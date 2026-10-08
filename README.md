@@ -334,10 +334,10 @@ Cada Pull Request necesita al menos **una revisión** de otro integrante y debe 
 
 | Integrante | Rol | GitHub |
 |---|---|---|
-| Jesús David Carvajal Coneo | Líder del equipo Móvil · Frontend móvil | [@usuario](https://github.com/usuario) |
-| *Integrante 2* | Frontend móvil | [@usuario](https://github.com/usuario) |
-| *Integrante 3* | Backend / integración móvil | [@usuario](https://github.com/usuario) |
-| *Integrante 4* | Backend / integración móvil | [@usuario](https://github.com/usuario) |
+| María García | Líder del equipo Móvil · Frontend móvil | [@Marysa2006](https://github.com/Marysa2006) |
+| Jhon Gómez | Frontend móvil | [@JhonJ-G](https://github.com/JhonJ-G) |
+| Jorge León | Backend / integración móvil | [@PokerProgramming](https://github.com/PokerProgramming) |
+| Rigoberto Márquez | Backend / integración móvil | [@RigoMarquez](https://github.com/RigoMarquez) |
 
 ---
 
