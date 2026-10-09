@@ -61,29 +61,30 @@ La Biblioteca de la UPC presta mucho más que libros: asesorías en normas APA y
 
 ## 💡 Nuestra propuesta
 
-Una app para **Android e iPhone** que reúne los servicios de la biblioteca y los complementa con lo que solo un celular puede hacer bien.
+Una app para **Android e iPhone** que reúne los servicios de la biblioteca, le da al personal acceso rápido a la gestión desde el celular y complementa todo con lo que solo un teléfono puede hacer bien.
 
 La app **no reemplaza** a las plataformas que ya funcionan: **Koha** sigue siendo el catálogo y los préstamos, y **DSpace** sigue siendo el Repositorio Institucional. La app las enlaza y se conecta a la misma API que usa el portal web, así que ambos muestran siempre la misma información.
 
 ### ¿Por qué una app si el portal web ya es responsive?
 
-Porque la app hace tres cosas que una página web no puede hacer bien:
+Porque la app hace cosas que una página web no puede hacer bien:
 
 1. 🔔 **Avisa aunque esté cerrada**: notificaciones y recordatorios.
-2. 📷 **Usa el teléfono a fondo**: cámara para códigos QR y calendario del sistema.
+2. 📷 **Usa el teléfono a fondo**: cámara para códigos QR y de barras, y calendario del sistema.
 3. 📴 **Funciona sin internet**: guías y material guardados en el dispositivo.
+4. ⚡ **Pone la gestión a un toque**: el personal aprueba, administra y registra préstamos sin estar frente al computador.
 
 ---
 
 ## 👥 ¿Para quién es?
 
-Para **toda la comunidad universitaria**, con tres niveles de acceso:
+Para **toda la comunidad universitaria** y para el **personal de la biblioteca**. La app tiene dos vistas y tres tipos de usuario:
 
-| Nivel | Quiénes | Qué pueden hacer |
-|---|---|---|
-| 🌐 **Sin cuenta** | Visitantes, invitados y egresados | Ver servicios y horarios, buscar en el catálogo, consultar recursos académicos, ver la disponibilidad de salas y leer las guías. |
-| 🎓 **Con cuenta institucional** | Estudiantes, docentes y administrativos | Todo lo anterior, más solicitar capacitaciones, agendar asesorías, reservar espacios, pedir tablets, seguir sus solicitudes y registrar asistencia. |
-| 🛠️ **Personal de la biblioteca** | Administración y facilitadores | Bandeja de solicitudes, panel del día, agenda de asesorías y entrega de tablets. |
+| Vista | Tipo de usuario | Quiénes | Acceso |
+|---|---|---|---|
+| 👥 **Comunidad** | 🌐 **Sin cuenta** | Visitantes, invitados y egresados | Servicios y horarios, catálogo, disponibilidad de espacios y guías. |
+| 👥 **Comunidad** | 🎓 **Con cuenta institucional** | Estudiantes, docentes y administrativos | La misma vista, más bases de datos académicas, solicitudes, seguimiento, perfil y funciones plus. |
+| 🛠️ **Personal** | 🔑 **Con cuenta institucional** | Administración y facilitadores de la biblioteca | Vista propia con la operación del día, la administración de los servicios y las funciones plus de gestión. |
 
 ---
 
@@ -91,50 +92,71 @@ Para **toda la comunidad universitaria**, con tres niveles de acceso:
 
 Cada funcionalidad se rastrea con su requerimiento (RF), caso de uso (CU) e historia de usuario (HU). En este proyecto la relación es uno a uno: **RF-14 ↔ CU-14 ↔ HU-14**. La columna *Iteración* indica en qué iteración del proyecto se construye.
 
-### 🎓 Vista de usuario
+### 👥 Vista de la comunidad
 
-| Funcionalidad | RF / HU | Iteración |
-|---|---|:---:|
-| Servicios de la biblioteca con descripción, público y horarios | 01 | 1 |
-| Acceso al catálogo bibliográfico (Koha / OPAC) | 02 | 1 |
-| Bases de datos y recursos académicos | 03 | 1 |
-| Inicio de sesión institucional y perfil | 05, 06 | 1 |
-| Disponibilidad de espacios (vista semanal y mensual) | 17 | 2 |
-| Solicitud de reserva de espacios | 18 | 2 |
-| Asesorías: agendar, cancelar y reprogramar | 14 | 3 |
-| Disponibilidad y solicitud de tablets | 22 | 3 |
-| Mis solicitudes: estado e historial en un solo lugar | 08 | 4 |
-| Solicitud de capacitaciones | 10 | 4 |
-| Orientación para el depósito del trabajo de grado | 11 | 4 |
+Visitantes y usuarios con cuenta ven la misma app; iniciar sesión desbloquea los servicios que necesitan identificación.
+
+| Funcionalidad | RF / HU | Sin cuenta | Con cuenta | Iteración |
+|---|---|:---:|:---:|:---:|
+| Servicios de la biblioteca con descripción, público y horarios | 01 | ✅ | ✅ | 1 |
+| Acceso al catálogo bibliográfico (Koha / OPAC) | 02 | ✅ | ✅ | 1 |
+| Bases de datos y recursos académicos | 03 | — | ✅ | 1 |
+| Inicio de sesión institucional y perfil | 05, 06 | — | ✅ | 1 |
+| Disponibilidad de espacios (vista semanal y mensual) | 17 | ✅ | ✅ | 2 |
+| Solicitud de reserva de espacios | 18 | — | ✅ | 2 |
+| Asesorías: agendar, cancelar y reprogramar | 14 | — | ✅ | 3 |
+| Disponibilidad y solicitud de tablets | 22 | — | ✅ | 3 |
+| Mis solicitudes: estado e historial en un solo lugar | 08 | — | ✅ | 4 |
+| Solicitud de capacitaciones | 10 | — | ✅ | 4 |
+| Orientación para el depósito del trabajo de grado | 11 | — | ✅ | 4 |
 
 ### 🛠️ Vista del personal
 
+Todo lo que la administración y los facilitadores hacen en el portal web también lo pueden hacer desde el celular, para resolver rápido cuando no están frente al computador.
+
+**Operación del día**
+
 | Funcionalidad | RF / HU | Iteración |
 |---|---|:---:|
-| Bandeja de reservas: aprobar, modificar o rechazar | 19 | 2 |
+| Bandeja de reservas: aprobar, modificar, rechazar o reservar para terceros | 19 | 2 |
 | Agenda del facilitador y resultado de cada cita | 15 | 3 |
 | Registro de entrega y devolución de tablets | 23 | 3 |
 | Bandeja de solicitudes de formación | 12 | 4 |
-| Panel del día: trámites, ocupación, tablets y asesorías | 26 | 4 |
+| Panel del día y estadísticas de uso | 26 | 4 |
+
+**Administración**
+
+| Funcionalidad | RF / HU | Iteración |
+|---|---|:---:|
+| Contenidos del portal: servicios y avisos | 04 | 1 |
+| Parámetros generales: periodos, festivos y horarios | 28 | 1 |
+| Catálogo de espacios | 16 | 2 |
+| Bloqueos institucionales de espacios | 20 | 2 |
+| Temas de asesoría y jornadas | 13 | 3 |
+| Inventario de tablets | 21 | 3 |
+| Líneas de formación | 09 | 4 |
 
 ### 🔁 Transversales
 
 | Funcionalidad | RF / HU | Iteración |
 |---|---|:---:|
-| Vistas según el rol del usuario | 07 | 1 |
+| Vistas según el rol del usuario y asignación de roles | 07 | 1 |
 | Notificaciones: el backend envía el correo y la app suma notificaciones push | 27 | 2 |
 
-La configuración de fondo (contenidos, líneas de formación, jornadas de asesoría, catálogo de espacios, bloqueos, inventario de tablets y parámetros generales) se gestiona desde el portal web.
+El control de préstamos vencidos (HU-24) y el registro estadístico (HU-25) son procesos automáticos del backend; la app muestra sus resultados.
 
 ### ⭐ Funciones plus
 
-Aprobadas por la Dirección de la Biblioteca. Son el valor diferencial de la app frente al portal web.
+Son el valor diferencial de la app frente al portal web.
 
-| Función | Problema que resuelve | Qué gana la biblioteca |
-|---|---|---|
-| 📷 **Registro de asistencia con QR** | La biblioteca sabe quién pidió un servicio, pero no quién asistió. | Estadísticas de uso real sin trabajo manual, y liberación de salas reservadas que nadie ocupa. |
-| 📴 **Guías y material sin internet** | El internet falla en los talleres prácticos. | Guías de APA, Mendeley, depósito de tesis y material de taller disponibles sin conexión. |
-| 📅 **Citas en el calendario con recordatorios** | Las citas olvidadas dejan franjas perdidas. | Cada asesoría, reserva o capacitación queda en el calendario del celular y se actualiza si cambia. |
+| Función | Para quién | Problema que resuelve | Qué gana la biblioteca |
+|---|---|---|---|
+| 📷 **Registro de asistencia con QR** | Comunidad con cuenta y personal | La biblioteca sabe quién pidió un servicio, pero no quién asistió. | Estadísticas de uso real sin trabajo manual, y liberación de salas reservadas que nadie ocupa. |
+| 📴 **Guías y material sin internet** | Toda la comunidad | El internet falla en los talleres prácticos. | Guías de APA, Mendeley, depósito de tesis y material de taller disponibles sin conexión. |
+| 📅 **Citas en el calendario con recordatorios** | Comunidad con cuenta y facilitadores | Las citas olvidadas dejan franjas perdidas. | Cada asesoría, reserva o capacitación queda en el calendario del celular y se actualiza si cambia. |
+| 🏷️ **Préstamos con código de barras** *(planeada)* | Personal | Registrar a mano la entrega y devolución de tablets es lento y propenso a errores. | El personal escanea el código del equipo con el celular y el préstamo queda registrado en segundos. |
+
+Las tres primeras fueron aprobadas por la Dirección de la Biblioteca; la cuarta se incorporará más adelante.
 
 > [!IMPORTANT]
 > Las funciones plus **no forman parte** de las 28 HU ni de los 103 SP del backlog general. Se estimarán como historias de usuario adicionales del equipo Móvil.
@@ -149,10 +171,10 @@ El proyecto general se planifica con **4 iteraciones de 8 días** (Planning Game
 
 | # | Iteración | Fechas | HU | Velocidad | En la app |
 |:---:|---|---|---|:---:|---|
-| 1 | Portal, autenticación y configuración base | 5 – 12 oct | 01, 02, 03, 04, 05, 06, 07, 28 | 26 SP | Inicio, catálogo, recursos, inicio de sesión, perfil y vistas por rol |
-| 2 | Espacios, reservas y notificaciones | 13 – 20 oct | 16, 17, 18, 19, 20, 27 | 26 SP | Disponibilidad y reserva de espacios, bandeja de reservas, notificaciones |
-| 3 | Asesorías y préstamo de tablets | 21 – 28 oct | 13, 14, 15, 21, 22, 23, 24 | 26 SP | Agendar asesorías, agenda del facilitador, solicitud y entrega de tablets |
-| 4 | Capacitaciones, seguimiento, estadísticas y Release 1.0 | 29 oct – 5 nov | 08, 09, 10, 11, 12, 25, 26 | 25 SP | Mis solicitudes, capacitaciones, autoarchivo, bandeja de formación y panel del día |
+| 1 | Portal, autenticación y configuración base | 5 – 12 oct | 01, 02, 03, 04, 05, 06, 07, 28 | 26 SP | **Comunidad:** inicio, catálogo, bases de datos, sesión y perfil. **Personal:** contenidos, parámetros y roles. |
+| 2 | Espacios, reservas y notificaciones | 13 – 20 oct | 16, 17, 18, 19, 20, 27 | 26 SP | **Comunidad:** disponibilidad y reserva de espacios. **Personal:** bandeja de reservas, espacios y bloqueos. Notificaciones. |
+| 3 | Asesorías y préstamo de tablets | 21 – 28 oct | 13, 14, 15, 21, 22, 23, 24 | 26 SP | **Comunidad:** asesorías y tablets. **Personal:** jornadas, agenda del facilitador, inventario, entrega y devolución. |
+| 4 | Capacitaciones, seguimiento, estadísticas y Release 1.0 | 29 oct – 5 nov | 08, 09, 10, 11, 12, 25, 26 | 25 SP | **Comunidad:** Mis solicitudes, capacitaciones y autoarchivo. **Personal:** líneas de formación, bandeja de formación y panel del día. |
 | | **Total** | **32 días** | **28 HU** | **103 SP** | **Release 1.0: 5 de noviembre de 2026** |
 
 ### Estimación
@@ -172,41 +194,41 @@ Los Story Points usan la escala de Fibonacci, con **1 SP ≈ 2 horas** de trabaj
 
 <br/>
 
-Prioridad: 1 = alta, 2 = media, 3 = baja. La columna *En la app* indica dónde aparece cada HU en este repositorio.
+Prioridad: 1 = alta, 2 = media, 3 = baja. La columna *En la app* indica en qué vista aparece cada HU en este repositorio.
 
 | HU | Historia | SP | Prioridad | Iteración | En la app |
 |---|---|:---:|:---:|:---:|---|
-| HU-01 | Consultar servicios del portal | 5 | 1 | 1 | 🎓 Usuario |
-| HU-02 | Acceder al catálogo OPAC | 1 | 1 | 1 | 🎓 Usuario |
-| HU-03 | Acceder a recursos académicos | 2 | 2 | 1 | 🎓 Usuario |
-| HU-04 | Gestionar contenidos del portal | 5 | 1 | 1 | 💻 Solo web |
-| HU-05 | Iniciar sesión institucional | 5 | 1 | 1 | 🎓 Usuario |
-| HU-06 | Gestionar perfil de usuario | 2 | 2 | 1 | 🎓 Usuario |
+| HU-01 | Consultar servicios del portal | 5 | 1 | 1 | 👥 Comunidad |
+| HU-02 | Acceder al catálogo OPAC | 1 | 1 | 1 | 👥 Comunidad |
+| HU-03 | Acceder a recursos académicos | 2 | 2 | 1 | 👥 Comunidad (con cuenta) |
+| HU-04 | Gestionar contenidos del portal | 5 | 1 | 1 | 🛠️ Personal |
+| HU-05 | Iniciar sesión institucional | 5 | 1 | 1 | 👥 Comunidad |
+| HU-06 | Gestionar perfil de usuario | 2 | 2 | 1 | 👥 Comunidad (con cuenta) |
 | HU-07 | Asignar roles y permisos | 3 | 1 | 1 | 🔁 Transversal |
-| HU-08 | Consultar estado de solicitudes | 5 | 2 | 4 | 🎓 Usuario |
-| HU-09 | Gestionar líneas de formación | 2 | 2 | 4 | 💻 Solo web |
-| HU-10 | Solicitar capacitación | 3 | 1 | 4 | 🎓 Usuario |
-| HU-11 | Consultar orientación de autoarchivo | 2 | 2 | 4 | 🎓 Usuario |
+| HU-08 | Consultar estado de solicitudes | 5 | 2 | 4 | 👥 Comunidad (con cuenta) |
+| HU-09 | Gestionar líneas de formación | 2 | 2 | 4 | 🛠️ Personal |
+| HU-10 | Solicitar capacitación | 3 | 1 | 4 | 👥 Comunidad (con cuenta) |
+| HU-11 | Consultar orientación de autoarchivo | 2 | 2 | 4 | 👥 Comunidad (con cuenta) |
 | HU-12 | Gestionar solicitudes de formación | 5 | 1 | 4 | 🛠️ Personal |
-| HU-13 | Configurar asesorías y jornadas | 8 | 1 | 3 | 💻 Solo web |
-| HU-14 | Agendar / cancelar asesoría | 5 | 1 | 3 | 🎓 Usuario |
+| HU-13 | Configurar asesorías y jornadas | 8 | 1 | 3 | 🛠️ Personal |
+| HU-14 | Agendar / cancelar asesoría | 5 | 1 | 3 | 👥 Comunidad (con cuenta) |
 | HU-15 | Consultar agenda del facilitador | 3 | 2 | 3 | 🛠️ Personal |
-| HU-16 | Gestionar espacios | 3 | 1 | 2 | 💻 Solo web |
-| HU-17 | Consultar disponibilidad de espacios | 5 | 1 | 2 | 🎓 Usuario |
-| HU-18 | Solicitar reserva de espacio | 5 | 1 | 2 | 🎓 Usuario |
+| HU-16 | Gestionar espacios | 3 | 1 | 2 | 🛠️ Personal |
+| HU-17 | Consultar disponibilidad de espacios | 5 | 1 | 2 | 👥 Comunidad |
+| HU-18 | Solicitar reserva de espacio | 5 | 1 | 2 | 👥 Comunidad (con cuenta) |
 | HU-19 | Gestionar reservas | 5 | 1 | 2 | 🛠️ Personal |
-| HU-20 | Bloquear espacios | 3 | 2 | 2 | 💻 Solo web |
-| HU-21 | Gestionar inventario de tablets | 2 | 1 | 3 | 💻 Solo web |
-| HU-22 | Solicitar préstamo de tablet | 3 | 1 | 3 | 🎓 Usuario |
+| HU-20 | Bloquear espacios | 3 | 2 | 2 | 🛠️ Personal |
+| HU-21 | Gestionar inventario de tablets | 2 | 1 | 3 | 🛠️ Personal |
+| HU-22 | Solicitar préstamo de tablet | 3 | 1 | 3 | 👥 Comunidad (con cuenta) |
 | HU-23 | Registrar entrega y devolución | 3 | 1 | 3 | 🛠️ Personal |
 | HU-24 | Controlar préstamos vencidos | 2 | 2 | 3 | ⚙️ Backend |
 | HU-25 | Registrar información estadística | 3 | 2 | 4 | ⚙️ Backend |
-| HU-26 | Consultar y exportar estadísticas | 5 | 3 | 4 | 🛠️ Personal (panel del día) |
+| HU-26 | Consultar y exportar estadísticas | 5 | 3 | 4 | 🛠️ Personal |
 | HU-27 | Enviar notificaciones y recordatorios | 5 | 2 | 2 | 🔁 Transversal |
-| HU-28 | Configurar parámetros generales | 3 | 1 | 1 | 💻 Solo web |
+| HU-28 | Configurar parámetros generales | 3 | 1 | 1 | 🛠️ Personal |
 | | **Total** | **103** | | | |
 
-**En la app:** 12 HU de usuario, 5 del personal y 2 transversales. Las 9 restantes se resuelven en el portal web o en el backend.
+**En la app:** 12 HU de la comunidad, 12 del personal y 2 transversales. Las 2 restantes son procesos automáticos del backend cuyos resultados muestra la app.
 
 </details>
 
@@ -249,7 +271,7 @@ flowchart LR
 | [react-native-calendars](https://github.com/wix/react-native-calendars) | Vistas semanales y mensuales de disponibilidad (HU-14, HU-17) |
 | expo-secure-store | Sesión guardada de forma cifrada |
 | expo-notifications | Notificaciones push y recordatorios (HU-27) |
-| expo-camera | Escaneo de códigos QR *(función plus)* |
+| expo-camera | Escaneo de códigos QR y de barras *(funciones plus)* |
 | expo-calendar | Sincronización con el calendario del celular *(función plus)* |
 | expo-file-system | Guías y material sin conexión *(función plus)* |
 
@@ -300,7 +322,8 @@ biblioteca-upc-movil/
 │   ├── hooks/           # Hooks personalizados
 │   └── utils/           # Utilidades
 ├── assets/              # Imágenes, íconos y fuentes
-└── docs/                # Documentación del proyecto (RF, CU, HU y plan de iteraciones)
+├── docs/                # Documentación del proyecto (RF, CU, HU y plan de iteraciones)
+└── .github/             # Plantillas de PR e issues, y guardianes (CODEOWNERS)
 ```
 
 > La estructura detallada se documenta al configurar el entorno de trabajo.
@@ -311,13 +334,23 @@ biblioteca-upc-movil/
 
 **Ramas**
 
-- **`main`**: versión estable. Solo recibe cambios por Pull Request al cierre de cada iteración.
-- **`develop`**: integración del trabajo del equipo durante la iteración.
-- **`feature/hu<número>-<descripcion>`**: una rama por historia de usuario, por ejemplo `feature/hu14-agendar-asesoria`.
+- **`main`**: versión estable. Solo recibe el Pull Request de cierre de cada iteración, que se fusiona con *merge commit* y se etiqueta (`v0.1.0`, `v0.2.0`…).
+- **`develop`**: rama principal del repositorio. Integra el trabajo de la iteración y solo recibe Pull Requests, que se fusionan con *squash*.
+- **Ramas de trabajo**: nacen de `develop` actualizado y viven pocos días. Cada HU se trabaja en dos ramas, una por capa: datos (integración) y pantalla (frontend).
 
-**Revisión y commits**
+| Prefijo | Para qué | Ejemplo |
+|---|---|---|
+| `feature/` | Una capa de una HU | `feature/hu14-datos-agendar-asesoria`, `feature/hu14-ui-agendar-asesoria` |
+| `fix/` | Corregir algo ya fusionado | `fix/hu18-validar-hora-fin` |
+| `chore/` | Base, configuración o dependencias | `chore/tema-upc` |
+| `docs/` | Documentación | `docs/guia-de-instalacion` |
 
-Cada Pull Request necesita al menos **una revisión** de otro integrante y debe nombrar la HU que resuelve. Los mensajes de commit siguen [Conventional Commits](https://www.conventionalcommits.org/es/v1.0.0/): `feat:`, `fix:`, `docs:`, `style:`, `refactor:`.
+**Commits y Pull Requests**
+
+- Los commits siguen [Conventional Commits](https://www.conventionalcommits.org/es/v1.0.0/) con la HU como alcance: `feat(hu14): selector de franjas por semana`.
+- El título del PR usa el mismo formato, porque se convierte en el commit que queda en `develop`.
+- Cada PR enlaza su issue (`Closes #12`), necesita **una aprobación** y no se fusiona con conversaciones abiertas.
+- Los cambios en la base compartida (`src/types`, `src/theme`, layouts de navegación, dependencias y configuración) necesitan la aprobación de un guardián (María García o Jorge León), definido en `.github/CODEOWNERS`.
 
 **Ceremonias**
 
@@ -332,12 +365,14 @@ Cada Pull Request necesita al menos **una revisión** de otro integrante y debe 
 
 ## 👨‍💻 Equipo
 
-| Integrante | Rol | GitHub |
-|---|---|---|
-| María García | Líder del equipo Móvil · Frontend móvil | [@Marysa2006](https://github.com/Marysa2006) |
-| Jhon Gómez | Frontend móvil | [@JhonJ-G](https://github.com/JhonJ-G) |
-| Jorge León | Backend / integración móvil | [@PokerProgramming](https://github.com/PokerProgramming) |
-| Rigoberto Márquez | Backend / integración móvil | [@RigoMarquez](https://github.com/RigoMarquez) |
+| Integrante | Rol | Pareja | GitHub |
+|---|---|---|---|
+| María García | Líder del equipo Móvil · Frontend móvil · Guardiana | Comunidad | [@Marysa2006](https://github.com/Marysa2006) |
+| Jhon Gómez | Frontend móvil | Personal | [@JhonJ-G](https://github.com/JhonJ-G) |
+| Jorge León | Backend / integración móvil · Guardián | Personal | [@PokerProgramming](https://github.com/PokerProgramming) |
+| Rigoberto Márquez | Backend / integración móvil | Comunidad | [@RigoMarquez](https://github.com/RigoMarquez) |
+
+Cada pareja construye una vista de la app: **Comunidad** (visitantes, estudiantes, docentes y administrativos) o **Personal** (administración y facilitadores de la biblioteca). Los guardianes aprueban los cambios en la base compartida.
 
 ---
 

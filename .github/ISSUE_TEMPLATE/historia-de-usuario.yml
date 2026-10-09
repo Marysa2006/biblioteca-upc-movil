@@ -1,0 +1,65 @@
+name: Historia de usuario
+description: Una capa (UI o datos) de una historia de usuario del backlog
+title: "HU-XX · UI · "
+labels: ["historia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Crea **un issue por HU y por capa**. Ejemplo: `HU-14 · UI · Agendar asesoría` y `HU-14 · Datos · Agendar asesoría`.
+        Después de crearlo, asígnale responsable, etiquetas (`vista: …`, `capa: …`) y el hito de la iteración.
+
+  - type: input
+    id: hu
+    attributes:
+      label: Historia de usuario
+      description: Código del backlog del proyecto.
+      placeholder: HU-14
+    validations:
+      required: true
+
+  - type: dropdown
+    id: capa
+    attributes:
+      label: Capa
+      options:
+        - UI (frontend)
+        - Datos (integración)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: vista
+    attributes:
+      label: Vista
+      options:
+        - Comunidad
+        - Personal
+        - Transversal
+    validations:
+      required: true
+
+  - type: textarea
+    id: historia
+    attributes:
+      label: Historia
+      description: Copiada del documento del proyecto.
+      placeholder: Como usuario autenticado, quiero …, para …
+    validations:
+      required: true
+
+  - type: textarea
+    id: criterios
+    attributes:
+      label: Criterios de aceptación
+      placeholder: |
+        - [ ] …
+        - [ ] …
+    validations:
+      required: true
+
+  - type: textarea
+    id: referencias
+    attributes:
+      label: Mockup o endpoints
+      description: Para UI, el enlace o la captura del mockup. Para datos, el endpoint de la API y la forma de los datos.

@@ -1,0 +1,27 @@
+# Guardianes de la base compartida
+# --------------------------------
+# Un PR que cambie cualquiera de estos archivos necesita la aprobación de UNO
+# de los guardianes, que no sea el autor del PR. El resto de archivos lo puede
+# aprobar cualquier integrante.
+#
+# Guardianes:
+#   @Marysa2006        María García, líder y frontend (pareja Comunidad)
+#   @PokerProgramming  Jorge León, integración (pareja Personal)
+
+# Tipos de datos que comparten pantallas y hooks
+/src/types/              @Marysa2006 @PokerProgramming
+
+# Tema visual de la UPC: colores, tipografía y espaciado
+/src/theme/              @Marysa2006 @PokerProgramming
+
+# Estructura de navegación (layouts de Expo Router, en cualquier carpeta de app/)
+/app/**/_layout.tsx      @Marysa2006 @PokerProgramming
+
+# Dependencias y configuración del proyecto
+/package.json            @Marysa2006 @PokerProgramming
+/package-lock.json       @Marysa2006 @PokerProgramming
+/app.json                @Marysa2006 @PokerProgramming
+/tsconfig.json           @Marysa2006 @PokerProgramming
+
+# Configuración del repositorio
+/.github/                @Marysa2006 @PokerProgramming

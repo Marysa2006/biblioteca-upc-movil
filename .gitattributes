@@ -1,0 +1,17 @@
+# Finales de línea iguales para todo el equipo (Windows, macOS y Linux):
+# evita que los diffs se llenen de cambios que no son reales.
+* text=auto eol=lf
+
+# Archivos binarios: Git no debe tocarlos
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.ttf   binary
+*.otf   binary
+*.woff  binary
+*.woff2 binary
+*.mp4   binary
+*.pdf   binary
