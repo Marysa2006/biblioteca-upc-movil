@@ -8,8 +8,8 @@
 
 <br/>
 
-![Expo](https://img.shields.io/badge/Expo-SDK%2056-000020?logo=expo&logoColor=white)
-![React Native](https://img.shields.io/badge/React%20Native-0.85-61DAFB?logo=react&logoColor=black)
+![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
 ![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black)
 ![Plataformas](https://img.shields.io/badge/plataformas-Android%20%7C%20iOS-006139)
 ![Release](https://img.shields.io/badge/Release%201.0-5%20nov%202026-E5BC16)
@@ -262,8 +262,8 @@ flowchart LR
 
 | Pieza | Para qué |
 |---|---|
-| [Expo](https://expo.dev) SDK 56 (React Native 0.85, React 19.2) | Base del proyecto: un solo código para Android e iOS |
-| [Expo Router](https://docs.expo.dev/router/introduction/) | Navegación basada en archivos |
+| [Expo](https://expo.dev) SDK 57 (React Native 0.86, React 19.2) | Base del proyecto: un solo código para Android e iOS. Se usa SDK 57 porque es la versión de Expo Go en Play Store |
+| [Expo Router](https://docs.expo.dev/router/introduction/) | Navegación basada en archivos (rutas en `src/app`) |
 | [React Native Paper](https://callstack.github.io/react-native-paper/) | Componentes visuales con los colores de la UPC |
 | [Zustand](https://zustand.docs.pmnd.rs/) | Estado global (sesión del usuario) |
 | [TanStack Query](https://tanstack.com/query) | Consumo de la API: carga, errores y caché |
@@ -279,33 +279,37 @@ flowchart LR
 
 ## 🚀 Cómo empezar
 
-> [!IMPORTANT]
-> Esta sección se completa cuando se inicialice el proyecto de Expo.
-
 ### Requisitos
 
-- [Node.js](https://nodejs.org/) LTS (versión 22 o superior)
-- [Git](https://git-scm.com/)
-- La app **Expo Go** en tu celular, o un emulador de Android o iOS
+- [Node.js](https://nodejs.org/) 22 LTS (22.13 o superior)
+- [Git](https://git-scm.com/) y [VS Code](https://code.visualstudio.com/)
+- **Expo Go** en el celular (Android: Play Store), o un emulador de Android
 
 ### Instalación
 
 ```bash
-# 1. Clonar el repositorio
-git clone https://github.com/<usuario>/biblioteca-upc-movil.git
+git clone https://github.com/Marysa2006/biblioteca-upc-movil.git
 cd biblioteca-upc-movil
-
-# 2. Instalar dependencias
 npm install
-
-# 3. Configurar variables de entorno
-cp .env.example .env   # y completar la URL de la API
-
-# 4. Iniciar el servidor de desarrollo
+cp .env.example .env
 npx expo start
 ```
 
-Escanea el código QR que aparece en la terminal con Expo Go (Android) o con la cámara (iPhone).
+Escanea el código QR de la terminal con Expo Go. El celular y el computador deben estar en la misma red Wi-Fi; si la red no lo permite, usa `npx expo start --tunnel`. Para ver la app en el navegador: `npm run web`.
+
+### Usuarios de prueba
+
+Mientras se define el inicio de sesión institucional (HU-05), la pantalla de login permite entrar como estudiante, docente, administrador o facilitador de prueba. Así se prueban las dos vistas de la app.
+
+### Comandos
+
+| Comando | Para qué |
+|---|---|
+| `npx expo start` | Inicia la app en modo desarrollo |
+| `npm run lint` | Revisa el estilo del código |
+| `npm run typecheck` | Revisa los tipos de TypeScript |
+
+Corre `npm run lint` y `npm run typecheck` antes de abrir un Pull Request.
 
 ---
 
@@ -313,20 +317,36 @@ Escanea el código QR que aparece en la terminal con Expo Go (Android) o con la 
 
 ```
 biblioteca-upc-movil/
-├── app/                 # Pantallas y rutas (Expo Router)
 ├── src/
-│   ├── api/             # Llamadas al backend (única puerta de salida)
-│   ├── components/      # Componentes reutilizables
-│   ├── theme/           # Colores, tipografía y espaciado de la UPC
-│   ├── store/           # Estado global (Zustand)
-│   ├── hooks/           # Hooks personalizados
-│   └── utils/           # Utilidades
-├── assets/              # Imágenes, íconos y fuentes
-├── docs/                # Documentación del proyecto (RF, CU, HU y plan de iteraciones)
-└── .github/             # Plantillas de PR e issues, y guardianes (CODEOWNERS)
+│   ├── app/                 # Rutas = pantallas (Expo Router). Aquí solo van rutas
+│   │   ├── _layout.tsx      # Proveedores y navegación raíz
+│   │   ├── login.tsx        # Inicio de sesión (provisional hasta HU-05)
+│   │   ├── (comunidad)/     # Vista de la comunidad: /, /catalogo, /solicitudes, /perfil
+│   │   └── (personal)/      # Vista del personal: /panel, /bandeja, /equipo, /inventario
+│   ├── api/                 # Integración · cliente HTTP, funciones por módulo y mocks/
+│   ├── hooks/               # Integración · hooks de datos con TanStack Query
+│   ├── store/               # Integración · sesión (Zustand + SecureStore)
+│   ├── components/          # Frontend · ui/ (comunes) y una carpeta por módulo
+│   ├── theme/               # Colores, espaciado y tema de la UPC (base compartida)
+│   ├── types/               # Tipos compartidos (base compartida)
+│   └── utils/               # Utilidades y constantes
+├── assets/                  # Íconos e imágenes
+└── .github/                 # Plantillas de PR e issues, y guardianes (CODEOWNERS)
 ```
 
-> La estructura detallada se documenta al configurar el entorno de trabajo.
+### El patrón de cada pantalla
+
+**pantalla → hook → función de API → mock**. Las pantallas nunca llaman a la API directamente. El ejemplo de referencia es la pantalla de inicio:
+
+| Capa | Archivo de ejemplo | Quién la hace |
+|---|---|---|
+| Pantalla | `src/app/(comunidad)/index.tsx` | Frontend |
+| Componente | `src/components/servicios/TarjetaServicio.tsx` | Frontend |
+| Hook | `src/hooks/useServicios.ts` | Integración |
+| Función de API | `src/api/servicios.ts` | Integración |
+| Datos de prueba | `src/api/mocks/servicios.ts` | Integración |
+
+Con `EXPO_PUBLIC_USAR_MOCKS=true` en el `.env`, la app usa los datos de prueba. Cuando el Backend publique un endpoint, integración lo conecta en la función de API y la pantalla no cambia.
 
 ---
 

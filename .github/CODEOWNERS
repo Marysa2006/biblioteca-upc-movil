@@ -14,8 +14,8 @@
 # Tema visual de la UPC: colores, tipografía y espaciado
 /src/theme/              @Marysa2006 @PokerProgramming
 
-# Estructura de navegación (layouts de Expo Router, en cualquier carpeta de app/)
-/app/**/_layout.tsx      @Marysa2006 @PokerProgramming
+# Estructura de navegación (layouts de Expo Router, en cualquier carpeta de src/app/)
+/src/app/**/_layout.tsx  @Marysa2006 @PokerProgramming
 
 # Dependencias y configuración del proyecto
 /package.json            @Marysa2006 @PokerProgramming
