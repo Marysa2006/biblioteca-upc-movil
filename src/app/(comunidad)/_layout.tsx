@@ -1,13 +1,43 @@
 /**
  * Pestañas de la vista de la comunidad: visitantes, egresados, estudiantes, docentes y administrativos.
+ * Al abrir la app con una sesión del personal guardada, entra directo al panel (HU-07).
  * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
  */
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
+import { useEffect } from 'react';
 
+import { EstadoCarga } from '@/components/ui';
+import { useSesion } from '@/store/sesion';
 import { colores } from '@/theme';
+import { esPersonal } from '@/utils/roles';
+
+/**
+ * La redirección al panel ocurre una sola vez por apertura de la app.
+ * Así el personal todavía puede visitar la vista de la comunidad desde el panel.
+ */
+let redireccionInicialHecha = false;
 
 export default function LayoutComunidad() {
+  const usuario = useSesion((estado) => estado.usuario);
+  const hidratada = useSesion((estado) => estado.hidratada);
+
+  useEffect(() => {
+    if (hidratada) {
+      redireccionInicialHecha = true;
+    }
+  }, [hidratada]);
+
+  if (!redireccionInicialHecha) {
+    if (!hidratada) {
+      return <EstadoCarga />;
+    }
+    if (esPersonal(usuario?.rol)) {
+      return <Redirect href="/panel" />;
+    }
+  }
+
   return (
     <Tabs
       screenOptions={{
