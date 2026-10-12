@@ -3,12 +3,14 @@
  * Solo muestra: el estado y la acción de abrir llegan por props desde la pantalla,
  * que usa useCatalogoKoha().
  */
-import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
 import { Button, Card, Icon, Text, TextInput } from 'react-native-paper';
 
 import type { EstadoCatalogo } from '@/hooks/useCatalogoKoha';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
+
+const MENSAJE_NO_DISPONIBLE = 'El catálogo no está disponible en este momento. Intenta más tarde.';
 
 type Props = {
   estado: EstadoCatalogo;
@@ -22,6 +24,13 @@ export function TarjetaCatalogoKoha({ estado, onAbrir }: Props) {
   const texto = busqueda.trim();
   const abrir = () => onAbrir(busqueda);
 
+  // accessibilityLiveRegion solo funciona en Android; en iOS el aviso se anuncia aquí.
+  useEffect(() => {
+    if (estado === 'no_disponible') {
+      AccessibilityInfo.announceForAccessibility(MENSAJE_NO_DISPONIBLE);
+    }
+  }, [estado]);
+
   return (
     <Card mode="contained" style={estilos.tarjeta}>
       <Card.Content style={estilos.contenido}>
@@ -30,7 +39,7 @@ export function TarjetaCatalogoKoha({ estado, onAbrir }: Props) {
             <Icon source="bookshelf" size={28} color={colores.primario} />
           </View>
           <View style={estilos.textos}>
-            <Text variant="titleMedium" style={estilos.titulo}>
+            <Text variant="titleMedium" style={estilos.titulo} accessibilityRole="header">
               Catálogo en línea
             </Text>
             <Text variant="bodyMedium" style={estilos.descripcion}>
@@ -42,11 +51,13 @@ export function TarjetaCatalogoKoha({ estado, onAbrir }: Props) {
         <TextInput
           mode="outlined"
           label="Buscar en el catálogo"
+          accessibilityLabel="Buscar en el catálogo"
           value={busqueda}
           onChangeText={setBusqueda}
           onSubmitEditing={abrir}
           returnKeyType="search"
-          left={<TextInput.Icon icon="magnify" />}
+          // Decorativo: sin esto, el lector lo anuncia como un botón sin nombre.
+          left={<TextInput.Icon icon="magnify" accessible={false} importantForAccessibility="no" />}
           disabled={comprobando}
         />
 
@@ -55,7 +66,7 @@ export function TarjetaCatalogoKoha({ estado, onAbrir }: Props) {
             <View style={estilos.filaAviso}>
               <Icon source="alert-circle-outline" size={24} color={coloresEstado.rechazada.texto} />
               <Text variant="bodyMedium" style={estilos.textoAviso}>
-                El catálogo no está disponible en este momento. Intenta más tarde.
+                {MENSAJE_NO_DISPONIBLE}
               </Text>
             </View>
             <Button
