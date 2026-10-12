@@ -113,6 +113,22 @@ export type EstadoSolicitud =
   | 'cancelada'
   | 'realizada';
 
+/** Datos que el usuario completa o actualiza; no vienen de la cuenta institucional (HU-06). */
+export type DatosEditablesPerfil = {
+  telefono?: string;
+  /**
+   * Dirección: PROVISIONAL. No está en el esquema del Backend (`core_user`); se confirma
+   * con la biblioteca y el equipo de Backend antes de conectar la API real.
+   */
+  direccion?: string;
+};
+
+/**
+ * Perfil del usuario autenticado (HU-06): datos institucionales de solo lectura
+ * más los datos editables.
+ * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
+ */
+export type Perfil = Usuario & DatosEditablesPerfil;
 /** Tipo de contenido editable del portal (HU-04). */
 export type TipoContenido = 'servicio' | 'informativo' | 'aviso';
 
