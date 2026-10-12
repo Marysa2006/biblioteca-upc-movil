@@ -22,6 +22,22 @@ export type Usuario = {
   semestre?: number;
 };
 
+/**
+ * Permisos de la vista del personal (HU-07).
+ * Cada rol del personal tiene un conjunto de permisos; la comunidad no administra
+ * la biblioteca, así que no tiene ninguno. Los usa useRol() para mostrar u ocultar funciones.
+ */
+export type Permiso =
+  | 'roles'
+  | 'contenidos'
+  | 'parametros'
+  | 'espacios'
+  | 'reservas'
+  | 'asesorias'
+  | 'tablets'
+  | 'formacion'
+  | 'estadisticas';
+
 export type CategoriaServicio =
   | 'asesorias'
   | 'capacitaciones'
