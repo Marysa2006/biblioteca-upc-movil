@@ -1,9 +1,14 @@
+import { TarjetaCatalogoKoha } from '@/components/catalogo/TarjetaCatalogoKoha';
 import { EnConstruccion, Pantalla } from '@/components/ui';
+import { useCatalogoKoha } from '@/hooks/useCatalogoKoha';
 
 export default function Catalogo() {
+  const { estado, abrirCatalogo } = useCatalogoKoha();
+
   return (
-    <Pantalla titulo="Catálogo" subtitulo="Libros y material de la biblioteca">
-      <EnConstruccion hu="HU-02 y HU-03" descripcion="Acceso al catálogo de Koha y a las bases de datos académicas." />
+    <Pantalla titulo="Catálogo" subtitulo="Material de la biblioteca y bases de datos académicas">
+      <TarjetaCatalogoKoha estado={estado} onAbrir={abrirCatalogo} />
+      <EnConstruccion hu="HU-03" descripcion="Bases de datos académicas suscritas por la biblioteca." />
     </Pantalla>
   );
 }
