@@ -5,7 +5,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Card, Icon, Text } from 'react-native-paper';
 
-import { acentoServicio, colores, espacio, radio } from '@/theme';
+import { acentoServicio, colores, espacio, fuentes, radio } from '@/theme';
 import type { Servicio } from '@/types';
 
 export function TarjetaServicio({ servicio }: { servicio: Servicio }) {
@@ -51,7 +51,7 @@ const estilos = StyleSheet.create({
     borderLeftWidth: 4,
   },
   contenido: { gap: espacio.s },
-  nombre: { color: colores.texto, fontWeight: '700' },
+  nombre: { color: colores.texto, fontFamily: fuentes.negrita },
   descripcion: { color: colores.texto },
   dato: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textoDato: { flex: 1, color: colores.textoSecundario },

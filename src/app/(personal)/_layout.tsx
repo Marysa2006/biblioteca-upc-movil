@@ -9,7 +9,7 @@ import { Tabs } from 'expo-router/js-tabs';
 
 import { EstadoCarga } from '@/components/ui';
 import { useSesion } from '@/store/sesion';
-import { colores } from '@/theme';
+import { colores, fuentes } from '@/theme';
 import { esPersonal } from '@/utils/roles';
 
 export default function LayoutPersonal() {
@@ -29,6 +29,7 @@ export default function LayoutPersonal() {
         headerShown: false,
         tabBarActiveTintColor: colores.primario,
         tabBarInactiveTintColor: colores.textoSecundario,
+        tabBarLabelStyle: { fontFamily: fuentes.seminegrita },
       }}>
       <Tabs.Screen
         name="panel"

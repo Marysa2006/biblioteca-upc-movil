@@ -4,7 +4,7 @@
  * Colores del manual de identidad UPC 2024 (pp. 19–20). Los marcados como derivados
  * no están en el manual: se sacaron de la paleta oficial para cumplir contraste AA.
  */
-import { MD3LightTheme, type MD3Theme } from 'react-native-paper';
+import { configureFonts, MD3LightTheme, type MD3Theme } from 'react-native-paper';
 
 import type { CategoriaServicio, EstadoSolicitud } from '@/types';
 
@@ -55,12 +55,47 @@ export const espacio = { xs: 4, s: 8, m: 16, l: 24, xl: 32 } as const;
 export const radio = { boton: 12, tarjeta: 16 } as const;
 
 /**
+ * Open Sans (manual UPC 2024, pp. 15–16), cargada en el layout raíz.
+ * El peso lo da la familia: Android no aplica fontWeight a fuentes cargadas.
+ */
+export const fuentes = {
+  regular: 'OpenSans_400Regular',
+  seminegrita: 'OpenSans_600SemiBold',
+  negrita: 'OpenSans_700Bold',
+} as const;
+
+const familia = (fontFamily: string) => ({ fontFamily, fontWeight: 'normal' as const });
+
+/** Una entrada por variante de Paper; tamaños e interlineado quedan los de MD3. */
+const fuentesPaper = configureFonts({
+  config: {
+    displayLarge: familia(fuentes.negrita),
+    displayMedium: familia(fuentes.negrita),
+    displaySmall: familia(fuentes.negrita),
+    headlineLarge: familia(fuentes.negrita),
+    headlineMedium: familia(fuentes.negrita),
+    headlineSmall: familia(fuentes.negrita),
+    titleLarge: familia(fuentes.seminegrita),
+    titleMedium: familia(fuentes.seminegrita),
+    titleSmall: familia(fuentes.seminegrita),
+    labelLarge: familia(fuentes.seminegrita),
+    labelMedium: familia(fuentes.seminegrita),
+    labelSmall: familia(fuentes.seminegrita),
+    bodyLarge: familia(fuentes.regular),
+    bodyMedium: familia(fuentes.regular),
+    bodySmall: familia(fuentes.regular),
+  },
+});
+
+/**
  * Tema de React Native Paper con los colores de la UPC.
  * Se definen todas las claves de color que usan los componentes: las que quedan por defecto salen moradas.
  */
 export const tema: MD3Theme = {
   ...MD3LightTheme,
   roundness: 3,
+  // `default` es la que usa <Text> sin variant.
+  fonts: { ...fuentesPaper, default: { ...fuentesPaper.default, ...familia(fuentes.regular) } },
   colors: {
     ...MD3LightTheme.colors,
     primary: colores.primario,

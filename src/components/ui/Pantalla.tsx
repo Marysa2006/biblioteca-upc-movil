@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colores, espacio } from '@/theme';
+import { colores, espacio, fuentes } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
 
 type Props = {
@@ -39,8 +39,8 @@ export function Pantalla({ titulo, subtitulo, children }: Props) {
 const estilos = StyleSheet.create({
   area: { flex: 1, backgroundColor: colores.fondo },
   contenido: { padding: espacio.m, gap: espacio.m, paddingBottom: espacio.xl },
-  marca: { color: colores.primario, fontWeight: '700' },
+  marca: { color: colores.primario, fontFamily: fuentes.negrita },
   encabezado: { gap: espacio.xs },
-  titulo: { color: colores.texto, fontWeight: '700' },
+  titulo: { color: colores.texto, fontFamily: fuentes.negrita },
   subtitulo: { color: colores.textoSecundario },
 });
