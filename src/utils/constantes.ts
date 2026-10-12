@@ -2,7 +2,7 @@
 export const NOMBRE_APP = 'Biblioteca UPC';
 
 /** Catálogo público (OPAC) de Koha. Confirmar la URL con el ingeniero de la biblioteca (HU-02). */
-export const URL_CATALOGO_KOHA = '';
+export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
 
 /** Repositorio Institucional (DSpace). Confirmar la URL con la biblioteca (HU-11). */
 export const URL_REPOSITORIO = '';
