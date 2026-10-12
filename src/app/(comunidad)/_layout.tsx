@@ -5,7 +5,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router/js-tabs';
 
-import { colores } from '@/theme';
+import { colores, fuentes } from '@/theme';
 
 export default function LayoutComunidad() {
   return (
@@ -14,6 +14,7 @@ export default function LayoutComunidad() {
         headerShown: false,
         tabBarActiveTintColor: colores.primario,
         tabBarInactiveTintColor: colores.textoSecundario,
+        tabBarLabelStyle: { fontFamily: fuentes.seminegrita },
       }}>
       <Tabs.Screen
         name="index"
