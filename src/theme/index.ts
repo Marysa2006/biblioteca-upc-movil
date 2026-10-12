@@ -53,6 +53,8 @@ export const coloresEstado: Record<EstadoSolicitud, { fondo: string; texto: stri
 
 export const espacio = { xs: 4, s: 8, m: 16, l: 24, xl: 32 } as const;
 export const radio = { boton: 12, tarjeta: 16 } as const;
+/** Ancho de los logos institucionales (el isotipo va entre 32 y 40 px, según CLAUDE.md). */
+export const tamanoLogo = { isotipo: 36 } as const;
 
 /**
  * Open Sans (manual UPC 2024, pp. 15–16), cargada en el layout raíz.
