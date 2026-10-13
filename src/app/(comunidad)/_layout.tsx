@@ -26,6 +26,15 @@ export default function LayoutComunidad() {
         }}
       />
       <Tabs.Screen
+        name="servicios"
+        options={{
+          title: 'Servicios',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="room-service-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="catalogo"
         options={{
           title: 'Catálogo',

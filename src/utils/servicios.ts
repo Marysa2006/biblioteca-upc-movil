@@ -4,9 +4,9 @@
  */
 import type { CategoriaServicio, Servicio } from '@/types';
 
-type InfoCategoria = { nombre: string; icono: string };
+type InfoCategoria = { nombre: string; icono: string; descripcion: string };
 
-/** Orden en que aparecen las categorías en Inicio. */
+/** Orden en que aparecen las categorías en Inicio y en Servicios. */
 export const ORDEN_CATEGORIAS: CategoriaServicio[] = [
   'asesorias',
   'capacitaciones',
@@ -17,13 +17,37 @@ export const ORDEN_CATEGORIAS: CategoriaServicio[] = [
 ];
 
 export const CATEGORIAS_SERVICIO: Record<CategoriaServicio, InfoCategoria> = {
-  asesorias: { nombre: 'Asesorías', icono: 'head-cog-outline' },
-  capacitaciones: { nombre: 'Capacitaciones', icono: 'account-group-outline' },
-  espacios: { nombre: 'Espacios', icono: 'office-building-outline' },
-  repositorio: { nombre: 'Repositorio institucional', icono: 'book-open-variant' },
-  tablets: { nombre: 'Préstamo de tablets', icono: 'tablet-cellphone' },
+  asesorias: {
+    nombre: 'Asesorías',
+    icono: 'head-cog-outline',
+    descripcion: 'Normas APA, Mendeley y búsqueda especializada.',
+  },
+  capacitaciones: {
+    nombre: 'Capacitaciones',
+    icono: 'account-group-outline',
+    descripcion: 'Talleres de búsqueda y manejo de información.',
+  },
+  espacios: {
+    nombre: 'Espacios',
+    icono: 'office-building-outline',
+    descripcion: 'Salas de estudio grupal y cubículos.',
+  },
+  repositorio: {
+    nombre: 'Repositorio institucional',
+    icono: 'book-open-variant',
+    descripcion: 'Depósito y consulta de trabajos de grado.',
+  },
+  tablets: {
+    nombre: 'Préstamo de tablets',
+    icono: 'tablet-cellphone',
+    descripcion: 'Tablets para usar dentro de la biblioteca.',
+  },
   // Provisional: la bibliotecóloga indica que los préstamos se gestionan en Koha.
-  prestamo: { nombre: 'Préstamo de libros', icono: 'book-arrow-right-outline' },
+  prestamo: {
+    nombre: 'Préstamo de libros',
+    icono: 'book-arrow-right-outline',
+    descripcion: 'Préstamo de material y hemeroteca.',
+  },
 };
 
 export type GrupoServicios = { categoria: CategoriaServicio; servicios: Servicio[] };

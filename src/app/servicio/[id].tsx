@@ -1,6 +1,6 @@
 /**
  * Detalle de un servicio (HU-01).
- * Va fuera de las pestañas: se apila encima de Inicio con botón de atrás.
+ * Va fuera de las pestañas: se apila encima de Servicios con botón de atrás.
  * El encabezado se configura aquí con <Stack.Screen />, sin tocar el layout raíz.
  *
  * Inactivo o inexistente (404) se muestran igual, como "no disponible":
@@ -10,14 +10,12 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Button, Card, Icon, Text } from 'react-native-paper';
 
+import { IconoCategoria } from '@/components/servicios/IconoCategoria';
 import { EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useServicio } from '@/hooks/useServicios';
 import { acentoServicio, colores, espacio, fuentes, radio } from '@/theme';
 import type { Servicio } from '@/types';
 import { CATEGORIAS_SERVICIO } from '@/utils/servicios';
-
-/** Opacidad del tinte del acento detrás del ícono de la categoría. */
-const OPACIDAD_TINTE = 0.12;
 
 export default function DetalleServicio() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -55,7 +53,8 @@ export default function DetalleServicio() {
         options={{
           headerShown: true,
           title: 'Detalle del servicio',
-          headerBackTitle: 'Inicio',
+          // Se llega desde Servicios o por enlace: solo la flecha, sin el nombre de la pantalla anterior.
+          headerBackButtonDisplayMode: 'minimal',
           headerStyle: { backgroundColor: colores.superficie },
           headerTintColor: colores.primario,
           headerTitleStyle: { fontFamily: fuentes.seminegrita, color: colores.texto },
@@ -68,19 +67,15 @@ export default function DetalleServicio() {
 
 function Detalle({ servicio }: { servicio: Servicio }) {
   const { categoria } = servicio;
-  const info = CATEGORIAS_SERVICIO[categoria];
   const acento = acentoServicio[categoria];
 
   return (
     <Pantalla titulo={servicio.nombre} conEncabezado>
       <View style={estilos.encabezado}>
-        <View style={estilos.cuadroIcono}>
-          <View style={[StyleSheet.absoluteFill, estilos.tinte, { backgroundColor: acento }]} />
-          <Icon source={info.icono} size={28} color={acento} />
-        </View>
+        <IconoCategoria categoria={categoria} />
         <View style={estilos.textosEncabezado}>
           <Text variant="labelLarge" style={{ color: acento }}>
-            {info.nombre}
+            {CATEGORIAS_SERVICIO[categoria].nombre}
           </Text>
           {servicio.requiereCuenta ? (
             <View style={estilos.fila}>
@@ -149,12 +144,6 @@ function NoDisponible() {
 
 const estilos = StyleSheet.create({
   encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.m },
-  cuadroIcono: {
-    padding: espacio.s,
-    borderRadius: radio.boton,
-    overflow: 'hidden',
-  },
-  tinte: { opacity: OPACIDAD_TINTE },
   textosEncabezado: { flex: 1, gap: espacio.xs },
   fila: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textoSecundario: { flex: 1, color: colores.textoSecundario },
