@@ -44,8 +44,7 @@ export type CategoriaServicio =
   | 'espacios'
   | 'tablets'
   | 'repositorio'
-  | 'prestamo'
-  | 'cultura';
+  | 'prestamo';
 
 /** Servicio de la biblioteca (HU-01). */
 export type Servicio = {

@@ -86,17 +86,6 @@ export const SERVICIOS: Servicio[] = [
     activo: true,
   },
   {
-    id: 'cultura',
-    nombre: 'Cineclub y talleres',
-    descripcion: 'Actividades culturales y talleres abiertos a la comunidad.',
-    categoria: 'cultura',
-    publico: 'Comunidad universitaria e invitados',
-    formaSolicitud: 'Consulta la programación en los avisos de la biblioteca',
-    horario: 'Según programación',
-    requiereCuenta: false,
-    activo: true,
-  },
-  {
     id: 'prestamo-virtual',
     nombre: 'Préstamo virtual',
     descripcion: 'Servicio inactivo de prueba: no debe aparecer en la app.',

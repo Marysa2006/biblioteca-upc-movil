@@ -38,7 +38,6 @@ export const acentoServicio: Record<CategoriaServicio, string> = {
   tablets: '#D4212C',
   repositorio: '#107B42',
   prestamo: '#1B5E86',
-  cultura: '#946622',
 };
 
 /** Colores de cada estado de solicitud: fondo de la etiqueta y color del texto (≥ 5.5:1). */

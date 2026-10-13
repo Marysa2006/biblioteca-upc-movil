@@ -48,7 +48,7 @@ El proyecto general, **Sistema de Gestión de Servicios de Biblioteca Unicesar**
 
 ## 🧩 El problema
 
-La Biblioteca de la UPC presta mucho más que libros: asesorías en normas APA y en el gestor bibliográfico Mendeley, capacitaciones, reserva de salas, préstamo de tablets, depósito de trabajos de grado y actividades culturales como el cineclub. Pero la Dirección de la Biblioteca identificó cuatro problemas:
+La Biblioteca de la UPC presta mucho más que libros: asesorías en normas APA y en el gestor bibliográfico Mendeley, capacitaciones, reserva de salas, préstamo de tablets y depósito de trabajos de grado. Pero la Dirección de la Biblioteca identificó cuatro problemas:
 
 | | Problema | Consecuencia |
 |---|---|---|
