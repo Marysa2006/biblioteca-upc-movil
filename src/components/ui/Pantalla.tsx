@@ -10,13 +10,15 @@ import { NOMBRE_APP } from '@/utils/constantes';
 type Props = {
   titulo: string;
   subtitulo?: string;
+  /** La pantalla tiene barra de navegación propia (Stack.Screen con headerShown): la barra ya cubre el borde superior. */
+  conEncabezado?: boolean;
   children: ReactNode;
 };
 
 /** Contenedor común de las pantallas: área segura, marca (isotipo + nombre), título y contenido desplazable. */
-export function Pantalla({ titulo, subtitulo, children }: Props) {
+export function Pantalla({ titulo, subtitulo, conEncabezado = false, children }: Props) {
   return (
-    <SafeAreaView style={estilos.area} edges={['top']}>
+    <SafeAreaView style={estilos.area} edges={conEncabezado ? [] : ['top']}>
       <ScrollView contentContainerStyle={estilos.contenido}>
         <View style={estilos.marca}>
           {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
