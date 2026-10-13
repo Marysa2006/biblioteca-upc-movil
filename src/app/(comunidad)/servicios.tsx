@@ -11,10 +11,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Chip, Text } from 'react-native-paper';
 
+import { IconoCategoria } from '@/components/servicios/IconoCategoria';
 import { TarjetaServicio } from '@/components/servicios/TarjetaServicio';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useServicios } from '@/hooks/useServicios';
-import { colores, espacio, fuentes } from '@/theme';
+import { colores, espacio, fuentes, radio } from '@/theme';
 import type { CategoriaServicio } from '@/types';
 import { agruparServiciosActivos, CATEGORIAS_SERVICIO, type GrupoServicios } from '@/utils/servicios';
 
@@ -44,10 +45,14 @@ export default function Servicios() {
       const elegido = grupos.find((g) => g.categoria === categoria);
       const filtro: Filtro = elegido ? elegido.categoria : 'todos';
       const visibles = elegido ? [elegido] : grupos;
+      const presentacion = elegido ? CATEGORIAS_SERVICIO[elegido.categoria].presentacion : undefined;
 
       contenido = (
         <>
           <ChipsFiltro grupos={grupos} filtro={filtro} onCambiar={cambiarFiltro} />
+          {elegido && presentacion ? (
+            <Presentacion categoria={elegido.categoria} texto={presentacion} />
+          ) : null}
           {visibles.map((grupo) => (
             <SeccionCategoria key={grupo.categoria} grupo={grupo} />
           ))}
@@ -118,6 +123,18 @@ function ChipsFiltro({ grupos, filtro, onCambiar }: PropsChips) {
   );
 }
 
+/** Texto que encabeza las opciones de una categoría con varios servicios (por ejemplo, Préstamo de libros). */
+function Presentacion({ categoria, texto }: { categoria: CategoriaServicio; texto: string }) {
+  return (
+    <View style={estilos.presentacion}>
+      <IconoCategoria categoria={categoria} tamano={24} />
+      <Text variant="bodyMedium" style={estilos.textoPresentacion}>
+        {texto}
+      </Text>
+    </View>
+  );
+}
+
 function SeccionCategoria({ grupo }: { grupo: GrupoServicios }) {
   return (
     <View style={estilos.seccion}>
@@ -142,4 +159,13 @@ const estilos = StyleSheet.create({
   textoChip: { fontFamily: fuentes.seminegrita },
   seccion: { gap: espacio.s },
   tituloSeccion: { color: colores.texto, fontFamily: fuentes.negrita },
+  presentacion: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: espacio.m,
+    padding: espacio.m,
+    borderRadius: radio.tarjeta,
+    backgroundColor: colores.primarioSuave,
+  },
+  textoPresentacion: { flex: 1, color: colores.texto },
 });

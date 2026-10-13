@@ -1,7 +1,8 @@
 /**
  * Inicio de la comunidad (HU-01): portada pública con las categorías de servicio.
  * Sin sesión (visitantes y egresados) muestra la bienvenida y la invitación a iniciar sesión;
- * con sesión, el saludo. Cada categoría abre la pestaña Servicios filtrada.
+ * con sesión, el saludo. Muestra las categorías destacadas (el resto, en "Ver todos"): cada
+ * una abre el detalle de su servicio o, si tiene varios, sus opciones en la pestaña Servicios.
  *
  * Patrón de datos: useServicios() (src/hooks) → obtenerServicios() (src/api) → mock o API.
  * Contempla los tres estados: cargando, error y vacío.
@@ -15,7 +16,11 @@ import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui
 import { useServicios } from '@/hooks/useServicios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import { agruparServiciosActivos, type GrupoServicios } from '@/utils/servicios';
+import {
+  agruparServiciosActivos,
+  CATEGORIAS_INICIO,
+  type GrupoServicios,
+} from '@/utils/servicios';
 
 /** Desde este ancho (tablets) la cuadrícula pasa a 3 columnas. */
 const ANCHO_TABLET = 600;
@@ -37,7 +42,7 @@ export default function Inicio() {
       grupos.length === 0 ? (
         <EstadoVacio mensaje="Todavía no hay servicios publicados." />
       ) : (
-        <CuadriculaCategorias grupos={grupos} />
+        <CuadriculaCategorias grupos={destacadas(grupos)} />
       );
   }
 
@@ -122,6 +127,26 @@ function InvitacionSesion() {
   );
 }
 
+/**
+ * Las categorías destacadas que tienen servicios activos, en su orden. Si ninguna tiene,
+ * las primeras con servicios, para que Inicio no quede vacío habiendo servicios.
+ */
+function destacadas(grupos: GrupoServicios[]): GrupoServicios[] {
+  const elegidas = CATEGORIAS_INICIO.flatMap((categoria) =>
+    grupos.filter((grupo) => grupo.categoria === categoria),
+  );
+  return elegidas.length > 0 ? elegidas : grupos.slice(0, CATEGORIAS_INICIO.length);
+}
+
+/** Con un solo servicio activo abre su detalle; con varios, sus opciones en Servicios. */
+function abrirCategoria({ categoria, servicios }: GrupoServicios) {
+  if (servicios.length === 1) {
+    router.push({ pathname: '/servicio/[id]', params: { id: servicios[0].id } });
+  } else {
+    router.navigate({ pathname: '/servicios', params: { categoria } });
+  }
+}
+
 function CuadriculaCategorias({ grupos }: { grupos: GrupoServicios[] }) {
   const { width, fontScale } = useWindowDimensions();
   const columnas = fontScale > ESCALA_LETRA_GRANDE ? 1 : width >= ANCHO_TABLET ? 3 : 2;
@@ -145,9 +170,7 @@ function CuadriculaCategorias({ grupos }: { grupos: GrupoServicios[] }) {
                 key={grupo.categoria}
                 categoria={grupo.categoria}
                 cantidad={grupo.servicios.length}
-                onPress={() =>
-                  router.navigate({ pathname: '/servicios', params: { categoria: grupo.categoria } })
-                }
+                onPress={() => abrirCategoria(grupo)}
               />
             ) : (
               <View key={`vacio-${columna}`} style={estilos.celdaVacia} />

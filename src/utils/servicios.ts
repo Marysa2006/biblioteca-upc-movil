@@ -4,7 +4,14 @@
  */
 import type { CategoriaServicio, Servicio } from '@/types';
 
-type InfoCategoria = { nombre: string; icono: string; descripcion: string };
+type InfoCategoria = {
+  nombre: string;
+  icono: string;
+  /** Descripción corta, para la tarjeta de Inicio. */
+  descripcion: string;
+  /** Texto que encabeza las opciones en Servicios, para categorías con varios servicios. */
+  presentacion?: string;
+};
 
 /** Orden en que aparecen las categorías en Inicio y en Servicios. */
 export const ORDEN_CATEGORIAS: CategoriaServicio[] = [
@@ -14,6 +21,14 @@ export const ORDEN_CATEGORIAS: CategoriaServicio[] = [
   'repositorio',
   'tablets',
   'prestamo',
+];
+
+/** Categorías destacadas en Inicio (las del mockup), en este orden. Las demás, en "Ver todos". */
+export const CATEGORIAS_INICIO: CategoriaServicio[] = [
+  'asesorias',
+  'capacitaciones',
+  'espacios',
+  'repositorio',
 ];
 
 export const CATEGORIAS_SERVICIO: Record<CategoriaServicio, InfoCategoria> = {
@@ -47,6 +62,8 @@ export const CATEGORIAS_SERVICIO: Record<CategoriaServicio, InfoCategoria> = {
     nombre: 'Préstamo de libros',
     icono: 'book-arrow-right-outline',
     descripcion: 'Préstamo de material y hemeroteca.',
+    presentacion:
+      'Préstamo de libros y material bibliográfico, y consulta de la hemeroteca. Elige el servicio para ver su público, horarios y cómo solicitarlo.',
   },
 };
 

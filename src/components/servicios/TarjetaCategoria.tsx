@@ -1,6 +1,6 @@
 /**
  * Tarjeta de una categoría en la cuadrícula "Servicios ofertados" de Inicio (HU-01).
- * Toda la tarjeta se puede presionar y abre la pestaña Servicios filtrada por la categoría.
+ * Toda la tarjeta se puede presionar: abre el detalle de su único servicio o sus opciones en Servicios.
  *
  * Usa TouchableRipple y no Card con onPress: Card pasa accessibilityRole y accessibilityLabel
  * a su contenedor exterior, no al elemento que se presiona, y no se estira en la fila.
@@ -30,9 +30,11 @@ export function TarjetaCategoria({ categoria, cantidad, onPress }: Props) {
         onPress={onPress}
         style={estilos.presionable}
         accessibilityRole="button"
-        accessibilityLabel={`${info.nombre}, ${cantidad} ${
-          cantidad === 1 ? 'servicio' : 'servicios'
-        }. Ver servicios`}
+        accessibilityLabel={
+          cantidad === 1
+            ? `${info.nombre}. Ver detalle`
+            : `${info.nombre}, ${cantidad} servicios. Ver opciones`
+        }
       >
         <View style={estilos.contenido}>
           <View style={estilos.icono}>
