@@ -6,8 +6,8 @@
  * Patrón de datos: useRecursos() (src/hooks) → obtenerRecursos() (src/api) → mock o API.
  */
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Icon, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { TarjetaCatalogoKoha } from '@/components/catalogo/TarjetaCatalogoKoha';
@@ -31,6 +31,14 @@ export default function Catalogo() {
 
   const [recursoPendiente, setRecursoPendiente] = useState<Recurso | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
+
+  // El Snackbar ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
+  useEffect(() => {
+    if (Platform.OS === 'ios' && aviso) {
+      AccessibilityInfo.announceForAccessibility(aviso);
+    }
+  }, [aviso]);
+
   // Recurso que se quería abrir al ir al login; se abre al volver a Catálogo con sesión.
   const recursoTrasLogin = useRef<Recurso | null>(null);
 
@@ -114,7 +122,6 @@ export default function Catalogo() {
           visible={aviso != null}
           onDismiss={() => setAviso(null)}
           duration={DURACION_AVISO_MS}
-          accessibilityLiveRegion="polite"
         >
           {aviso}
         </Snackbar>
