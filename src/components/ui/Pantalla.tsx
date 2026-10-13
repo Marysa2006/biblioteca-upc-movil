@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,14 +10,30 @@ import { NOMBRE_APP } from '@/utils/constantes';
 type Props = {
   titulo: string;
   subtitulo?: string;
+  /** La pantalla tiene barra de navegación propia (Stack.Screen con headerShown): la barra ya cubre el borde superior. */
+  conEncabezado?: boolean;
+  /** Activa "deslizar hacia abajo para recargar". */
+  recarga?: { recargando: boolean; onRecargar: () => void };
   children: ReactNode;
 };
 
 /** Contenedor común de las pantallas: área segura, marca (isotipo + nombre), título y contenido desplazable. */
-export function Pantalla({ titulo, subtitulo, children }: Props) {
+export function Pantalla({ titulo, subtitulo, conEncabezado = false, recarga, children }: Props) {
   return (
-    <SafeAreaView style={estilos.area} edges={['top']}>
-      <ScrollView contentContainerStyle={estilos.contenido}>
+    <SafeAreaView style={estilos.area} edges={conEncabezado ? [] : ['top']}>
+      <ScrollView
+        contentContainerStyle={estilos.contenido}
+        refreshControl={
+          recarga ? (
+            <RefreshControl
+              refreshing={recarga.recargando}
+              onRefresh={recarga.onRecargar}
+              colors={[colores.primario]}
+              tintColor={colores.primario}
+            />
+          ) : undefined
+        }
+      >
         <View style={estilos.marca}>
           {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
           <Image
