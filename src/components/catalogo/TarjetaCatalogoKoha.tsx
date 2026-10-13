@@ -4,7 +4,7 @@
  * que usa useCatalogoKoha().
  */
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Card, Icon, Text, TextInput } from 'react-native-paper';
 
 import type { EstadoCatalogo } from '@/hooks/useCatalogoKoha';
@@ -26,7 +26,7 @@ export function TarjetaCatalogoKoha({ estado, onAbrir }: Props) {
 
   // accessibilityLiveRegion solo funciona en Android; en iOS el aviso se anuncia aquí.
   useEffect(() => {
-    if (estado === 'no_disponible') {
+    if (Platform.OS === 'ios' && estado === 'no_disponible') {
       AccessibilityInfo.announceForAccessibility(MENSAJE_NO_DISPONIBLE);
     }
   }, [estado]);

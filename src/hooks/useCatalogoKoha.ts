@@ -46,6 +46,8 @@ export function useCatalogoKoha() {
       setEstado('inactivo');
       const texto = busqueda?.trim() ?? '';
       const url = texto !== '' ? urlBusquedaCatalogo(texto) : urlCatalogoPrincipal();
+      // En Android resuelve apenas se abre Custom Tabs, así que el bloqueo se libera de
+      // inmediato; en iOS resuelve al cerrar, pero el navegador es modal y tapa la app.
       await WebBrowser.openBrowserAsync(url, OPCIONES_NAVEGADOR);
     } catch {
       setEstado('no_disponible');
