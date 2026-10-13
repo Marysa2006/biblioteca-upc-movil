@@ -6,7 +6,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
 import { espacio } from '@/theme';
@@ -21,11 +21,16 @@ type Props = {
   onEnviar: (credenciales: Credenciales) => void;
 };
 
-/** Lleva el botón del ojo a 44 px de área táctil. */
-const AREA_OJO = { top: espacio.s, bottom: espacio.s, left: espacio.s, right: espacio.s };
+/**
+ * Con la letra ampliada por encima de este factor, el sufijo pasa debajo del campo
+ * (mismo umbral que la cuadrícula de Inicio).
+ */
+const ESCALA_LETRA_GRANDE = 1.3;
 
 export function FormularioLogin({ enviando, onEnviar }: Props) {
   const [verContrasena, setVerContrasena] = useState(false);
+  // Con letra muy grande, el sufijo dentro del campo dejaría poco espacio para escribir el usuario.
+  const sufijoAbajo = useWindowDimensions().fontScale > ESCALA_LETRA_GRANDE;
   const {
     control,
     handleSubmit,
@@ -65,9 +70,12 @@ export function FormularioLogin({ enviando, onEnviar }: Props) {
               returnKeyType="next"
               submitBehavior="submit"
               onSubmitEditing={() => setFocus('contrasena')}
-              right={<TextInput.Affix text={`@${DOMINIO_CORREO}`} />}
+              right={sufijoAbajo ? undefined : <TextInput.Affix text={`@${DOMINIO_CORREO}`} />}
               accessibilityLabel={`Correo institucional, usuario sin @${DOMINIO_CORREO}`}
             />
+            {sufijoAbajo ? (
+              <HelperText type="info">{`Se completa con @${DOMINIO_CORREO}`}</HelperText>
+            ) : null}
             <HelperText type="error" visible={errors.usuario != null}>
               {errors.usuario?.message}
             </HelperText>
@@ -101,7 +109,6 @@ export function FormularioLogin({ enviando, onEnviar }: Props) {
                   icon={verContrasena ? 'eye-off-outline' : 'eye-outline'}
                   onPress={() => setVerContrasena((visible) => !visible)}
                   forceTextInputFocus={false}
-                  hitSlop={AREA_OJO}
                   accessibilityRole="button"
                   accessibilityLabel={verContrasena ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 />
