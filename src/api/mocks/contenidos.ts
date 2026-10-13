@@ -51,7 +51,7 @@ export const CONTENIDOS: Contenido[] = [
   {
     id: 'con-borrador',
     tipo: 'informativo',
-    titulo: 'Cineclub (borrador)',
+    titulo: 'Club de lectura (borrador)',
     descripcion: 'Programación por confirmar.',
     publicado: false,
     orden: 6,
