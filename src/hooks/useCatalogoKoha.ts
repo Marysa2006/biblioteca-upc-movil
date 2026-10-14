@@ -8,7 +8,6 @@
  * El OPAC se abre en el navegador integrado; al cerrarlo, la persona vuelve al mismo
  * punto de la app con la sesión y la pestaña intactas (CA3).
  */
-import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useRef, useState } from 'react';
 
 import {
@@ -16,16 +15,9 @@ import {
   urlBusquedaCatalogo,
   urlCatalogoPrincipal,
 } from '@/api/catalogo';
-import { colores } from '@/theme';
+import { abrirEnNavegador } from '@/utils/navegador';
 
 export type EstadoCatalogo = 'inactivo' | 'comprobando' | 'no_disponible';
-
-const OPCIONES_NAVEGADOR: WebBrowser.WebBrowserOpenOptions = {
-  toolbarColor: colores.primario,
-  secondaryToolbarColor: colores.primario,
-  controlsColor: colores.superficie,
-  showTitle: true,
-};
 
 export function useCatalogoKoha() {
   const [estado, setEstado] = useState<EstadoCatalogo>('inactivo');
@@ -48,7 +40,7 @@ export function useCatalogoKoha() {
       const url = texto !== '' ? urlBusquedaCatalogo(texto) : urlCatalogoPrincipal();
       // En Android resuelve apenas se abre Custom Tabs, así que el bloqueo se libera de
       // inmediato; en iOS resuelve al cerrar, pero el navegador es modal y tapa la app.
-      await WebBrowser.openBrowserAsync(url, OPCIONES_NAVEGADOR);
+      await abrirEnNavegador(url);
     } catch {
       setEstado('no_disponible');
     } finally {

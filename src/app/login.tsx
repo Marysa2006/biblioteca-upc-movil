@@ -1,11 +1,12 @@
 /**
  * Inicio de sesión con el correo institucional (HU-05).
- * La abren la invitación de Inicio, Perfil y la vista del personal; el layout raíz la muestra como modal.
+ * La abren la invitación de Inicio, Perfil, la vista del personal y los recursos de Catálogo;
+ * el layout raíz la muestra como modal. Con ?volver=1, al entrar regresa a la pantalla de origen.
  *
  * Patrón de datos: useIniciarSesion() (src/hooks) → iniciarSesionApi() (src/api) → mock o API.
  * Con mocks, todos los usuarios de prueba usan la contraseña biblioteca123.
  */
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
@@ -17,6 +18,7 @@ import { colores, coloresEstado, espacio, radio } from '@/theme';
 import { esPersonal } from '@/utils/roles';
 
 export default function Login() {
+  const { volver } = useLocalSearchParams<{ volver?: string }>();
   const { mutate, isPending, error, reset } = useIniciarSesion();
   const mensajeError = error ? mensajeErrorLogin(error) : null;
 
@@ -31,7 +33,14 @@ export default function Login() {
     reset();
     mutate(credenciales, {
       // CA1: el hook ya guardó la sesión; solo falta llevar a cada quien a su vista.
-      onSuccess: ({ usuario }) => router.replace(esPersonal(usuario.rol) ? '/panel' : '/'),
+      // Con ?volver=1 (por ejemplo, desde un recurso de Catálogo) se regresa a donde estaba.
+      onSuccess: ({ usuario }) => {
+        if (volver === '1' && router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace(esPersonal(usuario.rol) ? '/panel' : '/');
+        }
+      },
     });
   };
 
