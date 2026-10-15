@@ -25,8 +25,9 @@ const ACCESOS: Acceso[] = [
   },
   {
     titulo: 'Parámetros generales',
-    descripcion: 'Periodos, festivos, horarios y tiempos mínimos (próximamente, HU-28).',
+    descripcion: 'Periodos, festivos, horarios, tiempos mínimos y textos automáticos.',
     icono: 'tune-variant',
+    destino: '/administracion/parametros',
   },
 ];
 
