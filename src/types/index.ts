@@ -4,14 +4,19 @@
  * Cuando el Backend publique su API, estos tipos deben coincidir con lo que devuelve.
  */
 
-/** Roles de la app. Los dos últimos pertenecen al personal de la biblioteca. */
+/**
+ * Roles de la app. Desde 'administrador' pertenecen al personal de la biblioteca.
+ * Administrador: una sola persona (la bibliotecóloga). Los demás roles del personal los asigna ella (HU-07).
+ */
 export type Rol =
   | 'visitante'
   | 'estudiante'
   | 'docente'
   | 'administrativo'
   | 'administrador'
-  | 'facilitador';
+  | 'facilitador'
+  | 'gestor_espacios'
+  | 'encargado_tablets';
 
 export type Usuario = {
   id: string;
