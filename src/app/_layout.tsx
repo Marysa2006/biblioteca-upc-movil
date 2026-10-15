@@ -7,16 +7,45 @@
  *   (comunidad)/...   vista de la comunidad: /, /catalogo, /solicitudes, /perfil
  *   (personal)/...    vista del personal:    /panel, /bandeja, /equipo, /inventario
  */
+import {
+  OpenSans_400Regular,
+  OpenSans_600SemiBold,
+  OpenSans_700Bold,
+  useFonts,
+} from '@expo-google-fonts/open-sans';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryClient } from '@/api/queryClient';
 import { tema } from '@/theme';
 
+// La pantalla de carga sigue visible hasta que Open Sans esté lista.
+SplashScreen.preventAutoHideAsync();
+
 export default function LayoutRaiz() {
+  const [fuentesCargadas, errorFuentes] = useFonts({
+    OpenSans_400Regular,
+    OpenSans_600SemiBold,
+    OpenSans_700Bold,
+  });
+  // Si la carga falla, la app abre con la fuente del sistema en vez de quedarse en la pantalla de carga.
+  const listo = fuentesCargadas || errorFuentes !== null;
+
+  useEffect(() => {
+    if (listo) {
+      SplashScreen.hide();
+    }
+  }, [listo]);
+
+  if (!listo) {
+    return null;
+  }
+
   return (
     <SafeAreaProvider>
       <PaperProvider theme={tema}>

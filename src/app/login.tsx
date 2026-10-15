@@ -1,49 +1,110 @@
 /**
- * Inicio de sesión PROVISIONAL.
- * Mientras se define el login institucional con el ingeniero de la biblioteca (HU-05),
- * esta pantalla permite entrar con usuarios de prueba para ver cada vista.
- * HU-05 (UI) la reemplaza por el diseño del mockup.
+ * Inicio de sesión con el correo institucional (HU-05).
+ * La abren la invitación de Inicio, Perfil, la vista del personal y los recursos de Catálogo;
+ * el layout raíz la muestra como modal. Con ?volver=1, al entrar regresa a la pantalla de origen.
+ *
+ * Patrón de datos: useIniciarSesion() (src/hooks) → iniciarSesionApi() (src/api) → mock o API.
+ * Con mocks, todos los usuarios de prueba usan la contraseña biblioteca123.
  */
-import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
+import { Button, Icon, Text } from 'react-native-paper';
 
-import { TOKEN_PRUEBA, USUARIOS_PRUEBA } from '@/api/mocks/usuarios';
+import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
 import { Pantalla } from '@/components/ui';
-import { useSesion } from '@/store/sesion';
-import { colores, espacio } from '@/theme';
-import type { Usuario } from '@/types';
-import { esPersonal, NOMBRE_ROL } from '@/utils/roles';
+import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
+import { colores, coloresEstado, espacio, radio } from '@/theme';
+import { esPersonal } from '@/utils/roles';
 
 export default function Login() {
-  const iniciarSesion = useSesion((estado) => estado.iniciarSesion);
+  const { volver } = useLocalSearchParams<{ volver?: string }>();
+  const { mutate, isPending, error, reset } = useIniciarSesion();
+  const mensajeError = error ? mensajeErrorLogin(error) : null;
 
-  const entrar = (usuario: Usuario) => {
-    iniciarSesion(usuario, TOKEN_PRUEBA);
-    router.replace(esPersonal(usuario.rol) ? '/panel' : '/');
+  // accessibilityLiveRegion solo funciona en Android; en iOS el aviso se anuncia aquí.
+  useEffect(() => {
+    if (Platform.OS === 'ios' && mensajeError) {
+      AccessibilityInfo.announceForAccessibility(mensajeError);
+    }
+  }, [mensajeError]);
+
+  const iniciarSesion = (credenciales: { correo: string; contrasena: string }) => {
+    reset();
+    mutate(credenciales, {
+      // CA1: el hook ya guardó la sesión; solo falta llevar a cada quien a su vista.
+      // Con ?volver=1 (por ejemplo, desde un recurso de Catálogo) se regresa a donde estaba.
+      onSuccess: ({ usuario }) => {
+        if (volver === '1' && router.canGoBack()) {
+          router.back();
+        } else {
+          router.replace(esPersonal(usuario.rol) ? '/panel' : '/');
+        }
+      },
+    });
   };
 
+  const explorarSinCuenta = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
   return (
-    <Pantalla titulo="Ingresa a la biblioteca" subtitulo="Inicio de sesión provisional (HU-05)">
-      <Text variant="bodyMedium" style={estilos.nota}>
-        El inicio de sesión institucional se definirá con el ingeniero de la biblioteca. Por ahora,
-        entra con un usuario de prueba:
-      </Text>
-      <View style={estilos.botones}>
-        {USUARIOS_PRUEBA.map((usuario) => (
-          <Button key={usuario.id} mode="contained-tonal" onPress={() => entrar(usuario)}>
-            {`${usuario.nombre} · ${NOMBRE_ROL[usuario.rol]}`}
-          </Button>
-        ))}
+    <Pantalla
+      titulo="Ingresar"
+      subtitulo="Usa tus credenciales institucionales para solicitar servicios, préstamos y salas de estudio."
+      conTeclado
+    >
+      <View style={estilos.tarjeta}>
+        {mensajeError ? (
+          <View style={estilos.aviso} accessibilityLiveRegion="polite">
+            <Icon source="alert-circle-outline" size={24} color={coloresEstado.rechazada.texto} />
+            <Text variant="bodyMedium" style={estilos.textoAviso}>
+              {mensajeError}
+            </Text>
+          </View>
+        ) : null}
+        <FormularioLogin enviando={isPending} onEnviar={iniciarSesion} />
       </View>
-      <Button mode="text" onPress={() => router.replace('/')}>
-        Continuar sin cuenta
+
+      <View style={estilos.separador}>
+        <View style={estilos.linea} />
+        <Text variant="bodyMedium" style={estilos.textoSeparador}>
+          o
+        </Text>
+        <View style={estilos.linea} />
+      </View>
+
+      <Button
+        mode="contained-tonal"
+        icon="compass-outline"
+        onPress={explorarSinCuenta}
+        disabled={isPending}
+        contentStyle={estilos.contenidoBoton}
+        accessibilityRole="button"
+        accessibilityLabel="Explorar sin iniciar sesión"
+      >
+        Explorar sin iniciar sesión
       </Button>
     </Pantalla>
   );
 }
 
 const estilos = StyleSheet.create({
-  nota: { color: colores.textoSecundario },
-  botones: { gap: espacio.s },
+  tarjeta: {
+    gap: espacio.m,
+    padding: espacio.m,
+    borderRadius: radio.tarjeta,
+    backgroundColor: colores.superficie,
+  },
+  aviso: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: espacio.s,
+    padding: espacio.m,
+    borderRadius: radio.boton,
+    backgroundColor: coloresEstado.rechazada.fondo,
+  },
+  textoAviso: { flex: 1, color: coloresEstado.rechazada.texto },
+  separador: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
+  linea: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colores.bordeFuerte },
+  textoSeparador: { color: colores.textoSecundario },
+  contenidoBoton: { paddingVertical: espacio.xs },
 });

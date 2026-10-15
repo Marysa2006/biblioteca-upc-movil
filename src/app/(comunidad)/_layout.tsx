@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 
 import { EstadoCarga } from '@/components/ui';
 import { useSesion } from '@/store/sesion';
-import { colores } from '@/theme';
+import { colores, fuentes } from '@/theme';
 import { esPersonal } from '@/utils/roles';
 
 /**
@@ -44,6 +44,7 @@ export default function LayoutComunidad() {
         headerShown: false,
         tabBarActiveTintColor: colores.primario,
         tabBarInactiveTintColor: colores.textoSecundario,
+        tabBarLabelStyle: { fontFamily: fuentes.seminegrita },
       }}>
       <Tabs.Screen
         name="index"
@@ -51,6 +52,15 @@ export default function LayoutComunidad() {
           title: 'Inicio',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="home-variant-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="servicios"
+        options={{
+          title: 'Servicios',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="room-service-outline" color={color} size={size} />
           ),
         }}
       />

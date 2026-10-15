@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "0.1.0",
   "dependencies": {
+    "@expo-google-fonts/open-sans": "^0.4.2",
     "@expo/ui": "~57.0.22",
     "@expo/vector-icons": "^15.0.2",
     "@hookform/resolvers": "^5.9.1",

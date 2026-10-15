@@ -1,59 +1,70 @@
 /**
- * EJEMPLO DE REFERENCIA de un componente de módulo.
- * HU-01 (UI) lo rediseña según el mockup.
+ * Tarjeta de un servicio en la pestaña Servicios (HU-01): ícono, nombre, categoría y descripción corta.
+ * Toda la tarjeta se puede presionar y abre el detalle.
+ *
+ * Usa TouchableRipple y no Card con onPress: Card pasa accessibilityRole y accessibilityLabel
+ * a su contenedor exterior, no al elemento que se presiona.
  */
 import { StyleSheet, View } from 'react-native';
-import { Card, Icon, Text } from 'react-native-paper';
+import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
-import { acentoServicio, colores, espacio, radio } from '@/theme';
+import { acentoServicio, colores, espacio, fuentes, radio } from '@/theme';
 import type { Servicio } from '@/types';
+import { CATEGORIAS_SERVICIO } from '@/utils/servicios';
 
-export function TarjetaServicio({ servicio }: { servicio: Servicio }) {
+import { IconoCategoria } from './IconoCategoria';
+
+type Props = {
+  servicio: Servicio;
+  onPress: () => void;
+};
+
+export function TarjetaServicio({ servicio, onPress }: Props) {
   const acento = acentoServicio[servicio.categoria];
+  const nombreCategoria = CATEGORIAS_SERVICIO[servicio.categoria].nombre;
 
   return (
-    <Card mode="contained" style={[estilos.tarjeta, { borderLeftColor: acento }]}>
-      <Card.Content style={estilos.contenido}>
-        <Text variant="titleMedium" style={estilos.nombre}>
-          {servicio.nombre}
-        </Text>
-        <Text variant="bodyMedium" style={estilos.descripcion}>
-          {servicio.descripcion}
-        </Text>
-        <Dato icono="account-group-outline" texto={servicio.publico} />
-        <Dato icono="clock-outline" texto={servicio.horario} />
-        <Dato icono="information-outline" texto={servicio.formaSolicitud} />
-        {servicio.requiereCuenta ? (
-          <Text variant="labelMedium" style={[estilos.cuenta, { color: acento }]}>
-            Requiere cuenta institucional
-          </Text>
-        ) : null}
-      </Card.Content>
-    </Card>
-  );
-}
-
-function Dato({ icono, texto }: { icono: string; texto: string }) {
-  return (
-    <View style={estilos.dato}>
-      <Icon source={icono} size={16} color={colores.textoSecundario} />
-      <Text variant="bodySmall" style={estilos.textoDato}>
-        {texto}
-      </Text>
+    <View style={estilos.tarjeta}>
+      <TouchableRipple
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${servicio.nombre}, ${nombreCategoria}. Ver detalle`}
+      >
+        <View style={estilos.contenido}>
+          <IconoCategoria categoria={servicio.categoria} tamano={24} />
+          <View style={estilos.textos}>
+            <Text variant="titleMedium" style={estilos.nombre}>
+              {servicio.nombre}
+            </Text>
+            <Text variant="labelMedium" style={{ color: acento }}>
+              {nombreCategoria}
+            </Text>
+            <Text variant="bodyMedium" style={estilos.descripcion} numberOfLines={2}>
+              {servicio.descripcion}
+            </Text>
+            {servicio.requiereCuenta ? (
+              <View style={estilos.cuenta}>
+                <Icon source="account-lock-outline" size={16} color={colores.textoSecundario} />
+                <Text variant="bodySmall" style={estilos.textoCuenta}>
+                  Requiere cuenta institucional
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          <Icon source="chevron-right" size={24} color={colores.textoSecundario} />
+        </View>
+      </TouchableRipple>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  tarjeta: {
-    backgroundColor: colores.superficie,
-    borderRadius: radio.tarjeta,
-    borderLeftWidth: 4,
-  },
-  contenido: { gap: espacio.s },
-  nombre: { color: colores.texto, fontWeight: '700' },
-  descripcion: { color: colores.texto },
-  dato: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
-  textoDato: { flex: 1, color: colores.textoSecundario },
-  cuenta: { marginTop: espacio.xs },
+  // overflow: 'hidden' recorta el ripple al borde redondeado.
+  tarjeta: { backgroundColor: colores.superficie, borderRadius: radio.tarjeta, overflow: 'hidden' },
+  contenido: { flexDirection: 'row', alignItems: 'center', gap: espacio.m, padding: espacio.m },
+  textos: { flex: 1, gap: espacio.xs },
+  nombre: { color: colores.texto, fontFamily: fuentes.negrita },
+  descripcion: { color: colores.textoSecundario },
+  cuenta: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
+  textoCuenta: { flex: 1, color: colores.textoSecundario },
 });
