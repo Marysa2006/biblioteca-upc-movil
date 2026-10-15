@@ -1,16 +1,19 @@
 /**
- * Personal (HU-07): la administración de la biblioteca asigna o retira los roles del personal.
+ * Personal (HU-07): la administración de la biblioteca asigna o retira los roles del personal,
+ * y entra a las demás funciones de administración (menú "Administración", HU-04 y HU-28).
  * Solo con el permiso 'roles' (la bibliotecóloga); el resto del personal ve un aviso.
  *
  * Patrón de datos: useUsuarios() / useCambiarRol() (src/hooks) → src/api/usuarios.ts → mock o API.
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Icon, Portal, Searchbar, Snackbar, Text } from 'react-native-paper';
+import { Portal, Searchbar, Snackbar, Text } from 'react-native-paper';
 
 import { DialogoCambiarRol } from '@/components/personal/DialogoCambiarRol';
+import { MenuAdministracion } from '@/components/personal/MenuAdministracion';
+import { SinPermiso } from '@/components/personal/SinPermiso';
 import { TarjetaUsuario } from '@/components/personal/TarjetaUsuario';
-import { EnConstruccion, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 import { useCambiarRol, useUsuarios } from '@/hooks/useUsuarios';
 import { colores, espacio, fuentes, radio } from '@/theme';
@@ -33,12 +36,7 @@ export default function Equipo() {
   if (!tienePermiso('roles')) {
     return (
       <Pantalla titulo="Personal" subtitulo="Usuarios y roles del personal">
-        <View style={estilos.sinPermiso}>
-          <Icon source="lock-outline" size={40} color={colores.textoSecundario} />
-          <Text variant="bodyMedium" style={estilos.textoSinPermiso}>
-            Esta sección es para la administración de la biblioteca.
-          </Text>
-        </View>
+        <SinPermiso />
       </Pantalla>
     );
   }
@@ -132,6 +130,11 @@ function GestionRoles() {
       subtitulo="Asigna o retira los roles del personal de la biblioteca."
       recarga={{ recargando: isRefetching, onRecargar: () => refetch() }}
     >
+      <MenuAdministracion />
+
+      <Text variant="titleMedium" style={estilos.tituloSeccion} accessibilityRole="header">
+        Usuarios y roles
+      </Text>
       <Searchbar
         placeholder="Buscar por nombre o correo"
         value={busqueda}
@@ -141,11 +144,6 @@ function GestionRoles() {
         accessibilityLabel="Buscar usuario por nombre o correo"
       />
       <View style={estilos.lista}>{lista}</View>
-
-      <EnConstruccion
-        hu="HU-04 y HU-28"
-        descripcion="Administrar los contenidos del portal y los parámetros generales."
-      />
 
       <DialogoCambiarRol
         usuario={editando}
@@ -165,8 +163,7 @@ function GestionRoles() {
 }
 
 const estilos = StyleSheet.create({
-  sinPermiso: { alignItems: 'center', gap: espacio.s, paddingVertical: espacio.xl },
-  textoSinPermiso: { color: colores.textoSecundario, textAlign: 'center' },
+  tituloSeccion: { color: colores.texto, fontFamily: fuentes.negrita, marginTop: espacio.s },
   buscador: { backgroundColor: colores.superficie, borderRadius: radio.tarjeta },
   textoBuscador: { fontFamily: fuentes.regular },
   lista: { gap: espacio.s },
