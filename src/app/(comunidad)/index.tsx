@@ -3,6 +3,7 @@
  * Sin sesión (visitantes y egresados) muestra la bienvenida y la invitación a iniciar sesión;
  * con sesión, el saludo. Muestra las categorías destacadas (el resto, en "Ver todos"): cada
  * una abre el detalle de su servicio o, si tiene varios, sus opciones en la pestaña Servicios.
+ * Arriba, "Avisos y novedades" que publica la administración (HU-04).
  *
  * Patrón de datos: useServicios() (src/hooks) → obtenerServicios() (src/api) → mock o API.
  * Contempla los tres estados: cargando, error y vacío.
@@ -11,11 +12,14 @@ import { router } from 'expo-router';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Card, Icon, Text } from 'react-native-paper';
 
+import { AvisosNovedades } from '@/components/contenidos/AvisosNovedades';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import { useContenidos } from '@/hooks/useContenidos';
 import { useServicios } from '@/hooks/useServicios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
+import { contenidosVisibles, hoyISO } from '@/utils/contenidos';
 import {
   agruparServiciosActivos,
   CATEGORIAS_INICIO,
@@ -30,6 +34,9 @@ const ESCALA_LETRA_GRANDE = 1.3;
 export default function Inicio() {
   const usuario = useSesion((estado) => estado.usuario);
   const { data: servicios, isPending, isError, isRefetching, refetch } = useServicios();
+  // Avisos y novedades (HU-04): sección secundaria; mientras carga o si falla, no se muestra.
+  const { data: contenidos, refetch: refetchContenidos } = useContenidos();
+  const avisos = contenidos ? contenidosVisibles(contenidos, hoyISO()) : [];
 
   let contenido;
   if (isPending) {
@@ -54,7 +61,13 @@ export default function Inicio() {
           ? 'Servicios de la biblioteca'
           : 'Consulta servicios, horarios y el catálogo de la biblioteca, abiertos a la comunidad upecista y a visitantes.'
       }
-      recarga={{ recargando: isRefetching, onRecargar: () => refetch() }}
+      recarga={{
+        recargando: isRefetching,
+        onRecargar: () => {
+          refetch();
+          refetchContenidos();
+        },
+      }}
     >
       {usuario ? null : (
         <>
@@ -62,6 +75,7 @@ export default function Inicio() {
           <InvitacionSesion />
         </>
       )}
+      {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       <View style={estilos.encabezadoSeccion}>
         <Icon source="room-service-outline" size={24} color={colores.primario} />
         <Text variant="titleMedium" style={estilos.tituloSeccion} accessibilityRole="header">
