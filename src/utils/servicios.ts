@@ -1,7 +1,9 @@
 /**
- * Categorías de servicio (HU-01): nombre visible, ícono y agrupación.
+ * Categorías de servicio (HU-01): nombre visible, ícono y agrupación; validación del formulario (HU-04).
  * Funciones puras, sin hooks.
  */
+import { z } from 'zod';
+
 import type { CategoriaServicio, Servicio } from '@/types';
 
 type InfoCategoria = {
@@ -80,3 +82,27 @@ export function agruparServiciosActivos(servicios: Servicio[]): GrupoServicios[]
     servicios: activos.filter((servicio) => servicio.categoria === categoria),
   })).filter((grupo) => grupo.servicios.length > 0);
 }
+
+const texto = (campo: string, maximo: number) =>
+  z
+    .string()
+    .trim()
+    .min(1, { error: `Escribe ${campo}.` })
+    .max(maximo, { error: `Máximo ${maximo} caracteres.` });
+
+/** Validación del formulario de servicio de la administración (HU-04, CA3). */
+export const esquemaServicio = z.object({
+  nombre: texto('el nombre del servicio', 80),
+  categoria: z.custom<CategoriaServicio>(
+    (valor) => typeof valor === 'string' && valor in CATEGORIAS_SERVICIO,
+    { error: 'Elige una categoría.' },
+  ),
+  descripcion: texto('la descripción', 500),
+  publico: texto('el público objetivo', 150),
+  formaSolicitud: texto('la forma de solicitud', 200),
+  horario: texto('el horario', 150),
+  requiereCuenta: z.boolean(),
+  activo: z.boolean(),
+});
+
+export type DatosFormularioServicio = z.infer<typeof esquemaServicio>;
