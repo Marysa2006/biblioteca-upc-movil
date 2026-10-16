@@ -37,13 +37,27 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     tipo: 'administrativo',
     rolesPersonal: ['facilitador'],
   },
+  {
+    id: 'u-gestor-espacios',
+    nombre: 'Sofía Vargas',
+    correo: 'sofia.vargas@unicesar.edu.co',
+    tipo: 'administrativo',
+    rolesPersonal: ['gestor_espacios'],
+  },
+  {
+    id: 'u-encargado-tablets',
+    nombre: 'Mateo Castro',
+    correo: 'mateo.castro@unicesar.edu.co',
+    tipo: 'administrativo',
+    rolesPersonal: ['encargado_tablets'],
+  },
 ];
 
 export const TOKEN_PRUEBA = 'token-de-prueba';
 
 /**
  * DIRECTORIO DE USUARIOS para la pantalla de roles (HU-07).
- * Arranca con los cuatro usuarios de prueba y suma otros para tener varios roles
+ * Arranca con los seis usuarios de prueba y suma otros para tener varios roles
  * a la vista. Es la semilla del mock: src/api/usuarios.ts trabaja sobre una copia.
  */
 export const USUARIOS_DIRECTORIO: Usuario[] = [
