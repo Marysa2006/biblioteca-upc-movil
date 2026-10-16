@@ -1,0 +1,82 @@
+/**
+ * Pestañas de la vista del personal, como el mockup: Dashboard, Gestión, Personal, Inventario
+ * y Estadísticas.
+ * Solo entra quien tenga un rol del personal; los demás vuelven al login.
+ * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
+ */
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Redirect } from 'expo-router';
+import { Tabs } from 'expo-router/js-tabs';
+
+import { EstadoCarga } from '@/components/ui';
+import { useSesion } from '@/store/sesion';
+import { colores, fuentes } from '@/theme';
+import { esPersonal } from '@/utils/roles';
+
+export default function LayoutPersonal() {
+  const usuario = useSesion((estado) => estado.usuario);
+  const hidratada = useSesion((estado) => estado.hidratada);
+
+  if (!hidratada) {
+    return <EstadoCarga />;
+  }
+  if (!esPersonal(usuario)) {
+    return <Redirect href="/login" />;
+  }
+
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colores.primario,
+        tabBarInactiveTintColor: colores.textoSecundario,
+        tabBarLabelStyle: { fontFamily: fuentes.seminegrita },
+      }}>
+      <Tabs.Screen
+        name="panel"
+        options={{
+          title: 'Dashboard',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="view-dashboard-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="gestion"
+        options={{
+          title: 'Gestión',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="clipboard-text-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="equipo"
+        options={{
+          title: 'Personal',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="account-group-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="inventario"
+        options={{
+          title: 'Inventario',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="archive-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="estadisticas"
+        options={{
+          title: 'Estadísticas',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="chart-bar" color={color} size={size} />
+          ),
+        }}
+      />
+    </Tabs>
+  );
+}
