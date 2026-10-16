@@ -1,7 +1,8 @@
 /**
- * Tarjeta de un usuario con su rol y los permisos vigentes, para la pantalla de roles (HU-07).
+ * Tarjeta de un usuario con su tipo, sus roles del personal y los permisos vigentes (la suma
+ * de los de sus roles), para la pantalla de roles (HU-07).
  * Recibe el usuario por props: no sabe de dónde salen los datos.
- * "Cambiar rol" abre el diálogo en la pantalla; en la propia tarjeta de la administración
+ * "Cambiar roles" abre el diálogo en la pantalla; en la propia tarjeta de la administración
  * también se puede intentar, y el sistema lo impide al confirmar (CA4).
  */
 import { StyleSheet, View } from 'react-native';
@@ -9,7 +10,7 @@ import { Button, Icon, Text } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Usuario } from '@/types';
-import { esPersonal, NOMBRE_PERMISO, NOMBRE_ROL, permisosDe } from '@/utils/roles';
+import { describirRoles, esPersonal, NOMBRE_PERMISO, NOMBRE_TIPO, permisosDe } from '@/utils/roles';
 
 type Props = {
   usuario: Usuario;
@@ -29,8 +30,8 @@ function iniciales(nombre: string): string {
 }
 
 export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: Props) {
-  const delPersonal = esPersonal(usuario.rol);
-  const permisos = permisosDe(usuario.rol);
+  const delPersonal = esPersonal(usuario);
+  const permisos = permisosDe(usuario);
 
   return (
     <View style={estilos.tarjeta}>
@@ -49,7 +50,7 @@ export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: 
             {esUstedMismo ? `${usuario.nombre} (tú)` : usuario.nombre}
           </Text>
           <Text variant="bodySmall" style={estilos.secundario}>
-            {usuario.correo}
+            {delPersonal ? `${usuario.correo} · ${NOMBRE_TIPO[usuario.tipo]}` : usuario.correo}
           </Text>
           <View style={estilos.filaRol}>
             {delPersonal ? (
@@ -60,7 +61,7 @@ export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: 
               </View>
             ) : null}
             <Text variant="labelLarge" style={delPersonal ? estilos.rolPersonal : estilos.secundario}>
-              {NOMBRE_ROL[usuario.rol]}
+              {describirRoles(usuario)}
             </Text>
           </View>
         </View>
@@ -92,9 +93,9 @@ export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: 
         onPress={onCambiarRol}
         contentStyle={estilos.contenidoBoton}
         accessibilityRole="button"
-        accessibilityLabel={`Cambiar rol de ${usuario.nombre}`}
+        accessibilityLabel={`Cambiar roles de ${usuario.nombre}`}
       >
-        Cambiar rol
+        Cambiar roles
       </Button>
     </View>
   );

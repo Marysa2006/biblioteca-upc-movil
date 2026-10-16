@@ -7,7 +7,7 @@ import { Button } from 'react-native-paper';
 
 import { EnConstruccion, Pantalla } from '@/components/ui';
 import { useSesion } from '@/store/sesion';
-import { NOMBRE_ROL } from '@/utils/roles';
+import { describirRoles } from '@/utils/roles';
 
 export default function Panel() {
   const usuario = useSesion((estado) => estado.usuario);
@@ -21,7 +21,7 @@ export default function Panel() {
   return (
     <Pantalla
       titulo={usuario ? `Hola, ${usuario.nombre.split(' ')[0]}` : 'Panel'}
-      subtitulo={usuario ? NOMBRE_ROL[usuario.rol] : undefined}>
+      subtitulo={usuario ? describirRoles(usuario) : undefined}>
       <EnConstruccion hu="HU-26" descripcion="Panel del día: trámites, ocupación de salas, tablets y asesorías." />
       <Button mode="outlined" onPress={() => router.replace('/')}>
         Ver la vista de la comunidad

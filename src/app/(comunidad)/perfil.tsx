@@ -89,7 +89,7 @@ export default function Perfil() {
     <Pantalla titulo="Perfil" subtitulo={usuario.correo} conTeclado>
       {contenido}
 
-      {esPersonal(usuario.rol) ? (
+      {esPersonal(usuario) ? (
         <Button
           mode="contained-tonal"
           icon="view-dashboard-outline"

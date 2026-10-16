@@ -1,6 +1,7 @@
 /**
  * USUARIOS DE PRUEBA para el inicio de sesión provisional.
- * Sirven para ver la app con cada rol mientras no exista el login institucional (HU-05).
+ * Sirven para ver la app con cada tipo de usuario y rol del personal mientras no exista el
+ * login institucional (HU-05). Todos entran con la contraseña biblioteca123.
  */
 import type { Usuario } from '@/types';
 
@@ -9,7 +10,8 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     id: 'u-estudiante',
     nombre: 'Laura Pérez',
     correo: 'laura.perez@unicesar.edu.co',
-    rol: 'estudiante',
+    tipo: 'estudiante',
+    rolesPersonal: [],
     programa: 'Enfermería',
     semestre: 8,
   },
@@ -17,20 +19,23 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     id: 'u-docente',
     nombre: 'Carlos Ramírez',
     correo: 'carlos.ramirez@unicesar.edu.co',
-    rol: 'docente',
+    tipo: 'docente',
+    rolesPersonal: [],
     programa: 'Ingeniería de Sistemas',
   },
   {
     id: 'u-administrador',
     nombre: 'Ana Torres',
     correo: 'ana.torres@unicesar.edu.co',
-    rol: 'administrador',
+    tipo: 'administrativo',
+    rolesPersonal: ['administrador'],
   },
   {
     id: 'u-facilitador',
     nombre: 'Julián Mendoza',
     correo: 'julian.mendoza@unicesar.edu.co',
-    rol: 'facilitador',
+    tipo: 'administrativo',
+    rolesPersonal: ['facilitador'],
   },
 ];
 
@@ -47,14 +52,16 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     id: 'u-administrativo',
     nombre: 'Diana Ospina',
     correo: 'diana.ospina@unicesar.edu.co',
-    rol: 'administrativo',
+    tipo: 'administrativo',
+    rolesPersonal: [],
     programa: 'Secretaría Académica',
   },
   {
     id: 'u-estudiante-2',
     nombre: 'Andrés Mejía',
     correo: 'andres.mejia@unicesar.edu.co',
-    rol: 'estudiante',
+    tipo: 'estudiante',
+    rolesPersonal: [],
     programa: 'Ingeniería Ambiental',
     semestre: 5,
   },
@@ -62,6 +69,7 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     id: 'u-facilitador-2',
     nombre: 'Paula Rincón',
     correo: 'paula.rincon@unicesar.edu.co',
-    rol: 'facilitador',
+    tipo: 'administrativo',
+    rolesPersonal: ['facilitador'],
   },
 ];

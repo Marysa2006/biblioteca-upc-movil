@@ -9,14 +9,15 @@ import { Icon, Text, TextInput } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Perfil } from '@/types';
-import { NOMBRE_ROL } from '@/utils/roles';
+import { describirRoles, esPersonal, NOMBRE_TIPO } from '@/utils/roles';
 
 export function DatosInstitucionales({ perfil }: { perfil: Perfil }) {
   const campos: { etiqueta: string; valor: string }[] = [
     { etiqueta: 'Nombre', valor: perfil.nombre },
     { etiqueta: 'Correo institucional', valor: perfil.correo },
-    { etiqueta: 'Rol', valor: NOMBRE_ROL[perfil.rol] },
+    { etiqueta: 'Tipo de usuario', valor: NOMBRE_TIPO[perfil.tipo] },
   ];
+  if (esPersonal(perfil)) campos.push({ etiqueta: 'Roles del personal', valor: describirRoles(perfil) });
   if (perfil.programa) campos.push({ etiqueta: 'Programa o dependencia', valor: perfil.programa });
   if (perfil.semestre) campos.push({ etiqueta: 'Semestre', valor: `${perfil.semestre}.º` });
 

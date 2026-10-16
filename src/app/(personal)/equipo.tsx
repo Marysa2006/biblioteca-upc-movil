@@ -3,22 +3,22 @@
  * y entra a las demás funciones de administración (menú "Administración", HU-04 y HU-28).
  * Solo con el permiso 'roles' (la bibliotecóloga); el resto del personal ve un aviso.
  *
- * Patrón de datos: useUsuarios() / useCambiarRol() (src/hooks) → src/api/usuarios.ts → mock o API.
+ * Patrón de datos: useUsuarios() / useActualizarRolesPersonal() (src/hooks) → src/api/usuarios.ts → mock o API.
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Portal, Searchbar, Snackbar, Text } from 'react-native-paper';
 
-import { DialogoCambiarRol } from '@/components/personal/DialogoCambiarRol';
+import { DialogoRolesPersonal } from '@/components/personal/DialogoRolesPersonal';
 import { MenuAdministracion } from '@/components/personal/MenuAdministracion';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import { TarjetaUsuario } from '@/components/personal/TarjetaUsuario';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
-import { useCambiarRol, useUsuarios } from '@/hooks/useUsuarios';
+import { useActualizarRolesPersonal, useUsuarios } from '@/hooks/useUsuarios';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import type { Rol, Usuario } from '@/types';
-import { esPersonal, NOMBRE_ROL } from '@/utils/roles';
+import type { RolPersonal, Usuario } from '@/types';
+import { NOMBRE_ROL_PERSONAL } from '@/utils/roles';
 
 /** Tiempo que se ve el aviso del cambio de rol. */
 const DURACION_AVISO_MS = 4000;
@@ -47,7 +47,7 @@ export default function Equipo() {
 function GestionRoles() {
   const { usuario: yo } = useRol();
   const { data: usuarios, isPending, isError, isRefetching, refetch } = useUsuarios();
-  const { mutate, isPending: guardando, error, reset } = useCambiarRol();
+  const { mutate, isPending: guardando, error, reset } = useActualizarRolesPersonal();
 
   const [busqueda, setBusqueda] = useState('');
   const [editando, setEditando] = useState<Usuario | null>(null);
@@ -70,18 +70,20 @@ function GestionRoles() {
     setEditando(null);
   };
 
-  const confirmar = (rol: Rol) => {
+  const confirmar = (rolesPersonal: RolPersonal[]) => {
     if (!editando) return;
     const persona = editando;
     mutate(
-      { usuarioId: persona.id, rol },
+      { usuarioId: persona.id, rolesPersonal },
       {
         onSuccess: () => {
           setEditando(null);
           setAviso(
-            esPersonal(rol)
-              ? `${persona.nombre} ahora es ${NOMBRE_ROL[rol]}.`
-              : `${persona.nombre} ya no tiene rol del personal.`,
+            rolesPersonal.length > 0
+              ? `${persona.nombre} ahora tiene: ${rolesPersonal
+                  .map((rol) => NOMBRE_ROL_PERSONAL[rol])
+                  .join(', ')}.`
+              : `${persona.nombre} ya no tiene roles del personal.`,
           );
         },
       },
@@ -127,7 +129,7 @@ function GestionRoles() {
   return (
     <Pantalla
       titulo="Personal"
-      subtitulo="Asigna o retira los roles del personal de la biblioteca."
+      subtitulo="Asigna o retira los roles del personal de la biblioteca. Una persona puede tener varios."
       recarga={{ recargando: isRefetching, onRecargar: () => refetch() }}
     >
       <MenuAdministracion />
@@ -145,10 +147,10 @@ function GestionRoles() {
       />
       <View style={estilos.lista}>{lista}</View>
 
-      <DialogoCambiarRol
+      <DialogoRolesPersonal
         usuario={editando}
         guardando={guardando}
-        // El error de CA4 lo da useCambiarRol() antes de llamar a la API.
+        // El error de CA4 lo da useActualizarRolesPersonal() antes de llamar a la API.
         mensajeError={error ? error.message : null}
         onConfirmar={confirmar}
         onCerrar={cerrar}

@@ -38,7 +38,7 @@ export default function Login() {
         if (volver === '1' && router.canGoBack()) {
           router.back();
         } else {
-          router.replace(esPersonal(usuario.rol) ? '/panel' : '/');
+          router.replace(esPersonal(usuario) ? '/panel' : '/');
         }
       },
     });
