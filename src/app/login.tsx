@@ -9,12 +9,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
-import { Pantalla } from '@/components/ui';
+import { AvisoError, Pantalla } from '@/components/ui';
 import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
-import { colores, coloresEstado, espacio, radio } from '@/theme';
+import { colores, espacio, radio } from '@/theme';
 import { esPersonal } from '@/utils/roles';
 
 export default function Login() {
@@ -53,14 +53,7 @@ export default function Login() {
       conTeclado
     >
       <View style={estilos.tarjeta}>
-        {mensajeError ? (
-          <View style={estilos.aviso} accessibilityLiveRegion="polite">
-            <Icon source="alert-circle-outline" size={24} color={coloresEstado.rechazada.texto} />
-            <Text variant="bodyMedium" style={estilos.textoAviso}>
-              {mensajeError}
-            </Text>
-          </View>
-        ) : null}
+        {mensajeError ? <AvisoError mensaje={mensajeError} /> : null}
         <FormularioLogin enviando={isPending} onEnviar={iniciarSesion} />
       </View>
 
@@ -94,15 +87,6 @@ const estilos = StyleSheet.create({
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
   },
-  aviso: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: espacio.s,
-    padding: espacio.m,
-    borderRadius: radio.boton,
-    backgroundColor: coloresEstado.rechazada.fondo,
-  },
-  textoAviso: { flex: 1, color: coloresEstado.rechazada.texto },
   separador: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   linea: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colores.bordeFuerte },
   textoSeparador: { color: colores.textoSecundario },

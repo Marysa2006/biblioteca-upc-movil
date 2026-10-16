@@ -144,6 +144,9 @@ function GestionRoles() {
         style={estilos.buscador}
         inputStyle={estilos.textoBuscador}
         accessibilityLabel="Buscar usuario por nombre o correo"
+        // Paper trae estos labels en inglés ("search" y "clear").
+        searchAccessibilityLabel="Buscar"
+        clearAccessibilityLabel="Borrar búsqueda"
       />
       <View style={estilos.lista}>{lista}</View>
 
