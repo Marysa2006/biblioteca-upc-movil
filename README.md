@@ -299,7 +299,29 @@ Escanea el código QR de la terminal con Expo Go. El celular y el computador deb
 
 ### Usuarios de prueba
 
-Mientras se define el inicio de sesión institucional (HU-05), la pantalla de login permite entrar como estudiante, docente, administrador o facilitador de prueba. Así se prueban las dos vistas de la app.
+Mientras el Backend publica el inicio de sesión institucional, la app usa datos de prueba (`EXPO_PUBLIC_USAR_MOCKS=true`). Todos los usuarios entran con la contraseña **`biblioteca123`**; en el campo de correo basta con el usuario (la app agrega `@unicesar.edu.co`).
+
+| Usuario | Nombre | Tipo de usuario | Rol del personal | Entra a |
+|---|---|---|---|---|
+| `laura.perez` | Laura Pérez | Estudiante | — | 👥 Comunidad |
+| `carlos.ramirez` | Carlos Ramírez | Docente | — | 👥 Comunidad |
+| `ana.torres` | Ana Torres | Administrativo | Administración de la biblioteca | 🛠️ Personal |
+| `julian.mendoza` | Julián Mendoza | Administrativo | Facilitador | 🛠️ Personal |
+| `sofia.vargas` | Sofía Vargas | Administrativo | Gestor de espacios | 🛠️ Personal |
+| `mateo.castro` | Mateo Castro | Administrativo | Encargado de préstamos (tablets) | 🛠️ Personal |
+
+Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
+
+**Roles del personal (provisionales).** Un usuario tiene un **tipo** (estudiante, docente, administrativo, egresado o visitante) y una lista de **roles del personal**, vacía para la comunidad. Sus permisos son la suma de los de sus roles:
+
+| Rol | Identificador | Permisos |
+|---|---|---|
+| Administración de la biblioteca | `administrador` | Todos. Una sola persona (la bibliotecóloga); no se asigna desde la app. |
+| Facilitador | `facilitador` | Asesorías y capacitaciones |
+| Gestor de espacios | `gestor_espacios` | Catálogo de espacios y reservas |
+| Encargado de préstamos (tablets) | `encargado_tablets` | Préstamo de tablets |
+
+Los identificadores son provisionales: se confirman con el portal web y el Backend en la iteración 2. Viven en `src/types/usuarios.ts` y `src/utils/roles.ts`.
 
 ### Comandos
 
@@ -320,8 +342,8 @@ biblioteca-upc-movil/
 ├── src/
 │   ├── app/                 # Rutas = pantallas (Expo Router). Aquí solo van rutas
 │   │   ├── _layout.tsx      # Proveedores y navegación raíz
-│   │   ├── login.tsx        # Inicio de sesión (provisional hasta HU-05)
-│   │   ├── (comunidad)/     # Vista de la comunidad: /, /catalogo, /solicitudes, /perfil
+│   │   ├── login.tsx        # Inicio de sesión con correo institucional (HU-05)
+│   │   ├── (comunidad)/     # Vista de la comunidad: /, /servicios, /catalogo, /solicitudes, /perfil
 │   │   └── (personal)/      # Vista del personal: /panel, /bandeja, /equipo, /inventario
 │   ├── api/                 # Integración · cliente HTTP, funciones por módulo y mocks/
 │   ├── hooks/               # Integración · hooks de datos con TanStack Query
