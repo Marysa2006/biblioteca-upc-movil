@@ -1,7 +1,8 @@
 /**
  * Inicio de sesión con el correo institucional (HU-05).
  * La abren la invitación de Inicio, Perfil, la vista del personal y los recursos de Catálogo;
- * el layout raíz la muestra como modal. Con ?volver=1, al entrar regresa a la pantalla de origen.
+ * el layout raíz la muestra como modal. El personal siempre entra al Panel; la comunidad, con
+ * ?volver=1, regresa a la pantalla de origen.
  *
  * Patrón de datos: useIniciarSesion() (src/hooks) → iniciarSesionApi() (src/api) → mock o API.
  * Con mocks, todos los usuarios de prueba usan la contraseña biblioteca123.
@@ -33,12 +34,15 @@ export default function Login() {
     reset();
     mutate(credenciales, {
       // CA1: el hook ya guardó la sesión; solo falta llevar a cada quien a su vista.
-      // Con ?volver=1 (por ejemplo, desde un recurso de Catálogo) se regresa a donde estaba.
+      // El personal siempre va al Panel. La comunidad, con ?volver=1 (por ejemplo, desde
+      // un recurso de Catálogo o desde Perfil), regresa a donde estaba.
       onSuccess: ({ usuario }) => {
-        if (volver === '1' && router.canGoBack()) {
+        if (esPersonal(usuario)) {
+          router.replace('/panel');
+        } else if (volver === '1' && router.canGoBack()) {
           router.back();
         } else {
-          router.replace(esPersonal(usuario) ? '/panel' : '/');
+          router.replace('/');
         }
       },
     });
