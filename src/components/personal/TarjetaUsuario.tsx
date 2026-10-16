@@ -14,8 +14,6 @@ import { describirRoles, esPersonal, NOMBRE_PERMISO, NOMBRE_TIPO, permisosDe } f
 
 type Props = {
   usuario: Usuario;
-  /** true si es la persona con la sesión abierta. */
-  esUstedMismo?: boolean;
   onCambiarRol: () => void;
 };
 
@@ -29,7 +27,7 @@ function iniciales(nombre: string): string {
     .join('');
 }
 
-export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: Props) {
+export function TarjetaUsuario({ usuario, onCambiarRol }: Props) {
   const delPersonal = esPersonal(usuario);
   const permisos = permisosDe(usuario);
 
@@ -47,7 +45,7 @@ export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: 
         </View>
         <View style={estilos.textos}>
           <Text variant="titleMedium" style={estilos.nombre}>
-            {esUstedMismo ? `${usuario.nombre} (tú)` : usuario.nombre}
+            {usuario.nombre}
           </Text>
           <Text variant="bodySmall" style={estilos.secundario}>
             {delPersonal ? `${usuario.correo} · ${NOMBRE_TIPO[usuario.tipo]}` : usuario.correo}
