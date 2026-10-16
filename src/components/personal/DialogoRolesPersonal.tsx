@@ -3,13 +3,14 @@
  * Un interruptor por rol: una persona puede tener varios, y sus permisos son la suma (CA1, CA2).
  * Apagarlos todos le retira los roles: sigue siendo de la comunidad con su tipo de usuario.
  *
- * "Administración de la biblioteca" no se asigna desde la app: solo aparece en la tarjeta
- * de quien ya lo tiene. Si se lo quita a sí misma, el sistema lo impide al confirmar (CA4).
+ * "Administración de la biblioteca" no se asigna desde la app: solo aparece si la persona
+ * ya lo tiene. La pantalla no abre el diálogo para quien tiene la sesión (CA4); además,
+ * useActualizarRolesPersonal() rechaza que la administración se quite su propio rol.
  * No guarda: la pantalla llama a useActualizarRolesPersonal() con onConfirmar.
  */
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Dialog, Icon, Portal, Text } from 'react-native-paper';
+import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError, FilaInterruptor } from '@/components/ui';
 import { colores, espacio, fuentes, radio } from '@/theme';
@@ -102,7 +103,6 @@ function Contenido({
             <View style={estilos.chips}>
               {permisos.map((permiso) => (
                 <View key={permiso} style={estilos.chip}>
-                  <Icon source="check" size={16} color={colores.primarioOscuro} />
                   <Text variant="labelMedium" style={estilos.textoChip}>
                     {NOMBRE_PERMISO[permiso]}
                   </Text>

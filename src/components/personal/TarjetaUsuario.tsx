@@ -2,11 +2,11 @@
  * Tarjeta de un usuario con su tipo, sus roles del personal y los permisos vigentes (la suma
  * de los de sus roles), para la pantalla de roles (HU-07).
  * Recibe el usuario por props: no sabe de dónde salen los datos.
- * "Cambiar roles" abre el diálogo en la pantalla; en la propia tarjeta de la administración
- * también se puede intentar, y el sistema lo impide al confirmar (CA4).
+ * "Cambiar roles" abre el diálogo en la pantalla. La pantalla no muestra la tarjeta de quien
+ * tiene la sesión: así nadie puede quitarse su propio rol (CA4).
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Usuario } from '@/types';
@@ -14,8 +14,6 @@ import { describirRoles, esPersonal, NOMBRE_PERMISO, NOMBRE_TIPO, permisosDe } f
 
 type Props = {
   usuario: Usuario;
-  /** true si es la persona con la sesión abierta. */
-  esUstedMismo?: boolean;
   onCambiarRol: () => void;
 };
 
@@ -29,7 +27,7 @@ function iniciales(nombre: string): string {
     .join('');
 }
 
-export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: Props) {
+export function TarjetaUsuario({ usuario, onCambiarRol }: Props) {
   const delPersonal = esPersonal(usuario);
   const permisos = permisosDe(usuario);
 
@@ -47,7 +45,7 @@ export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: 
         </View>
         <View style={estilos.textos}>
           <Text variant="titleMedium" style={estilos.nombre}>
-            {esUstedMismo ? `${usuario.nombre} (tú)` : usuario.nombre}
+            {usuario.nombre}
           </Text>
           <Text variant="bodySmall" style={estilos.secundario}>
             {delPersonal ? `${usuario.correo} · ${NOMBRE_TIPO[usuario.tipo]}` : usuario.correo}
@@ -74,7 +72,6 @@ export function TarjetaUsuario({ usuario, esUstedMismo = false, onCambiarRol }: 
         <View style={estilos.chips}>
           {permisos.map((permiso) => (
             <View key={permiso} style={estilos.chip}>
-              <Icon source="check" size={16} color={colores.primarioOscuro} />
               <Text variant="labelMedium" style={estilos.textoChip}>
                 {NOMBRE_PERMISO[permiso]}
               </Text>

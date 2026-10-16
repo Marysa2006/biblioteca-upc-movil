@@ -19,7 +19,6 @@ export function SeccionHorarios({ deshabilitado }: { deshabilitado: boolean }) {
 
   return (
     <TarjetaSeccion
-      icono="clock-outline"
       titulo="Horarios de atención"
       ayuda="Horas en formato HH:MM de 24 horas. Un día cerrado no se ofrece para reservas ni citas."
     >

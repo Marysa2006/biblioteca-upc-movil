@@ -55,6 +55,7 @@ export default function Login() {
       titulo="Ingresar"
       subtitulo="Usa tus credenciales institucionales para solicitar servicios, préstamos y salas de estudio."
       conTeclado
+      sinMenuUsuario
     >
       <View style={estilos.tarjeta}>
         {mensajeError ? <AvisoError mensaje={mensajeError} /> : null}

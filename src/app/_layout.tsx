@@ -3,9 +3,10 @@
  * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
  *
  * Rutas:
- *   /login            inicio de sesión (provisional hasta HU-05)
- *   (comunidad)/...   vista de la comunidad: /, /catalogo, /solicitudes, /perfil
- *   (personal)/...    vista del personal:    /panel, /bandeja, /equipo, /inventario
+ *   /login            inicio de sesión con correo institucional (HU-05)
+ *   (comunidad)/...   vista de la comunidad: /, /servicios, /catalogo, /solicitudes
+ *   (personal)/...    vista del personal:    /panel, /gestion, /equipo, /inventario, /estadisticas
+ *   apiladas          /perfil, /servicio/[id] y /administracion/... (con su barra y flecha atrás)
  */
 import {
   OpenSans_400Regular,

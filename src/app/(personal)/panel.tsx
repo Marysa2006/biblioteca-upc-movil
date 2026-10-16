@@ -1,34 +1,21 @@
 /**
- * Panel del día del personal (provisional).
- * Incluye accesos para cambiar de vista y cerrar sesión, útiles mientras se prueba.
+ * Dashboard del personal (provisional). Según el mockup, reunirá el resumen del día, la
+ * actividad reciente y la afluencia; no tiene HU propia, toma datos de varias.
+ * Cambiar a la vista de la comunidad y cerrar sesión están en el menú de usuario (arriba).
  */
-import { router } from 'expo-router';
-import { Button } from 'react-native-paper';
-
 import { EnConstruccion, Pantalla } from '@/components/ui';
 import { useSesion } from '@/store/sesion';
 import { describirRoles } from '@/utils/roles';
 
 export default function Panel() {
   const usuario = useSesion((estado) => estado.usuario);
-  const cerrarSesion = useSesion((estado) => estado.cerrarSesion);
-
-  const salir = () => {
-    cerrarSesion();
-    router.replace('/');
-  };
 
   return (
     <Pantalla
-      titulo={usuario ? `Hola, ${usuario.nombre.split(' ')[0]}` : 'Panel'}
-      subtitulo={usuario ? describirRoles(usuario) : undefined}>
-      <EnConstruccion hu="HU-26" descripcion="Panel del día: trámites, ocupación de salas, tablets y asesorías." />
-      <Button mode="outlined" onPress={() => router.replace('/')}>
-        Ver la vista de la comunidad
-      </Button>
-      <Button mode="text" onPress={salir}>
-        Cerrar sesión
-      </Button>
+      titulo={usuario ? `Hola, ${usuario.nombre.split(' ')[0]}` : 'Dashboard'}
+      subtitulo={usuario ? describirRoles(usuario) : undefined}
+    >
+      <EnConstruccion descripcion="Resumen del día, actividad reciente y afluencia de la biblioteca." />
     </Pantalla>
   );
 }

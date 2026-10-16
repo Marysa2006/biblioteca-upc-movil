@@ -35,7 +35,6 @@ export function ConsultaDisponibilidad({ parametros }: { parametros: Parametros 
 
   return (
     <TarjetaSeccion
-      icono="calendar-search"
       titulo="Consultar disponibilidad"
       ayuda="Revisa si un día se ofrece para reservas y citas, con los parámetros guardados."
     >

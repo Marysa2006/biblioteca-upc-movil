@@ -27,13 +27,6 @@ export function TarjetaRecurso({ recurso, onPress }: Props) {
         accessibilityLabel={`${recurso.nombre}. ${etiquetaCuenta}Abre en el navegador`}
       >
         <View style={estilos.contenido}>
-          <View
-            style={estilos.cuadroIcono}
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          >
-            <Icon source="database-search-outline" size={24} color={colores.primario} />
-          </View>
           <View style={estilos.textos}>
             <Text variant="titleMedium" style={estilos.nombre}>
               {recurso.nombre}
@@ -61,12 +54,6 @@ const estilos = StyleSheet.create({
   // overflow: 'hidden' recorta el ripple al borde redondeado.
   tarjeta: { backgroundColor: colores.superficie, borderRadius: radio.tarjeta, overflow: 'hidden' },
   contenido: { flexDirection: 'row', alignItems: 'center', gap: espacio.m, padding: espacio.m },
-  cuadroIcono: {
-    alignSelf: 'flex-start',
-    padding: espacio.s,
-    borderRadius: radio.boton,
-    backgroundColor: colores.primarioSuave,
-  },
   textos: { flex: 1, gap: espacio.xs },
   nombre: { color: colores.texto, fontFamily: fuentes.negrita },
   descripcion: { color: colores.textoSecundario },

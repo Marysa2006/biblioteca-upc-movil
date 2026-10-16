@@ -13,7 +13,7 @@ import { Button, Card, Icon, Text } from 'react-native-paper';
 import { IconoCategoria } from '@/components/servicios/IconoCategoria';
 import { EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useServicio } from '@/hooks/useServicios';
-import { acentoServicio, colores, espacio, fuentes, radio } from '@/theme';
+import { colores, espacio, fondoServicio, fuentes, radio } from '@/theme';
 import type { Servicio } from '@/types';
 import { CATEGORIAS_SERVICIO } from '@/utils/servicios';
 
@@ -67,52 +67,41 @@ export default function DetalleServicio() {
 
 function Detalle({ servicio }: { servicio: Servicio }) {
   const { categoria } = servicio;
-  const acento = acentoServicio[categoria];
 
   return (
     <Pantalla titulo={servicio.nombre} conEncabezado>
-      <View style={estilos.encabezado}>
+      <View style={[estilos.encabezado, { backgroundColor: fondoServicio[categoria] }]}>
         <IconoCategoria categoria={categoria} />
         <View style={estilos.textosEncabezado}>
-          <Text variant="labelLarge" style={{ color: acento }}>
+          <Text variant="labelLarge" style={estilos.categoria}>
             {CATEGORIAS_SERVICIO[categoria].nombre}
           </Text>
           {servicio.requiereCuenta ? (
-            <View style={estilos.fila}>
-              <Icon source="account-lock-outline" size={16} color={colores.textoSecundario} />
-              <Text variant="bodySmall" style={estilos.textoSecundario}>
-                Requiere cuenta institucional
-              </Text>
-            </View>
+            <Text variant="bodySmall" style={estilos.textoSecundario}>
+              Requiere cuenta institucional
+            </Text>
           ) : null}
         </View>
       </View>
 
       <Card mode="contained" style={estilos.tarjeta}>
         <Card.Content style={estilos.secciones}>
-          <Seccion icono="text-box-outline" titulo="Descripción" texto={servicio.descripcion} />
-          <Seccion icono="account-group-outline" titulo="Público objetivo" texto={servicio.publico} />
-          <Seccion
-            icono="clipboard-text-outline"
-            titulo="Forma de solicitud"
-            texto={servicio.formaSolicitud}
-          />
-          <Seccion icono="clock-outline" titulo="Horarios" texto={servicio.horario} />
+          <Seccion titulo="Descripción" texto={servicio.descripcion} />
+          <Seccion titulo="Público objetivo" texto={servicio.publico} />
+          <Seccion titulo="Forma de solicitud" texto={servicio.formaSolicitud} />
+          <Seccion titulo="Horarios" texto={servicio.horario} />
         </Card.Content>
       </Card>
     </Pantalla>
   );
 }
 
-function Seccion({ icono, titulo, texto }: { icono: string; titulo: string; texto: string }) {
+function Seccion({ titulo, texto }: { titulo: string; texto: string }) {
   return (
     <View style={estilos.seccion}>
-      <View style={estilos.fila}>
-        <Icon source={icono} size={20} color={colores.primario} />
-        <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">
-          {titulo}
-        </Text>
-      </View>
+      <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">
+        {titulo}
+      </Text>
       <Text variant="bodyMedium" style={estilos.texto}>
         {texto}
       </Text>
@@ -143,14 +132,21 @@ function NoDisponible() {
 }
 
 const estilos = StyleSheet.create({
-  encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.m },
+  encabezado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.m,
+    padding: espacio.m,
+    borderRadius: radio.tarjeta,
+  },
   textosEncabezado: { flex: 1, gap: espacio.xs },
-  fila: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
-  textoSecundario: { flex: 1, color: colores.textoSecundario },
+  textoSecundario: { color: colores.textoSecundario },
+  // Sobre el fondo de la categoría, su nombre va en color de texto (el acento bajaría del AA).
+  categoria: { color: colores.texto, fontFamily: fuentes.seminegrita },
   tarjeta: { backgroundColor: colores.superficie, borderRadius: radio.tarjeta },
   secciones: { gap: espacio.l },
   seccion: { gap: espacio.xs },
-  tituloSeccion: { flex: 1, color: colores.texto, fontFamily: fuentes.seminegrita },
+  tituloSeccion: { color: colores.texto, fontFamily: fuentes.seminegrita },
   texto: { color: colores.texto },
   noDisponible: {
     alignItems: 'center',

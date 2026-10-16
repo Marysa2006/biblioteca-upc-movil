@@ -109,6 +109,9 @@ export default function Catalogo() {
         <Text variant="bodyMedium" style={estilos.descripcion}>
           Fuentes académicas de acceso abierto y suscritas por la Universidad.
         </Text>
+        <Text variant="bodySmall" style={estilos.descripcion}>
+          El texto completo de algunas bases depende de la suscripción de la Universidad.
+        </Text>
       </View>
       <View style={estilos.lista}>{listaRecursos}</View>
 

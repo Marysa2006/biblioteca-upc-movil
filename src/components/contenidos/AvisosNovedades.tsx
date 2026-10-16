@@ -2,6 +2,7 @@
  * "Avisos y novedades" de Inicio (HU-04): lo que publica la administración, en su orden.
  * Recibe solo los contenidos visibles (ver contenidosVisibles en src/utils/contenidos.ts):
  * si la administración oculta uno, deja de llegar aquí (CA2); si cambia el orden, cambia aquí (CA4).
+ * El tipo va escrito; el fondo (verde claro para los avisos) solo lo refuerza.
  */
 import { StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
@@ -26,9 +27,13 @@ export function AvisosNovedades({ contenidos }: { contenidos: Contenido[] }) {
             key={contenido.id}
             style={[estilos.tarjeta, esAviso ? estilos.tarjetaAviso : estilos.tarjetaInformativo]}
           >
-            <View style={estilos.tipo}>
-              <Icon source={TIPOS_CONTENIDO[contenido.tipo].icono} size={16} color={colores.primarioOscuro} />
-              <Text variant="labelMedium" style={estilos.textoTipo}>
+            <View style={estilos.filaTipo}>
+              <Icon
+                source={TIPOS_CONTENIDO[contenido.tipo].icono}
+                size={16}
+                color={colores.primarioOscuro}
+              />
+              <Text variant="labelMedium" style={estilos.tipo}>
                 {TIPOS_CONTENIDO[contenido.tipo].nombre}
               </Text>
             </View>
@@ -54,18 +59,11 @@ const estilos = StyleSheet.create({
   seccion: { gap: espacio.s },
   encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   titulo: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
-  tarjeta: {
-    gap: espacio.xs,
-    padding: espacio.m,
-    borderRadius: radio.tarjeta,
-    backgroundColor: colores.superficie,
-    borderLeftWidth: espacio.xs,
-  },
-  // El tipo va escrito; el borde solo refuerza (avisos en verde oscuro, informativos en verde suave).
-  tarjetaAviso: { borderLeftColor: colores.primarioOscuro },
-  tarjetaInformativo: { borderLeftColor: colores.primarioSuave },
-  tipo: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
-  textoTipo: { color: colores.primarioOscuro },
+  filaTipo: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
+  tarjeta: { gap: espacio.xs, padding: espacio.m, borderRadius: radio.tarjeta },
+  tarjetaAviso: { backgroundColor: colores.primarioSuave },
+  tarjetaInformativo: { backgroundColor: colores.superficie },
+  tipo: { color: colores.primarioOscuro },
   tituloTarjeta: { color: colores.texto, fontFamily: fuentes.seminegrita },
   descripcion: { color: colores.texto },
   vigencia: { color: colores.textoSecundario },
