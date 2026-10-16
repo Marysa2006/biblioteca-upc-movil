@@ -2,8 +2,8 @@
  * Tarjeta de un usuario con su tipo, sus roles del personal y los permisos vigentes (la suma
  * de los de sus roles), para la pantalla de roles (HU-07).
  * Recibe el usuario por props: no sabe de dónde salen los datos.
- * "Cambiar roles" abre el diálogo en la pantalla; en la propia tarjeta de la administración
- * también se puede intentar, y el sistema lo impide al confirmar (CA4).
+ * "Cambiar roles" abre el diálogo en la pantalla. La pantalla no muestra la tarjeta de quien
+ * tiene la sesión: así nadie puede quitarse su propio rol (CA4).
  */
 import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';

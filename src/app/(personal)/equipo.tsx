@@ -96,12 +96,14 @@ function GestionRoles() {
   } else if (isError) {
     lista = <EstadoError mensaje="No pudimos cargar los usuarios." onReintentar={() => refetch()} />;
   } else {
+    // HU-07, CA4: la propia tarjeta no aparece, así que no hay forma de quitarse el propio rol.
+    const otros = usuarios.filter((u) => u.id !== yo?.id);
     const texto = normalizar(busqueda.trim());
     const encontrados = texto
-      ? usuarios.filter(
+      ? otros.filter(
           (u) => normalizar(u.nombre).includes(texto) || normalizar(u.correo).includes(texto),
         )
-      : usuarios;
+      : otros;
 
     if (encontrados.length === 0) {
       // CA3: el usuario buscado no existe.
@@ -119,7 +121,6 @@ function GestionRoles() {
         <TarjetaUsuario
           key={usuario.id}
           usuario={usuario}
-          esUstedMismo={usuario.id === yo?.id}
           onCambiarRol={() => abrir(usuario)}
         />
       ));

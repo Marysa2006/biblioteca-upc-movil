@@ -3,8 +3,9 @@
  * Un interruptor por rol: una persona puede tener varios, y sus permisos son la suma (CA1, CA2).
  * Apagarlos todos le retira los roles: sigue siendo de la comunidad con su tipo de usuario.
  *
- * "Administración de la biblioteca" no se asigna desde la app: solo aparece en la tarjeta
- * de quien ya lo tiene. Si se lo quita a sí misma, el sistema lo impide al confirmar (CA4).
+ * "Administración de la biblioteca" no se asigna desde la app: solo aparece si la persona
+ * ya lo tiene. La pantalla no abre el diálogo para quien tiene la sesión (CA4); además,
+ * useActualizarRolesPersonal() rechaza que la administración se quite su propio rol.
  * No guarda: la pantalla llama a useActualizarRolesPersonal() con onConfirmar.
  */
 import { useState } from 'react';
