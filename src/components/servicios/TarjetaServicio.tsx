@@ -1,5 +1,6 @@
 /**
- * Tarjeta de un servicio en la pestaña Servicios (HU-01): ícono, nombre, categoría y descripción corta.
+ * Tarjeta de un servicio en la pestaña Servicios (HU-01): ícono, nombre y descripción corta.
+ * La categoría no se repite: ya va como título de la sección; el lector de pantalla sí la nombra.
  * Toda la tarjeta se puede presionar y abre el detalle.
  *
  * Usa TouchableRipple y no Card con onPress: Card pasa accessibilityRole y accessibilityLabel
@@ -8,7 +9,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
-import { acentoServicio, colores, espacio, fuentes, radio } from '@/theme';
+import { colores, espacio, fondoServicio, fuentes, radio } from '@/theme';
 import type { Servicio } from '@/types';
 import { CATEGORIAS_SERVICIO } from '@/utils/servicios';
 
@@ -20,35 +21,30 @@ type Props = {
 };
 
 export function TarjetaServicio({ servicio, onPress }: Props) {
-  const acento = acentoServicio[servicio.categoria];
   const nombreCategoria = CATEGORIAS_SERVICIO[servicio.categoria].nombre;
 
   return (
-    <View style={estilos.tarjeta}>
+    <View style={[estilos.tarjeta, { backgroundColor: fondoServicio[servicio.categoria] }]}>
       <TouchableRipple
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`${servicio.nombre}, ${nombreCategoria}. Ver detalle`}
       >
         <View style={estilos.contenido}>
-          <IconoCategoria categoria={servicio.categoria} tamano={24} />
           <View style={estilos.textos}>
-            <Text variant="titleMedium" style={estilos.nombre}>
-              {servicio.nombre}
-            </Text>
-            <Text variant="labelMedium" style={{ color: acento }}>
-              {nombreCategoria}
-            </Text>
+            <View style={estilos.filaNombre}>
+              <IconoCategoria categoria={servicio.categoria} tamano={20} />
+              <Text variant="titleMedium" style={estilos.nombre}>
+                {servicio.nombre}
+              </Text>
+            </View>
             <Text variant="bodyMedium" style={estilos.descripcion} numberOfLines={2}>
               {servicio.descripcion}
             </Text>
             {servicio.requiereCuenta ? (
-              <View style={estilos.cuenta}>
-                <Icon source="account-lock-outline" size={16} color={colores.textoSecundario} />
-                <Text variant="bodySmall" style={estilos.textoCuenta}>
-                  Requiere cuenta institucional
-                </Text>
-              </View>
+              <Text variant="bodySmall" style={estilos.textoCuenta}>
+                Requiere cuenta institucional
+              </Text>
             ) : null}
           </View>
           <Icon source="chevron-right" size={24} color={colores.textoSecundario} />
@@ -60,11 +56,12 @@ export function TarjetaServicio({ servicio, onPress }: Props) {
 
 const estilos = StyleSheet.create({
   // overflow: 'hidden' recorta el ripple al borde redondeado.
-  tarjeta: { backgroundColor: colores.superficie, borderRadius: radio.tarjeta, overflow: 'hidden' },
+  tarjeta: { borderRadius: radio.tarjeta, overflow: 'hidden' },
   contenido: { flexDirection: 'row', alignItems: 'center', gap: espacio.m, padding: espacio.m },
   textos: { flex: 1, gap: espacio.xs },
-  nombre: { color: colores.texto, fontFamily: fuentes.negrita },
+  // El ícono va al inicio del nombre; el resto del texto usa todo el ancho de la tarjeta.
+  filaNombre: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
+  nombre: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
   descripcion: { color: colores.textoSecundario },
-  cuenta: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
-  textoCuenta: { flex: 1, color: colores.textoSecundario },
+  textoCuenta: { color: colores.textoSecundario },
 });

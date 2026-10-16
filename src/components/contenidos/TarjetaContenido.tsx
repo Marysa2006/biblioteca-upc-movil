@@ -3,7 +3,7 @@
  * Publicado u Oculto va con texto e ícono (CA2); subir y bajar cambian el orden (CA4).
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, Icon, IconButton, Text } from 'react-native-paper';
+import { Button, IconButton, Text } from 'react-native-paper';
 
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Contenido } from '@/types';
@@ -46,17 +46,11 @@ export function TarjetaContenido({
     <View style={estilos.tarjeta}>
       <View style={estilos.encabezado}>
         <View style={estilos.tipo}>
-          <Icon source={tipo.icono} size={16} color={colores.primario} />
           <Text variant="labelMedium" style={estilos.textoTipo}>
             {tipo.nombre}
           </Text>
         </View>
         <View style={[estilos.estado, publicado ? estilos.estadoPublicado : estilos.estadoOculto]}>
-          <Icon
-            source={publicado ? 'eye-outline' : 'eye-off-outline'}
-            size={16}
-            color={publicado ? colores.primarioOscuro : coloresEstado.cancelada.texto}
-          />
           <Text
             variant="labelMedium"
             style={publicado ? estilos.textoPublicado : estilos.textoOculto}
@@ -76,7 +70,6 @@ export function TarjetaContenido({
           </Text>
           {vigencia ? (
             <View style={estilos.vigencia}>
-              <Icon source="calendar-range" size={16} color={colores.textoSecundario} />
               <Text variant="bodySmall" style={estilos.secundario}>
                 {vigencia}
               </Text>

@@ -15,7 +15,6 @@ export function SeccionFestivos({ deshabilitado }: { deshabilitado: boolean }) {
 
   return (
     <TarjetaSeccion
-      icono="calendar-remove-outline"
       titulo="Días festivos"
       ayuda="Estos días no se ofrecen para reservas ni citas."
     >

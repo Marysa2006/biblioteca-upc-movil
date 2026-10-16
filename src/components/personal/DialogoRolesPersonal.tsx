@@ -10,7 +10,7 @@
  */
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Dialog, Icon, Portal, Text } from 'react-native-paper';
+import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError, FilaInterruptor } from '@/components/ui';
 import { colores, espacio, fuentes, radio } from '@/theme';
@@ -103,7 +103,6 @@ function Contenido({
             <View style={estilos.chips}>
               {permisos.map((permiso) => (
                 <View key={permiso} style={estilos.chip}>
-                  <Icon source="check" size={16} color={colores.primarioOscuro} />
                   <Text variant="labelMedium" style={estilos.textoChip}>
                     {NOMBRE_PERMISO[permiso]}
                   </Text>

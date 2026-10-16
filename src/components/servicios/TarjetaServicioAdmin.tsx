@@ -3,7 +3,7 @@
  * Activo o Inactivo va con texto e ícono, no solo color. Desactivar lo oculta a la comunidad (CA2).
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { acentoServicio, colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Servicio } from '@/types';
@@ -35,11 +35,6 @@ export function TarjetaServicioAdmin({ servicio, cambiando, onEditar, onCambiarE
           </Text>
         </View>
         <View style={[estilos.estado, activo ? estilos.estadoActivo : estilos.estadoInactivo]}>
-          <Icon
-            source={activo ? 'check-circle-outline' : 'eye-off-outline'}
-            size={16}
-            color={activo ? colores.primarioOscuro : coloresEstado.cancelada.texto}
-          />
           <Text
             variant="labelMedium"
             style={activo ? estilos.textoActivo : estilos.textoInactivo}

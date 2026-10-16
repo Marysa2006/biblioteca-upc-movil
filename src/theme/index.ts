@@ -40,6 +40,19 @@ export const acentoServicio: Record<CategoriaServicio, string> = {
   prestamo: '#1B5E86',
 };
 
+/**
+ * Fondo claro de las tarjetas de cada servicio: su acento mezclado con 90 % de blanco.
+ * Sobre este fondo, el texto va en colores.texto; el acento queda para el ícono (contraste AA).
+ */
+export const fondoServicio: Record<CategoriaServicio, string> = {
+  asesorias: '#E9F1F6',
+  capacitaciones: '#F6EBF9',
+  espacios: '#EBF2EB',
+  tablets: '#FBE9EA',
+  repositorio: '#E7F2EC',
+  prestamo: '#E8EFF3',
+};
+
 /** Colores de cada estado de solicitud: fondo de la etiqueta y color del texto (≥ 5.5:1). */
 export const coloresEstado: Record<EstadoSolicitud, { fondo: string; texto: string; etiqueta: string }> = {
   pendiente: { fondo: '#FEF3E3', texto: '#825A1E', etiqueta: 'Pendiente' },

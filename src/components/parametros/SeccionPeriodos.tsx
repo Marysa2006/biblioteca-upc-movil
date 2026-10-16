@@ -15,7 +15,6 @@ export function SeccionPeriodos({ deshabilitado }: { deshabilitado: boolean }) {
 
   return (
     <TarjetaSeccion
-      icono="calendar-range"
       titulo="Periodos académicos"
       ayuda="Fechas en formato AAAA-MM-DD. Los periodos no se pueden cruzar."
     >

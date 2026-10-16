@@ -6,7 +6,6 @@ export function SeccionPlazos({ deshabilitado }: { deshabilitado: boolean }) {
   return (
     <>
       <TarjetaSeccion
-        icono="timer-sand"
         titulo="Tiempos mínimos"
         ayuda="Horas de anticipación, en números enteros de 0 a 720."
       >
@@ -27,7 +26,6 @@ export function SeccionPlazos({ deshabilitado }: { deshabilitado: boolean }) {
       </TarjetaSeccion>
 
       <TarjetaSeccion
-        icono="message-text-outline"
         titulo="Textos automáticos"
         ayuda="Mensajes que recibe la comunidad en las comunicaciones automáticas."
       >

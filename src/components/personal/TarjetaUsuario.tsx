@@ -6,7 +6,7 @@
  * tiene la sesión: así nadie puede quitarse su propio rol (CA4).
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Usuario } from '@/types';
@@ -72,7 +72,6 @@ export function TarjetaUsuario({ usuario, onCambiarRol }: Props) {
         <View style={estilos.chips}>
           {permisos.map((permiso) => (
             <View key={permiso} style={estilos.chip}>
-              <Icon source="check" size={16} color={colores.primarioOscuro} />
               <Text variant="labelMedium" style={estilos.textoChip}>
                 {NOMBRE_PERMISO[permiso]}
               </Text>

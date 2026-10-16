@@ -5,7 +5,7 @@
 import { StyleSheet, View } from 'react-native';
 import { Icon } from 'react-native-paper';
 
-import { acentoServicio, espacio, radio } from '@/theme';
+import { acentoServicio, colores, espacio, radio } from '@/theme';
 import type { CategoriaServicio } from '@/types';
 import { CATEGORIAS_SERVICIO } from '@/utils/servicios';
 
@@ -33,7 +33,9 @@ export function IconoCategoria({ categoria, tamano = 28 }: Props) {
 }
 
 const estilos = StyleSheet.create({
+  // Base blanca bajo el tinte: el recuadro se distingue también sobre las tarjetas con fondo de color.
   cuadro: {
+    backgroundColor: colores.superficie,
     padding: espacio.s,
     borderRadius: radio.boton,
     overflow: 'hidden',

@@ -69,15 +69,9 @@ export default function Inicio() {
         },
       }}
     >
-      {usuario ? null : (
-        <>
-          <EtiquetaAccesoPublico />
-          <InvitacionSesion />
-        </>
-      )}
+      {usuario ? null : <InvitacionSesion />}
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       <View style={estilos.encabezadoSeccion}>
-        <Icon source="room-service-outline" size={24} color={colores.primario} />
         <Text variant="titleMedium" style={estilos.tituloSeccion} accessibilityRole="header">
           Servicios ofertados
         </Text>
@@ -94,17 +88,6 @@ export default function Inicio() {
       </View>
       {contenido}
     </Pantalla>
-  );
-}
-
-function EtiquetaAccesoPublico() {
-  return (
-    <View style={estilos.etiqueta}>
-      <View style={estilos.punto} />
-      <Text variant="labelMedium" style={estilos.textoEtiqueta}>
-        Acceso público y visitantes
-      </Text>
-    </View>
   );
 }
 
@@ -197,35 +180,16 @@ function CuadriculaCategorias({ grupos }: { grupos: GrupoServicios[] }) {
 }
 
 const estilos = StyleSheet.create({
-  etiqueta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: espacio.s,
-    paddingVertical: espacio.xs,
-    paddingHorizontal: espacio.m,
-    borderRadius: radio.tarjeta,
-    backgroundColor: colores.verdeClaroUpc,
-  },
-  punto: {
-    width: espacio.s,
-    aspectRatio: 1,
-    borderRadius: espacio.xs,
-    backgroundColor: colores.primarioOscuro,
-  },
-  textoEtiqueta: { color: colores.texto },
   invitacion: {
-    backgroundColor: colores.superficie,
+    backgroundColor: colores.primarioSuave,
     borderRadius: radio.tarjeta,
-    borderLeftWidth: 4,
-    borderLeftColor: colores.primarioOscuro,
   },
   contenidoInvitacion: { gap: espacio.m },
   filaInvitacion: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.m },
   cuadroIcono: {
     padding: espacio.s,
     borderRadius: radio.boton,
-    backgroundColor: colores.primarioSuave,
+    backgroundColor: colores.superficie,
   },
   textosInvitacion: { flex: 1, gap: espacio.xs },
   tituloInvitacion: { color: colores.texto, fontFamily: fuentes.negrita },

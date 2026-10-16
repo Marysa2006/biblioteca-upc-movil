@@ -8,10 +8,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
-import { Button, HelperText, Icon, Text, TextInput } from 'react-native-paper';
+import { Button, HelperText, TextInput } from 'react-native-paper';
 
 import { AvisoError } from '@/components/ui';
-import { colores, espacio, fuentes, radio } from '@/theme';
+import { espacio } from '@/theme';
 import type { DatosEditablesPerfil, Perfil } from '@/types';
 import { esquemaPerfil, LARGO_MAXIMO_DIRECCION, limpiarTelefono } from '@/utils/perfil';
 
@@ -21,9 +21,10 @@ type Props = {
   /** Error de la API al guardar (CA4); null si no hay. */
   mensajeError: string | null;
   onGuardar: (datos: DatosEditablesPerfil) => void;
+  onCancelar: () => void;
 };
 
-export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar }: Props) {
+export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, onCancelar }: Props) {
   const {
     control,
     handleSubmit,
@@ -40,23 +41,7 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar }:
   );
 
   return (
-    <View style={estilos.tarjeta}>
-      <View style={estilos.encabezado}>
-        <Icon source="card-account-phone-outline" size={24} color={colores.primario} />
-        <Text variant="titleMedium" style={estilos.titulo} accessibilityRole="header">
-          Datos de contacto
-        </Text>
-      </View>
-
-      {perfil.telefono ? null : (
-        <View style={estilos.faltante}>
-          <Icon source="information-outline" size={20} color={colores.primarioOscuro} />
-          <Text variant="bodyMedium" style={estilos.textoFaltante}>
-            Completa tu teléfono para recibir avisos de tus solicitudes.
-          </Text>
-        </View>
-      )}
-
+    <View style={estilos.formulario}>
       {mensajeError ? (
         <View style={estilos.margenAviso}>
           <AvisoError mensaje={mensajeError} />
@@ -122,41 +107,38 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar }:
         )}
       />
 
-      <Button
-        mode="contained"
-        icon="content-save-outline"
-        onPress={guardar}
-        loading={guardando}
-        disabled={guardando || !isDirty}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Guardar cambios"
-      >
-        Guardar cambios
-      </Button>
+      <View style={estilos.acciones}>
+        <Button
+          mode="text"
+          onPress={onCancelar}
+          disabled={guardando}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar la edición"
+        >
+          Cancelar
+        </Button>
+        <Button
+          mode="contained"
+          icon="content-save-outline"
+          onPress={guardar}
+          loading={guardando}
+          disabled={guardando || !isDirty}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Guardar cambios"
+        >
+          Guardar cambios
+        </Button>
+      </View>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  tarjeta: {
-    gap: espacio.xs,
-    padding: espacio.m,
-    borderRadius: radio.tarjeta,
-    backgroundColor: colores.superficie,
-  },
-  encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.s },
-  titulo: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
-  faltante: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: espacio.s,
-    padding: espacio.m,
-    marginBottom: espacio.s,
-    borderRadius: radio.boton,
-    backgroundColor: colores.primarioSuave,
-  },
-  textoFaltante: { flex: 1, color: colores.texto },
+  formulario: { gap: espacio.xs },
+  // Con letra grande, los botones pasan a otra línea en vez de cortarse.
+  acciones: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', gap: espacio.s },
   margenAviso: { marginBottom: espacio.s },
   contenidoBoton: { paddingVertical: espacio.xs },
 });
