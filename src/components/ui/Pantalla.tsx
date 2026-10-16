@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colores, espacio, fuentes, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
 
+import { MenuUsuario } from './MenuUsuario';
+
 type Props = {
   titulo: string;
   subtitulo?: string;
@@ -23,16 +25,22 @@ type Props = {
   recarga?: { recargando: boolean; onRecargar: () => void };
   /** Pantallas con formulario: el teclado no tapa los campos ni el botón de enviar. */
   conTeclado?: boolean;
+  /** Oculta el menú de usuario de arriba (por ejemplo, en el login). En pantallas con barra propia no se muestra. */
+  sinMenuUsuario?: boolean;
   children: ReactNode;
 };
 
-/** Contenedor común de las pantallas: área segura, marca (isotipo + nombre), título y contenido desplazable. */
+/**
+ * Contenedor común de las pantallas: área segura, marca (isotipo + nombre) con el menú de usuario,
+ * título y contenido desplazable.
+ */
 export function Pantalla({
   titulo,
   subtitulo,
   conEncabezado = false,
   recarga,
   conTeclado = false,
+  sinMenuUsuario = false,
   children,
 }: Props) {
   const contenido = (
@@ -58,7 +66,7 @@ export function Pantalla({
           style={estilos.isotipo}
           contentFit="contain"
         />
-        <View>
+        <View style={estilos.textosMarca}>
           <Text variant="titleMedium" style={estilos.nombreApp}>
             {NOMBRE_APP}
           </Text>
@@ -66,6 +74,7 @@ export function Pantalla({
             Universidad Popular del Cesar
           </Text>
         </View>
+        {conEncabezado || sinMenuUsuario ? null : <MenuUsuario />}
       </View>
       <View style={estilos.encabezado}>
         <Text variant="headlineSmall" style={estilos.titulo}>
@@ -103,6 +112,7 @@ const estilos = StyleSheet.create({
   teclado: { flex: 1 },
   contenido: { padding: espacio.m, gap: espacio.m, paddingBottom: espacio.xl },
   marca: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
+  textosMarca: { flex: 1 },
   isotipo: { width: tamanoLogo.isotipo, aspectRatio: 1 },
   nombreApp: { color: colores.primario, fontFamily: fuentes.negrita },
   universidad: { color: colores.texto },

@@ -1,5 +1,6 @@
 /**
- * Pestañas de la vista de la comunidad: visitantes, egresados, estudiantes, docentes y administrativos.
+ * Pestañas de la vista de la comunidad: Inicio, Servicios, Catálogo y Mis solicitudes.
+ * Perfil es una pantalla aparte (/perfil), desde el menú de usuario de arriba.
  * Al abrir la app con una sesión del personal guardada, entra directo al panel (HU-07).
  * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
  */
@@ -79,15 +80,6 @@ export default function LayoutComunidad() {
           title: 'Mis solicitudes',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="clipboard-text-outline" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="perfil"
-        options={{
-          title: 'Perfil',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-circle-outline" color={color} size={size} />
           ),
         }}
       />

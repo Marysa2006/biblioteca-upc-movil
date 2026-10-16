@@ -1,5 +1,6 @@
 /**
  * Perfil del usuario (HU-06): datos institucionales en solo lectura y datos de contacto editables.
+ * Pantalla apilada: se abre desde el menú de usuario (arriba a la derecha), no desde las pestañas.
  * Sin sesión, invita a iniciar sesión y vuelve aquí al entrar (/login?volver=1).
  *
  * Patrón de datos: usePerfil() / useActualizarPerfil() (src/hooks) → src/api/perfil.ts → mock o API.
@@ -11,24 +12,18 @@ import { Button, Portal, Snackbar } from 'react-native-paper';
 
 import { DatosInstitucionales } from '@/components/perfil/DatosInstitucionales';
 import { FormularioPerfil } from '@/components/perfil/FormularioPerfil';
-import { EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
+import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useCerrarSesion } from '@/hooks/useAutenticacion';
 import { useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
 import { useSesion } from '@/store/sesion';
 import { espacio } from '@/theme';
 import type { DatosEditablesPerfil } from '@/types';
-import { esPersonal } from '@/utils/roles';
+import { mensajeErrorGuardar } from '@/utils/errores';
 
 /** Tiempo que se ve la confirmación al guardar. */
 const DURACION_CONFIRMACION_MS = 3000;
 const MENSAJE_GUARDADO = 'Tu perfil quedó actualizado.';
 
-/** Mensaje del error al guardar: el de la API si es de validación (400), o uno general. */
-function mensajeErrorGuardar(error: Error): string {
-  // Las pantallas no importan de src/api: se lee el código del error (ErrorApi.estado) sin la clase.
-  if ('estado' in error && error.estado === 400) return error.message;
-  return 'No pudimos guardar tus cambios. Revisa tu conexión e inténtalo de nuevo.';
-}
 
 export default function Perfil() {
   const usuario = useSesion((estado) => estado.usuario);
@@ -51,7 +46,9 @@ export default function Perfil() {
 
   if (!usuario) {
     return (
-      <Pantalla titulo="Perfil" subtitulo="Inicia sesión para ver y completar tu perfil.">
+      <>
+        <EncabezadoApilado titulo="Perfil" />
+        <Pantalla titulo="Perfil" subtitulo="Inicia sesión para ver y completar tu perfil." conEncabezado>
         <Button
           mode="contained"
           icon="login"
@@ -62,7 +59,8 @@ export default function Perfil() {
         >
           Iniciar sesión
         </Button>
-      </Pantalla>
+        </Pantalla>
+      </>
     );
   }
 
@@ -86,21 +84,11 @@ export default function Perfil() {
   }
 
   return (
-    <Pantalla titulo="Perfil" subtitulo={usuario.correo} conTeclado>
+    <>
+    <EncabezadoApilado titulo="Perfil" />
+    <Pantalla titulo="Perfil" subtitulo={usuario.correo} conEncabezado conTeclado>
       {contenido}
 
-      {esPersonal(usuario) ? (
-        <Button
-          mode="contained-tonal"
-          icon="view-dashboard-outline"
-          onPress={() => router.replace('/panel')}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel="Ir a la vista del personal"
-        >
-          Ir a la vista del personal
-        </Button>
-      ) : null}
       <Button
         mode="outlined"
         icon="logout"
@@ -122,6 +110,7 @@ export default function Perfil() {
         </Snackbar>
       </Portal>
     </Pantalla>
+    </>
   );
 }
 

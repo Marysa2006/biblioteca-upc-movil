@@ -1,6 +1,5 @@
 /**
- * Personal (HU-07): la administración de la biblioteca asigna o retira los roles del personal,
- * y entra a las demás funciones de administración (menú "Administración", HU-04 y HU-28).
+ * Personal (HU-07): la administración de la biblioteca asigna o retira los roles del personal.
  * Solo con el permiso 'roles' (la bibliotecóloga); el resto del personal ve un aviso.
  *
  * Dos secciones: "Personal de la biblioteca" (quienes tienen algún rol, con filtro por rol)
@@ -15,7 +14,6 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Portal, Searchbar, SegmentedButtons, Snackbar } from 'react-native-paper';
 
 import { DialogoRolesPersonal } from '@/components/personal/DialogoRolesPersonal';
-import { MenuAdministracion } from '@/components/personal/MenuAdministracion';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import { TarjetaUsuario } from '@/components/personal/TarjetaUsuario';
 import {
@@ -203,8 +201,6 @@ function GestionRoles() {
       subtitulo="Asigna o retira los roles del personal de la biblioteca. Una persona puede tener varios."
       recarga={{ recargando: isRefetching, onRecargar: () => refetch() }}
     >
-      <MenuAdministracion />
-
       <SegmentedButtons
         value={seccion}
         onValueChange={(valor) => setSeccion(valor as Seccion)}
