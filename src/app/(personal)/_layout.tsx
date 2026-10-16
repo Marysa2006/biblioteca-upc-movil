@@ -19,7 +19,7 @@ export default function LayoutPersonal() {
   if (!hidratada) {
     return <EstadoCarga />;
   }
-  if (!esPersonal(usuario?.rol)) {
+  if (!esPersonal(usuario)) {
     return <Redirect href="/login" />;
   }
 

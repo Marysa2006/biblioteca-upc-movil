@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Card, Icon, Text, TextInput } from 'react-native-paper';
 
+import { AvisoError } from '@/components/ui';
 import type { EstadoCatalogo } from '@/hooks/useCatalogoKoha';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 
@@ -62,13 +63,7 @@ export function TarjetaCatalogoKoha({ estado, onAbrir }: Props) {
         />
 
         {estado === 'no_disponible' ? (
-          <View style={estilos.aviso} accessibilityLiveRegion="polite">
-            <View style={estilos.filaAviso}>
-              <Icon source="alert-circle-outline" size={24} color={coloresEstado.rechazada.texto} />
-              <Text variant="bodyMedium" style={estilos.textoAviso}>
-                {MENSAJE_NO_DISPONIBLE}
-              </Text>
-            </View>
+          <AvisoError mensaje={MENSAJE_NO_DISPONIBLE}>
             <Button
               mode="outlined"
               icon="refresh"
@@ -81,7 +76,7 @@ export function TarjetaCatalogoKoha({ estado, onAbrir }: Props) {
             >
               Reintentar
             </Button>
-          </View>
+          </AvisoError>
         ) : (
           <Button
             mode="contained"
@@ -119,14 +114,6 @@ const estilos = StyleSheet.create({
   textos: { flex: 1, gap: espacio.xs },
   titulo: { color: colores.texto, fontFamily: fuentes.negrita },
   descripcion: { color: colores.textoSecundario },
-  aviso: {
-    gap: espacio.s,
-    padding: espacio.m,
-    borderRadius: radio.boton,
-    backgroundColor: coloresEstado.rechazada.fondo,
-  },
-  filaAviso: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s },
-  textoAviso: { flex: 1, color: coloresEstado.rechazada.texto },
   botonReintentar: { borderColor: coloresEstado.rechazada.texto },
   contenidoBoton: { paddingVertical: espacio.xs },
   nota: { color: colores.textoSecundario },

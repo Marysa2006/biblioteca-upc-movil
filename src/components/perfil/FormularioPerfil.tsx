@@ -10,7 +10,8 @@ import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 import { Button, HelperText, Icon, Text, TextInput } from 'react-native-paper';
 
-import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
+import { AvisoError } from '@/components/ui';
+import { colores, espacio, fuentes, radio } from '@/theme';
 import type { DatosEditablesPerfil, Perfil } from '@/types';
 import { esquemaPerfil, LARGO_MAXIMO_DIRECCION, limpiarTelefono } from '@/utils/perfil';
 
@@ -57,11 +58,8 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar }:
       )}
 
       {mensajeError ? (
-        <View style={estilos.aviso} accessibilityLiveRegion="polite">
-          <Icon source="alert-circle-outline" size={20} color={coloresEstado.rechazada.texto} />
-          <Text variant="bodyMedium" style={estilos.textoAviso}>
-            {mensajeError}
-          </Text>
+        <View style={estilos.margenAviso}>
+          <AvisoError mensaje={mensajeError} />
         </View>
       ) : null}
 
@@ -159,15 +157,6 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.primarioSuave,
   },
   textoFaltante: { flex: 1, color: colores.texto },
-  aviso: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: espacio.s,
-    padding: espacio.m,
-    marginBottom: espacio.s,
-    borderRadius: radio.boton,
-    backgroundColor: coloresEstado.rechazada.fondo,
-  },
-  textoAviso: { flex: 1, color: coloresEstado.rechazada.texto },
+  margenAviso: { marginBottom: espacio.s },
   contenidoBoton: { paddingVertical: espacio.xs },
 });

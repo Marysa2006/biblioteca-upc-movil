@@ -58,6 +58,10 @@ export const useSesion = create<EstadoSesion>()(
       name: 'sesion-biblioteca-upc',
       storage: createJSONStorage(() => almacen),
       partialize: (estado) => ({ usuario: estado.usuario, token: estado.token }),
+      // Versión 1: el usuario pasó de un solo `rol` a `tipo` + `rolesPersonal` (cierre de la iteración 1).
+      // Una sesión guardada con otra versión se descarta y hay que volver a iniciar sesión.
+      version: 1,
+      migrate: () => ({ usuario: null, token: null }),
       onRehydrateStorage: (estadoInicial) => () => {
         estadoInicial.marcarHidratada();
       },
