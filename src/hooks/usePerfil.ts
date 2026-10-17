@@ -4,6 +4,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { claves } from '@/api/claves';
 import { actualizarPerfil, obtenerPerfil } from '@/api/perfil';
 import { useSesion } from '@/store/sesion';
 import type { DatosEditablesPerfil } from '@/types';
@@ -13,7 +14,7 @@ export function usePerfil() {
   const usuario = useSesion((estado) => estado.usuario);
 
   return useQuery({
-    queryKey: ['perfil', usuario?.id],
+    queryKey: claves.perfil(usuario?.id),
     queryFn: () => {
       if (!usuario) throw new Error('No hay sesión');
       return obtenerPerfil(usuario);
@@ -33,7 +34,7 @@ export function useActualizarPerfil() {
       return actualizarPerfil(usuario, datos);
     },
     onSuccess: (perfil) => {
-      queryClient.setQueryData(['perfil', usuario?.id], perfil);
+      queryClient.setQueryData(claves.perfil(usuario?.id), perfil);
     },
   });
 }
