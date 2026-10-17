@@ -7,6 +7,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { claves } from '@/api/claves';
 import { actualizarRolesPersonal, obtenerUsuarios } from '@/api/usuarios';
 import { useSesion } from '@/store/sesion';
 import type { RolPersonal } from '@/types';
@@ -14,7 +15,7 @@ import { tieneRol } from '@/utils/roles';
 
 export function useUsuarios() {
   return useQuery({
-    queryKey: ['usuarios'],
+    queryKey: claves.usuarios,
     queryFn: obtenerUsuarios,
   });
 }
@@ -36,7 +37,7 @@ export function useActualizarRolesPersonal() {
       return actualizarRolesPersonal(usuarioId, rolesPersonal);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['usuarios'] });
+      queryClient.invalidateQueries({ queryKey: claves.usuarios });
     },
   });
 }

@@ -4,11 +4,12 @@
  */
 import { useQuery } from '@tanstack/react-query';
 
+import { claves } from '@/api/claves';
 import { obtenerRecursos } from '@/api/recursos';
 
 export function useRecursos() {
   return useQuery({
-    queryKey: ['recursos'],
+    queryKey: claves.recursos,
     queryFn: obtenerRecursos,
   });
 }

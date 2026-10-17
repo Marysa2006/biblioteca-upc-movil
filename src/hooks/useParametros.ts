@@ -4,10 +4,11 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { claves } from '@/api/claves';
 import { actualizarParametros, obtenerParametros } from '@/api/parametros';
 import type { Parametros } from '@/types';
 
-const CLAVE = ['parametros'];
+const CLAVE = claves.parametros;
 
 export function useParametros() {
   return useQuery({
