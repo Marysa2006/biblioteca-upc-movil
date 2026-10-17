@@ -5,6 +5,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { claves } from '@/api/claves';
 import {
   cambiarPublicacionContenido,
   crearContenido,
@@ -14,7 +15,7 @@ import {
   type DatosContenido,
 } from '@/api/contenidos';
 
-const CLAVE = ['contenidos'];
+const CLAVE = claves.contenidos;
 
 export function useContenidos() {
   return useQuery({
