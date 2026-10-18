@@ -1,5 +1,5 @@
 /**
- * Espacios, reservas y bloqueos (HU-16, HU-17, HU-18, HU-19 y HU-20).
+ * Espacios, reservas, bloqueos y disponibilidad (HU-16, HU-17, HU-18, HU-19 y HU-20).
  * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
  *
  * Las fechas van como texto 'AAAA-MM-DD' y las horas como 'HH:MM', como en los parámetros
@@ -62,4 +62,36 @@ export type Bloqueo = {
   horaInicio?: string;
   horaFin?: string;
   motivo: string;
+};
+
+/**
+ * Estado de una franja en el calendario de un espacio (HU-17, CA2).
+ * 'no_disponible': ya pasó o no cumple la anticipación mínima de los parámetros (HU-28).
+ */
+export type EstadoFranja = 'disponible' | 'reservada' | 'bloqueada' | 'no_disponible';
+
+/**
+ * Franja de una hora dentro del horario de atención (HU-17).
+ * Nunca lleva datos de quien reservó: la disponibilidad es pública (HU-17, CA3).
+ */
+export type FranjaDisponibilidad = {
+  /** 'HH:MM'. */
+  horaInicio: string;
+  /** 'HH:MM'. */
+  horaFin: string;
+  estado: EstadoFranja;
+  /** Motivo del bloqueo o de no estar disponible; vacío si está disponible o reservada. */
+  motivo?: string;
+};
+
+/** Disponibilidad de un espacio en un día (HU-17), la que devuelve useDisponibilidad(). */
+export type DiaDisponibilidad = {
+  /** 'AAAA-MM-DD'. */
+  fecha: string;
+  /** false si es festivo o no tiene horario de atención: esDiaHabil() de HU-28. */
+  habil: boolean;
+  /** motivoNoDisponible() cuando el día no es hábil. */
+  motivo?: string;
+  /** Vacío cuando el día no es hábil. */
+  franjas: FranjaDisponibilidad[];
 };
