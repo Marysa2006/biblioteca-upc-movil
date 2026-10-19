@@ -6,6 +6,7 @@
  */
 export * from './contenidos';
 export * from './espacios';
+export * from './guias';
 export * from './notificaciones';
 export * from './parametros';
 export * from './perfil';
