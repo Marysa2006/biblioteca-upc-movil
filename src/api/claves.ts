@@ -32,5 +32,6 @@ export const claves = {
   /** Solicitudes de reserva por estado, para la bandeja (HU-19). */
   reservasPorEstado: (estado: EstadoSolicitud | 'todas') => ['reservas', estado] as const,
   bloqueos: ['bloqueos'] as const,
+  bloqueosDeEspacio: (espacioId: string) => ['bloqueos', espacioId] as const,
   notificaciones: ['notificaciones'] as const,
 };
