@@ -34,4 +34,9 @@ export const claves = {
   bloqueos: ['bloqueos'] as const,
   bloqueosDeEspacio: (espacioId: string) => ['bloqueos', espacioId] as const,
   notificaciones: ['notificaciones'] as const,
+
+  // ── Función plus: guías sin conexión (HU-29) ─────────────────
+  guias: ['guias'] as const,
+  guia: (id: string) => ['guias', id] as const,
+  guiasGuardadas: ['guias', 'guardadas'] as const,
 };
