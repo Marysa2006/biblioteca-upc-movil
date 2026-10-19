@@ -4,7 +4,7 @@
  * Cada decisión deja una notificación en los datos de prueba (HU-27).
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
-import type { EstadoSolicitud, Reserva } from '@/types';
+import type { Bloqueo, EstadoSolicitud, Reserva } from '@/types';
 import { esDiaHabil } from '@/utils/parametros';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -215,4 +215,52 @@ export async function crearReservaTercero(datos: DatosReservaTercero): Promise<R
     return simularRed({ ...nueva });
   }
   return peticion<Reserva>('/reservas/terceros/', { method: 'POST', body: JSON.stringify(datos) });
+}
+
+/** Criterio de un bloqueo para saber qué reservas caen dentro (HU-20). */
+export type CriterioBloqueo = Omit<Bloqueo, 'id' | 'motivo'>;
+
+function franjaAfecta(reserva: Reserva, criterio: CriterioBloqueo): boolean {
+  if (!criterio.horaInicio || !criterio.horaFin) {
+    return true; // Bloqueo de todo el día: afecta cualquier hora.
+  }
+  return seSolapan(reserva.horaInicio, reserva.horaFin, criterio.horaInicio, criterio.horaFin);
+}
+
+/**
+ * Reservas que ocupan el espacio dentro del bloqueo (HU-20, CA1).
+ * Solo cuentan las que ocupan franja: pendientes, aprobadas o con nueva fecha.
+ */
+export function reservasAfectadasPorBloqueo(criterio: CriterioBloqueo): Reserva[] {
+  return reservas.filter(
+    (reserva) =>
+      reserva.espacioId === criterio.espacioId &&
+      reserva.fecha >= criterio.desde &&
+      reserva.fecha <= criterio.hasta &&
+      ESTADOS_OCUPAN.includes(reserva.estado) &&
+      franjaAfecta(reserva, criterio),
+  );
+}
+
+/**
+ * Cancela las reservas indicadas y avisa a cada solicitante (HU-20, CA2).
+ * Devuelve las reservas que quedaron canceladas.
+ */
+export function cancelarReservas(ids: string[], motivo: string): Reserva[] {
+  const canceladas: Reserva[] = [];
+  reservas = reservas.map((reserva) => {
+    if (!ids.includes(reserva.id)) {
+      return reserva;
+    }
+    const cancelada: Reserva = { ...reserva, estado: 'cancelada', motivo };
+    canceladas.push(cancelada);
+    crearNotificacion({
+      usuarioId: cancelada.solicitanteId,
+      solicitudId: cancelada.id,
+      titulo: 'Reserva cancelada',
+      mensaje: `Tu reserva del ${cancelada.fecha} a las ${cancelada.horaInicio} fue cancelada: ${motivo}`,
+    });
+    return cancelada;
+  });
+  return canceladas;
 }
