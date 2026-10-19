@@ -26,6 +26,8 @@ export const claves = {
   /** Disponibilidad de un espacio (HU-17), con o sin rango de fechas. */
   disponibilidad: (espacioId: string, desde?: string, hasta?: string) =>
     ['disponibilidad', espacioId, desde ?? null, hasta ?? null] as const,
+  /** Prefijo para invalidar la disponibilidad de todos los espacios a la vez. */
+  disponibilidadTodas: ['disponibilidad'] as const,
   reservas: ['reservas'] as const,
   /** Solicitudes de reserva por estado, para la bandeja (HU-19). */
   reservasPorEstado: (estado: EstadoSolicitud | 'todas') => ['reservas', estado] as const,
