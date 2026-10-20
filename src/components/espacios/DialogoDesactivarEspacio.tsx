@@ -7,14 +7,15 @@
  * del Portal de Paper queda fuera del QueryClientProvider del layout raíz, así que aquí no se
  * puede llamar a un hook de TanStack Query.
  */
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
-import { AvisoError, EstadoCarga, EstadoError, EtiquetaEstado } from '@/components/ui';
+import { AvisoError, EstadoCarga, EstadoError } from '@/components/ui';
 import type { useReservasFuturas } from '@/hooks/useEspacios';
-import { colores, espacio, fuentes, radio } from '@/theme';
+import { colores, espacio, fuentes } from '@/theme';
 import type { Espacio } from '@/types';
-import { fechaLegible } from '@/utils/fechas';
+
+import { FilaReserva } from './FilaReserva';
 
 type Props = {
   /** El diálogo se muestra mientras no sea null. */
@@ -88,20 +89,7 @@ function Contenido({
           mensaje={`Tiene ${reservas.length} ${reservas.length === 1 ? 'reserva futura' : 'reservas futuras'}. Seguirán registradas: revísalas en Gestión → Solicitudes para cancelarlas o moverlas.`}
         />
         {reservas.map((reserva) => (
-          <View
-            key={reserva.id}
-            style={estilos.reserva}
-            accessible
-            accessibilityLabel={`${fechaLegible(reserva.fecha)}, de ${reserva.horaInicio} a ${reserva.horaFin}, ${reserva.solicitante}`}
-          >
-            <Text variant="labelLarge" style={estilos.fecha}>
-              {`${fechaLegible(reserva.fecha)} · ${reserva.horaInicio} a ${reserva.horaFin}`}
-            </Text>
-            <Text variant="bodyMedium" style={estilos.texto}>
-              {reserva.solicitante}
-            </Text>
-            <EtiquetaEstado estado={reserva.estado} />
-          </View>
+          <FilaReserva key={reserva.id} reserva={reserva} />
         ))}
       </>
     );
@@ -151,13 +139,6 @@ const estilos = StyleSheet.create({
   area: { paddingHorizontal: 0 },
   contenido: { gap: espacio.s, paddingHorizontal: espacio.l, paddingVertical: espacio.s },
   texto: { color: colores.texto },
-  fecha: { color: colores.texto, fontFamily: fuentes.seminegrita },
-  reserva: {
-    gap: espacio.xs,
-    padding: espacio.s,
-    borderRadius: radio.boton,
-    backgroundColor: colores.superficieVariante,
-  },
   // Con letra grande, los botones pasan a otra línea en vez de cortarse.
   acciones: { flexWrap: 'wrap', gap: espacio.s },
   contenidoBoton: { paddingVertical: espacio.xs },
