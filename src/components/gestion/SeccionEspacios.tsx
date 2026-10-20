@@ -7,6 +7,9 @@
  * Catálogo (HU-16): todos los espacios, también los inactivos; crear y editar en
  * /administracion/espacio (CA1, CA2) y activar o desactivar desde la tarjeta. Antes de
  * desactivar se advierten las reservas futuras (CA3).
+ *
+ * Bloqueos (HU-20): "Bloquear" en cada espacio activo abre /administracion/bloqueo, donde se
+ * revisan las reservas afectadas antes de confirmar.
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -96,6 +99,9 @@ export function SeccionEspacios() {
           router.push({ pathname: '/administracion/espacio', params: { id: actual.id } })
         }
         onCambiarEstado={() => (actual.activo ? abrirDesactivar(actual) : activar(actual))}
+        onBloquear={() =>
+          router.push({ pathname: '/administracion/bloqueo', params: { espacioId: actual.id } })
+        }
       />
     ));
   }
