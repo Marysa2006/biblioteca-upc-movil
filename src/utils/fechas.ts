@@ -37,3 +37,10 @@ export function fechaLegible(texto: string): string {
   const [, mes, dia] = texto.split('-').map(Number);
   return `${dia} de ${MESES[mes - 1]}`;
 }
+
+/** "09:00" + 1 → "10:00". Si pasa de la medianoche, se queda en "23:00". */
+export function sumarHoras(hora: string, horas: number): string {
+  const [h, m] = hora.split(':').map(Number);
+  const total = Math.min(h + horas, 23);
+  return `${String(total).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
