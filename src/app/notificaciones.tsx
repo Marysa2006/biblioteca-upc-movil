@@ -3,7 +3,8 @@
  * - CA1: los avisos de las solicitudes (creada, aprobada, rechazada, otra fecha, cancelada),
  *   el más reciente primero; los no leídos dicen "Nuevo" y se marcan leídos al tocarlos.
  * - CA3: si la carga falla, se ofrece reintentar.
- * Sin sesión, invita a iniciarla: los avisos son de cada persona.
+ * - CA2: arriba, la tarjeta de los recordatorios locales (permiso, cuántos hay y una prueba).
+ * Sin sesión, invita a iniciarla: los avisos y los recordatorios son de cada persona.
  *
  * Patrón de datos: useNotificaciones() / useMarcarLeida() (src/hooks) → src/api → mock o API.
  */
@@ -12,6 +13,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { TarjetaAviso } from '@/components/notificaciones/TarjetaAviso';
+import { TarjetaRecordatorios } from '@/components/notificaciones/TarjetaRecordatorios';
 import { AvisoError, EncabezadoApilado, EstadoCarga, EstadoVacio, Pantalla } from '@/components/ui';
 import { useMarcarLeida, useNotificaciones } from '@/hooks/useNotificaciones';
 import { useRol } from '@/hooks/useRol';
@@ -89,6 +91,7 @@ export default function Notificaciones() {
         conEncabezado
         recarga={usuario ? { recargando: isRefetching, onRecargar: () => refetch() } : undefined}
       >
+        {usuario ? <TarjetaRecordatorios /> : null}
         {contenido}
       </Pantalla>
     </>
