@@ -6,6 +6,8 @@
  * 3. Al confirmar, con afectadas se cancelan y se notifica a cada solicitante (CA2);
  *    sin afectadas, el bloqueo se aplica directo (CA3).
  * Cambiar un campo después de revisar descarta la revisión: se confirma solo lo que se vio.
+ * El formulario valida con los parámetros de HU-28 y los bloqueos del espacio, así que la
+ * pantalla espera a tener el espacio, los parámetros y los bloqueos antes de mostrarlo.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -25,6 +27,7 @@ import {
 } from '@/components/ui';
 import { useBloqueos, useConfirmarBloqueo, usePrevisualizarBloqueo } from '@/hooks/useBloqueos';
 import { useEspaciosAdministracion } from '@/hooks/useEspacios';
+import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Bloqueo, Reserva } from '@/types';
@@ -62,6 +65,7 @@ export default function BloquearEspacio() {
 function GestionBloqueo({ espacioId }: { espacioId: string }) {
   const espacios = useEspaciosAdministracion();
   const bloqueos = useBloqueos(espacioId);
+  const parametros = useParametros();
   const previsualizar = usePrevisualizarBloqueo();
   const confirmar = useConfirmarBloqueo();
   const [revision, setRevision] = useState<Revision | null>(null);
@@ -76,10 +80,19 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
     confirmar.reset();
   };
 
-  if (espacios.isPending) return <EstadoCarga mensaje="Cargando el espacio…" />;
-  if (espacios.isError) {
+  if (espacios.isPending || parametros.isPending || bloqueos.isPending) {
+    return <EstadoCarga mensaje="Cargando el espacio y su calendario…" />;
+  }
+  if (espacios.isError || parametros.isError || bloqueos.isError) {
     return (
-      <EstadoError mensaje="No pudimos cargar el espacio." onReintentar={() => espacios.refetch()} />
+      <EstadoError
+        mensaje="No pudimos cargar el espacio, sus bloqueos o el horario de la biblioteca."
+        onReintentar={() => {
+          espacios.refetch();
+          parametros.refetch();
+          bloqueos.refetch();
+        }}
+      />
     );
   }
   const actual = espacios.data.find((e) => e.id === espacioId);
@@ -166,6 +179,8 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
         <>
           <FormularioBloqueo
             key={intento}
+            parametros={parametros.data}
+            bloqueos={bloqueos.data}
             ocupado={previsualizar.isPending || confirmar.isPending}
             onRevisar={revisar}
             onCambio={descartarRevision}
@@ -187,14 +202,7 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
         <Text variant="titleSmall" style={estilos.nombre}>
           Bloqueos registrados
         </Text>
-        {bloqueos.isPending ? (
-          <EstadoCarga mensaje="Cargando bloqueos…" />
-        ) : bloqueos.isError ? (
-          <EstadoError
-            mensaje="No pudimos cargar los bloqueos."
-            onReintentar={() => bloqueos.refetch()}
-          />
-        ) : bloqueos.data.length === 0 ? (
+        {bloqueos.data.length === 0 ? (
           <EstadoVacio mensaje="Este espacio no tiene bloqueos." />
         ) : (
           [...bloqueos.data]
