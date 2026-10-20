@@ -40,7 +40,8 @@ export function TarjetaRecordatorios() {
     setOcupado(true);
     try {
       await pedir();
-    } catch {
+    } catch (error) {
+      console.warn('[recordatorios] No se pudo pedir el permiso', error);
       setFalla('No pudimos pedir el permiso de notificaciones. Inténtalo de nuevo.');
     } finally {
       setOcupado(false);
@@ -54,7 +55,8 @@ export function TarjetaRecordatorios() {
       const textoRecordatorio = parametros?.textoRecordatorio ?? TEXTO_POR_DEFECTO;
       await probarRecordatorio(ejemploRecordatorio(textoRecordatorio));
       setAviso(`Listo: el recordatorio de prueba llega en ${SEGUNDOS_PRUEBA} segundos.`);
-    } catch {
+    } catch (error) {
+      console.warn('[recordatorios] No se pudo programar el recordatorio de prueba', error);
       setFalla('No pudimos programar el recordatorio de prueba. Inténtalo de nuevo.');
     } finally {
       setOcupado(false);
