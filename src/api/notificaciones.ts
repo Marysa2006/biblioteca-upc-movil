@@ -10,6 +10,7 @@
  */
 import type { Notificacion } from '@/types';
 
+import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { NOTIFICACIONES } from './mocks/notificaciones';
 
 /** Copia mutable: con mocks, los avisos creados se ven durante la sesión de la app. */
@@ -36,4 +37,40 @@ export function crearNotificacion(datos: DatosNotificacion): Notificacion {
   };
   notificaciones = [...notificaciones, nueva];
   return { ...nueva };
+}
+
+/**
+ * Notificaciones del usuario, la más reciente primero (HU-27).
+ * Con la API real, el usuario sale del token.
+ */
+export function obtenerNotificaciones(usuarioId: string): Promise<Notificacion[]> {
+  if (USAR_MOCKS) {
+    // Al revés antes de ordenar: si dos avisos tienen el mismo minuto, va primero el último creado.
+    const lista = [...notificaciones]
+      .reverse()
+      .filter((notificacion) => notificacion.usuarioId === usuarioId)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha))
+      .map((notificacion) => ({ ...notificacion }));
+    return simularRed(lista);
+  }
+  // Ruta provisional: confirmar con Backend.
+  return peticion<Notificacion[]>('/notificaciones/');
+}
+
+/** Marca como leída una notificación del usuario (HU-27). */
+export function marcarLeida(usuarioId: string, id: string): Promise<Notificacion> {
+  if (USAR_MOCKS) {
+    const indice = notificaciones.findIndex(
+      (notificacion) => notificacion.id === id && notificacion.usuarioId === usuarioId,
+    );
+    if (indice === -1) {
+      return Promise.reject(new ErrorApi(404, 'La notificación no existe.'));
+    }
+    notificaciones = notificaciones.map((notificacion, i) =>
+      i === indice ? { ...notificacion, leida: true } : notificacion,
+    );
+    return simularRed({ ...notificaciones[indice] });
+  }
+  // Ruta provisional: confirmar con Backend.
+  return peticion<Notificacion>(`/notificaciones/${id}/leida/`, { method: 'PATCH' });
 }
