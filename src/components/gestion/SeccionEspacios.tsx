@@ -16,7 +16,11 @@ import { Button, Portal, Snackbar } from 'react-native-paper';
 import { DialogoDesactivarEspacio } from '@/components/espacios/DialogoDesactivarEspacio';
 import { TarjetaEspacioAdmin } from '@/components/espacios/TarjetaEspacioAdmin';
 import { EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
-import { useCambiarEstadoEspacio, useEspaciosAdministracion } from '@/hooks/useEspacios';
+import {
+  useCambiarEstadoEspacio,
+  useEspaciosAdministracion,
+  useReservasFuturas,
+} from '@/hooks/useEspacios';
 import { espacio } from '@/theme';
 import type { Espacio } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
@@ -35,6 +39,8 @@ export function SeccionEspacios() {
   const { data, isPending, isError, refetch } = useEspaciosAdministracion();
   const cambiarEstado = useCambiarEstadoEspacio();
   const [porDesactivar, setPorDesactivar] = useState<Espacio | null>(null);
+  // Se pide aquí y no en el diálogo: el Portal queda fuera del QueryClientProvider.
+  const reservasFuturas = useReservasFuturas(porDesactivar?.id ?? '');
   const [aviso, setAviso] = useState<string | null>(null);
 
   // El Snackbar ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
@@ -110,6 +116,7 @@ export function SeccionEspacios() {
 
       <DialogoDesactivarEspacio
         espacioActual={porDesactivar}
+        reservas={reservasFuturas}
         guardando={cambiarEstado.isPending}
         mensajeError={
           porDesactivar && cambiarEstado.error ? mensajeErrorGuardar(cambiarEstado.error) : null

@@ -21,6 +21,7 @@ import {
   useCrearEspacio,
   useEditarEspacio,
   useEspaciosAdministracion,
+  useReservasFuturas,
 } from '@/hooks/useEspacios';
 import { useRol } from '@/hooks/useRol';
 import type { Espacio } from '@/types';
@@ -49,6 +50,8 @@ function Formulario({ id }: { id?: string }) {
   const editar = useEditarEspacio();
   /** Datos que esperan la confirmación de desactivar (CA3). */
   const [pendientes, setPendientes] = useState<DatosEspacio | null>(null);
+  // Se pide aquí y no en el diálogo: el Portal queda fuera del QueryClientProvider.
+  const reservasFuturas = useReservasFuturas(pendientes && id ? id : '');
   const guardando = crear.isPending || editar.isPending;
   const error = crear.error ?? editar.error;
   const mensajeError = error ? mensajeErrorGuardar(error) : null;
@@ -95,6 +98,7 @@ function Formulario({ id }: { id?: string }) {
       />
       <DialogoDesactivarEspacio
         espacioActual={pendientes ? actual : null}
+        reservas={reservasFuturas}
         guardando={editar.isPending}
         mensajeError={pendientes ? mensajeError : null}
         onConfirmar={() => pendientes && editar.mutate({ id, datos: pendientes }, volver)}
