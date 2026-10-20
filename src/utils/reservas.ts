@@ -89,73 +89,103 @@ export const esquemaOtraFecha = z
 
 export type FormularioOtraFecha = z.input<typeof esquemaOtraFecha>;
 
+// ── Reglas de una reserva ─────────────────────────────────────────────────────────────
+// Las comparten la solicitud de la comunidad (HU-18) y la reserva para terceros (HU-19):
+// si una regla de la biblioteca cambia, cambia en los dos formularios. Cada formulario tiene
+// su propio esquema con sus campos. Devuelven el mensaje para la persona o null.
+
+/** La fecha no pasó y es un día hábil (HU-28). Si el formato falla, lo dice el campo. */
+export function problemaFecha(fecha: string, parametros: Parametros, hoy: string): string | null {
+  if (!esFechaValida(fecha)) return null;
+  if (fecha < hoy) return 'La fecha ya pasó.';
+  const motivo = motivoNoDisponible(fecha, parametros);
+  return motivo ? `No disponible: ${motivo}.` : null;
+}
+
+type ProblemaHorario = { campo: 'horaInicio' | 'horaFin'; mensaje: string };
+
+/** Horas en punto (las franjas son de una hora) y el fin después del inicio. */
+export function problemaHorario(inicio: string, fin: string): ProblemaHorario | null {
+  if (!esHoraValida(inicio) || !esHoraValida(fin)) return null;
+  const enPunto = 'Usa horas en punto, por ejemplo 14:00.';
+  if (!inicio.endsWith(':00')) return { campo: 'horaInicio', mensaje: enPunto };
+  if (!fin.endsWith(':00')) return { campo: 'horaFin', mensaje: enPunto };
+  if (fin <= inicio) {
+    return { campo: 'horaFin', mensaje: 'La hora de fin debe ser después de la de inicio.' };
+  }
+  return null;
+}
+
+/** Al menos 1 asistente y no más que la capacidad del espacio (HU-18, CA3). */
+export function problemaCapacidad(asistentes: string, espacio: Espacio | undefined): string | null {
+  if (!/^\d+$/.test(asistentes)) return null;
+  const cantidad = Number(asistentes);
+  if (cantidad < 1) return 'Debe asistir al menos 1 persona.';
+  if (espacio && cantidad > espacio.capacidad) {
+    return `${espacio.nombre} admite hasta ${espacio.capacidad} personas. Ajusta el número.`;
+  }
+  return null;
+}
+
 const LARGO_MAXIMO_PROPOSITO = 200;
+
+/** Campos que tienen las dos reservas, con sus formatos. */
+const camposReserva = {
+  fecha: z.string().trim().refine(esFechaValida, { error: 'Usa el formato AAAA-MM-DD.' }),
+  horaInicio: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
+  horaFin: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
+  proposito: z
+    .string()
+    .trim()
+    .min(1, { error: 'Escribe el propósito de la reserva.' })
+    .max(LARGO_MAXIMO_PROPOSITO, { error: `Máximo ${LARGO_MAXIMO_PROPOSITO} caracteres.` }),
+  asistentes: z.string().trim().regex(/^\d+$/, { error: 'Escribe un número entero.' }),
+  requerimientos: z
+    .string()
+    .trim()
+    .max(LARGO_MAXIMO_MOTIVO, { error: `Máximo ${LARGO_MAXIMO_MOTIVO} caracteres.` }),
+};
+
+type DatosReglas = { fecha: string; horaInicio: string; horaFin: string; asistentes: string };
+
+/** Aplica las tres reglas y marca el error en su campo. */
+function aplicarReglas(
+  datos: DatosReglas,
+  ctx: z.RefinementCtx,
+  { parametros, hoy, espacio }: { parametros: Parametros; hoy: string; espacio: Espacio | undefined },
+) {
+  const fecha = problemaFecha(datos.fecha, parametros, hoy);
+  if (fecha) ctx.addIssue({ code: 'custom', path: ['fecha'], message: fecha });
+
+  const horario = problemaHorario(datos.horaInicio, datos.horaFin);
+  if (horario) ctx.addIssue({ code: 'custom', path: [horario.campo], message: horario.mensaje });
+
+  const capacidad = problemaCapacidad(datos.asistentes, espacio);
+  if (capacidad) ctx.addIssue({ code: 'custom', path: ['asistentes'], message: capacidad });
+}
 
 /** Lo que necesita el esquema de la reserva para terceros para validar el día y la capacidad. */
 type ContextoReserva = { parametros: Parametros; espacios: Espacio[]; hoy: string };
 
 /**
  * Reserva que el personal crea en nombre de otra persona (HU-19).
- * Valida antes de enviar: la fecha no pasada y hábil (esDiaHabil de HU-28, con su motivo), el
- * horario y que los asistentes no pasen la capacidad del espacio. La API vuelve a validar el
- * día hábil y los choques de horario (CA3).
+ * Valida antes de enviar las reglas de la reserva; la API vuelve a validar el día hábil y los
+ * choques de horario (CA3).
  */
 export function esquemaReservaTercero({ parametros, espacios, hoy }: ContextoReserva) {
   return z
     .object({
       solicitanteId: z.string().min(1, { error: 'Elige a la persona que reserva.' }),
       espacioId: z.string().min(1, { error: 'Elige el espacio.' }),
-      fecha: z.string().trim().refine(esFechaValida, { error: 'Usa el formato AAAA-MM-DD.' }),
-      horaInicio: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
-      horaFin: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
-      proposito: z
-        .string()
-        .trim()
-        .min(1, { error: 'Escribe el propósito de la reserva.' })
-        .max(LARGO_MAXIMO_PROPOSITO, { error: `Máximo ${LARGO_MAXIMO_PROPOSITO} caracteres.` }),
-      asistentes: z.string().trim().regex(/^\d+$/, { error: 'Escribe un número entero.' }),
-      requerimientos: z
-        .string()
-        .trim()
-        .max(LARGO_MAXIMO_MOTIVO, { error: `Máximo ${LARGO_MAXIMO_MOTIVO} caracteres.` }),
+      ...camposReserva,
     })
-    .superRefine((datos, ctx) => {
-      if (esFechaValida(datos.fecha)) {
-        const motivo = motivoNoDisponible(datos.fecha, parametros);
-        if (datos.fecha < hoy) {
-          ctx.addIssue({ code: 'custom', path: ['fecha'], message: 'La fecha ya pasó.' });
-        } else if (motivo) {
-          ctx.addIssue({ code: 'custom', path: ['fecha'], message: `No disponible: ${motivo}.` });
-        }
-      }
-
-      const horasValidas = esHoraValida(datos.horaInicio) && esHoraValida(datos.horaFin);
-      if (horasValidas && datos.horaFin <= datos.horaInicio) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['horaFin'],
-          message: 'La hora de fin debe ser después de la de inicio.',
-        });
-      }
-
-      const lugar = espacios.find((e) => e.id === datos.espacioId);
-      if (/^\d+$/.test(datos.asistentes)) {
-        const cantidad = Number(datos.asistentes);
-        if (cantidad < 1) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['asistentes'],
-            message: 'Debe asistir al menos 1 persona.',
-          });
-        } else if (lugar && cantidad > lugar.capacidad) {
-          ctx.addIssue({
-            code: 'custom',
-            path: ['asistentes'],
-            message: `${lugar.nombre} admite hasta ${lugar.capacidad} personas.`,
-          });
-        }
-      }
-    });
+    .superRefine((datos, ctx) =>
+      aplicarReglas(datos, ctx, {
+        parametros,
+        hoy,
+        espacio: espacios.find((e) => e.id === datos.espacioId),
+      }),
+    );
 }
 
 export type FormularioReservaTercero = z.input<ReturnType<typeof esquemaReservaTercero>>;
