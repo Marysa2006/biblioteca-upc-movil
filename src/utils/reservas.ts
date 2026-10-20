@@ -6,8 +6,9 @@
  */
 import { z } from 'zod';
 
-import type { EstadoSolicitud } from '@/types';
+import type { Espacio, EstadoSolicitud, Parametros } from '@/types';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
+import { motivoNoDisponible } from '@/utils/parametros';
 
 /** Lo que el personal decide sobre una solicitud; lo mismo que recibe useDecidirReserva(). */
 export type AccionReserva = 'aprobar' | 'nueva_fecha' | 'rechazar' | 'cancelar';
@@ -87,3 +88,74 @@ export const esquemaOtraFecha = z
   });
 
 export type FormularioOtraFecha = z.input<typeof esquemaOtraFecha>;
+
+const LARGO_MAXIMO_PROPOSITO = 200;
+
+/** Lo que necesita el esquema de la reserva para terceros para validar el día y la capacidad. */
+type ContextoReserva = { parametros: Parametros; espacios: Espacio[]; hoy: string };
+
+/**
+ * Reserva que el personal crea en nombre de otra persona (HU-19).
+ * Valida antes de enviar: la fecha no pasada y hábil (esDiaHabil de HU-28, con su motivo), el
+ * horario y que los asistentes no pasen la capacidad del espacio. La API vuelve a validar el
+ * día hábil y los choques de horario (CA3).
+ */
+export function esquemaReservaTercero({ parametros, espacios, hoy }: ContextoReserva) {
+  return z
+    .object({
+      solicitanteId: z.string().min(1, { error: 'Elige a la persona que reserva.' }),
+      espacioId: z.string().min(1, { error: 'Elige el espacio.' }),
+      fecha: z.string().trim().refine(esFechaValida, { error: 'Usa el formato AAAA-MM-DD.' }),
+      horaInicio: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
+      horaFin: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
+      proposito: z
+        .string()
+        .trim()
+        .min(1, { error: 'Escribe el propósito de la reserva.' })
+        .max(LARGO_MAXIMO_PROPOSITO, { error: `Máximo ${LARGO_MAXIMO_PROPOSITO} caracteres.` }),
+      asistentes: z.string().trim().regex(/^\d+$/, { error: 'Escribe un número entero.' }),
+      requerimientos: z
+        .string()
+        .trim()
+        .max(LARGO_MAXIMO_MOTIVO, { error: `Máximo ${LARGO_MAXIMO_MOTIVO} caracteres.` }),
+    })
+    .superRefine((datos, ctx) => {
+      if (esFechaValida(datos.fecha)) {
+        const motivo = motivoNoDisponible(datos.fecha, parametros);
+        if (datos.fecha < hoy) {
+          ctx.addIssue({ code: 'custom', path: ['fecha'], message: 'La fecha ya pasó.' });
+        } else if (motivo) {
+          ctx.addIssue({ code: 'custom', path: ['fecha'], message: `No disponible: ${motivo}.` });
+        }
+      }
+
+      const horasValidas = esHoraValida(datos.horaInicio) && esHoraValida(datos.horaFin);
+      if (horasValidas && datos.horaFin <= datos.horaInicio) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['horaFin'],
+          message: 'La hora de fin debe ser después de la de inicio.',
+        });
+      }
+
+      const lugar = espacios.find((e) => e.id === datos.espacioId);
+      if (/^\d+$/.test(datos.asistentes)) {
+        const cantidad = Number(datos.asistentes);
+        if (cantidad < 1) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['asistentes'],
+            message: 'Debe asistir al menos 1 persona.',
+          });
+        } else if (lugar && cantidad > lugar.capacidad) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['asistentes'],
+            message: `${lugar.nombre} admite hasta ${lugar.capacidad} personas.`,
+          });
+        }
+      }
+    });
+}
+
+export type FormularioReservaTercero = z.input<ReturnType<typeof esquemaReservaTercero>>;

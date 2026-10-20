@@ -9,9 +9,11 @@
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Portal, Snackbar } from 'react-native-paper';
+import { router } from 'expo-router';
+import { Button, Portal, Snackbar } from 'react-native-paper';
 
 import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
+import { useEspaciosAdministracion } from '@/hooks/useEspacios';
 import { useDecidirReserva, useReservas } from '@/hooks/useReservas';
 import { coloresEstado, espacio } from '@/theme';
 import type { EstadoSolicitud, Reserva } from '@/types';
@@ -33,15 +35,14 @@ type DatosDecision = {
   cambios?: { fecha: string; horaInicio: string; horaFin: string };
 };
 
-/**
- * PROVISIONAL: el nombre del espacio sale de useEspacios(), que todavía no existe
- * (lo trae HU-16 o HU-17 Datos). Mientras tanto se muestra su código.
- */
-const nombreEspacio = (espacioId: string) => `Espacio ${espacioId}`;
-
 export function BandejaReservas() {
   const { data: reservas, isPending, isError, refetch } = useReservas('todas');
   const { mutate, isPending: guardando, error, reset } = useDecidirReserva();
+  // Todos los espacios, también los inactivos: una reserva vieja puede ser de uno desactivado.
+  // Si todavía no cargan, la tarjeta dice "Espacio" y la bandeja no se bloquea.
+  const { data: espacios } = useEspaciosAdministracion();
+  const nombreEspacio = (espacioId: string) =>
+    espacios?.find((e) => e.id === espacioId)?.nombre ?? 'Espacio';
 
   const [filtroElegido, setFiltroElegido] = useState<Filtro | null>(null);
   const [motivo, setMotivo] = useState<SolicitudMotivo | null>(null);
@@ -157,6 +158,18 @@ export function BandejaReservas() {
 
   return (
     <View style={estilos.bandeja}>
+      <Button
+        mode="contained-tonal"
+        icon="account-plus-outline"
+        onPress={() => router.push('/reservas/tercero')}
+        style={estilos.botonTercero}
+        contentStyle={estilos.contenidoBoton}
+        accessibilityRole="button"
+        accessibilityLabel="Reservar un espacio para un tercero"
+      >
+        Reservar para un tercero
+      </Button>
+
       {contenido}
 
       <DialogoMotivo
@@ -190,4 +203,6 @@ export function BandejaReservas() {
 
 const estilos = StyleSheet.create({
   bandeja: { gap: espacio.s },
+  botonTercero: { alignSelf: 'flex-start' },
+  contenidoBoton: { paddingVertical: espacio.xs },
 });
