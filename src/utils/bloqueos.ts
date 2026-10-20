@@ -31,23 +31,6 @@ export const DIAS_MAXIMOS_ANTICIPACION = 365;
 const MENSAJE_FECHA = 'Escribe una fecha real en formato AAAA-MM-DD.';
 const MENSAJE_HORA = 'Escribe una hora en formato HH:MM, de 00:00 a 23:59.';
 
-// ── Formato mientras se escribe ───────────────────────────────────────────────────────
-
-/** Deja solo dígitos y pone los guiones: "20261026" → "2026-10-26". */
-export function formatearFecha(texto: string): string {
-  const digitos = texto.replace(/\D/g, '').slice(0, 8);
-  if (digitos.length <= 4) return digitos;
-  if (digitos.length <= 6) return `${digitos.slice(0, 4)}-${digitos.slice(4)}`;
-  return `${digitos.slice(0, 4)}-${digitos.slice(4, 6)}-${digitos.slice(6)}`;
-}
-
-/** Deja solo dígitos y pone los dos puntos: "1400" → "14:00". */
-export function formatearHora(texto: string): string {
-  const digitos = texto.replace(/\D/g, '').slice(0, 4);
-  if (digitos.length <= 2) return digitos;
-  return `${digitos.slice(0, 2)}:${digitos.slice(2)}`;
-}
-
 // ── Ayudas para mostrar ───────────────────────────────────────────────────────────────
 
 /** Horario de atención del día de la fecha (HU-28), o undefined si ese día no se atiende. */
@@ -79,6 +62,107 @@ export function periodoLegible(bloqueo: Pick<Bloqueo, 'desde' | 'hasta' | 'horaI
       ? `${bloqueo.horaInicio} a ${bloqueo.horaFin}`
       : 'todo el día';
   return `${dias}, ${horas}`;
+}
+
+// ── Qué días y horas se pueden elegir (calendario y reloj) ────────────────────────────
+
+/** Lo que el formulario sabe de la biblioteca y del espacio para elegir y validar. */
+export type ContextoBloqueo = {
+  parametros: Parametros;
+  /** Bloqueos que ya tiene el espacio, para no cruzarlos. */
+  bloqueos: Bloqueo[];
+  /** Fecha 'AAAA-MM-DD' y hora 'HH:MM' de ahora, en el celular. */
+  hoy: string;
+  ahora: string;
+};
+
+/** Última fecha que se puede bloquear. */
+export const fechaLimite = (hoy: string) => sumarDias(hoy, DIAS_MAXIMOS_ANTICIPACION);
+
+const aHora = (hora: number) => `${String(hora).padStart(2, '0')}:00`;
+
+/** Bloqueos existentes que tocan la fecha. */
+const bloqueosDelDia = (fecha: string, bloqueos: Bloqueo[]) =>
+  bloqueos.filter((bloqueo) => bloqueo.desde <= fecha && fecha <= bloqueo.hasta);
+
+/** El bloqueo existente que se cruza con la franja [inicio, fin) de la fecha, si hay. */
+function bloqueoEnFranja(fecha: string, inicio: string, fin: string, bloqueos: Bloqueo[]) {
+  return bloqueosDelDia(fecha, bloqueos).find(
+    (b) => !b.horaInicio || !b.horaFin || (inicio < b.horaFin && b.horaInicio < fin),
+  );
+}
+
+/** Una hora del reloj y, si no se puede elegir, por qué. */
+export type OpcionHora = { hora: string; motivo?: string };
+
+/** Horas en punto de inicio dentro del horario de atención del día (HU-28). */
+export function horasDeInicio(fecha: string, contexto: ContextoBloqueo): OpcionHora[] {
+  const horario = esFechaValida(fecha) ? horarioDelDia(fecha, contexto.parametros) : undefined;
+  if (!horario) return [];
+  const [abreH, abreM] = horario.abre.split(':').map(Number);
+  const primera = abreM > 0 ? abreH + 1 : abreH;
+  const ultima = Number(horario.cierra.split(':')[0]) - 1;
+
+  const opciones: OpcionHora[] = [];
+  for (let h = primera; h <= ultima; h++) {
+    const inicio = aHora(h);
+    const bloqueo = bloqueoEnFranja(fecha, inicio, aHora(h + 1), contexto.bloqueos);
+    let motivo: string | undefined;
+    if (fecha === contexto.hoy && inicio <= contexto.ahora) motivo = 'ya pasó';
+    else if (bloqueo) motivo = `bloqueada: ${bloqueo.motivo}`;
+    opciones.push(motivo ? { hora: inicio, motivo } : { hora: inicio });
+  }
+  return opciones;
+}
+
+/**
+ * Horas de fin para un inicio: hasta el cierre, y sin pasar por encima de otro bloqueo
+ * (después del primer choque, ninguna sirve).
+ */
+export function horasDeFin(fecha: string, inicio: string, contexto: ContextoBloqueo): OpcionHora[] {
+  const horario = esFechaValida(fecha) ? horarioDelDia(fecha, contexto.parametros) : undefined;
+  if (!horario || !esHoraValida(inicio)) return [];
+  const desde = Number(inicio.split(':')[0]) + 1;
+  const hasta = Number(horario.cierra.split(':')[0]);
+
+  const opciones: OpcionHora[] = [];
+  let choque: Bloqueo | undefined;
+  for (let h = desde; h <= hasta; h++) {
+    const fin = aHora(h);
+    choque ??= bloqueoEnFranja(fecha, inicio, fin, contexto.bloqueos);
+    opciones.push(choque ? { hora: fin, motivo: `se cruza con: ${choque.motivo}` } : { hora: fin });
+  }
+  return opciones;
+}
+
+/**
+ * Por qué un día no se puede elegir en el calendario, o null si se puede.
+ * En franja y día solo sirven días hábiles sin bloqueo que lo impida; en rango, cualquier día
+ * desde hoy (el rango se valida completo al revisar). `minimo` es la primera fecha permitida
+ * (para "Hasta", el día siguiente a "Desde").
+ */
+export function motivoDiaNoElegible(
+  fecha: string,
+  modo: ModoBloqueo,
+  contexto: ContextoBloqueo,
+  minimo?: string,
+): string | null {
+  if (fecha < contexto.hoy) return 'ya pasó';
+  if (fecha > fechaLimite(contexto.hoy)) return 'más de un año adelante';
+  if (minimo && fecha < minimo) return 'antes de la fecha inicial';
+  if (modo === 'rango') return null;
+
+  const noDisponible = motivoNoDisponible(fecha, contexto.parametros);
+  if (noDisponible) return noDisponible;
+
+  const delDia = bloqueosDelDia(fecha, contexto.bloqueos);
+  if (modo === 'dia' && delDia.length > 0) return `ya tiene un bloqueo (${delDia[0].motivo})`;
+  const todoElDia = delDia.find((b) => !b.horaInicio || !b.horaFin);
+  if (todoElDia) return `bloqueado todo el día (${todoElDia.motivo})`;
+  if (modo === 'franja' && horasDeInicio(fecha, contexto).every((opcion) => opcion.motivo)) {
+    return 'sin horas libres';
+  }
+  return null;
 }
 
 // ── Validación ────────────────────────────────────────────────────────────────────────
@@ -127,21 +211,12 @@ function seCruzan(a: Omit<Bloqueo, 'id'>, b: Omit<Bloqueo, 'id'>): boolean {
   return a.horaInicio < b.horaFin && b.horaInicio < a.horaFin;
 }
 
-type Contexto = {
-  parametros: Parametros;
-  /** Bloqueos que ya tiene el espacio, para no cruzarlos. */
-  bloqueos: Bloqueo[];
-  /** Fecha 'AAAA-MM-DD' y hora 'HH:MM' de ahora, en el celular. */
-  hoy: string;
-  ahora: string;
-};
-
 /**
  * Validación del formulario (HU-20) con los parámetros de la biblioteca y los bloqueos del
  * espacio. Según el modo solo se validan los campos que se ven.
  */
-export function crearEsquemaBloqueo({ parametros, bloqueos, hoy, ahora }: Contexto) {
-  const limite = sumarDias(hoy, DIAS_MAXIMOS_ANTICIPACION);
+export function crearEsquemaBloqueo({ parametros, bloqueos, hoy, ahora }: ContextoBloqueo) {
+  const limite = fechaLimite(hoy);
 
   return camposFormulario.superRefine((datos, ctx) => {
     const error = (campo: keyof DatosFormularioBloqueo, message: string) =>

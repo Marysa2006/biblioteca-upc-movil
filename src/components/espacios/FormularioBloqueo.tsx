@@ -3,10 +3,10 @@
  * Solo valida y entrega los datos: la pantalla revisa las reservas afectadas con
  * usePrevisualizarBloqueo() (CA1) y confirma con useConfirmarBloqueo() (CA2, CA3).
  *
- * Valida con los parámetros de la biblioteca (HU-28) y los bloqueos que ya tiene el espacio
- * (crearEsquemaBloqueo). Las fechas y horas se formatean mientras se escriben, y debajo de
- * cada fecha se ve el día y su horario de atención.
- * Cada cambio en un campo avisa con onCambio, para que la revisión anterior no se use.
+ * Las fechas se eligen en un calendario (SelectorFecha) y las horas en un reloj de horas en
+ * punto (SelectorHora): solo se pueden tocar los días hábiles y las horas del horario de
+ * atención (HU-28) que no chocan con otro bloqueo del espacio. Al revisar, crearEsquemaBloqueo
+ * vuelve a validar todo. Cada cambio avisa con onCambio, para que la revisión anterior no se use.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
@@ -19,38 +19,20 @@ import type { Bloqueo, Parametros } from '@/types';
 import {
   crearEsquemaBloqueo,
   descripcionFecha,
-  formatearFecha,
-  formatearHora,
+  fechaLimite,
+  horasDeFin,
+  horasDeInicio,
   MODOS_BLOQUEO,
+  motivoDiaNoElegible,
+  type ContextoBloqueo,
   type DatosFormularioBloqueo,
   type ModoBloqueo,
 } from '@/utils/bloqueos';
 import { sumarDias } from '@/utils/calendario';
-import { hoyISO } from '@/utils/fechas';
-import { problemaFecha } from '@/utils/reservas';
+import { esFechaValida, hoyISO } from '@/utils/fechas';
 
-type Campo = 'fecha' | 'desde' | 'hasta' | 'horaInicio' | 'horaFin';
-
-type DefinicionCampo = { nombre: Campo; etiqueta: string; tipo: 'fecha' | 'hora' };
-
-/** Campos que se ven en cada modo. */
-const CAMPOS_POR_MODO: Record<ModoBloqueo, DefinicionCampo[]> = {
-  franja: [
-    { nombre: 'fecha', etiqueta: 'Fecha', tipo: 'fecha' },
-    { nombre: 'horaInicio', etiqueta: 'Hora de inicio', tipo: 'hora' },
-    { nombre: 'horaFin', etiqueta: 'Hora de fin', tipo: 'hora' },
-  ],
-  dia: [{ nombre: 'fecha', etiqueta: 'Fecha', tipo: 'fecha' }],
-  rango: [
-    { nombre: 'desde', etiqueta: 'Desde', tipo: 'fecha' },
-    { nombre: 'hasta', etiqueta: 'Hasta', tipo: 'fecha' },
-  ],
-};
-
-const FORMATO = {
-  fecha: { ayuda: 'AAAA-MM-DD', formatear: formatearFecha, largo: 10 },
-  hora: { ayuda: 'HH:MM, en punto', formatear: formatearHora, largo: 5 },
-} as const;
+import { SelectorFecha } from './SelectorFecha';
+import { SelectorHora } from './SelectorHora';
 
 const AYUDA_MODO: Record<ModoBloqueo, string> = {
   franja: 'Bloquea unas horas de un día hábil, dentro del horario de atención.',
@@ -58,18 +40,18 @@ const AYUDA_MODO: Record<ModoBloqueo, string> = {
   rango: 'Bloquea varios días completos, ambos incluidos (máximo 31).',
 };
 
-/** Primer día hábil desde mañana, para empezar con una fecha que sirva. */
-function primerDiaHabil(parametros: Parametros, hoy: string): string {
-  let dia = sumarDias(hoy, 1);
-  for (let i = 0; i < 30 && problemaFecha(dia, parametros, hoy); i++) {
-    dia = sumarDias(dia, 1);
-  }
-  return dia;
-}
-
 function horaActual(): string {
   const ahora = new Date();
   return `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Primer día que se puede elegir en franja desde hoy, para empezar con una fecha que sirva. */
+function primerDiaElegible(contexto: ContextoBloqueo): string {
+  let dia = contexto.hoy;
+  for (let i = 0; i < 60 && motivoDiaNoElegible(dia, 'franja', contexto); i++) {
+    dia = sumarDias(dia, 1);
+  }
+  return dia;
 }
 
 type Props = {
@@ -85,16 +67,20 @@ type Props = {
 export function FormularioBloqueo({ parametros, bloqueos, ocupado, onRevisar, onCambio }: Props) {
   // Se arma una vez al montar: la pantalla monta un formulario nuevo después de cada bloqueo.
   const [inicio] = useState(() => {
-    const hoy = hoyISO();
+    const contexto: ContextoBloqueo = { parametros, bloqueos, hoy: hoyISO(), ahora: horaActual() };
     return {
-      esquema: crearEsquemaBloqueo({ parametros, bloqueos, hoy, ahora: horaActual() }),
-      fecha: primerDiaHabil(parametros, hoy),
+      contexto,
+      esquema: crearEsquemaBloqueo(contexto),
+      fecha: primerDiaElegible(contexto),
     };
   });
+  const { contexto } = inicio;
+  const limite = fechaLimite(contexto.hoy);
 
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(inicio.esquema),
@@ -108,84 +94,116 @@ export function FormularioBloqueo({ parametros, bloqueos, ocupado, onRevisar, on
       motivo: '',
     },
   });
-  const modo = useWatch({ control, name: 'modo' });
+  const [modo, fecha, desde, hasta, horaInicio, horaFin] = useWatch({
+    control,
+    name: ['modo', 'fecha', 'desde', 'hasta', 'horaInicio', 'horaFin'],
+  });
+
+  const cambiarModo = (valor: ModoBloqueo) => {
+    setValue('modo', valor);
+    onCambio();
+  };
+
+  /** Cambia una fecha u hora y descarta lo que dependía de ella. */
+  const cambiar = (campo: 'fecha' | 'desde' | 'hasta' | 'horaInicio' | 'horaFin', valor: string) => {
+    // Si el campo mostraba un error, se vuelve a validar para quitarlo.
+    setValue(campo, valor, { shouldValidate: errors[campo] != null });
+    if (campo === 'fecha') {
+      setValue('horaInicio', '');
+      setValue('horaFin', '');
+    }
+    if (campo === 'horaInicio') setValue('horaFin', '');
+    if (campo === 'desde') setValue('hasta', '');
+    onCambio();
+  };
+
+  const opcionesInicio = horasDeInicio(fecha, contexto);
+  const opcionesFin = horasDeFin(fecha, horaInicio, contexto);
+  const diaSiguiente = esFechaValida(desde) ? sumarDias(desde, 1) : contexto.hoy;
 
   return (
     <View style={estilos.formulario}>
-      <Controller
-        control={control}
-        name="modo"
-        render={({ field: { value, onChange } }) => (
-          <View style={estilos.grupo}>
-            <Text variant="labelLarge" style={estilos.etiquetaGrupo}>
-              Tipo de bloqueo
-            </Text>
-            <SegmentedButtons
-              value={value}
-              onValueChange={(valor) => {
-                onChange(valor as ModoBloqueo);
-                onCambio();
-              }}
-              buttons={MODOS_BLOQUEO.map((opcion) => ({
-                value: opcion.valor,
-                label: opcion.etiqueta,
-                icon: opcion.icono,
-                disabled: ocupado,
-                accessibilityLabel: `Bloquear por ${opcion.etiqueta.toLowerCase()}`,
-              }))}
-            />
-            <Text variant="bodySmall" style={estilos.ayuda}>
-              {AYUDA_MODO[value]}
-            </Text>
-          </View>
-        )}
-      />
+      <View style={estilos.grupo}>
+        <Text variant="labelLarge" style={estilos.etiquetaGrupo}>
+          Tipo de bloqueo
+        </Text>
+        <SegmentedButtons
+          value={modo}
+          onValueChange={(valor) => cambiarModo(valor as ModoBloqueo)}
+          buttons={MODOS_BLOQUEO.map((opcion) => ({
+            value: opcion.valor,
+            label: opcion.etiqueta,
+            icon: opcion.icono,
+            disabled: ocupado,
+            accessibilityLabel: `Bloquear por ${opcion.etiqueta.toLowerCase()}`,
+          }))}
+        />
+        <Text variant="bodySmall" style={estilos.ayuda}>
+          {AYUDA_MODO[modo]}
+        </Text>
+      </View>
 
-      {CAMPOS_POR_MODO[modo].map((campo) => {
-        const formato = FORMATO[campo.tipo];
-        return (
-          <Controller
-            key={campo.nombre}
-            control={control}
-            name={campo.nombre}
-            render={({ field: { ref, value, onChange, onBlur } }) => {
-              const mensajeError = errors[campo.nombre]?.message;
-              const descripcion =
-                campo.tipo === 'fecha' ? descripcionFecha(value, parametros) : '';
-              return (
-                <View>
-                  <TextInput
-                    ref={ref}
-                    mode="outlined"
-                    label={campo.etiqueta}
-                    placeholder={formato.ayuda}
-                    value={value}
-                    onChangeText={(texto) => {
-                      onChange(formato.formatear(texto));
-                      onCambio();
-                    }}
-                    onBlur={onBlur}
-                    error={mensajeError != null}
-                    disabled={ocupado}
-                    keyboardType="number-pad"
-                    maxLength={formato.largo}
-                    accessibilityLabel={`${campo.etiqueta}, formato ${formato.ayuda}`}
-                  />
-                  {mensajeError ? (
-                    <HelperText type="error" visible>
-                      {mensajeError}
-                    </HelperText>
-                  ) : (
-                    <HelperText type="info" visible={descripcion !== ''}>
-                      {descripcion}
-                    </HelperText>
-                  )}
-                </View>
-              );
-            }}
+      {modo === 'rango' ? (
+        <>
+          <SelectorFecha
+            etiqueta="Desde"
+            valor={desde}
+            onCambiar={(valor) => cambiar('desde', valor)}
+            motivoNoElegible={(dia) => motivoDiaNoElegible(dia, 'rango', contexto)}
+            mesMinimo={contexto.hoy}
+            mesMaximo={limite}
+            mensajeError={errors.desde?.message}
+            descripcion={descripcionFecha(desde, parametros)}
+            deshabilitado={ocupado}
           />
-        );
-      })}
+          <SelectorFecha
+            etiqueta="Hasta"
+            valor={hasta}
+            onCambiar={(valor) => cambiar('hasta', valor)}
+            motivoNoElegible={(dia) => motivoDiaNoElegible(dia, 'rango', contexto, diaSiguiente)}
+            mesMinimo={diaSiguiente}
+            mesMaximo={limite}
+            mensajeError={errors.hasta?.message}
+            descripcion={descripcionFecha(hasta, parametros)}
+            deshabilitado={ocupado}
+          />
+        </>
+      ) : (
+        <SelectorFecha
+          etiqueta="Fecha"
+          valor={fecha}
+          onCambiar={(valor) => cambiar('fecha', valor)}
+          motivoNoElegible={(dia) => motivoDiaNoElegible(dia, modo, contexto)}
+          mesMinimo={contexto.hoy}
+          mesMaximo={limite}
+          mensajeError={errors.fecha?.message}
+          descripcion={descripcionFecha(fecha, parametros)}
+          deshabilitado={ocupado}
+        />
+      )}
+
+      {modo === 'franja' ? (
+        <>
+          <SelectorHora
+            etiqueta="Hora de inicio"
+            opciones={opcionesInicio}
+            valor={horaInicio}
+            onCambiar={(valor) => cambiar('horaInicio', valor)}
+            sinOpciones="Elige primero un día hábil."
+            mensajeError={errors.horaInicio?.message}
+            deshabilitado={ocupado}
+          />
+          <SelectorHora
+            etiqueta="Hora de fin"
+            opciones={opcionesFin}
+            valor={horaFin}
+            onCambiar={(valor) => cambiar('horaFin', valor)}
+            sinOpciones="Elige primero la hora de inicio."
+            mensajeError={errors.horaFin?.message}
+            deshabilitado={ocupado}
+          />
+        </>
+      ) : null}
 
       <Controller
         control={control}
