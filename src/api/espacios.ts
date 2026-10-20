@@ -14,14 +14,23 @@ import type {
   FranjaDisponibilidad,
   Parametros,
   Reserva,
+  Usuario,
 } from '@/types';
+import { esFechaValida, esHoraValida } from '@/utils/fechas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
 
 import { obtenerBloqueos } from './bloqueos';
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { ESPACIOS } from './mocks/espacios';
 import { obtenerParametros } from './parametros';
-import { obtenerSolicitudesReserva, reservasAfectadasPorBloqueo } from './reservas';
+import {
+  obtenerSolicitudesReserva,
+  registrarSolicitudReserva,
+  reservasAfectadasPorBloqueo,
+  type DatosSolicitudReserva,
+} from './reservas';
+
+export type { DatosSolicitudReserva } from './reservas';
 
 /** Copia mutable: con mocks, los cambios de la administración se ven durante la sesión. */
 let espacios: Espacio[] = ESPACIOS.map((espacio) => ({ ...espacio }));
@@ -284,4 +293,162 @@ export async function cambiarEstadoEspacio(
     method: 'PATCH',
     body: JSON.stringify({ activo }),
   });
+}
+
+// ── Solicitud de reserva (HU-18) ───────────────────────────────────────────────
+
+/**
+ * Lo que llena el usuario en el formulario de reserva (HU-18).
+ * Quién solicita sale de la sesión, no del formulario.
+ */
+export type FormularioReserva = Omit<DatosSolicitudReserva, 'solicitanteId' | 'solicitante'>;
+
+/** Horario alternativo sugerido cuando el pedido no está disponible (CA2). */
+export type AlternativaReserva = {
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+};
+
+/** Error 400 de la solicitud, con horarios alternativos (CA2). */
+export class ErrorReserva extends ErrorApi {
+  alternativas: AlternativaReserva[];
+
+  constructor(mensaje: string, alternativas: AlternativaReserva[] = []) {
+    super(400, mensaje);
+    this.name = 'ErrorReserva';
+    this.alternativas = alternativas;
+  }
+}
+
+/** Suma días a una fecha 'AAAA-MM-DD'. */
+function sumarDias(fecha: string, dias: number): string {
+  const [a, m, d] = fecha.split('-').map(Number);
+  const resultado = new Date(Date.UTC(a, m - 1, d));
+  resultado.setUTCDate(resultado.getUTCDate() + dias);
+  return resultado.toISOString().slice(0, 10);
+}
+
+function duracionHoras(inicio: string, fin: string): number {
+  return (aMinutos(fin) - aMinutos(inicio)) / 60;
+}
+
+/**
+ * La ventana libre de la duración pedida más cercana a la hora pedida en un día, o ninguna.
+ * Así, a quien pidió 11:00 se le sugiere 13:00 antes que 07:00.
+ */
+function alternativaEnDia(
+  dia: DiaDisponibilidad,
+  duracion: number,
+  horaPedida: string,
+): AlternativaReserva | null {
+  let mejor: AlternativaReserva | null = null;
+  let menorDistancia = Infinity;
+  for (let i = 0; i + duracion <= dia.franjas.length; i += 1) {
+    const ventana = dia.franjas.slice(i, i + duracion);
+    if (!ventana.every((franja) => franja.estado === 'disponible')) continue;
+    const distancia = Math.abs(aMinutos(ventana[0].horaInicio) - aMinutos(horaPedida));
+    if (distancia < menorDistancia) {
+      menorDistancia = distancia;
+      mejor = {
+        fecha: dia.fecha,
+        horaInicio: ventana[0].horaInicio,
+        horaFin: ventana[ventana.length - 1].horaFin,
+      };
+    }
+  }
+  return mejor;
+}
+
+/** Hasta 3 alternativas, una por día, en la semana que empieza en la fecha pedida (CA2). */
+async function buscarAlternativas(
+  datos: FormularioReserva,
+  duracion: number,
+): Promise<AlternativaReserva[]> {
+  const dias = await obtenerDisponibilidad(datos.espacioId, datos.fecha, sumarDias(datos.fecha, 7));
+  const alternativas: AlternativaReserva[] = [];
+  for (const dia of dias) {
+    const alternativa = alternativaEnDia(dia, duracion, datos.horaInicio);
+    if (alternativa) alternativas.push(alternativa);
+    if (alternativas.length === 3) break;
+  }
+  return alternativas;
+}
+
+/**
+ * Solicita una reserva a nombre del usuario de la sesión (HU-18); queda pendiente.
+ * Valida formato, capacidad (CA3), día hábil, anticipación y disponibilidad con la misma
+ * regla de HU-17. Si el horario no está libre, lanza ErrorReserva con alternativas (CA2).
+ */
+export async function solicitarReserva(
+  usuario: Usuario,
+  datos: FormularioReserva,
+): Promise<Reserva> {
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend. El solicitante sale del token.
+    return peticion<Reserva>('/reservas/', { method: 'POST', body: JSON.stringify(datos) });
+  }
+
+  if (
+    !esFechaValida(datos.fecha) ||
+    !esHoraValida(datos.horaInicio) ||
+    !esHoraValida(datos.horaFin)
+  ) {
+    throw new ErrorApi(400, 'Revisa la fecha y las horas de la reserva.');
+  }
+
+  const espacio = ESPACIOS.find((e) => e.id === datos.espacioId && e.activo);
+  if (!espacio) {
+    throw new ErrorApi(404, 'El espacio no existe o está inactivo.');
+  }
+  if (!datos.proposito?.trim()) {
+    throw new ErrorApi(400, 'El propósito de la reserva es obligatorio.');
+  }
+  if (
+    !Number.isInteger(datos.asistentes) ||
+    datos.asistentes < 1 ||
+    datos.asistentes > espacio.capacidad
+  ) {
+    throw new ErrorApi(400, `Este espacio admite entre 1 y ${espacio.capacidad} asistentes.`);
+  }
+
+  const parametros = await obtenerParametros();
+  if (!esDiaHabil(datos.fecha, parametros)) {
+    throw new ErrorApi(400, 'La fecha no es un día hábil de la biblioteca.');
+  }
+
+  if (datos.horaFin <= datos.horaInicio) {
+    throw new ErrorApi(400, 'La hora de fin debe ser posterior a la de inicio.');
+  }
+  const duracion = duracionHoras(datos.horaInicio, datos.horaFin);
+  if (!Number.isInteger(duracion)) {
+    throw new ErrorApi(400, 'El horario debe ser de horas completas.');
+  }
+
+  const dias = await obtenerDisponibilidad(datos.espacioId, datos.fecha, datos.fecha);
+  const franjas = dias[0]?.franjas ?? [];
+  const pedidas = franjas.filter(
+    (franja) => franja.horaInicio >= datos.horaInicio && franja.horaFin <= datos.horaFin,
+  );
+  const disponible =
+    pedidas.length === duracion && pedidas.every((franja) => franja.estado === 'disponible');
+
+  if (!disponible) {
+    const alternativas = await buscarAlternativas(datos, duracion);
+    throw new ErrorReserva('Ese horario no está disponible.', alternativas);
+  }
+
+  return simularRed(
+    registrarSolicitudReserva({
+      espacioId: datos.espacioId,
+      solicitanteId: usuario.id,
+      solicitante: usuario.nombre,
+      fecha: datos.fecha,
+      horaInicio: datos.horaInicio,
+      horaFin: datos.horaFin,
+      proposito: datos.proposito.trim(),
+      asistentes: datos.asistentes,
+      requerimientos: datos.requerimientos?.trim() || undefined,
+    }),
+  );
 }

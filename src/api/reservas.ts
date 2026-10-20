@@ -264,3 +264,38 @@ export function cancelarReservas(ids: string[], motivo: string): Reserva[] {
   });
   return canceladas;
 }
+
+/** Reserva que solicita un usuario de la comunidad (HU-18); queda pendiente. */
+export type DatosSolicitudReserva = {
+  espacioId: string;
+  solicitanteId: string;
+  solicitante: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string;
+  proposito: string;
+  asistentes: number;
+  requerimientos?: string;
+};
+
+/**
+ * Registra la solicitud de un usuario (HU-18): queda pendiente y avisa en la app (HU-27).
+ * La disponibilidad y la capacidad se validan antes, en solicitarReserva() de ./espacios.
+ */
+export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva {
+  const nueva: Reserva = {
+    ...datos,
+    id: `res-${Date.now()}`,
+    estado: 'pendiente',
+  };
+  reservas = [...reservas, nueva];
+
+  crearNotificacion({
+    usuarioId: nueva.solicitanteId,
+    solicitudId: nueva.id,
+    titulo: 'Solicitud recibida',
+    mensaje: `Recibimos tu solicitud para el ${nueva.fecha} de ${nueva.horaInicio} a ${nueva.horaFin}.`,
+  });
+
+  return { ...nueva };
+}
