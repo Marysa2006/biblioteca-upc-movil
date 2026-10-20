@@ -1,6 +1,7 @@
 /**
  * Espacio en la sección Espacios de Gestión (HU-16): foto, estado, capacidad, horario y acciones.
  * Activo o Inactivo va con texto, no solo color. Desactivar lo quita de las reservas (CA3).
+ * Bloquear (HU-20) solo aparece en los espacios activos: uno inactivo no recibe reservas.
  */
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
@@ -15,9 +16,16 @@ type Props = {
   cambiando: boolean;
   onEditar: () => void;
   onCambiarEstado: () => void;
+  onBloquear: () => void;
 };
 
-export function TarjetaEspacioAdmin({ espacioActual, cambiando, onEditar, onCambiarEstado }: Props) {
+export function TarjetaEspacioAdmin({
+  espacioActual,
+  cambiando,
+  onEditar,
+  onCambiarEstado,
+  onBloquear,
+}: Props) {
   const { activo, nombre } = espacioActual;
 
   return (
@@ -94,6 +102,19 @@ export function TarjetaEspacioAdmin({ espacioActual, cambiando, onEditar, onCamb
           >
             {activo ? 'Desactivar' : 'Activar'}
           </Button>
+          {activo ? (
+            <Button
+              mode="outlined"
+              icon="lock-outline"
+              onPress={onBloquear}
+              disabled={cambiando}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="button"
+              accessibilityLabel={`Bloquear ${nombre} para un evento institucional`}
+            >
+              Bloquear
+            </Button>
+          ) : null}
         </View>
       </View>
     </View>
