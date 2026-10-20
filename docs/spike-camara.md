@@ -30,26 +30,26 @@ La pantalla compara tres formas de leer un código:
 
 ## Resultados en el celular
 
-> Llenar al probar en Expo Go. Celular: ________ · Android ____
+Probado por Jhon en Expo Go, en Android, el 20 de octubre de 2026. Todas las pruebas pasaron.
 
 | Prueba | Resultado | Notas |
 |---|---|---|
-| Expo Go abre la cámara | ☐ Sí ☐ No | |
-| Pedir permiso → Permitir | ☐ Sí ☐ No | |
-| Negar el permiso dos veces → sale "Abrir ajustes" y lleva a Ajustes | ☐ Sí ☐ No | |
-| Lee un QR (por ejemplo, uno generado con un enlace) | ☐ Sí ☐ No | Tiempo: ___ s |
-| Lee un código de barras de un producto (EAN-13) | ☐ Sí ☐ No | Tiempo: ___ s |
-| Lee una etiqueta Code 128 (como las de inventario) | ☐ Sí ☐ No | Tiempo: ___ s |
-| No repite la lectura hasta tocar "Escanear otro" | ☐ Sí ☐ No | |
-| Linterna con poca luz | ☐ Sí ☐ No | |
-| Escáner del sistema (`launchScanner`) disponible y lee | ☐ Sí ☐ No | |
-| Al salir de la pantalla la cámara se apaga (se apaga la luz verde del indicador) | ☐ Sí ☐ No | |
+| Expo Go abre la cámara | ✅ Sí | |
+| Pedir permiso → Permitir | ✅ Sí | |
+| Negar el permiso dos veces → sale "Abrir ajustes" y lleva a Ajustes | ✅ Sí | |
+| Lee un QR (por ejemplo, uno generado con un enlace) | ✅ Sí | |
+| Lee un código de barras de un producto (EAN-13) | ✅ Sí | |
+| Lee una etiqueta Code 128 (como las de inventario) | ✅ Sí | |
+| No repite la lectura hasta tocar "Escanear otro" | ✅ Sí | |
+| Linterna con poca luz | ✅ Sí | |
+| Escáner del sistema (`launchScanner`) disponible y lee | ✅ Sí | |
+| Al salir de la pantalla la cámara se apaga (se apaga la luz verde del indicador) | ✅ Sí | |
 
 ## Conclusiones y recomendación
 
-> Completar después de las pruebas. Propuesta inicial, según la documentación:
+**Respuesta:** sí. `expo-camera` lee QR y códigos de barras en Expo Go sin una development build, con permiso, linterna y escáner del sistema.
 
 - **HU-32 (escanear el QR de asistencia):** reutilizar `EscanerCodigos` solo con el tipo `qr`. La pausa después de cada lectura ayuda con CA3 (no duplicar el registro). El aviso de permiso ya cubre CA4.
-- **HU-31 (tablets):** si el escáner del sistema funciona bien, es la opción más rápida para el responsable de préstamos. Si no, usar `EscanerCodigos` con los tipos de barras. El campo para escribir el código cubre CA3.
+- **HU-31 (tablets):** el escáner del sistema funcionó y es la opción más rápida para el responsable de préstamos. `EscanerCodigos` con los tipos de barras queda como alternativa dentro de la app. El campo para escribir el código cubre CA3.
 - **HU-33 (el facilitador muestra un QR):** generar un QR no lo hace `expo-camera`. Hace falta una librería para dibujarlo, que se evalúa en la iteración 4. Validar el QR necesita el endpoint del Backend que ya se pidió.
 - **Web:** la cámara en el navegador depende del navegador. Probamos solo en Android, que es lo que exige la definición de terminado.
