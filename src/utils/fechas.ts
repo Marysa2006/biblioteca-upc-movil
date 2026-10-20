@@ -26,7 +26,8 @@ export function hoyISO(): string {
   return `${hoy.getFullYear()}-${dos(hoy.getMonth() + 1)}-${dos(hoy.getDate())}`;
 }
 
-const MESES = [
+/** Nombres de los meses en minúscula, de enero (0) a diciembre (11). */
+export const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
