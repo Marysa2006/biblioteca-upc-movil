@@ -1,16 +1,22 @@
 /**
- * Hooks de espacios y disponibilidad (HU-17).
- * La pantalla (María, #53) solo usa estos hooks.
- *
- *   const { data: espacios } = useEspacios();
- *   const { data: dias } = useDisponibilidad('esp-biblioteca', '2026-10-19', '2026-10-25');
+ * Hooks de espacios: catálogo (HU-16) y disponibilidad (HU-17).
+ * Las pantallas de María (#53) y Jhon (#59) solo usan estos hooks.
  */
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
-import { obtenerDisponibilidad, obtenerEspacios } from '@/api/espacios';
+import {
+  cambiarEstadoEspacio,
+  crearEspacio,
+  editarEspacio,
+  obtenerDisponibilidad,
+  obtenerEspacios,
+  obtenerTodosLosEspacios,
+  reservasFuturasDeEspacio,
+  type DatosEspacio,
+} from '@/api/espacios';
 
-/** Espacios activos para la comunidad. */
+/** Espacios activos para la comunidad (HU-17). */
 export function useEspacios() {
   return useQuery({
     queryKey: claves.espacios,
@@ -24,5 +30,50 @@ export function useDisponibilidad(espacioId: string, desde: string, hasta: strin
     queryKey: claves.disponibilidad(espacioId, desde, hasta),
     queryFn: () => obtenerDisponibilidad(espacioId, desde, hasta),
     enabled: espacioId !== '' && desde !== '' && hasta !== '',
+  });
+}
+
+/** Todos los espacios, también los inactivos, para la administración (HU-16). */
+export function useEspaciosAdministracion() {
+  return useQuery({
+    queryKey: claves.espaciosAdministracion,
+    queryFn: obtenerTodosLosEspacios,
+  });
+}
+
+/** Reservas futuras de un espacio, para advertir antes de desactivarlo (CA3). */
+export function useReservasFuturas(espacioId: string) {
+  return useQuery({
+    queryKey: claves.espacioReservas(espacioId),
+    queryFn: () => reservasFuturasDeEspacio(espacioId),
+    enabled: espacioId !== '',
+  });
+}
+
+export function useCrearEspacio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (datos: DatosEspacio) => crearEspacio(datos),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.espacios }),
+  });
+}
+
+export function useEditarEspacio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, datos }: { id: string; datos: DatosEspacio }) => editarEspacio(id, datos),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.espacios }),
+  });
+}
+
+export function useCambiarEstadoEspacio() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) =>
+      cambiarEstadoEspacio(id, activo),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: claves.espacios });
+      queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
+    },
   });
 }
