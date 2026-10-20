@@ -33,6 +33,8 @@ export const claves = {
   reservas: ['reservas'] as const,
   /** Solicitudes de reserva por estado, para la bandeja (HU-19). */
   reservasPorEstado: (estado: EstadoSolicitud | 'todas') => ['reservas', estado] as const,
+  /** Reservas del usuario de la sesión, por fecha (HU-27 y HU-08). */
+  misReservas: (usuarioId?: string) => ['reservas', 'mias', usuarioId] as const,
   bloqueos: ['bloqueos'] as const,
   bloqueosDeEspacio: (espacioId: string) => ['bloqueos', espacioId] as const,
   notificaciones: ['notificaciones'] as const,
