@@ -24,6 +24,8 @@ export function useActualizarParametros() {
     onSuccess: (valor) => {
       queryClient.setQueryData(CLAVE, valor);
       queryClient.invalidateQueries({ queryKey: CLAVE });
+      // Festivos, horarios y anticipación cambian qué franjas se ofrecen (HU-17).
+      queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
     },
   });
 }
