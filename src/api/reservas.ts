@@ -299,3 +299,13 @@ export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva
 
   return { ...nueva };
 }
+
+/** Reservas del usuario de la sesión, ordenadas por fecha (HU-27 y HU-08). */
+export function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
+  if (USAR_MOCKS) {
+    const mias = reservas.filter((reserva) => reserva.solicitanteId === usuarioId);
+    return simularRed(ordenar(mias).map((reserva) => ({ ...reserva })));
+  }
+  // Ruta provisional: confirmar con Backend.
+  return peticion<Reserva[]>('/reservas/mias/');
+}

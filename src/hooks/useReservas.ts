@@ -15,6 +15,7 @@ import {
 import {
   crearReservaTercero,
   decidirReserva,
+  obtenerMisReservas,
   obtenerSolicitudesReserva,
   type CambiosReserva,
   type DatosReservaTercero,
@@ -94,4 +95,18 @@ export function useSolicitarReserva() {
  */
 export function alternativasDeError(error: unknown): AlternativaReserva[] {
   return error instanceof ErrorReserva ? error.alternativas : [];
+}
+
+/** Reservas del usuario de la sesión, por fecha (HU-27 y HU-08). No consulta sin sesión. */
+export function useMisReservas() {
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useQuery({
+    queryKey: claves.misReservas(usuario?.id),
+    queryFn: () => {
+      if (!usuario) throw new Error('No hay sesión');
+      return obtenerMisReservas(usuario.id);
+    },
+    enabled: usuario != null,
+  });
 }
