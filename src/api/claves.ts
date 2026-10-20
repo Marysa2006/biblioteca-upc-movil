@@ -23,6 +23,8 @@ export const claves = {
   espacios: ['espacios'] as const,
   espacio: (id: string) => ['espacios', id] as const,
   espaciosAdministracion: ['espacios', 'administracion'] as const,
+  /** Reservas futuras de un espacio, para advertir al desactivarlo (HU-16, CA3). */
+  espacioReservas: (id: string) => ['espacios', id, 'reservas'] as const,
   /** Disponibilidad de un espacio (HU-17), con o sin rango de fechas. */
   disponibilidad: (espacioId: string, desde?: string, hasta?: string) =>
     ['disponibilidad', espacioId, desde ?? null, hasta ?? null] as const,
