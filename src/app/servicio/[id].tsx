@@ -92,6 +92,20 @@ function Detalle({ servicio }: { servicio: Servicio }) {
           <Seccion titulo="Horarios" texto={servicio.horario} />
         </Card.Content>
       </Card>
+
+      {/* HU-17: la disponibilidad de los espacios se consulta sin cuenta. */}
+      {categoria === 'espacios' ? (
+        <Button
+          mode="contained"
+          icon="calendar-month-outline"
+          onPress={() => router.push('/espacios')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Ver la disponibilidad de los espacios"
+        >
+          Ver disponibilidad
+        </Button>
+      ) : null}
     </Pantalla>
   );
 }
