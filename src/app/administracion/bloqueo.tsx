@@ -167,6 +167,9 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
               mode="outlined"
               icon="plus"
               onPress={nuevoBloqueo}
+              // El formulario nuevo valida cruces con los bloqueos: espera a que incluyan el recién creado.
+              loading={bloqueos.isFetching}
+              disabled={bloqueos.isFetching}
               contentStyle={estilos.contenidoBoton}
               accessibilityRole="button"
               accessibilityLabel="Crear otro bloqueo para este espacio"
