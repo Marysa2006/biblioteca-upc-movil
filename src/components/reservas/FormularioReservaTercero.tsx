@@ -8,8 +8,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Controller, useForm, useWatch, type Control, type Path } from 'react-hook-form';
-import { AccessibilityInfo, Platform, StyleSheet, View, type KeyboardTypeOptions } from 'react-native';
+import { Controller, useForm, useWatch, type Control } from 'react-hook-form';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Chip, HelperText, Icon, Text, TextInput, TouchableRipple } from 'react-native-paper';
 
 import { AvisoError } from '@/components/ui';
@@ -21,6 +21,8 @@ import { hoyISO } from '@/utils/fechas';
 import { esquemaReservaTercero, type FormularioReservaTercero as Formulario } from '@/utils/reservas';
 import { NOMBRE_TIPO } from '@/utils/roles';
 import { normalizarTexto } from '@/utils/texto';
+
+import { CampoFormulario } from './CampoFormulario';
 
 /** Cuántas personas se muestran al buscar. */
 const MAXIMO_RESULTADOS = 5;
@@ -169,7 +171,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
       </Seccion>
 
       <Seccion titulo="Fecha y horario">
-        <Campo
+        <CampoFormulario
           control={control}
           nombre="fecha"
           etiqueta="Fecha (AAAA-MM-DD)"
@@ -177,7 +179,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
           teclado="numbers-and-punctuation"
           deshabilitado={guardando}
         />
-        <Campo
+        <CampoFormulario
           control={control}
           nombre="horaInicio"
           etiqueta="Hora de inicio (HH:MM)"
@@ -185,7 +187,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
           teclado="numbers-and-punctuation"
           deshabilitado={guardando}
         />
-        <Campo
+        <CampoFormulario
           control={control}
           nombre="horaFin"
           etiqueta="Hora de fin (HH:MM)"
@@ -196,20 +198,20 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
       </Seccion>
 
       <Seccion titulo="Detalles">
-        <Campo
+        <CampoFormulario
           control={control}
           nombre="proposito"
           etiqueta="Propósito"
           deshabilitado={guardando}
         />
-        <Campo
+        <CampoFormulario
           control={control}
           nombre="asistentes"
           etiqueta="Número de asistentes"
           teclado="number-pad"
           deshabilitado={guardando}
         />
-        <Campo
+        <CampoFormulario
           control={control}
           nombre="requerimientos"
           etiqueta="Requerimientos (opcional)"
@@ -246,46 +248,6 @@ function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) 
   );
 }
 
-type PropsCampo = {
-  control: Control<Formulario>;
-  nombre: Path<Formulario>;
-  etiqueta: string;
-  placeholder?: string;
-  teclado?: KeyboardTypeOptions;
-  multilinea?: boolean;
-  deshabilitado: boolean;
-};
-
-function Campo({ control, nombre, etiqueta, placeholder, teclado, multilinea, deshabilitado }: PropsCampo) {
-  return (
-    <Controller
-      control={control}
-      name={nombre}
-      render={({ field: { ref, value, onChange, onBlur }, fieldState: { error } }) => (
-        <View>
-          <TextInput
-            ref={ref}
-            mode="outlined"
-            label={etiqueta}
-            placeholder={placeholder}
-            value={value}
-            onChangeText={onChange}
-            onBlur={onBlur}
-            error={error != null}
-            disabled={deshabilitado}
-            keyboardType={teclado}
-            multiline={multilinea}
-            accessibilityLabel={etiqueta}
-          />
-          <HelperText type="error" visible={error != null}>
-            {error?.message}
-          </HelperText>
-        </View>
-      )}
-    />
-  );
-}
-
 /** Buscador de la persona: al elegirla, se reemplaza por su nombre con "Cambiar". */
 function ElegirPersona({
   usuarios,
@@ -294,7 +256,7 @@ function ElegirPersona({
   deshabilitado,
 }: {
   usuarios: Usuario[];
-  control: PropsCampo['control'];
+  control: Control<Formulario>;
   onElegir: (id: string) => void;
   deshabilitado: boolean;
 }) {

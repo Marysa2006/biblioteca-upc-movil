@@ -189,3 +189,19 @@ export function esquemaReservaTercero({ parametros, espacios, hoy }: ContextoRes
 }
 
 export type FormularioReservaTercero = z.input<ReturnType<typeof esquemaReservaTercero>>;
+
+/** Lo que necesita el esquema de la solicitud para validar el día y la capacidad. */
+type ContextoSolicitud = { parametros: Parametros; espacio: Espacio; hoy: string };
+
+/**
+ * Solicitud de reserva de la comunidad (HU-18): el espacio ya viene del calendario y el
+ * solicitante sale de la sesión. Valida antes de enviar las reglas de la reserva (CA3: la
+ * capacidad); la API vuelve a validar y responde la disponibilidad con alternativas (CA2).
+ */
+export function esquemaSolicitudReserva({ parametros, espacio, hoy }: ContextoSolicitud) {
+  return z
+    .object(camposReserva)
+    .superRefine((datos, ctx) => aplicarReglas(datos, ctx, { parametros, hoy, espacio }));
+}
+
+export type FormularioSolicitud = z.input<ReturnType<typeof esquemaSolicitudReserva>>;
