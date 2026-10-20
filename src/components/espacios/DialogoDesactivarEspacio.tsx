@@ -1,13 +1,17 @@
 /**
  * Confirmación para desactivar un espacio (HU-16, CA3): advierte las reservas futuras que tiene.
  * Las reservas no se cancelan solas: el personal las gestiona en la bandeja de Solicitudes (HU-19).
- * Pide las reservas con useReservasFuturas(); no guarda: la pantalla desactiva con onConfirmar.
+ * No guarda: la pantalla desactiva con onConfirmar.
+ *
+ * La pantalla pide las reservas con useReservasFuturas() y las pasa en `reservas`: el contenido
+ * del Portal de Paper queda fuera del QueryClientProvider del layout raíz, así que aquí no se
+ * puede llamar a un hook de TanStack Query.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError, EstadoCarga, EstadoError, EtiquetaEstado } from '@/components/ui';
-import { useReservasFuturas } from '@/hooks/useEspacios';
+import type { useReservasFuturas } from '@/hooks/useEspacios';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Espacio } from '@/types';
 import { fechaLegible } from '@/utils/fechas';
@@ -15,6 +19,8 @@ import { fechaLegible } from '@/utils/fechas';
 type Props = {
   /** El diálogo se muestra mientras no sea null. */
   espacioActual: Espacio | null;
+  /** Consulta de useReservasFuturas(espacioActual.id), hecha por la pantalla. */
+  reservas: ReturnType<typeof useReservasFuturas>;
   guardando: boolean;
   mensajeError: string | null;
   onConfirmar: () => void;
@@ -23,6 +29,7 @@ type Props = {
 
 export function DialogoDesactivarEspacio({
   espacioActual,
+  reservas,
   guardando,
   mensajeError,
   onConfirmar,
@@ -35,6 +42,7 @@ export function DialogoDesactivarEspacio({
           <Contenido
             key={espacioActual.id}
             espacioActual={espacioActual}
+            reservas={reservas}
             guardando={guardando}
             mensajeError={mensajeError}
             onConfirmar={onConfirmar}
@@ -48,12 +56,13 @@ export function DialogoDesactivarEspacio({
 
 function Contenido({
   espacioActual,
+  reservas: consulta,
   guardando,
   mensajeError,
   onConfirmar,
   onCerrar,
 }: Props & { espacioActual: Espacio }) {
-  const { data: reservas, isPending, isError, refetch } = useReservasFuturas(espacioActual.id);
+  const { data: reservas, isPending, isError, refetch } = consulta;
   const hayReservas = reservas != null && reservas.length > 0;
 
   let detalle;
