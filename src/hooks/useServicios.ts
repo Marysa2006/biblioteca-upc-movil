@@ -8,6 +8,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { claves } from '@/api/claves';
 import {
   cambiarEstadoServicio,
   crearServicio,
@@ -18,7 +19,7 @@ import {
   type DatosServicio,
 } from '@/api/servicios';
 
-const CLAVE = ['servicios'];
+const CLAVE = claves.servicios;
 
 export function useServicios() {
   return useQuery({
@@ -30,7 +31,7 @@ export function useServicios() {
 /** Detalle de un servicio por su id. No consulta mientras el id esté vacío. */
 export function useServicio(id: string) {
   return useQuery({
-    queryKey: ['servicios', id],
+    queryKey: claves.servicio(id),
     queryFn: () => obtenerServicio(id),
     enabled: id !== '',
   });
@@ -39,7 +40,7 @@ export function useServicio(id: string) {
 /** Todos los servicios, también los inactivos (HU-04). */
 export function useServiciosAdministracion() {
   return useQuery({
-    queryKey: ['servicios', 'administracion'],
+    queryKey: claves.serviciosAdministracion,
     queryFn: obtenerTodosLosServicios,
   });
 }

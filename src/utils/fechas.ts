@@ -26,7 +26,8 @@ export function hoyISO(): string {
   return `${hoy.getFullYear()}-${dos(hoy.getMonth() + 1)}-${dos(hoy.getDate())}`;
 }
 
-const MESES = [
+/** Nombres de los meses en minúscula, de enero (0) a diciembre (11). */
+export const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
@@ -35,4 +36,11 @@ const MESES = [
 export function fechaLegible(texto: string): string {
   const [, mes, dia] = texto.split('-').map(Number);
   return `${dia} de ${MESES[mes - 1]}`;
+}
+
+/** "09:00" + 1 → "10:00". Si pasa de la medianoche, se queda en "23:00". */
+export function sumarHoras(hora: string, horas: number): string {
+  const [h, m] = hora.split(':').map(Number);
+  const total = Math.min(h + horas, 23);
+  return `${String(total).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }

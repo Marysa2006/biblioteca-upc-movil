@@ -5,6 +5,9 @@
  * Cuando el Backend publique su API, estos tipos deben coincidir con lo que devuelve.
  */
 export * from './contenidos';
+export * from './espacios';
+export * from './guias';
+export * from './notificaciones';
 export * from './parametros';
 export * from './perfil';
 export * from './recursos';

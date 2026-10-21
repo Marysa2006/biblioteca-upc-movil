@@ -4,10 +4,11 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { claves } from '@/api/claves';
 import { actualizarParametros, obtenerParametros } from '@/api/parametros';
 import type { Parametros } from '@/types';
 
-const CLAVE = ['parametros'];
+const CLAVE = claves.parametros;
 
 export function useParametros() {
   return useQuery({
@@ -23,6 +24,8 @@ export function useActualizarParametros() {
     onSuccess: (valor) => {
       queryClient.setQueryData(CLAVE, valor);
       queryClient.invalidateQueries({ queryKey: CLAVE });
+      // Festivos, horarios y anticipación cambian qué franjas se ofrecen (HU-17).
+      queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
     },
   });
 }

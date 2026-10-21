@@ -23,6 +23,7 @@ import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryClient } from '@/api/queryClient';
+import { SincronizarRecordatorios } from '@/components/notificaciones/SincronizarRecordatorios';
 import { tema } from '@/theme';
 
 // La pantalla de carga sigue visible hasta que Open Sans esté lista.
@@ -52,6 +53,8 @@ export default function LayoutRaiz() {
       <PaperProvider theme={tema}>
         <QueryClientProvider client={queryClient}>
           <StatusBar style="dark" />
+          {/* HU-27: los recordatorios de las reservas aprobadas, aunque no se abra Notificaciones. */}
+          <SincronizarRecordatorios />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(comunidad)" />
             <Stack.Screen name="(personal)" />
