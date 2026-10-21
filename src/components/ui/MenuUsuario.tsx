@@ -1,15 +1,16 @@
 /**
  * Menú de usuario, arriba a la derecha de cada pantalla con pestañas (Pantalla lo muestra).
- * - Con sesión: Perfil, cambiar a la vista de la comunidad o del personal (solo el personal)
- *   y Cerrar sesión.
+ * - Con sesión: Perfil, Notificaciones (HU-27), cambiar a la vista de la comunidad o del personal
+ *   (solo el personal) y Cerrar sesión. Un globito sobre el botón cuenta los avisos sin leer.
  * - Sin sesión: Iniciar sesión.
  */
 import { router, useSegments } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Divider, Icon, Menu, Text, TouchableRipple } from 'react-native-paper';
+import { Badge, Divider, Icon, Menu, Text, TouchableRipple } from 'react-native-paper';
 
 import { useCerrarSesion } from '@/hooks/useAutenticacion';
+import { useNotificaciones } from '@/hooks/useNotificaciones';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { describirRoles, esPersonal } from '@/utils/roles';
@@ -29,6 +30,10 @@ export function MenuUsuario() {
   const cerrarSesion = useCerrarSesion();
   const segmentos = useSegments();
   const [abierto, setAbierto] = useState(false);
+  // Sin sesión, useNotificaciones() no consulta y no hay globito.
+  const { data: avisos } = useNotificaciones();
+  const sinLeer = usuario ? (avisos?.filter((aviso) => !aviso.leida).length ?? 0) : 0;
+  const textoSinLeer = `${sinLeer} ${sinLeer === 1 ? 'notificación' : 'notificaciones'} sin leer`;
   const enVistaPersonal = segmentos[0] === '(personal)';
 
   const ir = (accion: () => void) => {
@@ -37,23 +42,39 @@ export function MenuUsuario() {
   };
 
   const boton = (
-    <TouchableRipple
-      onPress={() => setAbierto(true)}
-      borderless
-      style={estilos.boton}
-      accessibilityRole="button"
-      accessibilityLabel={usuario ? `Menú de ${usuario.nombre}` : 'Menú: iniciar sesión'}
-    >
-      <View style={estilos.circulo}>
-        {usuario ? (
-          <Text variant="labelLarge" style={estilos.iniciales}>
-            {iniciales(usuario.nombre)}
-          </Text>
-        ) : (
-          <Icon source="account-outline" size={24} color={colores.superficie} />
-        )}
-      </View>
-    </TouchableRipple>
+    <View>
+      <TouchableRipple
+        onPress={() => setAbierto(true)}
+        borderless
+        style={estilos.boton}
+        accessibilityRole="button"
+        accessibilityLabel={
+          usuario
+            ? `Menú de ${usuario.nombre}${sinLeer > 0 ? `, ${textoSinLeer}` : ''}`
+            : 'Menú: iniciar sesión'
+        }
+      >
+        <View style={estilos.circulo}>
+          {usuario ? (
+            <Text variant="labelLarge" style={estilos.iniciales}>
+              {iniciales(usuario.nombre)}
+            </Text>
+          ) : (
+            <Icon source="account-outline" size={24} color={colores.superficie} />
+          )}
+        </View>
+      </TouchableRipple>
+      {/* El número ya va en la etiqueta del botón: el globito es solo visual. */}
+      <Badge
+        visible={sinLeer > 0}
+        size={espacio.m + espacio.xs}
+        style={estilos.globito}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        {sinLeer}
+      </Badge>
+    </View>
   );
 
   return (
@@ -80,6 +101,12 @@ export function MenuUsuario() {
             leadingIcon="account-circle-outline"
             onPress={() => ir(() => router.push('/perfil'))}
             accessibilityLabel="Perfil"
+          />
+          <Menu.Item
+            title={sinLeer > 0 ? `Notificaciones (${sinLeer})` : 'Notificaciones'}
+            leadingIcon="bell-outline"
+            onPress={() => ir(() => router.push('/notificaciones'))}
+            accessibilityLabel={sinLeer > 0 ? `Notificaciones, ${textoSinLeer}` : 'Notificaciones'}
           />
           {esPersonal(usuario) ? (
             enVistaPersonal ? (
@@ -135,6 +162,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.primarioOscuro,
   },
   iniciales: { color: colores.superficie, fontFamily: fuentes.negrita },
+  globito: { position: 'absolute', top: 0, right: 0 },
   menu: { backgroundColor: colores.superficie },
   cabecera: { gap: espacio.xs, paddingHorizontal: espacio.m, paddingVertical: espacio.s },
   nombre: { color: colores.texto, fontFamily: fuentes.seminegrita },
