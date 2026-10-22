@@ -39,6 +39,33 @@ export const claves = {
   bloqueosDeEspacio: (espacioId: string) => ['bloqueos', espacioId] as const,
   notificaciones: ['notificaciones'] as const,
 
+  // ── Iteración 3: asesorías (HU-13, HU-14 y HU-15) ────────────
+  temasAsesoria: ['asesorias', 'temas'] as const,
+  temaAsesoria: (id: string) => ['asesorias', 'temas', id] as const,
+  jornadasAsesoria: ['asesorias', 'jornadas'] as const,
+  jornadaAsesoria: (id: string) => ['asesorias', 'jornadas', id] as const,
+  /** Franjas de un tema en un rango de fechas (HU-14). */
+  franjasAsesoria: (temaId: string, desde?: string, hasta?: string) =>
+    ['asesorias', 'franjas', temaId, desde ?? null, hasta ?? null] as const,
+  citasAsesoria: ['asesorias', 'citas'] as const,
+  citasPorEstado: (estado: EstadoSolicitud | 'todas') => ['asesorias', 'citas', estado] as const,
+  /** Citas del usuario de la sesión (HU-14). */
+  misCitas: (usuarioId?: string) => ['asesorias', 'citas', 'mias', usuarioId] as const,
+  /** Agenda del facilitador por rango de fechas (HU-15). */
+  agendaFacilitador: (facilitadorId: string, desde?: string, hasta?: string) =>
+    ['asesorias', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
+
+  // ── Iteración 3: tablets (HU-21, HU-22, HU-23 y HU-24) ───────
+  tablets: ['tablets'] as const,
+  tablet: (id: string) => ['tablets', id] as const,
+  condicionesTablet: ['tablets', 'condiciones'] as const,
+  prestamosTablet: ['prestamos'] as const,
+  prestamosPorEstado: (estado: EstadoSolicitud | 'todas') => ['prestamos', estado] as const,
+  /** Préstamos del usuario de la sesión (HU-22). */
+  misPrestamos: (usuarioId?: string) => ['prestamos', 'mios', usuarioId] as const,
+  /** Préstamos pasados de la hora límite (HU-24). */
+  prestamosVencidos: ['prestamos', 'vencidos'] as const,
+
   // ── Función plus: guías sin conexión (HU-29) ─────────────────
   guias: ['guias'] as const,
   guia: (id: string) => ['guias', id] as const,
