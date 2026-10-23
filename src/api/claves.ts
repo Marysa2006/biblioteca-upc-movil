@@ -47,6 +47,8 @@ export const claves = {
   /** Franjas de un tema en un rango de fechas (HU-14). */
   franjasAsesoria: (temaId: string, desde?: string, hasta?: string) =>
     ['asesorias', 'franjas', temaId, desde ?? null, hasta ?? null] as const,
+  /** Prefijo para invalidar todas las franjas a la vez. */
+  franjasTodas: ['asesorias', 'franjas'] as const,
   citasAsesoria: ['asesorias', 'citas'] as const,
   citasPorEstado: (estado: EstadoSolicitud | 'todas') => ['asesorias', 'citas', estado] as const,
   /** Citas del usuario de la sesión (HU-14). */
