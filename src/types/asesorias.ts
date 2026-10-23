@@ -16,8 +16,6 @@ export type TemaAsesoria = {
   id: string;
   nombre: string;
   descripcion: string;
-  /** Facilitador que atiende el tema. */
-  facilitadorId: string;
   activo: boolean;
 };
 
@@ -25,7 +23,7 @@ export type TemaAsesoria = {
  * Jornada recurrente de un tema (HU-13): el facilitador atiende ciertos días, en una franja,
  * con una duración por cita y unos cupos. Al guardarla se generan sus franjas.
  */
-export type JornadaAsesoria = {
+export type Jornada = {
   id: string;
   temaId: string;
   facilitadorId: string;
@@ -55,6 +53,7 @@ export type JornadaAsesoria = {
 export type FranjaAsesoria = {
   id: string;
   jornadaId: string;
+  /** Tema y facilitador de la jornada, para mostrarlos sin otra consulta. */
   temaId: string;
   facilitadorId: string;
   /** 'AAAA-MM-DD'. */
@@ -63,23 +62,18 @@ export type FranjaAsesoria = {
   horaInicio: string;
   /** 'HH:MM'. */
   horaFin: string;
-  cupos: number;
-  /** Cupos ya tomados por citas pendientes o aprobadas. */
-  ocupados: number;
+  /** Cupos que quedan libres en la franja. */
+  cuposLibres: number;
 };
 
-/** Resultado que registra el facilitador al terminar la cita (HU-15). */
-export type ResultadoCita = 'asistio' | 'no_asistio';
-
 /** Cita agendada por un usuario (HU-14) y vista por el facilitador (HU-15). */
-export type CitaAsesoria = {
+export type Cita = {
   id: string;
-  temaId: string;
-  /** Nombre del tema, para mostrarlo sin otra consulta. */
-  tema: string;
   franjaId: string;
+  /** Tema, facilitador, fecha y horas, para mostrarlos sin otra consulta. */
+  temaId: string;
+  tema: string;
   facilitadorId: string;
-  /** Nombre del facilitador. */
   facilitador: string;
   solicitanteId: string;
   solicitante: string;
@@ -93,6 +87,8 @@ export type CitaAsesoria = {
   estado: EstadoSolicitud;
   /** Motivo de la cancelación o del rechazo; vacío mientras no aplique. */
   motivo?: string;
-  /** Resultado de la cita (HU-15); vacío mientras no se atienda. */
-  resultado?: ResultadoCita;
+  /** Resultado o nota que deja el facilitador (HU-15). */
+  resultado?: string;
+  /** Si la persona asistió (HU-15); vacío mientras no se atienda. */
+  asistio?: boolean;
 };

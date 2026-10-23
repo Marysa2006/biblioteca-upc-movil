@@ -58,6 +58,9 @@ export const claves = {
   // ── Iteración 3: tablets (HU-21, HU-22, HU-23 y HU-24) ───────
   tablets: ['tablets'] as const,
   tablet: (id: string) => ['tablets', id] as const,
+  /** Disponibilidad de tablets para una fecha y franja (HU-22). */
+  disponibilidadTablets: (fecha: string, horaInicio: string, horaLimite: string) =>
+    ['tablets', 'disponibilidad', fecha, horaInicio, horaLimite] as const,
   condicionesTablet: ['tablets', 'condiciones'] as const,
   prestamosTablet: ['prestamos'] as const,
   prestamosPorEstado: (estado: EstadoSolicitud | 'todas') => ['prestamos', estado] as const,

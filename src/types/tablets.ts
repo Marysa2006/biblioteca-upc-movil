@@ -6,13 +6,14 @@
  * de HU-28.
  */
 
-import type { EstadoSolicitud } from './solicitudes';
-
 /** Estado operativo de una tablet en el inventario (HU-21). */
-export type EstadoTablet = 'disponible' | 'prestada' | 'mantenimiento' | 'inactiva';
+export type EstadoTablet = 'disponible' | 'en_prestamo' | 'mantenimiento' | 'de_baja';
 
 /** Condición física del equipo al entregarlo o recibirlo (HU-23). */
 export type CondicionTablet = 'bueno' | 'regular' | 'danado';
+
+/** Estado de un préstamo (HU-21, HU-22, HU-23 y HU-24). */
+export type EstadoPrestamo = 'reservado' | 'entregado' | 'devuelto' | 'vencido' | 'cancelado';
 
 /** Tablet del inventario (HU-21). */
 export type Tablet = {
@@ -26,36 +27,39 @@ export type Tablet = {
   estado: EstadoTablet;
 };
 
-/** Estado del equipo y sus accesorios en la entrega o la devolución (HU-23). */
-export type RevisionTablet = {
+/** Entrega o devolución de una tablet (HU-23). */
+export type RegistroTablet = {
+  /** Fecha y hora del registro, 'AAAA-MM-DD HH:MM'. */
+  fechaHora: string;
   condicion: CondicionTablet;
   accesorios: string[];
-  observaciones?: string;
+  /** Solo en la devolución: daños o faltantes (CA3). */
+  novedades?: string;
+  /** Solo en la devolución: llegó después de la hora límite (CA4). */
+  tardia?: boolean;
+  /** Solo en la devolución: minutos de retraso, si fue tardía. */
+  retrasoMinutos?: number;
 };
 
 /** Préstamo o reserva de una tablet (HU-22, HU-23 y HU-24). */
-export type PrestamoTablet = {
+export type Prestamo = {
   id: string;
   tabletId: string;
   solicitanteId: string;
   solicitante: string;
-  /** Fecha y franja del préstamo, 'AAAA-MM-DD' y 'HH:MM'. */
+  /** 'AAAA-MM-DD'. */
   fecha: string;
+  /** Inicio de la franja, 'HH:MM'. */
   horaInicio: string;
-  horaFin: string;
+  /** Hora límite para devolver, 'HH:MM' del mismo día. */
+  horaLimite: string;
   /** Condiciones de uso aceptadas (HU-22); sin aceptarlas no se registra. */
   condicionesAceptadas: boolean;
-  estado: EstadoSolicitud;
-  /** Entrega (HU-23), 'AAAA-MM-DD HH:MM'. */
-  entregadaEn?: string;
-  entrega?: RevisionTablet;
-  /** Devolución (HU-23), 'AAAA-MM-DD HH:MM'. */
-  devueltaEn?: string;
-  devolucion?: RevisionTablet;
-  /** Novedades o daños detectados (HU-23). */
-  novedades?: string;
-  /** Minutos de retraso al devolver (HU-23, CA4). */
-  retrasoMinutos?: number;
+  estado: EstadoPrestamo;
+  /** Registro de la entrega (HU-23), si ya se entregó. */
+  entrega?: RegistroTablet;
+  /** Registro de la devolución (HU-23), si ya se devolvió. */
+  devolucion?: RegistroTablet;
 };
 
 /** Condiciones de uso del préstamo de tablets (HU-22), provisionales. */

@@ -2,36 +2,40 @@
  * DATOS DE PRUEBA de asesorías: temas, jornadas, franjas y citas (HU-13, HU-14 y HU-15).
  *
  * PROVISIONAL: los temas son los que menciona el servicio de asesorías de la biblioteca.
- * Los facilitadores, horarios y cupos son de ejemplo y se esperan por confirmar con la
- * biblioteca (sección 2 del documento de la iteración 3).
+ * Los facilitadores, horarios, cupos y fechas excluidas son de ejemplo y se esperan por
+ * confirmar con la biblioteca (sección 2 del documento de la iteración 3).
  */
-import type { CitaAsesoria, FranjaAsesoria, JornadaAsesoria, TemaAsesoria } from '@/types';
+import type { Cita, FranjaAsesoria, Jornada, TemaAsesoria } from '@/types';
 
 export const TEMAS_ASESORIA: TemaAsesoria[] = [
   {
     id: 'tema-apa',
     nombre: 'Normas APA 7',
     descripcion: 'Citas, referencias y formato del trabajo de grado.',
-    facilitadorId: 'u-facilitador',
     activo: true,
   },
   {
     id: 'tema-mendeley',
     nombre: 'Mendeley',
     descripcion: 'Organiza tus fuentes y genera la bibliografía.',
-    facilitadorId: 'u-facilitador-2',
     activo: true,
   },
   {
     id: 'tema-busqueda',
     nombre: 'Búsqueda de información',
     descripcion: 'Catálogo, bases de datos y evaluación de fuentes.',
-    facilitadorId: 'u-facilitador',
     activo: true,
+  },
+  {
+    id: 'tema-zotero',
+    nombre: 'Zotero',
+    descripcion: 'Tema de prueba inactivo: no debe ofrecerse para agendar.',
+    activo: false,
   },
 ];
 
-export const JORNADAS_ASESORIA: JornadaAsesoria[] = [
+/** Julián Mendoza (u-facilitador) atiende las dos jornadas; una tiene una fecha excluida. */
+export const JORNADAS_ASESORIA: Jornada[] = [
   {
     id: 'jor-apa',
     temaId: 'tema-apa',
@@ -45,21 +49,6 @@ export const JORNADAS_ASESORIA: JornadaAsesoria[] = [
     vigenciaDesde: '2026-10-01',
     vigenciaHasta: '2026-11-30',
     excepciones: ['2026-11-02'],
-    activa: true,
-  },
-  {
-    id: 'jor-mendeley',
-    temaId: 'tema-mendeley',
-    facilitadorId: 'u-facilitador-2',
-    dias: [2],
-    horaInicio: '14:00',
-    horaFin: '17:00',
-    duracionMinutos: 45,
-    cupos: 1,
-    modalidad: 'virtual',
-    vigenciaDesde: '2026-10-01',
-    vigenciaHasta: '2026-11-30',
-    excepciones: [],
     activa: true,
   },
   {
@@ -88,9 +77,7 @@ export const FRANJAS_ASESORIA: FranjaAsesoria[] = [
     fecha: '2026-10-19',
     horaInicio: '09:00',
     horaFin: '09:30',
-    cupos: 2,
-    // Franja pasada: ya no se ofrece, por eso no cuenta cupos ocupados.
-    ocupados: 0,
+    cuposLibres: 2,
   },
   {
     id: 'fran-apa-26-0900',
@@ -100,8 +87,7 @@ export const FRANJAS_ASESORIA: FranjaAsesoria[] = [
     fecha: '2026-10-26',
     horaInicio: '09:00',
     horaFin: '09:30',
-    cupos: 2,
-    ocupados: 1,
+    cuposLibres: 1,
   },
   {
     id: 'fran-apa-28-0900',
@@ -111,30 +97,17 @@ export const FRANJAS_ASESORIA: FranjaAsesoria[] = [
     fecha: '2026-10-28',
     horaInicio: '09:00',
     horaFin: '09:30',
-    cupos: 2,
-    ocupados: 0,
+    cuposLibres: 2,
   },
   {
-    id: 'fran-men-27-1400',
-    jornadaId: 'jor-mendeley',
-    temaId: 'tema-mendeley',
-    facilitadorId: 'u-facilitador-2',
-    fecha: '2026-10-27',
-    horaInicio: '14:00',
-    horaFin: '14:45',
-    cupos: 1,
-    ocupados: 1,
-  },
-  {
-    id: 'fran-men-27-1445',
-    jornadaId: 'jor-mendeley',
-    temaId: 'tema-mendeley',
-    facilitadorId: 'u-facilitador-2',
-    fecha: '2026-10-27',
-    horaInicio: '14:45',
-    horaFin: '15:30',
-    cupos: 1,
-    ocupados: 0,
+    id: 'fran-bus-23-1000',
+    jornadaId: 'jor-busqueda',
+    temaId: 'tema-busqueda',
+    facilitadorId: 'u-facilitador',
+    fecha: '2026-10-23',
+    horaInicio: '10:00',
+    horaFin: '11:00',
+    cuposLibres: 3,
   },
   {
     id: 'fran-bus-30-1000',
@@ -144,17 +117,16 @@ export const FRANJAS_ASESORIA: FranjaAsesoria[] = [
     fecha: '2026-10-30',
     horaInicio: '10:00',
     horaFin: '11:00',
-    cupos: 3,
-    ocupados: 0,
+    cuposLibres: 2,
   },
 ];
 
-export const CITAS_ASESORIA: CitaAsesoria[] = [
+export const CITAS_ASESORIA: Cita[] = [
   {
     id: 'cit-1',
+    franjaId: 'fran-apa-26-0900',
     temaId: 'tema-apa',
     tema: 'Normas APA 7',
-    franjaId: 'fran-apa-26-0900',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
     solicitanteId: 'u-estudiante',
@@ -168,50 +140,51 @@ export const CITAS_ASESORIA: CitaAsesoria[] = [
   },
   {
     id: 'cit-2',
-    temaId: 'tema-mendeley',
-    tema: 'Mendeley',
-    franjaId: 'fran-men-27-1400',
-    facilitadorId: 'u-facilitador-2',
-    facilitador: 'Paula Rincón',
+    franjaId: 'fran-bus-30-1000',
+    temaId: 'tema-busqueda',
+    tema: 'Búsqueda de información',
+    facilitadorId: 'u-facilitador',
+    facilitador: 'Julián Mendoza',
     solicitanteId: 'u-docente',
     solicitante: 'Carlos Ramírez',
-    fecha: '2026-10-27',
-    horaInicio: '14:00',
-    horaFin: '14:45',
-    necesidad: 'Organizar las referencias de la tesis.',
-    modalidad: 'virtual',
+    fecha: '2026-10-30',
+    horaInicio: '10:00',
+    horaFin: '11:00',
+    necesidad: 'Buscar artículos para el proyecto de grado.',
+    modalidad: 'presencial',
     estado: 'pendiente',
   },
   {
     id: 'cit-3',
+    franjaId: 'fran-apa-19-0900',
     temaId: 'tema-apa',
     tema: 'Normas APA 7',
-    franjaId: 'fran-apa-19-0900',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
-    solicitanteId: 'u-estudiante-2',
-    solicitante: 'Andrés Mejía',
+    solicitanteId: 'u-estudiante',
+    solicitante: 'Laura Pérez',
     fecha: '2026-10-19',
     horaInicio: '09:00',
     horaFin: '09:30',
     necesidad: 'Revisar las referencias del proyecto.',
     modalidad: 'presencial',
     estado: 'realizada',
-    resultado: 'asistio',
+    resultado: 'Revisamos las referencias y quedaron ajustadas.',
+    asistio: true,
   },
   {
     id: 'cit-4',
+    franjaId: 'fran-bus-23-1000',
     temaId: 'tema-busqueda',
     tema: 'Búsqueda de información',
-    franjaId: 'fran-bus-30-1000',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
-    solicitanteId: 'u-estudiante',
-    solicitante: 'Laura Pérez',
-    fecha: '2026-10-30',
+    solicitanteId: 'u-docente',
+    solicitante: 'Carlos Ramírez',
+    fecha: '2026-10-23',
     horaInicio: '10:00',
     horaFin: '11:00',
-    necesidad: 'Buscar artículos para el proyecto.',
+    necesidad: 'Buscar bases de datos para la asignatura.',
     modalidad: 'presencial',
     estado: 'cancelada',
     motivo: 'Se cruzó con una clase.',
