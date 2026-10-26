@@ -106,6 +106,20 @@ function Detalle({ servicio }: { servicio: Servicio }) {
           Ver disponibilidad
         </Button>
       ) : null}
+
+      {/* HU-14: los temas se consultan sin cuenta; la sesión se pide al confirmar la cita. */}
+      {categoria === 'asesorias' ? (
+        <Button
+          mode="contained"
+          icon="calendar-account-outline"
+          onPress={() => router.push('/asesorias')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Agendar una asesoría"
+        >
+          Agendar asesoría
+        </Button>
+      ) : null}
     </Pantalla>
   );
 }
