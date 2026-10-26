@@ -5,7 +5,7 @@
  * consultan las pantallas. Las claves de la iteración 1 quedaron aquí centralizadas y las
  * de la iteración 2 se suman desde el contrato de tipos.
  */
-import type { EstadoSolicitud } from '@/types';
+import type { EstadoPrestamo, EstadoSolicitud } from '@/types';
 
 export const claves = {
   // ── Iteración 1 ──────────────────────────────────────────────
@@ -65,7 +65,7 @@ export const claves = {
     ['tablets', 'disponibilidad', fecha, horaInicio, horaLimite] as const,
   condicionesTablet: ['tablets', 'condiciones'] as const,
   prestamosTablet: ['prestamos'] as const,
-  prestamosPorEstado: (estado: EstadoSolicitud | 'todas') => ['prestamos', estado] as const,
+  prestamosPorEstado: (estado: EstadoPrestamo | 'todas') => ['prestamos', estado] as const,
   /** Préstamos del usuario de la sesión (HU-22). */
   misPrestamos: (usuarioId?: string) => ['prestamos', 'mios', usuarioId] as const,
   /** Préstamos pasados de la hora límite (HU-24). */
