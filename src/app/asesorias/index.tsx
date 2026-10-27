@@ -5,7 +5,7 @@
  *
  * Patrón de datos: useTemas() (src/hooks) → src/api/asesorias.ts → mock o API.
  */
-import { TarjetaTema } from '@/components/asesorias/TarjetaTema';
+import { TarjetaElegirTema } from '@/components/asesorias/TarjetaElegirTema';
 import { EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useTemas } from '@/hooks/useAsesorias';
 import { temasActivos } from '@/utils/asesorias';
@@ -23,7 +23,7 @@ export default function TemasAsesoria() {
     contenido = <EstadoVacio mensaje="Por ahora no hay asesorías disponibles para agendar." />;
   } else {
     // Al entrar las franjas (HU-14 Datos), cada tema abre su pantalla con onElegir.
-    contenido = temas.map((tema) => <TarjetaTema key={tema.id} tema={tema} />);
+    contenido = temas.map((tema) => <TarjetaElegirTema key={tema.id} tema={tema} />);
   }
 
   return (

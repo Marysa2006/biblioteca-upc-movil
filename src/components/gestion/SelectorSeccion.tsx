@@ -1,5 +1,5 @@
 /**
- * Selector de las secciones de Gestión: una fila de chips que se desplaza de lado.
+ * Selector de secciones (Gestión e Inventario): una fila de chips que se desplaza de lado.
  * Reemplaza a SegmentedButtons, que corta la etiqueta con la letra grande.
  * El elegido va con fondo oscuro y la marca de selección de Paper, no solo con color.
  */
@@ -17,19 +17,26 @@ type Props<T extends string> = {
   opciones: OpcionSeccion<T>[];
   valor: T;
   onCambiar: (valor: T) => void;
+  /** Lo que lee el lector de pantalla para la fila; por defecto, el de Gestión. */
+  etiqueta?: string;
 };
 
 /** Lleva el chip a 48 px de área táctil sin cambiar su tamaño visible. */
 const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
 
-export function SelectorSeccion<T extends string>({ opciones, valor, onCambiar }: Props<T>) {
+export function SelectorSeccion<T extends string>({
+  opciones,
+  valor,
+  onCambiar,
+  etiqueta = 'Secciones de Gestión',
+}: Props<T>) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={estilos.chips}
       accessibilityRole="tablist"
-      accessibilityLabel="Secciones de Gestión"
+      accessibilityLabel={etiqueta}
     >
       {opciones.map((opcion) => {
         const elegida = opcion.valor === valor;
