@@ -11,9 +11,10 @@ import { EtiquetaEstado } from '@/components/ui';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Cita } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
+import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
 
 export function DetalleCitaAgenda({ cita }: { cita: Cita }) {
-  const modalidad = cita.modalidad === 'virtual' ? 'Virtual' : 'Presencial';
+  const modalidad = NOMBRE_MODALIDAD[cita.modalidad];
 
   return (
     <View style={estilos.bloques}>
