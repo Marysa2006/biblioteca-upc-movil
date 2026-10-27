@@ -19,16 +19,18 @@ type Props = {
   franjas: FranjaAsesoria[];
   onElegir: (franja: FranjaAsesoria) => void;
   onSemanaSiguiente: () => void;
-  onOtroTema: () => void;
+  /** Sin él no se ofrece otro tema: al reprogramar, la cita sigue en el mismo tema. */
+  onOtroTema?: () => void;
 };
 
 export function ListaFranjas({ franjas, onElegir, onSemanaSiguiente, onOtroTema }: Props) {
   const dias = agruparFranjasPorDia(franjas);
 
   if (dias.length === 0) {
+    const sugerencia = onOtroTema ? 'la semana siguiente u otro tema' : 'la semana siguiente';
     return (
       <View style={estilos.vacio} accessibilityLiveRegion="polite">
-        <EstadoVacio mensaje="No hay franjas para este tema esta semana. Prueba la semana siguiente u otro tema." />
+        <EstadoVacio mensaje={`No hay franjas para este tema esta semana. Prueba ${sugerencia}.`} />
         <View style={estilos.botones}>
           <Button
             mode="contained"
@@ -40,16 +42,18 @@ export function ListaFranjas({ franjas, onElegir, onSemanaSiguiente, onOtroTema 
           >
             Ver la semana siguiente
           </Button>
-          <Button
-            mode="outlined"
-            onPress={onOtroTema}
-            style={estilos.boton}
-            contentStyle={estilos.contenidoBoton}
-            accessibilityRole="button"
-            accessibilityLabel="Elegir otro tema de asesoría"
-          >
-            Elegir otro tema
-          </Button>
+          {onOtroTema ? (
+            <Button
+              mode="outlined"
+              onPress={onOtroTema}
+              style={estilos.boton}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="button"
+              accessibilityLabel="Elegir otro tema de asesoría"
+            >
+              Elegir otro tema
+            </Button>
+          ) : null}
         </View>
       </View>
     );

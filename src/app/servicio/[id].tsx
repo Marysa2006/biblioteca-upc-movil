@@ -109,16 +109,28 @@ function Detalle({ servicio }: { servicio: Servicio }) {
 
       {/* HU-14: los temas se consultan sin cuenta; la sesión se pide al confirmar la cita. */}
       {categoria === 'asesorias' ? (
-        <Button
-          mode="contained"
-          icon="calendar-account-outline"
-          onPress={() => router.push('/asesorias')}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel="Agendar una asesoría"
-        >
-          Agendar asesoría
-        </Button>
+        <>
+          <Button
+            mode="contained"
+            icon="calendar-account-outline"
+            onPress={() => router.push('/asesorias')}
+            contentStyle={estilos.contenidoBoton}
+            accessibilityRole="button"
+            accessibilityLabel="Agendar una asesoría"
+          >
+            Agendar asesoría
+          </Button>
+          <Button
+            mode="outlined"
+            icon="calendar-check-outline"
+            onPress={() => router.push('/asesorias/mis-citas')}
+            contentStyle={estilos.contenidoBoton}
+            accessibilityRole="button"
+            accessibilityLabel="Ver mis citas de asesoría"
+          >
+            Mis citas
+          </Button>
+        </>
       ) : null}
     </Pantalla>
   );

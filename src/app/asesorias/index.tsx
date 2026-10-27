@@ -5,6 +5,8 @@
  *
  * Patrón de datos: useTemas() (src/hooks) → src/api/asesorias.ts → mock o API.
  */
+import { router } from 'expo-router';
+
 import { TarjetaElegirTema } from '@/components/asesorias/TarjetaElegirTema';
 import { EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useTemas } from '@/hooks/useAsesorias';
@@ -22,8 +24,15 @@ export default function TemasAsesoria() {
   } else if (temas.length === 0) {
     contenido = <EstadoVacio mensaje="Por ahora no hay asesorías disponibles para agendar." />;
   } else {
-    // Al entrar las franjas (HU-14 Datos), cada tema abre su pantalla con onElegir.
-    contenido = temas.map((tema) => <TarjetaElegirTema key={tema.id} tema={tema} />);
+    contenido = temas.map((tema) => (
+      <TarjetaElegirTema
+        key={tema.id}
+        tema={tema}
+        onElegir={({ id }) =>
+          router.push({ pathname: '/asesorias/[temaId]', params: { temaId: id } })
+        }
+      />
+    ));
   }
 
   return (

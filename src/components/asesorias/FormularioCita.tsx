@@ -3,13 +3,15 @@
  * - CA1: valida la necesidad con esquemaCita (el error bajo el campo) y la envía con onConfirmar.
  * - CA2: si la franja se ocupó al confirmar, lo explica y el botón principal pasa a ser
  *   "Elegir otra franja", que vuelve a las franjas.
+ * - Agendada, la confirmación queda en el mismo lugar, como en la reserva de espacios (HU-18).
  * No guarda: la pantalla llama al hook con onConfirmar y le pasa guardando y los errores.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { Button, Icon, Text } from 'react-native-paper';
 
 import { CampoFormulario } from '@/components/reservas/CampoFormulario';
 import { AvisoError } from '@/components/ui';
@@ -22,8 +24,11 @@ const FRANJA_OCUPADA = 'Esa franja se acaba de ocupar. Elige otra para agendar t
 
 type Props = {
   nombreTema: string;
-  franja: FranjaAsesoria;
+  /** Solo lo que se muestra: si la franja se ocupa, ya no llega en la consulta. */
+  franja: Pick<FranjaAsesoria, 'fecha' | 'horaInicio' | 'horaFin'>;
   guardando: boolean;
+  /** CA1: la cita quedó agendada; se muestra la confirmación. */
+  agendada: boolean;
   /** CA2: la API respondió que la franja ya no tiene cupo. */
   franjaOcupada: boolean;
   /** Cualquier otro error al guardar, ya en texto (mensajeErrorGuardar). */
@@ -36,6 +41,7 @@ export function FormularioCita({
   nombreTema,
   franja,
   guardando,
+  agendada,
   franjaOcupada,
   mensajeError,
   onConfirmar,
@@ -47,14 +53,47 @@ export function FormularioCita({
   });
 
   const cuando = `${fechaCompleta(franja.fecha)} · ${franja.horaInicio} – ${franja.horaFin}`;
+  const confirmacion = `Tu asesoría de ${nombreTema} quedó agendada para el ${cuando}. Te dejamos una notificación con los datos.`;
   const error = franjaOcupada ? FRANJA_OCUPADA : mensajeError;
+  const aviso = agendada ? confirmacion : error;
 
-  // En Android lo anuncia accessibilityLiveRegion (en AvisoError); en iOS se anuncia aquí.
+  // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.
   useEffect(() => {
-    if (Platform.OS === 'ios' && error) {
-      AccessibilityInfo.announceForAccessibility(error);
+    if (Platform.OS === 'ios' && aviso) {
+      AccessibilityInfo.announceForAccessibility(aviso);
     }
-  }, [error]);
+  }, [aviso]);
+
+  if (agendada) {
+    return (
+      <View style={estilos.confirmacion} accessibilityLiveRegion="polite">
+        <Icon source="check-circle-outline" size={40} color={colores.primario} />
+        <Text variant="bodyLarge" style={estilos.textoConfirmacion}>
+          {confirmacion}
+        </Text>
+        <View style={estilos.botones}>
+          <Button
+            mode="contained"
+            onPress={() => router.replace('/asesorias/mis-citas')}
+            contentStyle={estilos.contenidoBoton}
+            accessibilityRole="button"
+            accessibilityLabel="Ver mis citas de asesoría"
+          >
+            Ver mis citas
+          </Button>
+          <Button
+            mode="outlined"
+            onPress={() => router.replace('/')}
+            contentStyle={estilos.contenidoBoton}
+            accessibilityRole="button"
+            accessibilityLabel="Ir a Inicio"
+          >
+            Ir a Inicio
+          </Button>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={estilos.formulario}>
@@ -120,4 +159,7 @@ const estilos = StyleSheet.create({
   tema: { color: colores.texto, fontFamily: fuentes.negrita },
   dato: { color: colores.texto, fontFamily: fuentes.seminegrita },
   contenidoBoton: { paddingVertical: espacio.xs },
+  confirmacion: { alignItems: 'center', gap: espacio.m, paddingVertical: espacio.xl },
+  textoConfirmacion: { color: colores.texto, textAlign: 'center' },
+  botones: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: espacio.s },
 });
