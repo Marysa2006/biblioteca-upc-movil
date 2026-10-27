@@ -14,7 +14,7 @@ import type {
   Usuario,
 } from '@/types';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
-import { aMinutos, generarFranjas } from '@/utils/franjas';
+import { aMinutos, conservarFranjas, generarFranjas } from '@/utils/franjas';
 import { problemaHorario } from '@/utils/reservas';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -164,9 +164,15 @@ export async function guardarJornada(datos: DatosJornada): Promise<ResultadoJorn
     const id = datos.id ?? `jor-${Date.now()}`;
     const jornada: Jornada = { ...datos, id };
     const parametros: Parametros = await obtenerParametros();
-    const nuevas = generarFranjas(jornada, parametros);
+    const anteriores = franjas.filter((franja) => franja.jornadaId === id);
+    const cuposAnteriores = jornadas.find((actual) => actual.id === id)?.cupos ?? jornada.cupos;
+    const nuevas = conservarFranjas(
+      generarFranjas(jornada, parametros),
+      anteriores,
+      cuposAnteriores,
+    );
 
-    // Reemplaza las franjas de esta jornada y conserva las de las demás.
+    // Reemplaza las franjas de esta jornada sin perder las citas ya agendadas.
     franjas = [...franjas.filter((franja) => franja.jornadaId !== id), ...nuevas];
 
     if (datos.id) {
