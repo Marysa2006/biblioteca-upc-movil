@@ -75,3 +75,30 @@ export function generarFranjas(jornada: Jornada, parametros: Parametros): Franja
   }
   return franjas;
 }
+
+/**
+ * Al regenerar las franjas de una jornada (HU-13), conserva las que ya existían en el mismo
+ * día y hora: mantiene su id (para no romper las citas de HU-14) y descuenta los cupos ya
+ * ocupados. Las franjas nuevas quedan con el cupo completo.
+ */
+export function conservarFranjas(
+  nuevas: FranjaAsesoria[],
+  anteriores: FranjaAsesoria[],
+  cuposAnteriores: number,
+): FranjaAsesoria[] {
+  const porDiaYHora = new Map(
+    anteriores.map((franja) => [`${franja.fecha} ${franja.horaInicio}`, franja]),
+  );
+  return nuevas.map((franja) => {
+    const anterior = porDiaYHora.get(`${franja.fecha} ${franja.horaInicio}`);
+    if (!anterior) {
+      return franja;
+    }
+    const ocupados = Math.max(0, cuposAnteriores - anterior.cuposLibres);
+    return {
+      ...franja,
+      id: anterior.id,
+      cuposLibres: Math.max(0, franja.cuposLibres - ocupados),
+    };
+  });
+}
