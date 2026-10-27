@@ -3,12 +3,13 @@
  * deciden cuándo suena cada recordatorio y qué dice. Quien los programa es useRecordatorios.
  *
  * Cada reserva aprobada tiene dos: 24 h antes (con el plazo para cancelar de los parámetros,
- * HU-28) y 1 h antes. Si el momento ya pasó, ese recordatorio no se programa.
+ * HU-28) y 1 h antes. Cada préstamo de tablet activo tiene uno, 30 minutos antes de la hora
+ * límite (HU-24, CA2). Si el momento ya pasó, ese recordatorio no se programa.
  */
-import type { Reserva } from '@/types';
+import type { Prestamo, Reserva } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
 
-/** Todos los recordatorios de reservas empiezan así; la sincronización solo toca estos. */
+/** Todos los recordatorios (de reservas y de préstamos) empiezan así; la sincronización solo toca estos. */
 export const PREFIJO_RECORDATORIO = 'recordatorio-';
 
 const HORA_MS = 60 * 60 * 1000;
@@ -84,14 +85,46 @@ export function recordatoriosDeReserva(
   }).filter((recordatorio) => recordatorio.cuando > ahora);
 }
 
-/** Todos los recordatorios de las reservas, del más próximo al más lejano. */
+/** Minutos antes de la hora límite en que suena el recordatorio del préstamo (HU-24). */
+const MINUTOS_ANTES_LIMITE = 30;
+
+/** Préstamos que todavía se pueden devolver a tiempo: reservados o entregados. */
+const ESTADOS_PRESTAMO_ACTIVO: Prestamo['estado'][] = ['reservado', 'entregado'];
+
+/** El recordatorio de devolver la tablet: solo si el préstamo está activo y aún no suena (HU-24). */
+export function recordatoriosDePrestamo(
+  prestamo: Prestamo,
+  { texto, ahora }: Pick<ContextoRecordatorios, 'texto' | 'ahora'>,
+): RecordatorioPlaneado[] {
+  if (!ESTADOS_PRESTAMO_ACTIVO.includes(prestamo.estado)) return [];
+
+  const limite = inicioReserva({ fecha: prestamo.fecha, horaInicio: prestamo.horaLimite });
+  const cuando = new Date(limite.getTime() - MINUTOS_ANTES_LIMITE * 60 * 1000);
+  if (cuando <= ahora) return [];
+
+  return [
+    {
+      identificador: `${PREFIJO_RECORDATORIO}prestamo-${prestamo.id}`,
+      cuando,
+      titulo: `Devuelve la tablet antes de las ${prestamo.horaLimite}`,
+      cuerpo: `${texto} Tu préstamo de tablet vence hoy a las ${prestamo.horaLimite}. Devuélvela en el mostrador con sus accesorios.`,
+    },
+  ];
+}
+
+/**
+ * Todos los recordatorios, del más próximo al más lejano. La sincronización cancela los que
+ * no están aquí: los de los préstamos tienen que entrar en el mismo plan.
+ */
 export function planRecordatorios(
   reservas: Reserva[],
   contexto: ContextoRecordatorios,
+  prestamos: Prestamo[] = [],
 ): RecordatorioPlaneado[] {
-  return reservas
-    .flatMap((reserva) => recordatoriosDeReserva(reserva, contexto))
-    .sort((a, b) => a.cuando.getTime() - b.cuando.getTime());
+  return [
+    ...reservas.flatMap((reserva) => recordatoriosDeReserva(reserva, contexto)),
+    ...prestamos.flatMap((prestamo) => recordatoriosDePrestamo(prestamo, contexto)),
+  ].sort((a, b) => a.cuando.getTime() - b.cuando.getTime());
 }
 
 /** El recordatorio de ejemplo del botón "Probar un recordatorio". */
