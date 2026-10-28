@@ -383,7 +383,7 @@ export function FormularioJornada({
       <Button
         mode="contained"
         icon="content-save-outline"
-        onPress={guardar}
+        onPress={() => guardar()}
         loading={guardando}
         disabled={guardando || (original != null && !isDirty)}
         contentStyle={estilos.contenidoBoton}

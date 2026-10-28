@@ -153,7 +153,7 @@ export function FormularioServicio({ servicio, guardando, mensajeError, onGuarda
       <Button
         mode="contained"
         icon="content-save-outline"
-        onPress={guardar}
+        onPress={() => guardar()}
         loading={guardando}
         disabled={guardando || (servicio != null && !isDirty)}
         contentStyle={estilos.contenidoBoton}
