@@ -1,8 +1,20 @@
 /**
- * Reglas del inventario de tablets (HU-21, CA3), de la disponibilidad por franja (HU-22) y
- * de la entrega/devolución (HU-23). Funciones puras, sin hooks.
+ * Reglas del inventario de tablets (HU-21, CA3), de la disponibilidad por franja (HU-22),
+ * de la entrega/devolución (HU-23) y de la solicitud de préstamo en la UI (HU-22).
+ * Funciones puras, sin hooks.
  */
-import type { CondicionTablet, EstadoPrestamo, EstadoTablet, Prestamo, Tablet } from '@/types';
+import { z } from 'zod';
+
+import type { AlternativaPrestamo, FranjaTablets } from '@/hooks/useTablets';
+import type {
+  CondicionTablet,
+  EstadoPrestamo,
+  EstadoTablet,
+  Parametros,
+  Prestamo,
+  Tablet,
+} from '@/types';
+import { motivoNoDisponible } from '@/utils/parametros';
 
 /** Una tablet está operativa si no está en mantenimiento ni de baja. */
 export function estaOperativa(tablet: Tablet): boolean {
@@ -88,3 +100,58 @@ export function estadoTabletAlEntregar(): EstadoTablet {
 export function estadoTabletAlDevolver(condicion: CondicionTablet): EstadoTablet {
   return condicion === 'danado' ? 'mantenimiento' : 'disponible';
 }
+
+// ── Solicitud de préstamo en la UI (HU-22) ────────────────────────────────────────────
+// Qué franjas están disponibles lo deciden los datos (useDisponibilidadTablets): aquí solo
+// se elige cuáles mostrar. Sin tablets en una franja, se sugieren las más cercanas del día
+// (CA2); si el día no tiene ninguna, las sugerencias del día que manda la API.
+// Sin aceptar las condiciones de uso, la solicitud no se envía (CA3); la API vuelve a validar.
+
+/** "Quedan 2 tablets", "Queda 1 tablet" o "Sin tablets". */
+export function textoLibres(libres: number): string {
+  if (libres <= 0) return 'Sin tablets';
+  return libres === 1 ? 'Queda 1 tablet' : `Quedan ${libres} tablets`;
+}
+
+const enMinutos = (hora: string) => {
+  const [h, m] = hora.split(':').map(Number);
+  return h * 60 + m;
+};
+
+const MAXIMO_SUGERIDAS = 3;
+
+/**
+ * CA2: hasta 3 franjas disponibles del mismo día, las más cercanas a la consultada, en orden
+ * de hora. Con franjas de 1 hora, la hora límite es el fin de la franja.
+ */
+export function franjasSugeridas(
+  franjas: FranjaTablets[],
+  horaConsultada: string,
+  fecha: string,
+): AlternativaPrestamo[] {
+  const consultada = enMinutos(horaConsultada);
+  const distancia = (franja: FranjaTablets) => Math.abs(enMinutos(franja.horaInicio) - consultada);
+  return franjas
+    .filter((franja) => franja.estado === 'disponible' && franja.horaInicio !== horaConsultada)
+    .sort((a, b) => distancia(a) - distancia(b))
+    .slice(0, MAXIMO_SUGERIDAS)
+    .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+    .map((franja) => ({ fecha, horaInicio: franja.horaInicio, horaLimite: franja.horaFin }));
+}
+
+/** Por qué no se puede pedir una tablet ese día, o null si se puede (HU-28). */
+export function motivoDiaNoElegible(fecha: string, parametros: Parametros, hoy: string): string | null {
+  if (fecha < hoy) return 'Ya pasó';
+  const motivo = motivoNoDisponible(fecha, parametros);
+  return motivo ? `No disponible: ${motivo}` : null;
+}
+
+/** La franja y las condiciones. La fecha la lleva la pantalla, porque con ella pide las franjas. */
+export const esquemaPrestamo = z.object({
+  horaInicio: z.string().min(1, { error: 'Elige una franja con tablets libres.' }),
+  aceptaCondiciones: z.boolean().refine((acepta) => acepta, {
+    error: 'Acepta las condiciones de uso para enviar la solicitud.',
+  }),
+});
+
+export type DatosPrestamo = z.input<typeof esquemaPrestamo>;
