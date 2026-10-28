@@ -6,6 +6,8 @@
 import { z } from 'zod';
 
 import type { Cita, EstadoSolicitud } from '@/types';
+import { diasSemana, mismoMes, numeroDia, sumarDias } from '@/utils/calendario';
+import { fechaLegible } from '@/utils/fechas';
 import { inicioReserva } from '@/utils/recordatorios';
 
 /** Estados que aparecen en la agenda; las rechazadas y canceladas no se atienden. */
@@ -36,6 +38,43 @@ export function agruparCitasPorDia(citas: Cita[]): DiaCitas[] {
   }
   return dias;
 }
+
+/** Los días que muestra la agenda en Día y Semana: de lunes a sábado (los domingos no hay citas). */
+export function diasAgenda(fecha: string): string[] {
+  return diasSemana(fecha).slice(0, 6);
+}
+
+/** El domingo pasa al lunes siguiente, para que la vista Día no quede en un domingo. */
+export function diaDeAgenda(fecha: string): string {
+  return diasSemana(fecha)[6] === fecha ? sumarDias(fecha, 1) : fecha;
+}
+
+/** Un día antes o después en la vista Día, saltando el domingo. */
+export function moverDiaAgenda(fecha: string, paso: 1 | -1): string {
+  const siguiente = sumarDias(fecha, paso);
+  return diasSemana(siguiente)[6] === siguiente ? sumarDias(siguiente, paso) : siguiente;
+}
+
+/** "26 al 31 de octubre", o "28 de septiembre al 3 de octubre" si cruza de mes (sin el domingo). */
+export function tituloSemanaAgenda(fecha: string): string {
+  const dias = diasAgenda(fecha);
+  const desde = dias[0];
+  const hasta = dias[dias.length - 1];
+  if (mismoMes(desde, hasta)) return `${numeroDia(desde)} al ${fechaLegible(hasta)}`;
+  return `${fechaLegible(desde)} al ${fechaLegible(hasta)}`;
+}
+
+/** Cuántas citas de la agenda tiene cada día, para la tira de días y el mes. */
+export function contarCitasPorDia(citas: Cita[]): Map<string, number> {
+  const conteo = new Map<string, number>();
+  for (const cita of citasAsignadas(citas)) {
+    conteo.set(cita.fecha, (conteo.get(cita.fecha) ?? 0) + 1);
+  }
+  return conteo;
+}
+
+/** "1 cita" o "3 citas". */
+export const textoCitas = (cantidad: number) => (cantidad === 1 ? '1 cita' : `${cantidad} citas`);
 
 /** Ya pasó la hora de fin de la cita, en la hora del celular. */
 export function citaTerminada(cita: Cita, ahora = new Date()): boolean {

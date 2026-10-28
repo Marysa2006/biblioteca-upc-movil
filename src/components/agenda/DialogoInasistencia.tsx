@@ -3,7 +3,7 @@
  * por eso se pregunta antes. No guarda: el detalle llama al hook de la cita con onConfirmar.
  * Va en un Portal, fuera del QueryClientProvider: no usa hooks de datos.
  */
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError } from '@/components/ui';
@@ -24,8 +24,9 @@ export function DialogoInasistencia({ cita, guardando, mensajeError, onConfirmar
   return (
     <Portal>
       <Dialog visible={cita != null} onDismiss={onCerrar} style={estilos.dialogo}>
+        {/* View y no Fragment: Dialog le pasa un style a su primer hijo, y un Fragment no lo acepta. */}
         {cita ? (
-          <>
+          <View>
             <Dialog.Title style={estilos.titulo}>Registrar inasistencia</Dialog.Title>
             <Dialog.Content style={estilos.contenido}>
               <Text variant="bodyMedium" style={estilos.texto}>
@@ -58,7 +59,7 @@ export function DialogoInasistencia({ cita, guardando, mensajeError, onConfirmar
                 No asistió
               </Button>
             </Dialog.Actions>
-          </>
+          </View>
         ) : null}
       </Dialog>
     </Portal>

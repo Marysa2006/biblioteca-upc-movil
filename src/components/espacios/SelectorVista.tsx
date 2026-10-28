@@ -1,7 +1,8 @@
 /**
- * Selector entre las vistas de un calendario: semana y mes en el de un espacio (HU-17, CA1),
- * y día y semana en la agenda del facilitador (HU-15). Cada pantalla elige sus opciones.
+ * Selector entre la vista semanal y la mensual del calendario de un espacio (HU-17, CA1).
  * Chips con el estilo del selector de Gestión: la etiqueta no se corta con la letra grande.
+ * El tipo también incluye 'dia' porque NavegacionPeriodo sirve a la agenda (HU-15), que tiene
+ * su propio selector (SelectorVistaAgenda).
  */
 import { StyleSheet, View } from 'react-native';
 import { Chip } from 'react-native-paper';
@@ -26,14 +27,12 @@ const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
 type Props = {
   valor: VistaCalendario;
   onCambiar: (valor: VistaCalendario) => void;
-  /** Vistas que se ofrecen, en orden. Por defecto, semana y mes. */
-  opciones?: VistaCalendario[];
 };
 
-export function SelectorVista({ valor, onCambiar, opciones = OPCIONES_ESPACIO }: Props) {
+export function SelectorVista({ valor, onCambiar }: Props) {
   return (
     <View style={estilos.chips} accessibilityRole="tablist" accessibilityLabel="Vista del calendario">
-      {opciones.map((opcion) => {
+      {OPCIONES_ESPACIO.map((opcion) => {
         const elegida = opcion === valor;
         const etiqueta = NOMBRE_VISTA[opcion];
         return (
