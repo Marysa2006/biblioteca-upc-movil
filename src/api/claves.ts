@@ -66,6 +66,10 @@ export const claves = {
   /** Disponibilidad de tablets para una fecha y franja (HU-22). */
   disponibilidadTablets: (fecha: string, horaInicio: string, horaLimite: string) =>
     ['tablets', 'disponibilidad', fecha, horaInicio, horaLimite] as const,
+  /** Disponibilidad de tablets de un día completo (HU-22). */
+  disponibilidadTabletsDia: (fecha: string) => ['tablets', 'disponibilidad', fecha] as const,
+  /** Prefijo para invalidar toda la disponibilidad de tablets a la vez. */
+  disponibilidadTabletsTodas: ['tablets', 'disponibilidad'] as const,
   condicionesTablet: ['tablets', 'condiciones'] as const,
   prestamosTablet: ['prestamos'] as const,
   prestamosPorEstado: (estado: EstadoPrestamo | 'todas') => ['prestamos', estado] as const,
