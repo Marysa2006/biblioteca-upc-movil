@@ -3,7 +3,7 @@
  * deciden cuándo suena cada recordatorio y qué dice. Quien los programa es useRecordatorios.
  *
  * Cada reserva aprobada tiene dos: 24 h antes (con el plazo para cancelar de los parámetros,
- * HU-28) y 1 h antes. Cada préstamo de tablet activo tiene uno, 30 minutos antes de la hora
+ * HU-28) y 1 h antes. Cada préstamo de tablet entregado tiene uno, 30 minutos antes de la hora
  * límite (HU-24, CA2). Si el momento ya pasó, ese recordatorio no se programa.
  */
 import type { Prestamo, Reserva } from '@/types';
@@ -88,8 +88,11 @@ export function recordatoriosDeReserva(
 /** Minutos antes de la hora límite en que suena el recordatorio del préstamo (HU-24). */
 const MINUTOS_ANTES_LIMITE = 30;
 
-/** Préstamos que todavía se pueden devolver a tiempo: reservados o entregados. */
-const ESTADOS_PRESTAMO_ACTIVO: Prestamo['estado'][] = ['reservado', 'entregado'];
+/**
+ * Préstamos con la tablet en manos del usuario: solo los entregados. Un préstamo reservado
+ * todavía no tiene tablet que devolver; si se quiere avisar antes de recogerla, es otro mensaje.
+ */
+const ESTADOS_PRESTAMO_ACTIVO: Prestamo['estado'][] = ['entregado'];
 
 /** El recordatorio de devolver la tablet: solo si el préstamo está activo y aún no suena (HU-24). */
 export function recordatoriosDePrestamo(
