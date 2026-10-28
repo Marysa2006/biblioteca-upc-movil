@@ -3,6 +3,7 @@
  * Cada sección vive en su propio componente de src/components/gestion y se ve con su permiso:
  * - Solicitudes (`reservas`, `asesorias` o `formacion`): la bandeja de solicitudes de todos
  *   los servicios, filtrada por los permisos de cada persona (HU-19; luego asesorías y capacitaciones).
+ * - Agenda (`asesorias`): las citas de asesoría por día y por semana (HU-15).
  * - Espacios (`espacios`): la configuración de los espacios y sus bloqueos (HU-16 y HU-20).
  * - Portal (`contenidos` o `parametros`): contenidos (HU-04) y parámetros generales (HU-28).
  * El selector aparece solo con dos secciones o más. Esta pantalla solo compone: el contenido
@@ -10,6 +11,7 @@
  */
 import { useState, type ComponentType } from 'react';
 
+import { SeccionAgenda } from '@/components/gestion/SeccionAgenda';
 import { SeccionEspacios } from '@/components/gestion/SeccionEspacios';
 import { SeccionPortal } from '@/components/gestion/SeccionPortal';
 import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
@@ -18,7 +20,7 @@ import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 import type { Permiso } from '@/types';
 
-type ValorSeccion = 'solicitudes' | 'espacios' | 'portal';
+type ValorSeccion = 'solicitudes' | 'agenda' | 'espacios' | 'portal';
 
 type Seccion = {
   valor: ValorSeccion;
@@ -34,6 +36,12 @@ const SECCIONES: Seccion[] = [
     etiqueta: 'Solicitudes',
     Componente: SeccionSolicitudes,
     permisos: ['reservas', 'asesorias', 'formacion'],
+  },
+  {
+    valor: 'agenda',
+    etiqueta: 'Agenda',
+    Componente: SeccionAgenda,
+    permisos: ['asesorias'],
   },
   {
     valor: 'espacios',

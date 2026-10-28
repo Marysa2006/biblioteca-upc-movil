@@ -4,7 +4,7 @@
  * No guarda: Mis citas llama al hook con onConfirmar. Va en un Portal, fuera del
  * QueryClientProvider, así que no usa hooks de datos.
  */
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError } from '@/components/ui';
@@ -25,8 +25,9 @@ export function DialogoCancelarCita({ cita, guardando, mensajeError, onConfirmar
   return (
     <Portal>
       <Dialog visible={cita != null} onDismiss={onCerrar} style={estilos.dialogo}>
+        {/* View y no Fragment: Dialog le pasa un style a su primer hijo, y un Fragment no lo acepta. */}
         {cita ? (
-          <>
+          <View>
             <Dialog.Title style={estilos.titulo}>Cancelar la cita</Dialog.Title>
             <Dialog.Content style={estilos.contenido}>
               <Text variant="bodyMedium" style={estilos.texto}>
@@ -62,7 +63,7 @@ export function DialogoCancelarCita({ cita, guardando, mensajeError, onConfirmar
                 Cancelar la cita
               </Button>
             </Dialog.Actions>
-          </>
+          </View>
         ) : null}
       </Dialog>
     </Portal>
