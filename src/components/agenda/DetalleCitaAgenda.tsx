@@ -1,19 +1,20 @@
 /**
  * Detalle de una cita para el facilitador (HU-15, CA2): quién la pidió y qué necesita,
- * y los datos de la cita. Si ya se atendió, muestra el resultado o la inasistencia (CA3).
- * El tipo y el programa del solicitante se suman cuando estén en el contrato de Cita.
+ * con su tipo de usuario y su programa o dependencia si se conocen, y los datos de la cita.
+ * Si ya se atendió, muestra el resultado o la inasistencia (CA3).
  */
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { EtiquetaEstado } from '@/components/ui';
+import type { CitaAgenda } from '@/hooks/useAsesorias';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import type { Cita } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
 import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
+import { NOMBRE_TIPO } from '@/utils/roles';
 
-export function DetalleCitaAgenda({ cita }: { cita: Cita }) {
+export function DetalleCitaAgenda({ cita }: { cita: CitaAgenda }) {
   const modalidad = NOMBRE_MODALIDAD[cita.modalidad];
 
   return (
@@ -22,6 +23,12 @@ export function DetalleCitaAgenda({ cita }: { cita: Cita }) {
         <Text variant="titleMedium" style={estilos.nombre}>
           {cita.solicitante}
         </Text>
+        {cita.solicitanteTipo ? (
+          <Dato etiqueta="Tipo de usuario" valor={NOMBRE_TIPO[cita.solicitanteTipo]} />
+        ) : null}
+        {cita.solicitantePrograma ? (
+          <Dato etiqueta="Programa o dependencia" valor={cita.solicitantePrograma} />
+        ) : null}
         <Dato etiqueta="Qué necesita" valor={cita.necesidad} />
       </Bloque>
 
