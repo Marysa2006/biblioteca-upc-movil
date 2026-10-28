@@ -1,7 +1,8 @@
 /**
- * Inventario de tablets (HU-21), solicitud de préstamo (HU-22) y entrega/devolución (HU-23).
+ * Inventario de tablets (HU-21), solicitud de préstamo (HU-22), entrega/devolución (HU-23)
+ * y préstamos vencidos (HU-24).
  * Lista, crea, edita y cambia el estado operativo; muestra la disponibilidad por franja,
- * registra la solicitud y entrega y recibe los equipos.
+ * registra la solicitud, entrega y recibe los equipos, y marca y avisa los vencidos.
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type {
@@ -32,12 +33,16 @@ import {
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
+import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
 /** Copias mutables: con mocks, lo que se crea, edita o presta se ve durante la sesión. */
 let tablets: Tablet[] = TABLETS.map((tablet) => ({ ...tablet }));
 let prestamos: Prestamo[] = PRESTAMOS_TABLET.map(copiarPrestamo);
+
+/** Préstamos a los que ya se les creó la alerta y el aviso (HU-24, CA2). */
+const avisosVencidos = new Set<string>();
 
 const ESTADOS: readonly EstadoTablet[] = ['disponible', 'en_prestamo', 'mantenimiento', 'de_baja'];
 
@@ -615,4 +620,66 @@ export function obtenerMisPrestamos(usuarioId: string): Promise<Prestamo[]> {
   }
   // Ruta provisional: confirmar con Backend. El usuario sale del token.
   return peticion<Prestamo[]>('/prestamos/mios/');
+}
+
+// ── HU-24: préstamos vencidos ──────────────────────────────────
+
+/** Por hora límite, el más antiguo primero. */
+function ordenarVencidos(lista: Prestamo[]): Prestamo[] {
+  return [...lista].sort(
+    (a, b) => a.fecha.localeCompare(b.fecha) || a.horaLimite.localeCompare(b.horaLimite),
+  );
+}
+
+/**
+ * Alerta a los encargados de tablets y avisa al usuario, una sola vez por préstamo (CA2).
+ * Si no hay encargados en el directorio, el aviso al usuario se crea igual.
+ */
+function avisarVencido(prestamo: Prestamo): void {
+  if (avisosVencidos.has(prestamo.id)) return;
+
+  const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
+  const codigo = tablet?.codigo ?? 'sin código';
+  const encargados = USUARIOS_DIRECTORIO.filter((usuario) =>
+    usuario.rolesPersonal.includes('encargado_tablets'),
+  );
+
+  for (const encargado of encargados) {
+    crearNotificacion({
+      usuarioId: encargado.id,
+      solicitudId: prestamo.id,
+      titulo: 'Préstamo vencido',
+      mensaje: `El préstamo de ${prestamo.solicitante} venció el ${prestamo.fecha} a las ${prestamo.horaLimite}. Tablet ${codigo}.`,
+    });
+  }
+  crearNotificacion({
+    usuarioId: prestamo.solicitanteId,
+    solicitudId: prestamo.id,
+    titulo: 'Recordatorio: devuelve la tablet',
+    mensaje: `La tablet ${codigo} debía devolverse el ${prestamo.fecha} a las ${prestamo.horaLimite}. Devuélvela cuanto antes en la biblioteca.`,
+  });
+  avisosVencidos.add(prestamo.id);
+}
+
+/**
+ * Préstamos vencidos (HU-24). Con mocks, marca `vencido` los entregados cuya hora límite ya
+ * pasó (CA1) y avisa cada uno una sola vez (CA2); sin vencidos, devuelve [] (CA3).
+ * Un préstamo reservado que nunca se entregó no es vencido. La tablet sigue en préstamo
+ * hasta que se reciba (HU-23).
+ */
+export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend. El Backend marca y avisa; la app solo lee.
+    return peticion<Prestamo[]>('/prestamos/vencidos/');
+  }
+
+  const ahora = new Date();
+  prestamos = prestamos.map((prestamo) =>
+    prestamo.estado === 'entregado' && minutosDeRetraso(prestamo, ahora) > 0
+      ? { ...prestamo, estado: 'vencido' }
+      : prestamo,
+  );
+  const vencidos = prestamos.filter((prestamo) => prestamo.estado === 'vencido');
+  vencidos.forEach(avisarVencido);
+  return simularRed(ordenarVencidos(vencidos).map(copiarPrestamo));
 }
