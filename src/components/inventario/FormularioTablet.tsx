@@ -179,7 +179,7 @@ export function FormularioTablet({ tablets, original, guardando, mensajeError, o
       <Button
         mode="contained"
         icon="content-save-outline"
-        onPress={handleSubmit((datos) => onGuardar(datos))}
+        onPress={() => handleSubmit((datos) => onGuardar(datos))()}
         loading={guardando}
         disabled={guardando || (original != null && !isDirty)}
         style={estilos.boton}
