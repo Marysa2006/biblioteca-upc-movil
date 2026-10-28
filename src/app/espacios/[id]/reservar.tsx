@@ -40,7 +40,12 @@ export default function ReservarEspacio() {
   } else if (!lugar) {
     contenido = <NoDisponible />;
   } else if (!usuario) {
-    contenido = <InvitarSesion nombreEspacio={lugar.nombre} />;
+    contenido = (
+      <InvitarSesion
+        mensaje={`Inicia sesión con tu cuenta institucional para solicitar ${lugar.nombre}.`}
+        etiqueta="Iniciar sesión para solicitar la reserva"
+      />
+    );
   } else {
     contenido = (
       <FormularioSolicitudReserva
