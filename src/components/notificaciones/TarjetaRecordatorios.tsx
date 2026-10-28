@@ -97,10 +97,10 @@ export function TarjetaRecordatorios() {
   } else {
     icono = 'bell-check-outline';
     titulo = 'Recordatorios activos';
-    texto =
-      programados === null
-        ? 'Te avisaremos 24 horas y 1 hora antes de cada reserva aprobada.'
-        : `Te avisaremos 24 horas y 1 hora antes de cada reserva aprobada. Programados: ${programados}.`;
+    // HU-27 (reservas) y HU-24 (préstamos de tablet).
+    const cuando =
+      'Te avisaremos 24 horas y 1 hora antes de cada reserva aprobada, y 30 minutos antes de devolver una tablet.';
+    texto = programados === null ? cuando : `${cuando} Programados: ${programados}.`;
     acciones = (
       <Boton etiqueta="Probar un recordatorio" icono="bell-outline" onPress={probar} cargando={ocupado} />
     );

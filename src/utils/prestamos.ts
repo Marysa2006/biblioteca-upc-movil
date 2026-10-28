@@ -31,8 +31,8 @@ export const ESTADOS_DE_GRUPO: Record<GrupoPrestamos, readonly EstadoPrestamo[]>
 };
 
 export const NOMBRE_GRUPO: Record<GrupoPrestamos, string> = {
-  entregar: 'Por entregar',
-  recibir: 'Por recibir',
+  entregar: 'Entregar',
+  recibir: 'Recibir',
   devueltos: 'Devueltos',
 };
 
