@@ -50,7 +50,7 @@ export function FormularioResultado({ guardando, mensajeError, onGuardar, onNoAs
       <View style={estilos.acciones}>
         <Button
           mode="contained"
-          onPress={handleSubmit(({ resultado }) => onGuardar(resultado.trim()))}
+          onPress={() => handleSubmit(({ resultado }) => onGuardar(resultado.trim()))()}
           loading={guardando}
           disabled={guardando}
           style={estilos.boton}
