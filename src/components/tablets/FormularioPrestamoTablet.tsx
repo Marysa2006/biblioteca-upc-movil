@@ -1,7 +1,7 @@
 /**
  * Solicitud de préstamo de tablet (HU-22): la fecha, la franja con las tablets que quedan, las
- * condiciones de uso y Confirmar. La fecha y las franjas se consultan sin cuenta; la sesión se
- * pide al confirmar.
+ * condiciones de uso y Confirmar. Se usa con la sesión iniciada: sin sesión, la pantalla solo
+ * muestra la invitación a iniciarla.
  * - CA2: al tocar una franja sin tablets, o si al confirmar la API dice que se ocupó, se
  *   sugieren otras franjas; si el día no tiene ninguna, las sugerencias del día de la API.
  *   Una sugerencia de otro día cambia la fecha y deja elegida la franja.
@@ -18,7 +18,6 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
 
 import { SelectorFecha } from '@/components/espacios/SelectorFecha';
-import { InvitarSesion } from '@/components/reservas/InvitarSesion';
 import { AvisoError, EstadoCarga, EstadoError } from '@/components/ui';
 import type { AlternativaPrestamo, FormularioPrestamo, FranjaTablets } from '@/hooks/useTablets';
 import { colores, espacio, fuentes } from '@/theme';
@@ -53,8 +52,6 @@ type Props = {
   sugerenciasDia: AlternativaPrestamo[];
   errorFranjas: boolean;
   onReintentarFranjas: () => void;
-  /** Sin sesión, en lugar de Confirmar se invita a iniciarla. */
-  conSesion: boolean;
   guardando: boolean;
   /** Error de la API al confirmar, con mensajeErrorGuardar(). */
   mensajeError: string | null;
@@ -77,7 +74,6 @@ export function FormularioPrestamoTablet({
   sugerenciasDia,
   errorFranjas,
   onReintentarFranjas,
-  conSesion,
   guardando,
   mensajeError,
   sugeridasError,
@@ -249,25 +245,18 @@ export function FormularioPrestamoTablet({
 
       {mensajeError && sugeridasError.length === 0 ? <AvisoError mensaje={mensajeError} /> : null}
 
-      {conSesion ? (
-        <Button
-          mode="contained"
-          onPress={() => confirmar()}
-          loading={guardando}
-          disabled={guardando}
-          contentStyle={estilos.contenidoBoton}
-          labelStyle={estilos.textoBoton}
-          accessibilityRole="button"
-          accessibilityLabel="Confirmar la solicitud de préstamo de tablet"
-        >
-          Confirmar solicitud
-        </Button>
-      ) : (
-        <InvitarSesion
-          mensaje="Inicia sesión con tu cuenta institucional para solicitar la tablet."
-          etiqueta="Iniciar sesión para solicitar la tablet"
-        />
-      )}
+      <Button
+        mode="contained"
+        onPress={() => confirmar()}
+        loading={guardando}
+        disabled={guardando}
+        contentStyle={estilos.contenidoBoton}
+        labelStyle={estilos.textoBoton}
+        accessibilityRole="button"
+        accessibilityLabel="Confirmar la solicitud de préstamo de tablet"
+      >
+        Confirmar solicitud
+      </Button>
     </View>
   );
 }

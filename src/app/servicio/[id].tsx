@@ -133,7 +133,7 @@ function Detalle({ servicio }: { servicio: Servicio }) {
         </>
       ) : null}
 
-      {/* HU-22: las franjas se consultan sin cuenta; la sesión se pide al confirmar. */}
+      {/* HU-22: pide cuenta; sin sesión, la pantalla solo invita a iniciarla. */}
       {categoria === 'tablets' ? (
         <Button
           mode="contained"
