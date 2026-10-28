@@ -1,67 +1,61 @@
 /**
  * Sugerencias cuando no quedan tablets (HU-22, CA2): otras franjas del mismo día, las más
- * cercanas primero, o, si el día ya no tiene ninguna, el siguiente día en que se puede pedir.
- * Las sugeridas salen de franjasSugeridas() o del 400 de la API al confirmar.
+ * cercanas primero, o, si el día no tiene ninguna, las que sugiere la API en los días
+ * siguientes. Las del 400 al confirmar también llegan aquí. Las de otro día dicen la fecha.
  */
 import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
 
+import type { AlternativaPrestamo } from '@/hooks/useTablets';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { fechaCompleta } from '@/utils/calendario';
-import { textoLibres, type FranjaTablet } from '@/utils/tablets';
 
 type Props = {
-  /** Qué se consultó, por ejemplo "No quedan tablets de 10:00 a 12:00". */
+  /** Qué se consultó, por ejemplo "No quedan tablets de 10:00 a 11:00". */
   mensaje: string;
-  sugeridas: FranjaTablet[];
-  onElegir: (franja: FranjaTablet) => void;
-  /** Sin sugeridas en el día: el siguiente día elegible, o null si no hay. */
-  diaSiguiente: string | null;
-  onVerDia: (fecha: string) => void;
+  sugeridas: AlternativaPrestamo[];
+  /** La fecha que se está viendo: las sugeridas de otro día dicen su fecha. */
+  fecha: string;
+  onElegir: (sugerida: AlternativaPrestamo) => void;
 };
 
-export function SugerenciasFranja({ mensaje, sugeridas, onElegir, diaSiguiente, onVerDia }: Props) {
-  const sinFranjas = sugeridas.length === 0;
+export function SugerenciasFranja({ mensaje, sugeridas, fecha, onElegir }: Props) {
+  const sinSugeridas = sugeridas.length === 0;
 
   return (
     <View style={estilos.aviso} accessibilityLiveRegion="polite">
       <View style={estilos.fila}>
         <Icon source="information-outline" size={20} color={colores.primarioOscuro} />
         <Text variant="bodyMedium" style={estilos.texto}>
-          {sinFranjas ? `${mensaje}, y este día ya no quedan otras franjas.` : `${mensaje}. Prueba con:`}
+          {sinSugeridas
+            ? `${mensaje}, y no encontramos otras franjas en la próxima semana.`
+            : `${mensaje}. Prueba con:`}
         </Text>
       </View>
 
-      <View style={estilos.botones}>
-        {sugeridas.map((franja) => (
-          <Button
-            key={franja.horaInicio}
-            mode="contained-tonal"
-            onPress={() => onElegir(franja)}
-            style={estilos.boton}
-            contentStyle={estilos.contenidoBoton}
-            labelStyle={estilos.textoBoton}
-            accessibilityRole="button"
-            accessibilityLabel={`Elegir de ${franja.horaInicio} a ${franja.horaLimite}, ${textoLibres(franja.libres).toLowerCase()}`}
-          >
-            {`${franja.horaInicio} – ${franja.horaLimite}`}
-          </Button>
-        ))}
-        {sinFranjas && diaSiguiente ? (
-          <Button
-            mode="contained-tonal"
-            icon="calendar-arrow-right"
-            onPress={() => onVerDia(diaSiguiente)}
-            style={estilos.boton}
-            contentStyle={estilos.contenidoBoton}
-            labelStyle={estilos.textoBoton}
-            accessibilityRole="button"
-            accessibilityLabel={`Ver las franjas del ${fechaCompleta(diaSiguiente).toLowerCase()}`}
-          >
-            {`Ver el ${fechaCompleta(diaSiguiente).toLowerCase()}`}
-          </Button>
-        ) : null}
-      </View>
+      {sinSugeridas ? null : (
+        <View style={estilos.botones}>
+          {sugeridas.map((sugerida) => {
+            const horas = `${sugerida.horaInicio} – ${sugerida.horaLimite}`;
+            const otroDia = sugerida.fecha !== fecha;
+            const dia = fechaCompleta(sugerida.fecha);
+            return (
+              <Button
+                key={`${sugerida.fecha}-${sugerida.horaInicio}`}
+                mode="contained-tonal"
+                onPress={() => onElegir(sugerida)}
+                style={estilos.boton}
+                contentStyle={estilos.contenidoBoton}
+                labelStyle={estilos.textoBoton}
+                accessibilityRole="button"
+                accessibilityLabel={`Elegir ${otroDia ? `el ${dia.toLowerCase()}, ` : ''}de ${sugerida.horaInicio} a ${sugerida.horaLimite}`}
+              >
+                {otroDia ? `${dia} · ${horas}` : horas}
+              </Button>
+            );
+          })}
+        </View>
+      )}
     </View>
   );
 }

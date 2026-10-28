@@ -3,9 +3,11 @@
  * condiciones de uso y Confirmar. La fecha y las franjas se consultan sin cuenta; la sesión se
  * pide al confirmar.
  * - CA2: al tocar una franja sin tablets, o si al confirmar la API dice que se ocupó, se
- *   sugieren otras franjas (o el siguiente día, si el día ya no tiene).
+ *   sugieren otras franjas; si el día no tiene ninguna, las sugerencias del día de la API.
+ *   Una sugerencia de otro día cambia la fecha y deja elegida la franja.
  * - CA3: sin aceptar las condiciones, no se envía y se explica bajo la casilla.
  * - CA1: al terminar, la confirmación en el mismo lugar, como en HU-18.
+ * Cada solicitud es de una franja de 1 hora: la hora límite es el fin de la franja.
  * No consulta ni guarda: la pantalla pide las franjas con la fecha y envía con onConfirmar.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +20,7 @@ import { Button, Icon, Text } from 'react-native-paper';
 import { SelectorFecha } from '@/components/espacios/SelectorFecha';
 import { InvitarSesion } from '@/components/reservas/InvitarSesion';
 import { AvisoError, EstadoCarga, EstadoError } from '@/components/ui';
+import type { AlternativaPrestamo, FormularioPrestamo, FranjaTablets } from '@/hooks/useTablets';
 import { colores, espacio, fuentes } from '@/theme';
 import type { CondicionesTablet, Parametros } from '@/types';
 import { fechaCompleta, sumarMeses } from '@/utils/calendario';
@@ -26,19 +29,15 @@ import {
   esquemaPrestamo,
   franjasSugeridas,
   motivoDiaNoElegible,
-  siguienteDiaElegible,
   type DatosPrestamo,
-  type FranjaTablet,
 } from '@/utils/tablets';
 
 import { CondicionesUso } from './CondicionesUso';
 import { ListaFranjasTablet } from './ListaFranjasTablet';
 import { SugerenciasFranja } from './SugerenciasFranja';
 
-export type SolicitudPrestamo = { fecha: string; horaInicio: string; horaLimite: string };
-
 const CONFIRMACION =
-  'Solicitud enviada. Tu tablet quedó reservada: recógela en el mostrador a la hora de inicio.';
+  'Solicitud enviada. Tu tablet quedó reservada: recógela en el mostrador a la hora de inicio. Te dejamos una notificación con los datos.';
 
 type Props = {
   parametros: Parametros;
@@ -47,7 +46,11 @@ type Props = {
   fecha: string;
   onCambiarFecha: (fecha: string) => void;
   /** Las franjas de la fecha; undefined mientras cargan. */
-  franjas: FranjaTablet[] | undefined;
+  franjas: FranjaTablets[] | undefined;
+  /** Si el día no es hábil, por qué (DiaTablets.motivo). */
+  motivoDia?: string;
+  /** Lo que sugiere la API cuando el día no tiene ninguna franja disponible (CA2). */
+  sugerenciasDia: AlternativaPrestamo[];
   errorFranjas: boolean;
   onReintentarFranjas: () => void;
   /** Sin sesión, en lugar de Confirmar se invita a iniciarla. */
@@ -56,12 +59,12 @@ type Props = {
   /** Error de la API al confirmar, con mensajeErrorGuardar(). */
   mensajeError: string | null;
   /** Franjas sugeridas por el 400 de la API cuando la elegida se ocupó (CA2). */
-  sugeridasError: FranjaTablet[];
+  sugeridasError: AlternativaPrestamo[];
   /** Se eligió otra franja: la pantalla limpia el error de la solicitud anterior. */
   onLimpiarError: () => void;
   /** La solicitud ya se registró (CA1). */
   enviada: boolean;
-  onConfirmar: (solicitud: SolicitudPrestamo) => void;
+  onConfirmar: (solicitud: FormularioPrestamo) => void;
 };
 
 export function FormularioPrestamoTablet({
@@ -70,6 +73,8 @@ export function FormularioPrestamoTablet({
   fecha,
   onCambiarFecha,
   franjas,
+  motivoDia,
+  sugerenciasDia,
   errorFranjas,
   onReintentarFranjas,
   conSesion,
@@ -88,10 +93,10 @@ export function FormularioPrestamoTablet({
   const horaInicio = useWatch({ control, name: 'horaInicio' });
   const aceptaCondiciones = useWatch({ control, name: 'aceptaCondiciones' });
   /** La franja sin tablets que se tocó (CA2). */
-  const [consultada, setConsultada] = useState<FranjaTablet | null>(null);
+  const [consultada, setConsultada] = useState<FranjaTablets | null>(null);
 
-  const elegir = (franja: FranjaTablet) => {
-    setValue('horaInicio', franja.horaInicio, { shouldValidate: formState.isSubmitted });
+  const elegirHora = (hora: string) => {
+    setValue('horaInicio', hora, { shouldValidate: formState.isSubmitted });
     setConsultada(null);
     onLimpiarError();
   };
@@ -103,10 +108,22 @@ export function FormularioPrestamoTablet({
     onCambiarFecha(nueva);
   };
 
+  // Una sugerencia de otro día cambia la fecha y deja elegida su franja.
+  const elegirSugerida = (sugerida: AlternativaPrestamo) => {
+    if (sugerida.fecha !== fecha) cambiarFecha(sugerida.fecha);
+    elegirHora(sugerida.horaInicio);
+  };
+
   const confirmar = handleSubmit(
     (datos) => {
       const franja = franjas?.find((f) => f.horaInicio === datos.horaInicio);
-      if (franja) onConfirmar({ fecha, horaInicio: franja.horaInicio, horaLimite: franja.horaLimite });
+      if (franja) {
+        onConfirmar({
+          fecha,
+          franja: { horaInicio: franja.horaInicio, horaLimite: franja.horaFin },
+          aceptaCondiciones: datos.aceptaCondiciones,
+        });
+      }
     },
     (errores) => {
       // En Android lo anuncia accessibilityLiveRegion bajo cada campo.
@@ -135,39 +152,39 @@ export function FormularioPrestamoTablet({
     );
   }
 
-  const conTablets = franjas?.some((franja) => franja.libres > 0) ?? false;
-  const diaSiguiente = fecha ? siguienteDiaElegible(fecha, parametros, hoy) : null;
+  const conTablets = franjas?.some((franja) => franja.estado === 'disponible') ?? false;
 
-  // CA2: la que se tocó sin tablets, la que se ocupó al confirmar o el día sin tablets.
+  // CA2: la que se ocupó al confirmar, la que se tocó sin tablets o el día sin tablets.
   let sugerencias = null;
   if (franjas && sugeridasError.length > 0) {
     sugerencias = (
       <SugerenciasFranja
         mensaje="Mientras confirmabas, se ocuparon las tablets de esa franja"
         sugeridas={sugeridasError}
-        onElegir={elegir}
-        diaSiguiente={diaSiguiente}
-        onVerDia={cambiarFecha}
+        fecha={fecha}
+        onElegir={elegirSugerida}
       />
     );
   } else if (franjas && consultada) {
+    const delDia = franjasSugeridas(franjas, consultada.horaInicio, fecha);
     sugerencias = (
       <SugerenciasFranja
-        mensaje={`No quedan tablets de ${consultada.horaInicio} a ${consultada.horaLimite}`}
-        sugeridas={franjasSugeridas(franjas, consultada.horaInicio)}
-        onElegir={elegir}
-        diaSiguiente={diaSiguiente}
-        onVerDia={cambiarFecha}
+        mensaje={`No quedan tablets de ${consultada.horaInicio} a ${consultada.horaFin}`}
+        sugeridas={delDia.length > 0 ? delDia : sugerenciasDia}
+        fecha={fecha}
+        onElegir={elegirSugerida}
       />
     );
   } else if (franjas && !conTablets) {
+    let mensaje = 'No quedan tablets este día';
+    if (motivoDia) mensaje = `Ese día no hay préstamo de tablets: ${motivoDia}`;
+    else if (franjas.length === 0) mensaje = 'No hay franjas de préstamo este día';
     sugerencias = (
       <SugerenciasFranja
-        mensaje={franjas.length === 0 ? 'No hay franjas de préstamo este día' : 'No quedan tablets este día'}
-        sugeridas={[]}
-        onElegir={elegir}
-        diaSiguiente={diaSiguiente}
-        onVerDia={cambiarFecha}
+        mensaje={mensaje}
+        sugeridas={sugerenciasDia}
+        fecha={fecha}
+        onElegir={elegirSugerida}
       />
     );
   }
@@ -188,7 +205,7 @@ export function FormularioPrestamoTablet({
           <ListaFranjasTablet
             franjas={franjas}
             elegida={horaInicio}
-            onElegir={elegir}
+            onElegir={(franja) => elegirHora(franja.horaInicio)}
             onConsultarAgotada={setConsultada}
           />
         ) : null}
