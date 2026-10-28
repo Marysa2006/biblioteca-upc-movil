@@ -106,7 +106,7 @@ function Contenido({
         </Button>
         <Button
           mode="contained"
-          onPress={handleSubmit(({ motivo }) => onConfirmar(motivo))}
+          onPress={() => handleSubmit(({ motivo }) => onConfirmar(motivo))()}
           loading={guardando}
           disabled={guardando}
           buttonColor={coloresEstado.rechazada.texto}

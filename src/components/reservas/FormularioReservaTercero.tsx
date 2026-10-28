@@ -224,7 +224,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
 
       <Button
         mode="contained"
-        onPress={handleSubmit(enviar)}
+        onPress={() => handleSubmit(enviar)()}
         loading={guardando}
         disabled={guardando}
         contentStyle={estilos.contenidoBoton}
