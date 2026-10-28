@@ -8,9 +8,9 @@
 
 <br/>
 
-![Expo](https://img.shields.io/badge/Expo-SDK%2057-000020?logo=expo&logoColor=white)
-![React Native](https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black)
-![React](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black)
+![Expo](https://img.shields.io/badge/Expo-SDK%2058-000020?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?logo=react&logoColor=black)
+![React](https://img.shields.io/badge/React-19.3-61DAFB?logo=react&logoColor=black)
 ![Plataformas](https://img.shields.io/badge/plataformas-Android%20%7C%20iOS-006139)
 ![Release](https://img.shields.io/badge/Release%201.0-5%20nov%202026-E5BC16)
 
@@ -262,7 +262,7 @@ flowchart LR
 
 | Pieza | Para qué |
 |---|---|
-| [Expo](https://expo.dev) SDK 57 (React Native 0.86, React 19.2) | Base del proyecto: un solo código para Android e iOS. Se usa SDK 57 porque es la versión de Expo Go en Play Store |
+| [Expo](https://expo.dev) SDK 58 (React Native 0.88, React 19.3) | Base del proyecto: un solo código para Android e iOS. Se usa SDK 58 porque es la versión de Expo Go en Play Store |
 | [Expo Router](https://docs.expo.dev/router/introduction/) | Navegación basada en archivos (rutas en `src/app`) |
 | [React Native Paper](https://callstack.github.io/react-native-paper/) | Componentes visuales con los colores de la UPC |
 | [Zustand](https://zustand.docs.pmnd.rs/) | Estado global (sesión del usuario) |

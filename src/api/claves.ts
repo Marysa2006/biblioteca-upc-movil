@@ -53,9 +53,12 @@ export const claves = {
   citasPorEstado: (estado: EstadoSolicitud | 'todas') => ['asesorias', 'citas', estado] as const,
   /** Citas del usuario de la sesión (HU-14). */
   misCitas: (usuarioId?: string) => ['asesorias', 'citas', 'mias', usuarioId] as const,
-  /** Agenda del facilitador por rango de fechas (HU-15). */
-  agendaFacilitador: (facilitadorId: string, desde?: string, hasta?: string) =>
-    ['asesorias', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
+  /**
+   * Agenda del facilitador por rango de fechas (HU-15); 'todas' para la administración.
+   * Va bajo el prefijo de citas para que agendar, cancelar o reprogramar también la refresque.
+   */
+  agendaFacilitador: (facilitadorId: string | 'todas', desde?: string, hasta?: string) =>
+    ['asesorias', 'citas', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
 
   // ── Iteración 3: tablets (HU-21, HU-22, HU-23 y HU-24) ───────
   tablets: ['tablets'] as const,
@@ -63,6 +66,10 @@ export const claves = {
   /** Disponibilidad de tablets para una fecha y franja (HU-22). */
   disponibilidadTablets: (fecha: string, horaInicio: string, horaLimite: string) =>
     ['tablets', 'disponibilidad', fecha, horaInicio, horaLimite] as const,
+  /** Disponibilidad de tablets de un día completo (HU-22). */
+  disponibilidadTabletsDia: (fecha: string) => ['tablets', 'disponibilidad', fecha] as const,
+  /** Prefijo para invalidar toda la disponibilidad de tablets a la vez. */
+  disponibilidadTabletsTodas: ['tablets', 'disponibilidad'] as const,
   condicionesTablet: ['tablets', 'condiciones'] as const,
   prestamosTablet: ['prestamos'] as const,
   prestamosPorEstado: (estado: EstadoPrestamo | 'todas') => ['prestamos', estado] as const,

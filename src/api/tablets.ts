@@ -1,25 +1,39 @@
 /**
- * Inventario de tablets (HU-21) y entrega/devolución de préstamos (HU-23).
- * Lista, crea, edita y cambia el estado operativo; entrega y recibe los equipos.
+ * Inventario de tablets (HU-21), solicitud de préstamo (HU-22) y entrega/devolución (HU-23).
+ * Lista, crea, edita y cambia el estado operativo; muestra la disponibilidad por franja,
+ * registra la solicitud y entrega y recibe los equipos.
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type {
+  CondicionesTablet,
   CondicionTablet,
+  EstadoFranja,
   EstadoPrestamo,
   EstadoTablet,
+  HorarioAtencion,
+  Parametros,
   Prestamo,
   RegistroTablet,
   Tablet,
+  Usuario,
 } from '@/types';
+import { sumarDias } from '@/utils/calendario';
+import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
+import { aHora, aMinutos } from '@/utils/franjas';
+import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
 import {
   ahoraFechaHora,
   estadoTabletAlDevolver,
   estadoTabletAlEntregar,
+  estaOperativa,
   minutosDeRetraso,
+  tabletsLibresEnFranja,
 } from '@/utils/tablets';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
-import { PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
+import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
+import { crearNotificacion } from './notificaciones';
+import { obtenerParametros } from './parametros';
 
 /** Copias mutables: con mocks, lo que se crea, edita o presta se ve durante la sesión. */
 let tablets: Tablet[] = TABLETS.map((tablet) => ({ ...tablet }));
@@ -291,4 +305,314 @@ export function registrarDevolucion(
     method: 'POST',
     body: JSON.stringify(datos),
   });
+}
+
+// ── HU-22: disponibilidad y solicitud de préstamo ──────────────
+
+/** Una franja de 1 hora con las tablets libres (HU-22). No dice quién tiene las demás. */
+export type FranjaTablets = {
+  horaInicio: string;
+  horaFin: string;
+  estado: EstadoFranja;
+  /** Tablets operativas sin préstamo activo en esta hora. */
+  libres: number;
+  /** Tablets operativas del inventario. */
+  total: number;
+  /** Por qué la franja no se puede solicitar. */
+  motivo?: string;
+};
+
+/** Horario alternativo sugerido cuando no hay tablets libres (CA2). */
+export type AlternativaPrestamo = {
+  fecha: string;
+  horaInicio: string;
+  horaLimite: string;
+};
+
+/** Disponibilidad de tablets de un día (HU-22). */
+export type DiaTablets = {
+  fecha: string;
+  habil: boolean;
+  motivo?: string;
+  franjas: FranjaTablets[];
+  /** Solo cuando la fecha consultada no tiene ninguna franja disponible (CA2). */
+  sugerencias: AlternativaPrestamo[];
+};
+
+/** Rango de horas completas del préstamo; puede cubrir varias franjas. */
+export type FranjaPrestamo = {
+  horaInicio: string;
+  horaLimite: string;
+};
+
+/**
+ * Lo que llena el usuario al solicitar una tablet (HU-22).
+ * Quién solicita sale de la sesión, no del formulario.
+ */
+export type FormularioPrestamo = {
+  fecha: string;
+  franja: FranjaPrestamo;
+  aceptaCondiciones: boolean;
+};
+
+/** Error 400 de la solicitud, con horarios alternativos (CA2). */
+export class ErrorPrestamo extends ErrorApi {
+  alternativas: AlternativaPrestamo[];
+
+  constructor(mensaje: string, alternativas: AlternativaPrestamo[] = []) {
+    super(400, mensaje);
+    this.name = 'ErrorPrestamo';
+    this.alternativas = alternativas;
+  }
+}
+
+function duracionHoras(inicio: string, fin: string): number {
+  return (aMinutos(fin) - aMinutos(inicio)) / 60;
+}
+
+function horarioDelDia(fecha: string, parametros: Parametros): HorarioAtencion | undefined {
+  const dia = new Date(`${fecha}T00:00:00`).getDay();
+  return parametros.horarios.find((horario) => horario.dia === dia);
+}
+
+/**
+ * Franjas de 1 hora del horario de atención con las tablets libres. Es síncrona y no simula
+ * red, para reutilizarla al buscar sugerencias y alternativas.
+ */
+function franjasDelDia(fecha: string, parametros: Parametros): FranjaTablets[] {
+  const horario = horarioDelDia(fecha, parametros);
+  if (!horario) return [];
+
+  const total = tablets.filter(estaOperativa).length;
+  const ahora = new Date();
+  const minimo = new Date(ahora.getTime() + parametros.horasMinimasSolicitud * 60 * 60 * 1000);
+  const franjas: FranjaTablets[] = [];
+
+  for (let inicio = aMinutos(horario.abre); inicio + 60 <= aMinutos(horario.cierra); inicio += 60) {
+    const horaInicio = aHora(inicio);
+    const horaFin = aHora(inicio + 60);
+    const libres = tabletsLibresEnFranja(tablets, prestamos, fecha, horaInicio, horaFin).length;
+    const inicioFechaHora = new Date(`${fecha}T${horaInicio}:00`);
+    let estado: EstadoFranja = 'disponible';
+    let motivo: string | undefined;
+
+    if (inicioFechaHora < ahora) {
+      estado = 'no_disponible';
+      motivo = 'Ya pasó';
+    } else if (inicioFechaHora < minimo) {
+      estado = 'no_disponible';
+      motivo = `Faltan menos de ${parametros.horasMinimasSolicitud} h para solicitarla`;
+    } else if (total === 0) {
+      estado = 'no_disponible';
+      motivo = 'No hay tablets operativas.';
+    } else if (libres === 0) {
+      estado = 'reservada';
+      motivo = 'No quedan tablets libres en esta franja.';
+    }
+
+    franjas.push({ horaInicio, horaFin, estado, libres, total, ...(motivo ? { motivo } : {}) });
+  }
+  return franjas;
+}
+
+/** Hasta 3 franjas de 1 hora disponibles desde la fecha (o hoy) y los 7 días siguientes. */
+function buscarSugerencias(fecha: string, parametros: Parametros): AlternativaPrestamo[] {
+  const hoy = hoyISO();
+  const desde = fecha > hoy ? fecha : hoy;
+  const sugerencias: AlternativaPrestamo[] = [];
+  for (let i = 0; i <= 7 && sugerencias.length < 3; i += 1) {
+    const dia = sumarDias(desde, i);
+    if (!esDiaHabil(dia, parametros)) continue;
+    for (const franja of franjasDelDia(dia, parametros)) {
+      if (franja.estado !== 'disponible') continue;
+      sugerencias.push({ fecha: dia, horaInicio: franja.horaInicio, horaLimite: franja.horaFin });
+      if (sugerencias.length === 3) break;
+    }
+  }
+  return sugerencias;
+}
+
+/**
+ * La ventana libre de la duración pedida más cercana a la hora pedida en un día, o ninguna.
+ * Además de que cada hora tenga tablets libres, una misma tablet debe estar libre toda la
+ * ventana; si no, la sugerencia fallaría al confirmarla.
+ */
+function alternativaEnDia(
+  fecha: string,
+  parametros: Parametros,
+  duracion: number,
+  horaPedida: string,
+): AlternativaPrestamo | null {
+  const franjas = franjasDelDia(fecha, parametros);
+  let mejor: AlternativaPrestamo | null = null;
+  let menorDistancia = Infinity;
+  for (let i = 0; i + duracion <= franjas.length; i += 1) {
+    const ventana = franjas.slice(i, i + duracion);
+    if (!ventana.every((franja) => franja.estado === 'disponible')) continue;
+    const horaInicio = ventana[0].horaInicio;
+    const horaLimite = ventana[ventana.length - 1].horaFin;
+    if (tabletsLibresEnFranja(tablets, prestamos, fecha, horaInicio, horaLimite).length === 0) {
+      continue;
+    }
+    const distancia = Math.abs(aMinutos(horaInicio) - aMinutos(horaPedida));
+    if (distancia < menorDistancia) {
+      menorDistancia = distancia;
+      mejor = { fecha, horaInicio, horaLimite };
+    }
+  }
+  return mejor;
+}
+
+/** Hasta 3 alternativas de la misma duración, una por día, desde la fecha pedida (CA2). */
+function buscarAlternativas(
+  fecha: string,
+  horaInicio: string,
+  horaLimite: string,
+  parametros: Parametros,
+): AlternativaPrestamo[] {
+  const duracion = duracionHoras(horaInicio, horaLimite);
+  const alternativas: AlternativaPrestamo[] = [];
+  for (let i = 0; i <= 7 && alternativas.length < 3; i += 1) {
+    const dia = sumarDias(fecha, i);
+    if (!esDiaHabil(dia, parametros)) continue;
+    const alternativa = alternativaEnDia(dia, parametros, duracion, horaInicio);
+    if (alternativa) alternativas.push(alternativa);
+  }
+  return alternativas;
+}
+
+function ordenarPrestamos(lista: Prestamo[]): Prestamo[] {
+  return [...lista].sort(
+    (a, b) => a.fecha.localeCompare(b.fecha) || a.horaInicio.localeCompare(b.horaInicio),
+  );
+}
+
+/**
+ * Franjas de 1 hora del día con las tablets libres (HU-22). Respeta día hábil, horario de
+ * atención y anticipación mínima. Si no queda ninguna franja disponible, sugiere otras (CA2).
+ */
+export async function obtenerDisponibilidadTablets(fecha: string): Promise<DiaTablets> {
+  if (!esFechaValida(fecha)) {
+    throw new ErrorApi(400, 'La fecha no es válida.');
+  }
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend.
+    return peticion<DiaTablets>(`/tablets/disponibilidad/?fecha=${fecha}`);
+  }
+
+  const parametros = await obtenerParametros();
+  if (!esDiaHabil(fecha, parametros)) {
+    return simularRed({
+      fecha,
+      habil: false,
+      motivo: motivoNoDisponible(fecha, parametros) ?? undefined,
+      franjas: [],
+      sugerencias: buscarSugerencias(fecha, parametros),
+    });
+  }
+
+  const franjas = franjasDelDia(fecha, parametros);
+  const sugerencias = franjas.some((franja) => franja.estado === 'disponible')
+    ? []
+    : buscarSugerencias(fecha, parametros);
+  return simularRed({ fecha, habil: true, franjas, sugerencias });
+}
+
+/** Condiciones de uso del préstamo (HU-22, CA3). Texto provisional de la biblioteca. */
+export function obtenerCondicionesTablet(): Promise<CondicionesTablet> {
+  if (USAR_MOCKS) {
+    return simularRed({ ...CONDICIONES_TABLET });
+  }
+  return peticion<CondicionesTablet>('/tablets/condiciones/');
+}
+
+/**
+ * Solicita una tablet a nombre del usuario de la sesión (HU-22). Exige aceptar las
+ * condiciones (CA3); si no hay tablets libres en la franja, lanza ErrorPrestamo con
+ * alternativas (CA2). El préstamo queda reservado y se notifica (CA1). La tablet no cambia
+ * de estado hasta que se entregue (HU-23).
+ */
+export async function solicitarPrestamo(
+  usuario: Usuario,
+  datos: FormularioPrestamo,
+): Promise<Prestamo> {
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend. El solicitante sale del token.
+    return peticion<Prestamo>('/prestamos/', { method: 'POST', body: JSON.stringify(datos) });
+  }
+
+  if (!datos.aceptaCondiciones) {
+    throw new ErrorApi(400, 'Debes aceptar las condiciones de uso para solicitar la tablet.');
+  }
+
+  const { fecha } = datos;
+  const { horaInicio, horaLimite } = datos.franja;
+  if (!esFechaValida(fecha) || !esHoraValida(horaInicio) || !esHoraValida(horaLimite)) {
+    throw new ErrorApi(400, 'Revisa la fecha y las horas del préstamo.');
+  }
+  if (horaLimite <= horaInicio) {
+    throw new ErrorApi(400, 'La hora límite debe ser posterior a la de inicio.');
+  }
+  if (!horaInicio.endsWith(':00') || !horaLimite.endsWith(':00')) {
+    throw new ErrorApi(400, 'Usa horas en punto, por ejemplo 09:00.');
+  }
+
+  const parametros = await obtenerParametros();
+  const horario = horarioDelDia(fecha, parametros);
+  if (!esDiaHabil(fecha, parametros) || !horario) {
+    throw new ErrorApi(400, 'La fecha no es un día hábil de la biblioteca.');
+  }
+  if (horaInicio < horario.abre || horaLimite > horario.cierra) {
+    throw new ErrorApi(400, 'La franja está fuera del horario de atención.');
+  }
+  const minimo = Date.now() + parametros.horasMinimasSolicitud * 60 * 60 * 1000;
+  if (new Date(`${fecha}T${horaInicio}:00`).getTime() < minimo) {
+    throw new ErrorApi(
+      400,
+      `La franja no cumple la anticipación mínima de ${parametros.horasMinimasSolicitud} horas.`,
+    );
+  }
+
+  // Primero las que hoy están disponibles: HU-23 solo entrega una tablet disponible.
+  const libres = tabletsLibresEnFranja(tablets, prestamos, fecha, horaInicio, horaLimite).sort(
+    (a, b) =>
+      Number(b.estado === 'disponible') - Number(a.estado === 'disponible') ||
+      a.codigo.localeCompare(b.codigo),
+  );
+  if (libres.length === 0) {
+    const alternativas = buscarAlternativas(fecha, horaInicio, horaLimite, parametros);
+    throw new ErrorPrestamo('No hay tablets libres en esa franja.', alternativas);
+  }
+
+  const nuevo: Prestamo = {
+    id: `pre-${Date.now()}-${prestamos.length + 1}`,
+    tabletId: libres[0].id,
+    solicitanteId: usuario.id,
+    solicitante: usuario.nombre,
+    fecha,
+    horaInicio,
+    horaLimite,
+    condicionesAceptadas: true,
+    estado: 'reservado',
+  };
+  prestamos = [...prestamos, nuevo];
+
+  crearNotificacion({
+    usuarioId: usuario.id,
+    solicitudId: nuevo.id,
+    titulo: 'Préstamo de tablet reservado',
+    mensaje: `Reservamos una tablet para el ${fecha} de ${horaInicio} a ${horaLimite}. Recógela en la biblioteca.`,
+  });
+
+  return simularRed(copiarPrestamo(nuevo));
+}
+
+/** Préstamos del usuario de la sesión, por fecha y hora, en todos sus estados (HU-22 y HU-30). */
+export function obtenerMisPrestamos(usuarioId: string): Promise<Prestamo[]> {
+  if (USAR_MOCKS) {
+    const mios = prestamos.filter((prestamo) => prestamo.solicitanteId === usuarioId);
+    return simularRed(ordenarPrestamos(mios).map(copiarPrestamo));
+  }
+  // Ruta provisional: confirmar con Backend. El usuario sale del token.
+  return peticion<Prestamo[]>('/prestamos/mios/');
 }

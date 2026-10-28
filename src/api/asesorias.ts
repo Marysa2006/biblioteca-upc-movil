@@ -1,7 +1,9 @@
 /**
- * Asesorías: temas y jornadas del personal (HU-13) y citas de la comunidad (HU-14).
+ * Asesorías: temas y jornadas del personal (HU-13), citas de la comunidad (HU-14) y agenda
+ * del facilitador (HU-15).
  * Lista y guarda temas y jornadas; al guardar una jornada genera sus franjas (CA1).
  * La comunidad consulta las franjas libres y agenda, cancela o reprograma sus citas.
+ * El facilitador consulta su agenda y registra el resultado o la inasistencia.
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type {
@@ -11,6 +13,7 @@ import type {
   Jornada,
   Parametros,
   TemaAsesoria,
+  TipoUsuario,
   Usuario,
 } from '@/types';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
@@ -431,4 +434,107 @@ export async function reprogramarCita(
     method: 'POST',
     body: JSON.stringify({ nuevaFranjaId }),
   });
+}
+
+// ── HU-15: agenda del facilitador ──────────────────────────────
+
+/** Cita de la agenda con los datos del solicitante (CA2). */
+export type CitaAgenda = Cita & {
+  /** Tipo de usuario del solicitante (CA2). */
+  solicitanteTipo?: TipoUsuario;
+  /** Programa o dependencia del solicitante (CA2); vacío si no está informado. */
+  solicitantePrograma?: string;
+};
+
+/** Copia de la cita con el tipo y el programa del solicitante, si está en el directorio. */
+function aCitaAgenda(cita: Cita): CitaAgenda {
+  const solicitante = USUARIOS_DIRECTORIO.find((usuario) => usuario.id === cita.solicitanteId);
+  return {
+    ...cita,
+    solicitanteTipo: solicitante?.tipo,
+    solicitantePrograma: solicitante?.programa,
+  };
+}
+
+/**
+ * Cita activa del facilitador que ya terminó, para registrar lo que pasó. Una cita de otro
+ * facilitador responde como si no existiera.
+ */
+function citaAtendible(usuarioId: string, citaId: string, accion: string): Cita {
+  const cita = citas.find((c) => c.id === citaId && c.facilitadorId === usuarioId);
+  if (!cita) {
+    throw new ErrorApi(404, 'La cita no existe.');
+  }
+  if (!ESTADOS_ACTIVOS.includes(cita.estado)) {
+    throw new ErrorApi(400, 'Esta cita ya no se puede atender.');
+  }
+  if (new Date(`${cita.fecha}T${cita.horaFin}:00`) > new Date()) {
+    throw new ErrorApi(400, `Solo puedes registrar ${accion} cuando la cita haya terminado.`);
+  }
+  return cita;
+}
+
+/**
+ * Citas de un facilitador, o de todos con 'todas' (administración), entre dos fechas
+ * incluidas (HU-15). Trae todos los estados, por fecha y hora, con los datos del
+ * solicitante (CA2). El alcance real lo aplica el Backend.
+ */
+export function obtenerAgenda(
+  facilitadorId: string | 'todas',
+  desde: string,
+  hasta: string,
+): Promise<CitaAgenda[]> {
+  if (!esFechaValida(desde) || !esFechaValida(hasta)) {
+    return Promise.reject(new ErrorApi(400, 'Revisa el rango de fechas.'));
+  }
+  if (USAR_MOCKS) {
+    const lista = citas.filter(
+      (cita) =>
+        cita.fecha >= desde &&
+        cita.fecha <= hasta &&
+        (facilitadorId === 'todas' || cita.facilitadorId === facilitadorId),
+    );
+    return simularRed(ordenarPorFecha(lista).map(aCitaAgenda));
+  }
+  const filtro = facilitadorId === 'todas' ? '' : `&facilitador=${facilitadorId}`;
+  return peticion<CitaAgenda[]>(`/asesorias/agenda/?desde=${desde}&hasta=${hasta}${filtro}`);
+}
+
+/** Registra el resultado de una cita que ya terminó: queda realizada y con asistencia. */
+export async function registrarResultado(
+  usuario: Usuario,
+  citaId: string,
+  resultado: string,
+): Promise<CitaAgenda> {
+  if (USAR_MOCKS) {
+    const cita = citaAtendible(usuario.id, citaId, 'el resultado');
+    const texto = resultado?.trim() ?? '';
+    if (!texto) {
+      throw new ErrorApi(400, 'Escribe el resultado de la asesoría.');
+    }
+    if (texto.length > 300) {
+      throw new ErrorApi(400, 'Máximo 300 caracteres.');
+    }
+    const actualizada: Cita = { ...cita, estado: 'realizada', asistio: true, resultado: texto };
+    citas = citas.map((c) => (c.id === citaId ? actualizada : c));
+    return simularRed(aCitaAgenda(actualizada));
+  }
+  return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/resultado/`, {
+    method: 'POST',
+    body: JSON.stringify({ resultado }),
+  });
+}
+
+/**
+ * Registra que la persona no asistió. No hay un estado propio: queda realizada con
+ * `asistio: false`, y la pantalla muestra "No asistió".
+ */
+export async function registrarInasistencia(usuario: Usuario, citaId: string): Promise<CitaAgenda> {
+  if (USAR_MOCKS) {
+    const cita = citaAtendible(usuario.id, citaId, 'la inasistencia');
+    const actualizada: Cita = { ...cita, estado: 'realizada', asistio: false, resultado: undefined };
+    citas = citas.map((c) => (c.id === citaId ? actualizada : c));
+    return simularRed(aCitaAgenda(actualizada));
+  }
+  return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/inasistencia/`, { method: 'POST' });
 }

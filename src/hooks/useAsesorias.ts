@@ -1,8 +1,9 @@
 /**
- * Hooks de asesorías (HU-13 y HU-14).
+ * Hooks de asesorías (HU-13, HU-14 y HU-15).
  * Temas y jornadas del personal; al guardar una jornada se refrescan sus franjas.
  * La comunidad consulta franjas y sus citas; agendar, cancelar o reprogramar refresca
- * las citas, los cupos de las franjas y las notificaciones.
+ * las citas (también la agenda del facilitador), los cupos de las franjas y las notificaciones.
+ * El facilitador consulta su agenda y registra el resultado o la inasistencia.
  *
  *   const { data: franjas } = useFranjas(temaId, desde, hasta);
  *   const agendar = useAgendarCita();
@@ -15,16 +16,22 @@ import {
   cancelarCita,
   guardarJornada,
   guardarTema,
+  obtenerAgenda,
   obtenerFranjas,
   obtenerJornadas,
   obtenerMisCitas,
   obtenerTemas,
+  registrarInasistencia,
+  registrarResultado,
   reprogramarCita,
   type DatosJornada,
   type DatosTema,
 } from '@/api/asesorias';
 import { claves } from '@/api/claves';
 import { useSesion } from '@/store/sesion';
+
+/** Para que la pantalla de HU-15 (María) tipe la agenda sin importar de src/api. */
+export type { CitaAgenda } from '@/api/asesorias';
 
 export function useTemas() {
   return useQuery({
@@ -131,5 +138,51 @@ export function useReprogramarCita() {
       return reprogramarCita(usuario, id, nuevaFranjaId);
     },
     onSuccess: refrescar,
+  });
+}
+
+/**
+ * Agenda de asesorías entre dos fechas (HU-15). Sin facilitadorId, la del usuario de la
+ * sesión; la administración pasa 'todas' o el id de un facilitador. No consulta sin sesión.
+ */
+export function useAgenda(desde: string, hasta: string, facilitadorId?: string | 'todas') {
+  const usuario = useSesion((estado) => estado.usuario);
+  const filtro = facilitadorId ?? usuario?.id;
+
+  return useQuery({
+    queryKey: claves.agendaFacilitador(filtro ?? 'sin-sesion', desde, hasta),
+    queryFn: () => {
+      if (!usuario || !filtro) throw new Error('No hay sesión');
+      return obtenerAgenda(filtro, desde, hasta);
+    },
+    enabled: usuario != null && desde !== '' && hasta !== '',
+  });
+}
+
+/** Registra el resultado de una cita que ya terminó. Refresca la agenda y las citas. */
+export function useRegistrarResultado() {
+  const queryClient = useQueryClient();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    mutationFn: ({ citaId, resultado }: { citaId: string; resultado: string }) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return registrarResultado(usuario, citaId, resultado);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.citasAsesoria }),
+  });
+}
+
+/** Registra que la persona no asistió a una cita que ya terminó. Refresca la agenda y las citas. */
+export function useRegistrarInasistencia() {
+  const queryClient = useQueryClient();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    mutationFn: (citaId: string) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return registrarInasistencia(usuario, citaId);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.citasAsesoria }),
   });
 }
