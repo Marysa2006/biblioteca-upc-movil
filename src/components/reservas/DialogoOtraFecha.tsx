@@ -127,7 +127,7 @@ function Contenido({
         </Button>
         <Button
           mode="contained"
-          onPress={handleSubmit(onConfirmar)}
+          onPress={() => handleSubmit(onConfirmar)()}
           loading={guardando}
           disabled={guardando}
           contentStyle={estilos.contenidoBoton}
