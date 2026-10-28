@@ -1,10 +1,11 @@
 /**
- * Hooks del inventario de tablets (HU-21), de la solicitud de préstamo (HU-22) y de la
- * entrega/devolución (HU-23).
+ * Hooks del inventario de tablets (HU-21), de la solicitud de préstamo (HU-22), de la
+ * entrega/devolución (HU-23) y de los préstamos vencidos (HU-24).
  * Las mutaciones refrescan la disponibilidad y, según el caso, los préstamos, las tablets
- * y las notificaciones.
+ * y las notificaciones. La consulta de vencidos marca y avisa los nuevos.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 import { claves } from '@/api/claves';
 import {
@@ -16,6 +17,7 @@ import {
   obtenerDisponibilidadTablets,
   obtenerMisPrestamos,
   obtenerPrestamos,
+  obtenerPrestamosVencidos,
   obtenerTablets,
   registrarDevolucion,
   registrarEntrega,
@@ -161,6 +163,41 @@ export function useRegistrarEntrega() {
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTabletsTodas });
     },
   });
+}
+
+/**
+ * Préstamos vencidos para la sección Vencidos de Inventario (HU-24). No consulta sin sesión.
+ * Ojo: la consulta tiene efectos. Con mocks marca `vencido` los entregados atrasados y crea
+ * la alerta del encargado y el aviso del usuario, una vez por préstamo; con la API real, el
+ * Backend hace esa revisión programada y la app solo lee.
+ * Si hay vencidos, refresca las listas de préstamos y las notificaciones. No invalida
+ * claves.prestamosTablet: es el prefijo ['prestamos'] y volvería a lanzar esta consulta.
+ */
+export function usePrestamosVencidos() {
+  const usuario = useSesion((estado) => estado.usuario);
+  const queryClient = useQueryClient();
+
+  const consulta = useQuery({
+    queryKey: claves.prestamosVencidos,
+    queryFn: obtenerPrestamosVencidos,
+    enabled: usuario != null,
+  });
+
+  useEffect(() => {
+    if (!consulta.data?.length) return;
+
+    queryClient.invalidateQueries({ queryKey: claves.prestamosPorEstado('todas') });
+    queryClient.invalidateQueries({ queryKey: claves.prestamosPorEstado('entregado') });
+    queryClient.invalidateQueries({ queryKey: claves.prestamosPorEstado('vencido') });
+
+    for (const solicitanteId of new Set(consulta.data.map((prestamo) => prestamo.solicitanteId))) {
+      queryClient.invalidateQueries({ queryKey: claves.misPrestamos(solicitanteId) });
+    }
+
+    queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+  }, [consulta.data, queryClient]);
+
+  return consulta;
 }
 
 /** Registra la devolución y refresca los préstamos y las tablets (HU-23, CA2-CA4). */
