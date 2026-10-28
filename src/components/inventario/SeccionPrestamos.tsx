@@ -6,13 +6,16 @@
  * recibir (entregados y vencidos, con Registrar devolución y el tiempo o el retraso) y
  * Devueltos (lo registrado, con novedades y retrasos). Entregar y recibir van en
  * /administracion/prestamo. La alerta de vencidos es de la sección Vencidos (HU-24).
+ * El encabezado y los filtros de a 3 (SelectorConteo) la separan del selector de Inventario.
  */
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { EncabezadoSeccion } from '@/components/inventario/EncabezadoSeccion';
+import { SelectorConteo } from '@/components/inventario/SelectorConteo';
 import { TarjetaPrestamo } from '@/components/inventario/TarjetaPrestamo';
-import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
+import { EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
 import { usePrestamos, useTablets } from '@/hooks/useTablets';
 import { espacio } from '@/theme';
 import { NOMBRE_GRUPO, prestamosDeGrupo, type GrupoPrestamos } from '@/utils/prestamos';
@@ -56,7 +59,18 @@ export function SeccionPrestamos() {
 
   return (
     <View style={estilos.seccion}>
-      <ChipsFiltro opciones={opciones} valor={grupo} onCambiar={setGrupo} descripcion="Filtrar préstamos" />
+      <EncabezadoSeccion
+        icono="swap-horizontal"
+        titulo="Préstamos"
+        descripcion="Entrega las tablets reservadas y recibe las prestadas."
+      />
+      <SelectorConteo
+        opciones={opciones}
+        valor={grupo}
+        onCambiar={setGrupo}
+        descripcion="Filtrar préstamos"
+        variante="filtro"
+      />
       {visibles.length === 0 ? (
         <EstadoVacio mensaje={VACIO[grupo]} />
       ) : (

@@ -6,17 +6,21 @@
  * - Vencidos (`tablets`): los préstamos que pasaron la hora límite (HU-24, María).
  * Esta pantalla solo compone: el contenido de cada sección se cambia en su componente, no aquí,
  * para que dos personas no editen el mismo archivo.
+ * El selector es SelectorConteo, no el de Gestión: tres casillas iguales, y Vencidos dice
+ * debajo cuántos hay (HU-24). Usa la misma consulta que SeccionVencidos, así
+ * que la alerta del encargado se crea apenas se abre Inventario.
  */
 import { router } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 import { Button } from 'react-native-paper';
 
-import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { SeccionPrestamos } from '@/components/inventario/SeccionPrestamos';
 import { SeccionTablets } from '@/components/inventario/SeccionTablets';
 import { SeccionVencidos } from '@/components/inventario/SeccionVencidos';
+import { SelectorConteo } from '@/components/inventario/SelectorConteo';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
+import { usePrestamosVencidos } from '@/hooks/useTablets';
 import type { Permiso } from '@/types';
 
 type ValorSeccion = 'tablets' | 'prestamos' | 'vencidos';
@@ -38,8 +42,14 @@ const SECCIONES: Seccion[] = [
 export default function Inventario() {
   const { tienePermiso } = useRol();
   const [elegida, setElegida] = useState<ValorSeccion>('tablets');
+  const cantidadVencidos = usePrestamosVencidos().data?.length ?? 0;
 
-  const visibles = SECCIONES.filter((seccion) => seccion.permisos.some(tienePermiso));
+  const visibles = SECCIONES.filter((seccion) => seccion.permisos.some(tienePermiso)).map(
+    (seccion) =>
+      seccion.valor === 'vencidos' && cantidadVencidos > 0
+        ? { ...seccion, cantidad: cantidadVencidos }
+        : seccion,
+  );
   // Si la elegida dejó de verse (o nunca se vio), se muestra la primera visible.
   const activa: Seccion | undefined =
     visibles.find((seccion) => seccion.valor === elegida) ?? visibles[0];
@@ -47,11 +57,12 @@ export default function Inventario() {
   return (
     <Pantalla titulo="Inventario" subtitulo="Tablets, préstamos y vencidos">
       {activa && visibles.length > 1 ? (
-        <SelectorSeccion
+        <SelectorConteo
           opciones={visibles}
           valor={activa.valor}
           onCambiar={setElegida}
-          etiqueta="Secciones de Inventario"
+          descripcion="Secciones de Inventario"
+          variante="seccion"
         />
       ) : null}
 
