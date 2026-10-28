@@ -103,7 +103,7 @@ export function FormularioLogin({ enviando, onEnviar }: Props) {
               autoComplete="current-password"
               textContentType="password"
               returnKeyType="go"
-              onSubmitEditing={enviar}
+              onSubmitEditing={() => enviar()}
               right={
                 <TextInput.Icon
                   icon={verContrasena ? 'eye-off-outline' : 'eye-outline'}
@@ -125,7 +125,7 @@ export function FormularioLogin({ enviando, onEnviar }: Props) {
       <Button
         mode="contained"
         icon="arrow-right"
-        onPress={enviar}
+        onPress={() => enviar()}
         loading={enviando}
         disabled={enviando}
         contentStyle={estilos.contenidoBoton}

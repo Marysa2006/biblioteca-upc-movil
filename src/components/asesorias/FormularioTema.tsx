@@ -98,7 +98,7 @@ export function FormularioTema({ temas, original, guardando, mensajeError, onGua
       <Button
         mode="contained"
         icon="content-save-outline"
-        onPress={handleSubmit(onGuardar)}
+        onPress={() => handleSubmit(onGuardar)()}
         loading={guardando}
         disabled={guardando || (original != null && !isDirty)}
         style={estilos.boton}

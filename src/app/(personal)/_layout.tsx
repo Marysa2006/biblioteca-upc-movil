@@ -37,7 +37,7 @@ export default function LayoutPersonal() {
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="view-dashboard-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="view-dashboard-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
@@ -46,7 +46,7 @@ export default function LayoutPersonal() {
         options={{
           title: 'Gestión',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="clipboard-text-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="clipboard-text-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
@@ -55,7 +55,7 @@ export default function LayoutPersonal() {
         options={{
           title: 'Personal',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-group-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="account-group-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
@@ -64,7 +64,7 @@ export default function LayoutPersonal() {
         options={{
           title: 'Inventario',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="archive-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="archive-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
@@ -73,7 +73,7 @@ export default function LayoutPersonal() {
         options={{
           title: 'Estadísticas',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="chart-bar" color={color} size={size} />
+            <MaterialCommunityIcons name="chart-bar" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />

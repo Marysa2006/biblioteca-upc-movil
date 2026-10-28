@@ -124,7 +124,7 @@ export function FormularioEspacio({ espacioActual, guardando, mensajeError, onGu
       <Button
         mode="contained"
         icon="content-save-outline"
-        onPress={guardar}
+        onPress={() => guardar()}
         loading={guardando}
         disabled={guardando || (espacioActual != null && !isDirty)}
         contentStyle={estilos.contenidoBoton}

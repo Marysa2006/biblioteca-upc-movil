@@ -237,7 +237,7 @@ export function FormularioBloqueo({ parametros, bloqueos, ocupado, onRevisar, on
       <Button
         mode="contained"
         icon="calendar-search"
-        onPress={handleSubmit(onRevisar)}
+        onPress={() => handleSubmit(onRevisar)()}
         loading={ocupado}
         disabled={ocupado}
         contentStyle={estilos.contenidoBoton}
