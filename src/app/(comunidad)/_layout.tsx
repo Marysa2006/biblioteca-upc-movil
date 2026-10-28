@@ -52,7 +52,7 @@ export default function LayoutComunidad() {
         options={{
           title: 'Inicio',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home-variant-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="home-variant-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
@@ -61,7 +61,7 @@ export default function LayoutComunidad() {
         options={{
           title: 'Servicios',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="room-service-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="room-service-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
@@ -70,7 +70,7 @@ export default function LayoutComunidad() {
         options={{
           title: 'Catálogo',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="book-search-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="book-search-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
@@ -79,7 +79,7 @@ export default function LayoutComunidad() {
         options={{
           title: 'Mis solicitudes',
           tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="clipboard-text-outline" color={color} size={size} />
+            <MaterialCommunityIcons name="clipboard-text-outline" color={typeof color === 'string' ? color : undefined} size={size} />
           ),
         }}
       />
