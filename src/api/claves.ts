@@ -53,9 +53,12 @@ export const claves = {
   citasPorEstado: (estado: EstadoSolicitud | 'todas') => ['asesorias', 'citas', estado] as const,
   /** Citas del usuario de la sesión (HU-14). */
   misCitas: (usuarioId?: string) => ['asesorias', 'citas', 'mias', usuarioId] as const,
-  /** Agenda del facilitador por rango de fechas (HU-15). */
-  agendaFacilitador: (facilitadorId: string, desde?: string, hasta?: string) =>
-    ['asesorias', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
+  /**
+   * Agenda del facilitador por rango de fechas (HU-15); 'todas' para la administración.
+   * Va bajo el prefijo de citas para que agendar, cancelar o reprogramar también la refresque.
+   */
+  agendaFacilitador: (facilitadorId: string | 'todas', desde?: string, hasta?: string) =>
+    ['asesorias', 'citas', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
 
   // ── Iteración 3: tablets (HU-21, HU-22, HU-23 y HU-24) ───────
   tablets: ['tablets'] as const,
