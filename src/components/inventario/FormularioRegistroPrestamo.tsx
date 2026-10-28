@@ -179,7 +179,7 @@ export function FormularioRegistroPrestamo({ modo, prestamo, tablet, guardando, 
       <Button
         mode="contained"
         icon={esDevolucion ? 'clipboard-check-outline' : 'tablet'}
-        onPress={guardar}
+        onPress={() => guardar()}
         loading={guardando}
         disabled={guardando}
         contentStyle={estilos.contenidoBoton}
