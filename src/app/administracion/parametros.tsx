@@ -104,7 +104,7 @@ function Formulario({ guardados }: { guardados: Parametros }) {
       <Button
         mode="contained"
         icon="content-save-outline"
-        onPress={guardar}
+        onPress={() => guardar()}
         loading={guardando}
         disabled={guardando || !isDirty}
         contentStyle={estilos.contenidoBoton}
