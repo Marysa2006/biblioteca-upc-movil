@@ -132,6 +132,20 @@ function Detalle({ servicio }: { servicio: Servicio }) {
           </Button>
         </>
       ) : null}
+
+      {/* HU-22: pide cuenta; sin sesión, la pantalla solo invita a iniciarla. */}
+      {categoria === 'tablets' ? (
+        <Button
+          mode="contained"
+          icon="tablet"
+          onPress={() => router.push('/tablets/solicitar')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Solicitar el préstamo de una tablet"
+        >
+          Solicitar tablet
+        </Button>
+      ) : null}
     </Pantalla>
   );
 }
