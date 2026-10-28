@@ -133,7 +133,7 @@ export function FormularioCita({
       ) : (
         <Button
           mode="contained"
-          onPress={handleSubmit(({ necesidad }) => onConfirmar(necesidad.trim()))}
+          onPress={() => handleSubmit(({ necesidad }) => onConfirmar(necesidad.trim()))()}
           loading={guardando}
           disabled={guardando}
           contentStyle={estilos.contenidoBoton}
