@@ -200,7 +200,7 @@ export function FormularioContenido({ contenido, guardando, mensajeError, onGuar
       <Button
         mode="contained"
         icon="content-save-outline"
-        onPress={guardar}
+        onPress={() => guardar()}
         loading={guardando}
         disabled={guardando || (contenido != null && !isDirty)}
         contentStyle={estilos.contenidoBoton}

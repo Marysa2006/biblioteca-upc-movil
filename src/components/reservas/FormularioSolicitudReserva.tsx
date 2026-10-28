@@ -228,7 +228,7 @@ export function FormularioSolicitudReserva({ espacio: lugar, parametros, fecha, 
 
       <Button
         mode="contained"
-        onPress={handleSubmit(enviar)}
+        onPress={() => handleSubmit(enviar)()}
         loading={guardando}
         disabled={guardando}
         contentStyle={estilos.contenidoBoton}
