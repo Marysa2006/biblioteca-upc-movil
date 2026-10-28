@@ -235,7 +235,7 @@ export function FormularioPrestamoTablet({
       {conSesion ? (
         <Button
           mode="contained"
-          onPress={confirmar}
+          onPress={() => confirmar()}
           loading={guardando}
           disabled={guardando}
           contentStyle={estilos.contenidoBoton}
