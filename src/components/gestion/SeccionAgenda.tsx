@@ -10,6 +10,7 @@
  * - Día y Semana piden la semana completa: la vista Día filtra sobre ella, así que cambiar de
  *   día dentro de la semana no vuelve a consultar. En Semana, tocar un día abre su vista Día.
  * - Mes pide el mes completo y muestra la cuadrícula; tocar un día abre su vista Día.
+ * - Las convenciones filtran por estado (por ejemplo, solo las realizadas del mes).
  * Al tocar una cita se abre su detalle (CA2).
  *
  * Patrón de datos: useAgenda() (src/hooks) → src/api/asesorias.ts → mock o API.
@@ -29,10 +30,11 @@ import { EstadoCarga, EstadoError } from '@/components/ui';
 import { useAgenda } from '@/hooks/useAsesorias';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import type { Cita } from '@/types';
+import type { Cita, EstadoSolicitud } from '@/types';
 import {
   contarCitasPorDia,
   diaDeAgenda,
+  filtrarPorEstado,
   moverDiaAgenda,
   tituloSemanaAgenda,
 } from '@/utils/agenda';
@@ -56,7 +58,10 @@ export function SeccionAgenda() {
 
   const { desde, hasta } = vista === 'mes' ? rangoMes(dia) : rangoSemana(dia);
   const agenda = useAgenda(desde, hasta, esAdministrador ? 'todas' : undefined);
-  const conteo = contarCitasPorDia(agenda.data ?? []);
+  // El filtro de las convenciones se aplica a la lista, a la tira y al mes; no vuelve a consultar.
+  const [filtro, setFiltro] = useState<EstadoSolicitud | null>(null);
+  const citasVisibles = filtrarPorEstado(agenda.data ?? [], filtro);
+  const conteo = contarCitasPorDia(citasVisibles);
 
   const mover = (paso: 1 | -1) => {
     if (vista === 'dia') setDia(moverDiaAgenda(dia, paso));
@@ -93,8 +98,9 @@ export function SeccionAgenda() {
       <ListaAgenda
         vista={vista}
         fecha={dia}
-        citas={agenda.data}
+        citas={citasVisibles}
         mostrarFacilitador={esAdministrador}
+        filtro={filtro}
         onAbrir={abrir}
       />
     );
@@ -138,7 +144,7 @@ export function SeccionAgenda() {
           />
         )}
 
-        <ConvencionesAgenda />
+        <ConvencionesAgenda filtro={filtro} onCambiar={setFiltro} />
       </View>
 
       {/* En Mes, las citas se ven en la cuadrícula: debajo solo la carga o el error. */}

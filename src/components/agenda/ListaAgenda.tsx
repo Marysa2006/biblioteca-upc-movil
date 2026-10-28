@@ -8,8 +8,8 @@ import { Text } from 'react-native-paper';
 
 import { EstadoVacio } from '@/components/ui';
 import { colores, espacio, fuentes } from '@/theme';
-import type { Cita } from '@/types';
-import { agruparCitasPorDia, citasDelDia } from '@/utils/agenda';
+import type { Cita, EstadoSolicitud } from '@/types';
+import { agruparCitasPorDia, citasDelDia, nombreEstadoAgenda } from '@/utils/agenda';
 import { fechaCompleta } from '@/utils/calendario';
 
 import { TarjetaCitaAgenda } from './TarjetaCitaAgenda';
@@ -20,12 +20,15 @@ type Props = {
   fecha: string;
   citas: Cita[];
   mostrarFacilitador: boolean;
+  /** El estado de las convenciones por el que se filtra: el mensaje vacío lo nombra. */
+  filtro?: EstadoSolicitud | null;
   onAbrir: (cita: Cita) => void;
 };
 
-export function ListaAgenda({ vista, fecha, citas, mostrarFacilitador, onAbrir }: Props) {
+export function ListaAgenda({ vista, fecha, citas, mostrarFacilitador, filtro, onAbrir }: Props) {
   // La administración ve las citas de todos: no son "sus" citas.
-  const sinCitas = mostrarFacilitador ? 'No hay citas' : 'No tienes citas';
+  const quien = mostrarFacilitador ? 'No hay citas' : 'No tienes citas';
+  const sinCitas = filtro ? `${quien} ${nombreEstadoAgenda(filtro, 2)}` : quien;
 
   if (vista === 'dia') {
     const delDia = citasDelDia(citas, fecha);

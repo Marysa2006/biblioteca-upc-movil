@@ -64,17 +64,73 @@ export function tituloSemanaAgenda(fecha: string): string {
   return `${fechaLegible(desde)} al ${fechaLegible(hasta)}`;
 }
 
-/** Cuántas citas de la agenda tiene cada día, para la tira de días y el mes. */
-export function contarCitasPorDia(citas: Cita[]): Map<string, number> {
-  const conteo = new Map<string, number>();
+/** Ícono de cada estado de la agenda: las convenciones, el mes y la tira de días usan los mismos. */
+export const ICONO_ESTADO_AGENDA: Partial<Record<EstadoSolicitud, string>> = {
+  pendiente: 'clock-outline',
+  aprobada: 'check',
+  realizada: 'check-all',
+};
+
+/** Nombre de cada estado en singular y plural, para el lector de pantalla ("2 aprobadas"). */
+const NOMBRE_ESTADO_AGENDA: Partial<Record<EstadoSolicitud, [string, string]>> = {
+  pendiente: ['pendiente', 'pendientes'],
+  aprobada: ['aprobada', 'aprobadas'],
+  realizada: ['realizada', 'realizadas'],
+};
+
+/** "aprobada" o "aprobadas", según la cantidad. */
+export function nombreEstadoAgenda(estado: EstadoSolicitud, cantidad: number): string {
+  const [singular, plural] = NOMBRE_ESTADO_AGENDA[estado] ?? [estado, estado];
+  return cantidad === 1 ? singular : plural;
+}
+
+/** Con el filtro de las convenciones, solo las citas de ese estado; sin filtro, todas. */
+export function filtrarPorEstado(citas: Cita[], estado: EstadoSolicitud | null): Cita[] {
+  return estado ? citas.filter((cita) => cita.estado === estado) : citas;
+}
+
+/** Las citas de un día: el total y cuántas hay de cada estado, en el orden de ESTADOS_AGENDA. */
+export type ConteoDia = {
+  total: number;
+  estados: { estado: EstadoSolicitud; cantidad: number }[];
+};
+
+/** Cuántas citas de cada estado tiene cada día, para la tira de días y el mes. */
+export function contarCitasPorDia(citas: Cita[]): Map<string, ConteoDia> {
+  const porDia = new Map<string, Map<EstadoSolicitud, number>>();
   for (const cita of citasAsignadas(citas)) {
-    conteo.set(cita.fecha, (conteo.get(cita.fecha) ?? 0) + 1);
+    const delDia = porDia.get(cita.fecha) ?? new Map<EstadoSolicitud, number>();
+    delDia.set(cita.estado, (delDia.get(cita.estado) ?? 0) + 1);
+    porDia.set(cita.fecha, delDia);
+  }
+
+  const conteo = new Map<string, ConteoDia>();
+  for (const [fecha, delDia] of porDia) {
+    const estados = ESTADOS_AGENDA.filter((estado) => delDia.has(estado)).map((estado) => ({
+      estado,
+      cantidad: delDia.get(estado) ?? 0,
+    }));
+    conteo.set(fecha, { total: estados.reduce((suma, e) => suma + e.cantidad, 0), estados });
   }
   return conteo;
 }
 
 /** "1 cita" o "3 citas". */
 export const textoCitas = (cantidad: number) => (cantidad === 1 ? '1 cita' : `${cantidad} citas`);
+
+/** "Sin citas", "1 cita aprobada" o "3 citas: 1 pendiente y 2 aprobadas" (lector de pantalla). */
+export function textoConteoDia(conteo: ConteoDia | undefined): string {
+  if (!conteo || conteo.total === 0) return 'Sin citas';
+  if (conteo.estados.length === 1) {
+    const { estado, cantidad } = conteo.estados[0];
+    return `${textoCitas(cantidad)} ${nombreEstadoAgenda(estado, cantidad)}`;
+  }
+  const partes = conteo.estados.map(
+    ({ estado, cantidad }) => `${cantidad} ${nombreEstadoAgenda(estado, cantidad)}`,
+  );
+  const ultima = partes.pop();
+  return `${textoCitas(conteo.total)}: ${partes.join(', ')} y ${ultima}`;
+}
 
 /** Ya pasó la hora de fin de la cita, en la hora del celular. */
 export function citaTerminada(cita: Cita, ahora = new Date()): boolean {

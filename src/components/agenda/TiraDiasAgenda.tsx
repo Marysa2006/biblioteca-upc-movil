@@ -1,6 +1,6 @@
 /**
  * Los días de la semana en una fila que se desliza de lado, como el encabezado del calendario
- * de la web (HU-15): "Mié 28" y, debajo, cuántas citas tiene. De lunes a sábado: los domingos
+ * de la web (HU-15): "Mié 28" y, debajo, sus citas por estado. De lunes a sábado: los domingos
  * no hay citas. El día elegido va en el bloque oscuro y hoy lleva borde. Con letra grande cada
  * día crece y la fila se desliza.
  */
@@ -8,8 +8,10 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Text, TouchableRipple } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
-import { diasAgenda, textoCitas } from '@/utils/agenda';
+import { diasAgenda, textoConteoDia, type ConteoDia } from '@/utils/agenda';
 import { abreviaturaDia, fechaCompleta, numeroDia } from '@/utils/calendario';
+
+import { EstadosDelDia } from './EstadosDelDia';
 
 type Props = {
   /** Cualquier día de la semana que se muestra. */
@@ -17,8 +19,8 @@ type Props = {
   /** El día elegido (vista Día), o null en la vista Semana. */
   elegido: string | null;
   hoy: string;
-  /** Citas de cada día ('AAAA-MM-DD' → cantidad). */
-  conteo: Map<string, number>;
+  /** Citas de cada día por estado ('AAAA-MM-DD' → conteo). */
+  conteo: Map<string, ConteoDia>;
   onElegir: (fecha: string) => void;
 };
 
@@ -33,8 +35,9 @@ export function TiraDiasAgenda({ semana, elegido, hoy, conteo, onElegir }: Props
       {diasAgenda(semana).map((fecha) => {
         const esElegido = fecha === elegido;
         const esHoy = fecha === hoy;
-        const citas = conteo.get(fecha) ?? 0;
-        const detalle = citas > 0 ? textoCitas(citas) : 'Sin citas';
+        const delDia = conteo.get(fecha);
+        const conCitas = delDia != null && delDia.total > 0;
+        const detalle = textoConteoDia(delDia);
         return (
           <View
             key={fecha}
@@ -51,12 +54,13 @@ export function TiraDiasAgenda({ semana, elegido, hoy, conteo, onElegir }: Props
                 <Text variant="labelLarge" style={[estilos.nombre, esElegido && estilos.textoElegido]}>
                   {`${abreviaturaDia(fecha)} ${numeroDia(fecha)}`}
                 </Text>
-                <Text
-                  variant="labelSmall"
-                  style={[estilos.citas, citas > 0 && estilos.conCitas, esElegido && estilos.textoElegido]}
-                >
-                  {citas > 0 ? textoCitas(citas) : '—'}
-                </Text>
+                {conCitas ? (
+                  <EstadosDelDia conteo={delDia} sobreOscuro={esElegido} />
+                ) : (
+                  <Text variant="labelSmall" style={[estilos.sinCitas, esElegido && estilos.textoElegido]}>
+                    —
+                  </Text>
+                )}
               </View>
             </TouchableRipple>
           </View>
@@ -87,8 +91,7 @@ const estilos = StyleSheet.create({
   },
   textos: { alignItems: 'center', gap: espacio.xs },
   nombre: { color: colores.texto, fontFamily: fuentes.seminegrita },
-  citas: { color: colores.textoSecundario },
-  conCitas: { color: colores.primario, fontFamily: fuentes.seminegrita },
+  sinCitas: { color: colores.textoSecundario },
   // Sobre el bloque oscuro, texto blanco (identidad visual).
   textoElegido: { color: colores.superficie },
 });
