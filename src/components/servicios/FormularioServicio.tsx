@@ -6,12 +6,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
-import { Button, Chip, HelperText, Text, TextInput } from 'react-native-paper';
+import { Button, HelperText, TextInput } from 'react-native-paper';
 
 import { AvisoError, FilaInterruptor } from '@/components/ui';
-import { colores, espacio, fuentes } from '@/theme';
+import { espacio } from '@/theme';
 import type { Servicio } from '@/types';
-import { CATEGORIAS_SERVICIO, esquemaServicio, ORDEN_CATEGORIAS } from '@/utils/servicios';
+import { esquemaServicio, ORDEN_CATEGORIAS } from '@/utils/servicios';
+
+import { SelectorCategoria } from './SelectorCategoria';
 
 type DatosServicio = Omit<Servicio, 'id'>;
 
@@ -62,36 +64,12 @@ export function FormularioServicio({ servicio, guardando, mensajeError, onGuarda
         control={control}
         name="categoria"
         render={({ field: { value, onChange } }) => (
-          <View style={estilos.grupo}>
-            <Text variant="labelLarge" style={estilos.etiquetaGrupo}>
-              Categoría
-            </Text>
-            <View style={estilos.chips} accessibilityRole="radiogroup">
-              {ORDEN_CATEGORIAS.map((categoria) => {
-                const elegida = value === categoria;
-                return (
-                  <Chip
-                    key={categoria}
-                    icon={CATEGORIAS_SERVICIO[categoria].icono}
-                    selected={elegida}
-                    onPress={() => onChange(categoria)}
-                    disabled={guardando}
-                    style={elegida ? estilos.chipElegido : estilos.chip}
-                    selectedColor={elegida ? colores.superficie : colores.primarioOscuro}
-                    hitSlop={{ top: espacio.s, bottom: espacio.s }}
-                    accessibilityRole="radio"
-                    accessibilityState={{ checked: elegida }}
-                    accessibilityLabel={CATEGORIAS_SERVICIO[categoria].nombre}
-                  >
-                    {CATEGORIAS_SERVICIO[categoria].nombre}
-                  </Chip>
-                );
-              })}
-            </View>
-            <HelperText type="error" visible={errors.categoria != null}>
-              {errors.categoria?.message}
-            </HelperText>
-          </View>
+          <SelectorCategoria
+            valor={value}
+            onCambiar={onChange}
+            deshabilitado={guardando}
+            mensajeError={errors.categoria?.message}
+          />
         )}
       />
 
@@ -169,11 +147,6 @@ export function FormularioServicio({ servicio, guardando, mensajeError, onGuarda
 
 const estilos = StyleSheet.create({
   formulario: { gap: espacio.xs },
-  grupo: { gap: espacio.s },
-  etiquetaGrupo: { color: colores.texto, fontFamily: fuentes.seminegrita },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
-  chip: { backgroundColor: colores.primarioSuave },
-  chipElegido: { backgroundColor: colores.primarioOscuro },
   boton: { marginTop: espacio.s },
   contenidoBoton: { paddingVertical: espacio.xs },
 });

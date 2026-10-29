@@ -86,10 +86,10 @@ function Detalle({ servicio }: { servicio: Servicio }) {
 
       <Card mode="contained" style={estilos.tarjeta}>
         <Card.Content style={estilos.secciones}>
-          <Seccion titulo="Descripción" texto={servicio.descripcion} />
-          <Seccion titulo="Público objetivo" texto={servicio.publico} />
-          <Seccion titulo="Forma de solicitud" texto={servicio.formaSolicitud} />
-          <Seccion titulo="Horarios" texto={servicio.horario} />
+          <Seccion icono="text-box-outline" titulo="Descripción" texto={servicio.descripcion} />
+          <Seccion icono="account-group-outline" titulo="Público objetivo" texto={servicio.publico} />
+          <Seccion icono="clipboard-text-outline" titulo="Forma de solicitud" texto={servicio.formaSolicitud} />
+          <Seccion icono="clock-outline" titulo="Horarios" texto={servicio.horario} />
         </Card.Content>
       </Card>
 
@@ -109,11 +109,12 @@ function Detalle({ servicio }: { servicio: Servicio }) {
 
       {/* HU-14: los temas se consultan sin cuenta; la sesión se pide al confirmar la cita. */}
       {categoria === 'asesorias' ? (
-        <>
+        <View style={estilos.filaBotones}>
           <Button
             mode="contained"
             icon="calendar-account-outline"
             onPress={() => router.push('/asesorias')}
+            style={estilos.botonEnFila}
             contentStyle={estilos.contenidoBoton}
             accessibilityRole="button"
             accessibilityLabel="Agendar una asesoría"
@@ -124,13 +125,14 @@ function Detalle({ servicio }: { servicio: Servicio }) {
             mode="outlined"
             icon="calendar-check-outline"
             onPress={() => router.push('/asesorias/mis-citas')}
+            style={estilos.botonEnFila}
             contentStyle={estilos.contenidoBoton}
             accessibilityRole="button"
             accessibilityLabel="Ver mis citas de asesoría"
           >
             Mis citas
           </Button>
-        </>
+        </View>
       ) : null}
 
       {/* HU-22: pide cuenta; sin sesión, la pantalla solo invita a iniciarla. */}
@@ -150,12 +152,16 @@ function Detalle({ servicio }: { servicio: Servicio }) {
   );
 }
 
-function Seccion({ titulo, texto }: { titulo: string; texto: string }) {
+/** El ícono va junto al título; el texto empieza en el borde, sin sangría. */
+function Seccion({ icono, titulo, texto }: { icono: string; titulo: string; texto: string }) {
   return (
     <View style={estilos.seccion}>
-      <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">
-        {titulo}
-      </Text>
+      <View style={estilos.filaTituloSeccion}>
+        <Icon source={icono} size={20} color={colores.primario} />
+        <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">
+          {titulo}
+        </Text>
+      </View>
       <Text variant="bodyMedium" style={estilos.texto}>
         {texto}
       </Text>
@@ -200,7 +206,8 @@ const estilos = StyleSheet.create({
   tarjeta: { backgroundColor: colores.superficie, borderRadius: radio.tarjeta },
   secciones: { gap: espacio.l },
   seccion: { gap: espacio.xs },
-  tituloSeccion: { color: colores.texto, fontFamily: fuentes.seminegrita },
+  filaTituloSeccion: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
+  tituloSeccion: { flex: 1, color: colores.texto, fontFamily: fuentes.seminegrita },
   texto: { color: colores.texto },
   noDisponible: {
     alignItems: 'center',
@@ -208,5 +215,8 @@ const estilos = StyleSheet.create({
     paddingVertical: espacio.xl,
   },
   textoNoDisponible: { color: colores.textoSecundario, textAlign: 'center' },
+  // Agendar y Mis citas comparten la fila; con letra grande, el segundo pasa a la siguiente.
+  filaBotones: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
+  botonEnFila: { flexGrow: 1 },
   contenidoBoton: { paddingVertical: espacio.xs },
 });
