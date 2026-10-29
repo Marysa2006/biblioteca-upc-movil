@@ -1,6 +1,8 @@
 /**
  * Bandeja de solicitudes de reserva del personal (HU-19), en Gestión → Solicitudes.
- * Chips por estado con su cantidad; cada tarjeta trae las acciones de su estado (CA1).
+ * Arriba, un buscador por persona, espacio o propósito; debajo, pestañas por estado con su
+ * cantidad (distintas de los chips de las secciones). Cada tarjeta trae las acciones de su estado (CA1).
+ * "Reservar para un tercero" es el botón flotante de la sección (BotonReservaTercero).
  * Rechazar y cancelar piden el motivo (CA2); otra fecha pide la fecha y el horario.
  * La API impide los choques de horario (CA3) y su error se muestra donde se tomó la decisión.
  * Al guardar, la lista se refresca y un aviso confirma a quién se notificó (CA4).
@@ -9,16 +11,15 @@
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { router } from 'expo-router';
-import { Button, Portal, Snackbar } from 'react-native-paper';
+import { Portal, Searchbar, Snackbar } from 'react-native-paper';
 
-import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
+import { EstadoCarga, EstadoError, EstadoVacio, PestanasFiltro, type OpcionFiltro } from '@/components/ui';
 import { useEspaciosAdministracion } from '@/hooks/useEspacios';
 import { useDecidirReserva, useReservas } from '@/hooks/useReservas';
-import { coloresEstado, espacio } from '@/theme';
+import { colores, coloresEstado, espacio } from '@/theme';
 import type { EstadoSolicitud, Reserva } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
-import { avisoDecision, ORDEN_ESTADOS, type AccionReserva } from '@/utils/reservas';
+import { avisoDecision, buscarReservas, ORDEN_ESTADOS, type AccionReserva } from '@/utils/reservas';
 
 import { DialogoMotivo, type SolicitudMotivo } from './DialogoMotivo';
 import { DialogoOtraFecha } from './DialogoOtraFecha';
@@ -45,6 +46,7 @@ export function BandejaReservas() {
     espacios?.find((e) => e.id === espacioId)?.nombre ?? 'Espacio';
 
   const [filtroElegido, setFiltroElegido] = useState<Filtro | null>(null);
+  const [busqueda, setBusqueda] = useState('');
   const [motivo, setMotivo] = useState<SolicitudMotivo | null>(null);
   const [otraFecha, setOtraFecha] = useState<Reserva | null>(null);
   const [aprobando, setAprobando] = useState<string | null>(null);
@@ -109,37 +111,39 @@ export function BandejaReservas() {
       <EstadoError mensaje="No pudimos cargar las solicitudes." onReintentar={() => refetch()} />
     );
   } else {
-    const cantidad = (estado: EstadoSolicitud) => reservas.filter((r) => r.estado === estado).length;
+    const encontradas = buscarReservas(reservas, busqueda, nombreEspacio);
+    const hay = (estado: EstadoSolicitud) => reservas.some((r) => r.estado === estado);
+    const cantidad = (estado: EstadoSolicitud) => encontradas.filter((r) => r.estado === estado).length;
+    // Las pestañas son los estados que tienen solicitudes; la búsqueda solo cambia los números,
+    // así no aparecen ni desaparecen mientras se escribe. "Todas" va al final.
     const opciones: OpcionFiltro<Filtro>[] = [
-      { valor: 'todas', etiqueta: 'Todas', cantidad: reservas.length },
-      ...ORDEN_ESTADOS.map((estado) => ({
+      ...ORDEN_ESTADOS.filter(hay).map((estado) => ({
         valor: estado,
         etiqueta: coloresEstado[estado].etiqueta,
         cantidad: cantidad(estado),
-      })).filter((opcion) => opcion.cantidad > 0),
+      })),
+      { valor: 'todas', etiqueta: 'Todas', cantidad: encontradas.length },
     ];
     // Empieza en Pendiente; si el estado elegido se queda sin solicitudes, vuelve a "Todas".
-    const inicial: Filtro = cantidad('pendiente') > 0 ? 'pendiente' : 'todas';
+    const inicial: Filtro = hay('pendiente') ? 'pendiente' : 'todas';
     const filtro =
       filtroElegido && opciones.some((o) => o.valor === filtroElegido) ? filtroElegido : inicial;
-    const visibles = filtro === 'todas' ? reservas : reservas.filter((r) => r.estado === filtro);
+    const visibles = filtro === 'todas' ? encontradas : encontradas.filter((r) => r.estado === filtro);
+
+    let mensajeVacio = 'Todavía no hay solicitudes de reserva.';
+    if (busqueda.trim()) mensajeVacio = `Ninguna solicitud coincide con «${busqueda.trim()}».`;
+    else if (filtro !== 'todas') mensajeVacio = `No hay solicitudes en estado «${coloresEstado[filtro].etiqueta}».`;
 
     contenido = (
       <>
-        <ChipsFiltro
+        <PestanasFiltro
           opciones={opciones}
           valor={filtro}
           onCambiar={setFiltroElegido}
           descripcion="Filtrar las solicitudes por estado"
         />
         {visibles.length === 0 ? (
-          <EstadoVacio
-            mensaje={
-              filtro === 'todas'
-                ? 'Todavía no hay solicitudes de reserva.'
-                : `No hay solicitudes en estado «${coloresEstado[filtro].etiqueta}».`
-            }
-          />
+          <EstadoVacio mensaje={mensajeVacio} />
         ) : (
           visibles.map((reserva) => (
             <TarjetaSolicitud
@@ -158,17 +162,13 @@ export function BandejaReservas() {
 
   return (
     <View style={estilos.bandeja}>
-      <Button
-        mode="contained-tonal"
-        icon="account-plus-outline"
-        onPress={() => router.push('/reservas/tercero')}
-        style={estilos.botonTercero}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Reservar un espacio para un tercero"
-      >
-        Reservar para un tercero
-      </Button>
+      <Searchbar
+        placeholder="Buscar por persona, espacio o propósito"
+        value={busqueda}
+        onChangeText={setBusqueda}
+        style={estilos.buscador}
+        accessibilityLabel="Buscar solicitudes por persona, espacio o propósito"
+      />
 
       {contenido}
 
@@ -203,6 +203,5 @@ export function BandejaReservas() {
 
 const estilos = StyleSheet.create({
   bandeja: { gap: espacio.s },
-  botonTercero: { alignSelf: 'flex-start' },
-  contenidoBoton: { paddingVertical: espacio.xs },
+  buscador: { backgroundColor: colores.superficie },
 });

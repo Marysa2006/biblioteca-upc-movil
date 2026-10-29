@@ -6,6 +6,7 @@
  * - Agenda (`asesorias`): las citas de asesoría por día y por semana (HU-15).
  * - Espacios (`espacios`): la configuración de los espacios y sus bloqueos (HU-16 y HU-20).
  * - Portal (`contenidos` o `parametros`): contenidos (HU-04) y parámetros generales (HU-28).
+ * Una sección puede traer un botón flotante (Solicitudes: "Reservar para un tercero").
  * El selector aparece solo con dos secciones o más. Esta pantalla solo compone: el contenido
  * de cada sección se cambia en su componente, no aquí.
  */
@@ -16,6 +17,7 @@ import { SeccionEspacios } from '@/components/gestion/SeccionEspacios';
 import { SeccionPortal } from '@/components/gestion/SeccionPortal';
 import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
+import { BotonReservaTercero } from '@/components/reservas/BotonReservaTercero';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 import type { Permiso } from '@/types';
@@ -26,6 +28,8 @@ type Seccion = {
   valor: ValorSeccion;
   etiqueta: string;
   Componente: ComponentType;
+  /** Botón flotante de la sección, fijo abajo a la derecha (opcional). */
+  Flotante?: ComponentType;
   /** Se ve con cualquiera de estos permisos. */
   permisos: readonly Permiso[];
 };
@@ -35,6 +39,7 @@ const SECCIONES: Seccion[] = [
     valor: 'solicitudes',
     etiqueta: 'Solicitudes',
     Componente: SeccionSolicitudes,
+    Flotante: BotonReservaTercero,
     permisos: ['reservas', 'asesorias', 'formacion'],
   },
   {
@@ -67,7 +72,11 @@ export default function Gestion() {
     visibles.find((seccion) => seccion.valor === elegida) ?? visibles[0];
 
   return (
-    <Pantalla titulo="Gestión" subtitulo="Solicitudes, espacios y administración del portal">
+    <Pantalla
+      titulo="Gestión"
+      subtitulo="Solicitudes, espacios y administración del portal"
+      flotante={activa?.Flotante ? <activa.Flotante /> : null}
+    >
       {activa && visibles.length > 1 ? (
         <SelectorSeccion opciones={visibles} valor={activa.valor} onCambiar={setElegida} />
       ) : null}

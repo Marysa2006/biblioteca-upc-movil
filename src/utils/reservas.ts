@@ -6,7 +6,7 @@
  */
 import { z } from 'zod';
 
-import type { Espacio, EstadoSolicitud, Parametros } from '@/types';
+import type { Espacio, EstadoSolicitud, Parametros, Reserva } from '@/types';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
 import { motivoNoDisponible } from '@/utils/parametros';
 
@@ -22,6 +22,25 @@ export const ORDEN_ESTADOS: EstadoSolicitud[] = [
   'cancelada',
   'realizada',
 ];
+
+/** Minúsculas y sin tildes, para que "sofia" encuentre "Sofía". */
+const normalizar = (texto: string) =>
+  texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+/** Las solicitudes cuya persona, espacio o propósito contienen el texto; sin texto, todas. */
+export function buscarReservas(
+  reservas: Reserva[],
+  texto: string,
+  nombreEspacio: (espacioId: string) => string,
+): Reserva[] {
+  const buscado = normalizar(texto);
+  if (!buscado) return reservas;
+  return reservas.filter((reserva) =>
+    [reserva.solicitante, nombreEspacio(reserva.espacioId), reserva.proposito].some((campo) =>
+      normalizar(campo).includes(buscado),
+    ),
+  );
+}
 
 /** Acciones de cada estado (CA1). Lo ya resuelto no tiene acciones. */
 export const ACCIONES_POR_ESTADO: Record<EstadoSolicitud, AccionReserva[]> = {
