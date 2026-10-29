@@ -7,11 +7,14 @@
  * Un valor desconocido muestra todas.
  *
  * Patrón de datos: useServicios() (src/hooks) → obtenerServicios() (src/api) → mock o API.
+ * Arriba va el acceso a las guías sin conexión (HU-29), fuera de la lista para que se abra
+ * aunque los servicios no carguen por falta de internet.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
+import { AccesoGuias } from '@/components/guias/AccesoGuias';
 import { IconoCategoria } from '@/components/servicios/IconoCategoria';
 import { TarjetaServicio } from '@/components/servicios/TarjetaServicio';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
@@ -69,6 +72,7 @@ export default function Servicios() {
       subtitulo="Servicios de la biblioteca: público, horarios y forma de solicitud"
       recarga={{ recargando: isRefetching, onRecargar: () => refetch() }}
     >
+      <AccesoGuias />
       {contenido}
     </Pantalla>
   );
