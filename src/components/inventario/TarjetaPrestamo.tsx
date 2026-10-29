@@ -68,7 +68,7 @@ export function TarjetaPrestamo({ prestamo, tablet, onEntregar, onRecibir }: Pro
           <Text variant="labelSmall" style={estilos.secundario}>
             Hora límite
           </Text>
-          <Text variant="bodyMedium" style={[estilos.dato, tiempo?.tarde ? { color: coloresEstado.rechazada.texto } : null]}>
+          <Text variant="bodyMedium" style={[estilos.dato, tiempo?.tarde ? { color: coloresEstado.pendiente.texto } : null]}>
             {`${fechaLegible(prestamo.fecha)}, ${prestamo.horaLimite}`}
           </Text>
         </View>
@@ -79,11 +79,11 @@ export function TarjetaPrestamo({ prestamo, tablet, onEntregar, onRecibir }: Pro
           <Icon
             source={tiempo.tarde ? 'alert-circle-outline' : 'timer-outline'}
             size={18}
-            color={tiempo.tarde ? coloresEstado.rechazada.texto : coloresEstado.nueva_fecha.texto}
+            color={tiempo.tarde ? coloresEstado.pendiente.texto : coloresEstado.nueva_fecha.texto}
           />
           <Text
             variant="labelLarge"
-            style={{ color: tiempo.tarde ? coloresEstado.rechazada.texto : coloresEstado.nueva_fecha.texto }}
+            style={{ color: tiempo.tarde ? coloresEstado.pendiente.texto : coloresEstado.nueva_fecha.texto }}
           >
             {tiempo.texto}
           </Text>
@@ -102,7 +102,7 @@ export function TarjetaPrestamo({ prestamo, tablet, onEntregar, onRecibir }: Pro
             {`Devuelta el ${fechaHoraLegible(devolucion.fechaHora)} · ${NOMBRE_CONDICION[devolucion.condicion]}`}
           </Text>
           {devolucion.tardia ? (
-            <Text variant="bodySmall" style={{ color: coloresEstado.rechazada.texto }}>
+            <Text variant="bodySmall" style={{ color: coloresEstado.pendiente.texto }}>
               {`Con retraso de ${duracionLegible(devolucion.retrasoMinutos ?? 0)}.`}
             </Text>
           ) : null}
