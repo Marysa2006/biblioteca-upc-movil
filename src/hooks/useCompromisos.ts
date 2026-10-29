@@ -1,6 +1,6 @@
 /**
  * Compromisos del usuario de la sesión para "Mi calendario" (HU-30): reservas y citas
- * aprobadas y préstamos de tablet reservados o entregados, en una sola lista.
+ * aprobadas y préstamos de tablet reservados, entregados o vencidos, en una sola lista.
  * Se refresca solo: agendar, cancelar, aprobar, entregar o devolver invalidan las consultas
  * de las que sale.
  *
@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 import { useMisCitas } from '@/hooks/useAsesorias';
 import { useEspacios } from '@/hooks/useEspacios';
 import { useMisReservas } from '@/hooks/useReservas';
-import { useMisPrestamos, useTablets } from '@/hooks/useTablets';
+import { useMisPrestamos } from '@/hooks/useTablets';
 import { useSesion } from '@/store/sesion';
 import { construirCompromisos, type Compromiso } from '@/utils/compromisos';
 
@@ -29,9 +29,8 @@ export function useMisCompromisos(): {
   const reservas = useMisReservas();
   const citas = useMisCitas();
   const prestamos = useMisPrestamos();
-  // Solo para nombres y códigos: si faltan, el compromiso usa un texto genérico.
+  // Solo para el nombre del espacio: si falta, el compromiso usa un texto genérico.
   const espacios = useEspacios();
-  const tablets = useTablets();
 
   const data = useMemo(
     () =>
@@ -40,9 +39,8 @@ export function useMisCompromisos(): {
         citas: citas.data ?? [],
         prestamos: prestamos.data ?? [],
         espacios: espacios.data ?? [],
-        tablets: tablets.data ?? [],
       }),
-    [reservas.data, citas.data, prestamos.data, espacios.data, tablets.data],
+    [reservas.data, citas.data, prestamos.data, espacios.data],
   );
 
   const principales = [reservas, citas, prestamos];
@@ -59,7 +57,6 @@ export function useMisCompromisos(): {
       citas.refetch();
       prestamos.refetch();
       espacios.refetch();
-      tablets.refetch();
     },
   };
 }

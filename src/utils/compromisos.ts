@@ -2,10 +2,11 @@
  * Compromisos del usuario para "Mi calendario" (HU-30). Funciones puras: unen las reservas,
  * las citas de asesoría y los préstamos de tablet en una sola lista ordenada.
  *
- * Entran las reservas y citas aprobadas y los préstamos reservados (por recoger) o entregados
- * (por devolver). No filtra por fecha: el calendario decide qué día o mes muestra.
+ * Entran las reservas y citas aprobadas y los préstamos reservados (por recoger), entregados
+ * (por devolver) o vencidos (marcados con `vencido`). No filtra por fecha: el calendario decide
+ * qué día o mes muestra.
  */
-import type { Cita, Espacio, Prestamo, Reserva, Tablet } from '@/types';
+import type { Cita, Espacio, Prestamo, Reserva } from '@/types';
 
 export type TipoCompromiso = 'reserva' | 'asesoria' | 'tablet';
 
@@ -23,10 +24,12 @@ export type Compromiso = {
   lugar: string;
   titulo: string;
   detalle?: string;
+  /** Préstamo de tablet que ya pasó la hora límite sin devolverse (HU-24). */
+  vencido?: boolean;
 };
 
-/** Préstamos que son un compromiso: recoger la tablet o devolverla. */
-const ESTADOS_PRESTAMO_COMPROMISO: Prestamo['estado'][] = ['reservado', 'entregado'];
+/** Préstamos que son un compromiso: recoger la tablet o devolverla, aunque ya esté vencido. */
+const ESTADOS_PRESTAMO_COMPROMISO: Prestamo['estado'][] = ['reservado', 'entregado', 'vencido'];
 
 function deReserva(reserva: Reserva, espacios: Espacio[]): Compromiso {
   const espacio = espacios.find((actual) => actual.id === reserva.espacioId);
@@ -56,10 +59,8 @@ function deCita(cita: Cita): Compromiso {
   };
 }
 
-function dePrestamo(prestamo: Prestamo, tablets: Tablet[]): Compromiso {
-  const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
-  // Sin la tablet en el inventario, el id hace de código.
-  const codigo = tablet?.codigo ?? prestamo.tabletId;
+/** Sin código ni modelo: el calendario no consulta el inventario. */
+function dePrestamo(prestamo: Prestamo): Compromiso {
   return {
     id: `tablet-${prestamo.id}`,
     tipo: 'tablet',
@@ -68,7 +69,9 @@ function dePrestamo(prestamo: Prestamo, tablets: Tablet[]): Compromiso {
     horaFin: prestamo.horaLimite,
     lugar: 'Biblioteca',
     titulo: 'Préstamo de tablet',
-    detalle: tablet?.modelo ? `Tablet ${codigo} · ${tablet.modelo}` : `Tablet ${codigo}`,
+    ...(prestamo.estado === 'vencido'
+      ? { vencido: true, detalle: 'Ya pasó la hora límite: devuélvela cuanto antes' }
+      : {}),
   };
 }
 
@@ -78,13 +81,11 @@ export function construirCompromisos({
   citas,
   prestamos,
   espacios,
-  tablets,
 }: {
   reservas: Reserva[];
   citas: Cita[];
   prestamos: Prestamo[];
   espacios: Espacio[];
-  tablets: Tablet[];
 }): Compromiso[] {
   return [
     ...reservas
@@ -93,7 +94,7 @@ export function construirCompromisos({
     ...citas.filter((cita) => cita.estado === 'aprobada').map(deCita),
     ...prestamos
       .filter((prestamo) => ESTADOS_PRESTAMO_COMPROMISO.includes(prestamo.estado))
-      .map((prestamo) => dePrestamo(prestamo, tablets)),
+      .map(dePrestamo),
   ].sort(
     (a, b) =>
       a.fecha.localeCompare(b.fecha) ||
