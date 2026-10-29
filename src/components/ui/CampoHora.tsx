@@ -1,8 +1,9 @@
 /**
  * Campo de hora con el reloj del sistema: al tocarlo se abre el reloj de Android (24 horas)
  * y se elige la hora. No se escribe: así no hay errores de formato.
- * Las horas van cada 30 minutos: si se marca un minuto suelto, se ajusta a la media hora más
- * cercana y se avisa debajo (también al lector de pantalla). Entrega la hora como 'HH:MM'.
+ * Las horas van cada 30 minutos (o en punto, con pasoMinutos 60): si se marca un minuto suelto,
+ * se ajusta a la más cercana y se avisa debajo (también al lector de pantalla).
+ * Entrega la hora como 'HH:MM'.
  *
  * El reloj es el DateTimePicker de @expo/ui (incluido en Expo Go): en Android abre un diálogo
  * al montarse, así que solo se monta mientras está abierto.
@@ -13,7 +14,7 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { HelperText, Icon, Text, TouchableRipple } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
-import { esHoraValida, horaAlPaso } from '@/utils/fechas';
+import { esHoraValida, horaAlPaso, MINUTOS_PASO_HORA } from '@/utils/fechas';
 
 /** La hora en la que abre el reloj si el campo está vacío. */
 const HORA_INICIAL = '08:00';
@@ -23,6 +24,8 @@ type Props = {
   /** 'HH:MM' o vacío. */
   valor: string;
   onCambiar: (hora: string) => void;
+  /** 30 (por defecto) o 60: las reservas de espacios van en punto. */
+  pasoMinutos?: 30 | 60;
   mensajeError?: string;
   deshabilitado?: boolean;
 };
@@ -35,14 +38,22 @@ function aFecha(hora: string): Date {
   return fecha;
 }
 
-export function CampoHora({ etiqueta, valor, onCambiar, mensajeError, deshabilitado = false }: Props) {
+export function CampoHora({
+  etiqueta,
+  valor,
+  onCambiar,
+  pasoMinutos = MINUTOS_PASO_HORA,
+  mensajeError,
+  deshabilitado = false,
+}: Props) {
   const [abierto, setAbierto] = useState(false);
   const [ajuste, setAjuste] = useState<string | null>(null);
 
   const elegir = (fecha: Date) => {
     setAbierto(false);
-    const { hora, ajustada } = horaAlPaso(fecha.getHours(), fecha.getMinutes());
-    const aviso = ajustada ? `Se ajustó a ${hora}: las horas van cada 30 minutos.` : null;
+    const { hora, ajustada } = horaAlPaso(fecha.getHours(), fecha.getMinutes(), pasoMinutos);
+    const regla = pasoMinutos === 60 ? 'las horas van en punto' : 'las horas van cada 30 minutos';
+    const aviso = ajustada ? `Se ajustó a ${hora}: ${regla}.` : null;
     setAjuste(aviso);
     if (aviso && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(aviso);
     onCambiar(hora);

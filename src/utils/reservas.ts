@@ -68,9 +68,9 @@ export type FormularioMotivo = z.input<typeof esquemaMotivo>;
 /** Otra fecha (CA1, "modificar"): fecha y horario válidos, con el fin después del inicio. */
 export const esquemaOtraFecha = z
   .object({
-    fecha: z.string().trim().refine(esFechaValida, { error: 'Usa el formato AAAA-MM-DD.' }),
-    horaInicio: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
-    horaFin: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
+    fecha: z.string().trim().refine(esFechaValida, { error: 'Elige una fecha en el calendario.' }),
+    horaInicio: z.string().trim().refine(esHoraValida, { error: 'Elige una hora.' }),
+    horaFin: z.string().trim().refine(esHoraValida, { error: 'Elige una hora.' }),
     motivo: z
       .string()
       .trim()
@@ -94,7 +94,23 @@ export type FormularioOtraFecha = z.input<typeof esquemaOtraFecha>;
 // si una regla de la biblioteca cambia, cambia en los dos formularios. Cada formulario tiene
 // su propio esquema con sus campos. Devuelven el mensaje para la persona o null.
 
-/** La fecha no pasó y es un día hábil (HU-28). Si el formato falla, lo dice el campo. */
+/** Hasta cuántos meses adelante se puede elegir el día de una reserva en el calendario. */
+export const MESES_RESERVA = 3;
+
+/**
+ * Por qué un día no se ofrece en el calendario de una reserva, o null si se puede elegir:
+ * ya pasó o no es hábil (motivoNoDisponible, HU-28). Sin parámetros, solo los días pasados.
+ */
+export function motivoDiaReserva(
+  dia: string,
+  parametros: Parametros | undefined,
+  hoy: string,
+): string | null {
+  if (dia < hoy) return 'ya pasó';
+  return parametros ? motivoNoDisponible(dia, parametros) : null;
+}
+
+/** La fecha no pasó y es un día hábil (HU-28). Si falta la fecha, lo dice el campo. */
 export function problemaFecha(fecha: string, parametros: Parametros, hoy: string): string | null {
   if (!esFechaValida(fecha)) return null;
   if (fecha < hoy) return 'La fecha ya pasó.';
@@ -129,11 +145,11 @@ export function problemaCapacidad(asistentes: string, espacio: Espacio | undefin
 
 const LARGO_MAXIMO_PROPOSITO = 200;
 
-/** Campos que tienen las dos reservas, con sus formatos. */
+/** Campos que tienen las dos reservas: la fecha y las horas se eligen, no se escriben. */
 const camposReserva = {
-  fecha: z.string().trim().refine(esFechaValida, { error: 'Usa el formato AAAA-MM-DD.' }),
-  horaInicio: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
-  horaFin: z.string().trim().refine(esHoraValida, { error: 'Usa el formato HH:MM.' }),
+  fecha: z.string().trim().refine(esFechaValida, { error: 'Elige una fecha en el calendario.' }),
+  horaInicio: z.string().trim().refine(esHoraValida, { error: 'Elige una hora.' }),
+  horaFin: z.string().trim().refine(esHoraValida, { error: 'Elige una hora.' }),
   proposito: z
     .string()
     .trim()

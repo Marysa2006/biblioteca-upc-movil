@@ -28,8 +28,8 @@ export const DIAS_MAXIMOS_RANGO = 31;
 /** Hasta dónde se puede bloquear por adelantado. */
 export const DIAS_MAXIMOS_ANTICIPACION = 365;
 
-const MENSAJE_FECHA = 'Escribe una fecha real en formato AAAA-MM-DD.';
-const MENSAJE_HORA = 'Escribe una hora en formato HH:MM, de 00:00 a 23:59.';
+const MENSAJE_FECHA = 'Elige una fecha en el calendario.';
+const MENSAJE_HORA = 'Elige una hora.';
 
 // ── Ayudas para mostrar ───────────────────────────────────────────────────────────────
 
