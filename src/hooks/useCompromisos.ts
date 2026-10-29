@@ -4,7 +4,7 @@
  * Se refresca solo: agendar, cancelar, aprobar, entregar o devolver invalidan las consultas
  * de las que sale.
  *
- *   const { data: compromisos, isPending, isError, refetch } = useMisCompromisos();
+ *   const { data: compromisos, isPending, isError, isRefetching, refetch } = useMisCompromisos();
  */
 import { useMemo } from 'react';
 
@@ -22,6 +22,8 @@ export function useMisCompromisos(): {
   data: Compromiso[];
   isPending: boolean;
   isError: boolean;
+  /** Para "deslizar hacia abajo para recargar". */
+  isRefetching: boolean;
   error: unknown;
   refetch: () => void;
 } {
@@ -49,6 +51,7 @@ export function useMisCompromisos(): {
     // isLoading y no isPending: sin sesión las consultas están apagadas y quedarían pendientes.
     isPending: principales.some((consulta) => consulta.isLoading),
     isError: principales.some((consulta) => consulta.isError),
+    isRefetching: principales.some((consulta) => consulta.isRefetching),
     error: principales.find((consulta) => consulta.error)?.error ?? null,
     refetch: () => {
       // refetch() ignora `enabled`: sin sesión, las consultas propias fallarían.
