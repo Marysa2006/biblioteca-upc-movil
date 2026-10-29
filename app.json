@@ -1,20 +1,17 @@
 {
   "expo": {
-    "name": "Biblioteca UPC",
+    "name": "BiblioUPC",
     "slug": "biblioteca-upc-movil",
     "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "bibliotecaupc",
     "userInterfaceStyle": "light",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
     "android": {
+      "package": "com.biblioupc.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E2F8EB",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -30,14 +27,14 @@
         {
           "backgroundColor": "#FFFFFF",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 200
         }
       ],
       "expo-secure-store",
       [
         "expo-camera",
         {
-          "cameraPermission": "La Biblioteca UPC usa la cámara para leer códigos QR y códigos de barras.",
+          "cameraPermission": "BiblioUPC usa la cámara para leer códigos QR y códigos de barras.",
           "recordAudioAndroid": false
         }
       ]
@@ -45,6 +42,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1ca845b7-0f61-44d6-83ac-7e6b5f904f17"
+      }
+    },
+    "owner": "biblioupc"
   }
 }
