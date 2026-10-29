@@ -39,8 +39,9 @@ export const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
 const HORAS_MAXIMAS = 720;
 const LARGO_MAXIMO_TEXTO = 300;
 
-const MENSAJE_FECHA = 'Usa el formato AAAA-MM-DD, por ejemplo 2026-10-20.';
-const MENSAJE_HORA = 'Usa el formato HH:MM de 24 horas, por ejemplo 07:30.';
+// Las fechas y horas se eligen (calendario y reloj): si no son válidas, es que faltan.
+const MENSAJE_FECHA = 'Elige una fecha en el calendario.';
+const MENSAJE_HORA = 'Elige una hora.';
 
 const fecha = z.string().trim().refine(esFechaValida, { error: MENSAJE_FECHA });
 const horas = z

@@ -29,6 +29,8 @@ type Props = {
   mensajeError?: string;
   descripcion?: string;
   deshabilitado?: boolean;
+  /** Campos opcionales: el calendario ofrece "Quitar fecha" para dejarlo vacío. */
+  permiteQuitar?: boolean;
 };
 
 export function SelectorFecha({
@@ -41,6 +43,7 @@ export function SelectorFecha({
   mensajeError,
   descripcion,
   deshabilitado = false,
+  permiteQuitar = false,
 }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [mes, setMes] = useState(() => inicioMes(esFechaValida(valor) ? valor : mesMinimo));
@@ -55,6 +58,16 @@ export function SelectorFecha({
     onCambiar(fecha);
     setAbierto(false);
   };
+
+  const quitar = () => {
+    onCambiar('');
+    setAbierto(false);
+  };
+
+  // La leyenda de los días tachados solo se muestra si este mes tiene alguno.
+  const hayNoElegibles = grillaMes(mes).some((semana) =>
+    semana.some((fecha) => fecha != null && motivoNoElegible(fecha) != null),
+  );
 
   const puedeAnterior = mes > inicioMes(mesMinimo);
   const puedeSiguiente = mes < inicioMes(mesMaximo);
@@ -154,12 +167,25 @@ export function SelectorFecha({
               </View>
             ))}
 
-            <Text variant="bodySmall" style={estilos.leyenda}>
-              Los días tachados no se pueden elegir: ya pasaron, son festivos, no hay atención o ya
-              tienen un bloqueo.
-            </Text>
+            {hayNoElegibles ? (
+              <Text variant="bodySmall" style={estilos.leyenda}>
+                Los días tachados no se pueden elegir: ya pasaron, son festivos, no hay atención o ya
+                tienen un bloqueo.
+              </Text>
+            ) : null}
           </Dialog.Content>
           <Dialog.Actions>
+            {permiteQuitar && valido ? (
+              <Button
+                mode="text"
+                onPress={quitar}
+                contentStyle={estilos.contenidoBoton}
+                accessibilityRole="button"
+                accessibilityLabel={`Quitar la fecha de ${etiqueta.toLowerCase()}`}
+              >
+                Quitar fecha
+              </Button>
+            ) : null}
             <Button
               mode="text"
               onPress={() => setAbierto(false)}

@@ -1,4 +1,6 @@
 export { AvisoError } from './AvisoError';
+export { CampoHora } from './CampoHora';
+export { CampoNumerico } from './CampoNumerico';
 export { ChipsFiltro, type OpcionFiltro } from './ChipsFiltro';
 export { EncabezadoApilado } from './EncabezadoApilado';
 export { EnConstruccion } from './EnConstruccion';

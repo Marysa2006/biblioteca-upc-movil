@@ -17,8 +17,14 @@ import { useCrearReservaTercero } from '@/hooks/useReservas';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Espacio, Parametros, Usuario } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
+import { sumarMeses } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
-import { esquemaReservaTercero, type FormularioReservaTercero as Formulario } from '@/utils/reservas';
+import {
+  esquemaReservaTercero,
+  MESES_RESERVA,
+  motivoDiaReserva,
+  type FormularioReservaTercero as Formulario,
+} from '@/utils/reservas';
 import { NOMBRE_TIPO } from '@/utils/roles';
 import { normalizarTexto } from '@/utils/texto';
 
@@ -57,6 +63,9 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
     resolver: zodResolver(esquemaReservaTercero({ parametros, espacios, hoy })),
     defaultValues: VACIO,
   });
+  // El máximo de asistentes es la capacidad del espacio elegido (useWatch: React Compiler).
+  const espacioId = useWatch({ control, name: 'espacioId' });
+  const capacidadElegida = espacios.find((lugar) => lugar.id === espacioId)?.capacidad;
 
   const aviso = creadaPara ? `Reserva creada y aprobada. Se notificó a ${creadaPara}.` : null;
   // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.
@@ -174,25 +183,27 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
         <CampoFormulario
           control={control}
           nombre="fecha"
-          etiqueta="Fecha (AAAA-MM-DD)"
-          placeholder="2026-10-27"
-          teclado="numbers-and-punctuation"
+          etiqueta="Fecha"
+          tipo="fecha"
+          motivoNoElegible={(dia) => motivoDiaReserva(dia, parametros, hoy)}
+          mesMinimo={hoy}
+          mesMaximo={sumarMeses(hoy, MESES_RESERVA)}
           deshabilitado={guardando}
         />
         <CampoFormulario
           control={control}
           nombre="horaInicio"
-          etiqueta="Hora de inicio (HH:MM)"
-          placeholder="14:00"
-          teclado="numbers-and-punctuation"
+          etiqueta="Hora de inicio"
+          tipo="hora"
+          pasoMinutos={60}
           deshabilitado={guardando}
         />
         <CampoFormulario
           control={control}
           nombre="horaFin"
-          etiqueta="Hora de fin (HH:MM)"
-          placeholder="16:00"
-          teclado="numbers-and-punctuation"
+          etiqueta="Hora de fin"
+          tipo="hora"
+          pasoMinutos={60}
           deshabilitado={guardando}
         />
       </Seccion>
@@ -207,8 +218,12 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
         <CampoFormulario
           control={control}
           nombre="asistentes"
-          etiqueta="Número de asistentes"
-          teclado="number-pad"
+          etiqueta={
+            capacidadElegida ? `Número de asistentes (hasta ${capacidadElegida})` : 'Número de asistentes'
+          }
+          tipo="numero"
+          minimo={1}
+          maximo={capacidadElegida}
           deshabilitado={guardando}
         />
         <CampoFormulario

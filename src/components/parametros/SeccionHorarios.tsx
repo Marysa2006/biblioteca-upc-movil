@@ -1,6 +1,6 @@
 /**
  * Horarios de atención (HU-28): los 7 días, de lunes a domingo. Cada día se abre o se cierra
- * con un interruptor; si está abierto, lleva la hora de apertura y de cierre (HH:MM).
+ * con un interruptor; si está abierto, lleva la hora de apertura y de cierre, elegidas en el reloj.
  * Un día cerrado no se ofrece para reservas ni citas (esDiaHabil).
  */
 import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
@@ -20,7 +20,7 @@ export function SeccionHorarios({ deshabilitado }: { deshabilitado: boolean }) {
   return (
     <TarjetaSeccion
       titulo="Horarios de atención"
-      ayuda="Horas en formato HH:MM de 24 horas. Un día cerrado no se ofrece para reservas ni citas."
+      ayuda="Elige las horas en el reloj, cada 30 minutos. Un día cerrado no se ofrece para reservas ni citas."
     >
       {fields.map((field, i) => (
         <FilaDia key={field.id} indice={i} dia={field.dia} deshabilitado={deshabilitado} />
@@ -54,22 +54,16 @@ function FilaDia({ indice, dia, deshabilitado }: { indice: number; dia: number; 
           <View style={estilos.hora}>
             <CampoParametro
               nombre={`dias.${indice}.abre`}
-              etiqueta="Abre"
-              placeholder="07:00"
-              teclado="numbers-and-punctuation"
-              largoMaximo={5}
-              descripcionAccesible={`${nombreDia}, hora de apertura`}
+              etiqueta={`${nombreDia}: abre`}
+              tipo="hora"
               deshabilitado={deshabilitado}
             />
           </View>
           <View style={estilos.hora}>
             <CampoParametro
               nombre={`dias.${indice}.cierra`}
-              etiqueta="Cierra"
-              placeholder="18:00"
-              teclado="numbers-and-punctuation"
-              largoMaximo={5}
-              descripcionAccesible={`${nombreDia}, hora de cierre`}
+              etiqueta={`${nombreDia}: cierra`}
+              tipo="hora"
               deshabilitado={deshabilitado}
             />
           </View>

@@ -23,10 +23,15 @@ import {
 } from '@/hooks/useReservas';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Espacio, Parametros } from '@/types';
-import { fechaCompleta } from '@/utils/calendario';
+import { fechaCompleta, sumarMeses } from '@/utils/calendario';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { esFechaValida, esHoraValida, hoyISO, sumarHoras } from '@/utils/fechas';
-import { esquemaSolicitudReserva, type FormularioSolicitud } from '@/utils/reservas';
+import {
+  esquemaSolicitudReserva,
+  MESES_RESERVA,
+  motivoDiaReserva,
+  type FormularioSolicitud,
+} from '@/utils/reservas';
 
 import { CampoFormulario } from './CampoFormulario';
 
@@ -140,25 +145,27 @@ export function FormularioSolicitudReserva({ espacio: lugar, parametros, fecha, 
         <CampoFormulario
           control={control}
           nombre="fecha"
-          etiqueta="Fecha (AAAA-MM-DD)"
-          placeholder="2026-10-27"
-          teclado="numbers-and-punctuation"
+          etiqueta="Fecha"
+          tipo="fecha"
+          motivoNoElegible={(dia) => motivoDiaReserva(dia, parametros, hoy)}
+          mesMinimo={hoy}
+          mesMaximo={sumarMeses(hoy, MESES_RESERVA)}
           deshabilitado={guardando}
         />
         <CampoFormulario
           control={control}
           nombre="horaInicio"
-          etiqueta="Hora de inicio (HH:MM)"
-          placeholder="14:00"
-          teclado="numbers-and-punctuation"
+          etiqueta="Hora de inicio"
+          tipo="hora"
+          pasoMinutos={60}
           deshabilitado={guardando}
         />
         <CampoFormulario
           control={control}
           nombre="horaFin"
-          etiqueta="Hora de fin (HH:MM)"
-          placeholder="16:00"
-          teclado="numbers-and-punctuation"
+          etiqueta="Hora de fin"
+          tipo="hora"
+          pasoMinutos={60}
           deshabilitado={guardando}
         />
       </Seccion>
@@ -184,7 +191,9 @@ export function FormularioSolicitudReserva({ espacio: lugar, parametros, fecha, 
           control={control}
           nombre="asistentes"
           etiqueta={`Número de asistentes (hasta ${lugar.capacidad})`}
-          teclado="number-pad"
+          tipo="numero"
+          minimo={1}
+          maximo={lugar.capacidad}
           deshabilitado={guardando}
         />
         <CampoFormulario

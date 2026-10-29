@@ -1,18 +1,29 @@
 /**
  * Diálogo para proponer otra fecha u horario a una reserva (HU-19, CA1 "modificar").
- * Valida los formatos y que el fin sea después del inicio; los choques de horario (CA3) y el
- * día no hábil (HU-28) los responde la API y se muestran en el aviso.
+ * La fecha se elige en el calendario (sin días pasados) y las horas en el reloj, en punto.
+ * Valida que el fin sea después del inicio; los choques de horario (CA3) y el día no hábil
+ * (HU-28) los responde la API y se muestran en el aviso.
  * No guarda: la bandeja llama a useDecidirReserva() con onConfirmar.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Controller, useForm, type Path } from 'react-hook-form';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Dialog, HelperText, Portal, Text, TextInput } from 'react-native-paper';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { ScrollView, StyleSheet } from 'react-native';
+import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError } from '@/components/ui';
 import { colores, espacio, fuentes } from '@/theme';
 import type { Reserva } from '@/types';
-import { esquemaOtraFecha, type FormularioOtraFecha } from '@/utils/reservas';
+import { sumarMeses } from '@/utils/calendario';
+import { hoyISO } from '@/utils/fechas';
+import {
+  esquemaOtraFecha,
+  MESES_RESERVA,
+  motivoDiaReserva,
+  type FormularioOtraFecha,
+} from '@/utils/reservas';
+
+import { CampoFormulario } from './CampoFormulario';
 
 type Props = {
   /** El diálogo se muestra mientras no sea null. */
@@ -43,20 +54,6 @@ export function DialogoOtraFecha({ reserva, guardando, mensajeError, onConfirmar
   );
 }
 
-type Campo = {
-  nombre: Path<FormularioOtraFecha>;
-  etiqueta: string;
-  placeholder?: string;
-  multilinea?: boolean;
-};
-
-const CAMPOS: Campo[] = [
-  { nombre: 'fecha', etiqueta: 'Fecha (AAAA-MM-DD)', placeholder: '2026-10-27' },
-  { nombre: 'horaInicio', etiqueta: 'Hora de inicio (HH:MM)', placeholder: '09:00' },
-  { nombre: 'horaFin', etiqueta: 'Hora de fin (HH:MM)', placeholder: '11:00' },
-  { nombre: 'motivo', etiqueta: 'Motivo (opcional)', multilinea: true },
-];
-
 function Contenido({
   reserva,
   guardando,
@@ -64,6 +61,7 @@ function Contenido({
   onConfirmar,
   onCerrar,
 }: Props & { reserva: Reserva }) {
+  const [hoy] = useState(hoyISO);
   const { control, handleSubmit } = useForm<FormularioOtraFecha>({
     resolver: zodResolver(esquemaOtraFecha),
     defaultValues: {
@@ -82,34 +80,39 @@ function Contenido({
           <Text variant="bodyMedium" style={estilos.texto}>
             {`${reserva.solicitante} · ${reserva.proposito}`}
           </Text>
-          {CAMPOS.map((campo) => (
-            <Controller
-              key={campo.nombre}
-              control={control}
-              name={campo.nombre}
-              render={({ field: { ref, value, onChange, onBlur }, fieldState: { error } }) => (
-                <View>
-                  <TextInput
-                    ref={ref}
-                    mode="outlined"
-                    label={campo.etiqueta}
-                    placeholder={campo.placeholder}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={error != null}
-                    disabled={guardando}
-                    multiline={campo.multilinea}
-                    keyboardType={campo.multilinea ? 'default' : 'numbers-and-punctuation'}
-                    accessibilityLabel={campo.etiqueta}
-                  />
-                  <HelperText type="error" visible={error != null}>
-                    {error?.message}
-                  </HelperText>
-                </View>
-              )}
-            />
-          ))}
+          <CampoFormulario
+            control={control}
+            nombre="fecha"
+            etiqueta="Nueva fecha"
+            tipo="fecha"
+            motivoNoElegible={(dia) => motivoDiaReserva(dia, undefined, hoy)}
+            mesMinimo={hoy}
+            mesMaximo={sumarMeses(hoy, MESES_RESERVA)}
+            deshabilitado={guardando}
+          />
+          <CampoFormulario
+            control={control}
+            nombre="horaInicio"
+            etiqueta="Hora de inicio"
+            tipo="hora"
+            pasoMinutos={60}
+            deshabilitado={guardando}
+          />
+          <CampoFormulario
+            control={control}
+            nombre="horaFin"
+            etiqueta="Hora de fin"
+            tipo="hora"
+            pasoMinutos={60}
+            deshabilitado={guardando}
+          />
+          <CampoFormulario
+            control={control}
+            nombre="motivo"
+            etiqueta="Motivo (opcional)"
+            multilinea
+            deshabilitado={guardando}
+          />
           {mensajeError ? <AvisoError mensaje={mensajeError} /> : null}
         </ScrollView>
       </Dialog.ScrollArea>

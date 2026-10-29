@@ -4,26 +4,28 @@
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { HelperText, Icon, Text, TextInput } from 'react-native-paper';
+import { Icon, Text } from 'react-native-paper';
+
+import { SelectorFecha } from '@/components/espacios/SelectorFecha';
 
 import { colores, coloresEstado, espacio, radio } from '@/theme';
 import type { Parametros } from '@/types';
-import { esFechaValida, fechaLegible } from '@/utils/fechas';
+import { sumarMeses } from '@/utils/calendario';
+import { esFechaValida, fechaLegible, hoyISO } from '@/utils/fechas';
 import { motivoNoDisponible } from '@/utils/parametros';
 
 import { TarjetaSeccion } from './TarjetaSeccion';
 
 export function ConsultaDisponibilidad({ parametros }: { parametros: Parametros }) {
   const [fecha, setFecha] = useState('');
-  const texto = fecha.trim();
-  const completa = texto.length === 10;
-  const valida = completa && esFechaValida(texto);
+  const [hoy] = useState(hoyISO);
+  const valida = esFechaValida(fecha);
 
-  const motivo = valida ? motivoNoDisponible(texto, parametros) : null;
+  const motivo = valida ? motivoNoDisponible(fecha, parametros) : null;
   const resultado = valida
     ? motivo
-      ? `${fechaLegible(texto)}: no disponible, ${motivo}.`
-      : `${fechaLegible(texto)}: día hábil, se ofrece para reservas y citas.`
+      ? `${fechaLegible(fecha)}: no disponible, ${motivo}.`
+      : `${fechaLegible(fecha)}: día hábil, se ofrece para reservas y citas.`
     : null;
 
   // En Android lo anuncia accessibilityLiveRegion; en iOS, aquí.
@@ -38,22 +40,15 @@ export function ConsultaDisponibilidad({ parametros }: { parametros: Parametros 
       titulo="Consultar disponibilidad"
       ayuda="Revisa si un día se ofrece para reservas y citas, con los parámetros guardados."
     >
-      <View>
-        <TextInput
-          mode="outlined"
-          label="Fecha"
-          placeholder="2026-10-20"
-          value={fecha}
-          onChangeText={setFecha}
-          keyboardType="numbers-and-punctuation"
-          maxLength={10}
-          error={completa && !valida}
-          accessibilityLabel="Fecha para consultar, formato año, mes y día"
-        />
-        <HelperText type="error" visible={completa && !valida}>
-          Usa el formato AAAA-MM-DD, por ejemplo 2026-10-20.
-        </HelperText>
-      </View>
+      {/* Todos los días se pueden elegir: justo es para saber si se ofrecen o no. */}
+      <SelectorFecha
+        etiqueta="Fecha para consultar"
+        valor={fecha}
+        onCambiar={setFecha}
+        motivoNoElegible={() => null}
+        mesMinimo={sumarMeses(hoy, -12)}
+        mesMaximo={sumarMeses(hoy, 24)}
+      />
 
       {resultado ? (
         <View
