@@ -4,19 +4,23 @@
  * y muestra el error de la API (mensajeError). Las fechas de vigencia solo aplican a los avisos.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 import { Button, HelperText, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 
+import { SelectorFecha } from '@/components/espacios/SelectorFecha';
 import { AvisoError, FilaInterruptor } from '@/components/ui';
 import { colores, espacio, fuentes } from '@/theme';
 import type { Contenido } from '@/types';
+import { sumarMeses } from '@/utils/calendario';
 import {
   esquemaContenido,
   TIPOS_CONTENIDO,
   TIPOS_EDITABLES,
   type TipoEditable,
 } from '@/utils/contenidos';
+import { hoyISO } from '@/utils/fechas';
 
 type DatosContenido = Omit<Contenido, 'id' | 'orden'>;
 
@@ -49,6 +53,8 @@ export function FormularioContenido({ contenido, guardando, mensajeError, onGuar
   });
   // useWatch y no watch(): watch no es compatible con el React Compiler del proyecto.
   const esAviso = useWatch({ control, name: 'tipo' }) === 'aviso';
+  const inicio = useWatch({ control, name: 'fechaInicio' });
+  const [hoy] = useState(hoyISO);
 
   const guardar = handleSubmit((datos) => {
     const conFechas = datos.tipo === 'aviso';
@@ -143,40 +149,28 @@ export function FormularioContenido({ contenido, guardando, mensajeError, onGuar
             Vigencia (opcional)
           </Text>
           <Text variant="bodySmall" style={estilos.ayuda}>
-            El aviso solo se muestra entre estas fechas. Formato AAAA-MM-DD.
+            El aviso solo se muestra entre estas fechas. Elígelas en el calendario.
           </Text>
           {(['fechaInicio', 'fechaFin'] as const).map((campo) => (
             <Controller
               key={campo}
               control={control}
               name={campo}
-              render={({ field: { ref, value, onChange, onBlur } }) => (
-                <View>
-                  <TextInput
-                    ref={ref}
-                    mode="outlined"
-                    label={campo === 'fechaInicio' ? 'Inicio' : 'Fin'}
-                    placeholder="2026-10-20"
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    error={errors[campo] != null}
-                    disabled={guardando}
-                    keyboardType="numbers-and-punctuation"
-                    maxLength={10}
-                    right={
-                      <TextInput.Icon
-                        icon="calendar-outline"
-                        accessible={false}
-                        importantForAccessibility="no"
-                      />
-                    }
-                    accessibilityLabel={`${campo === 'fechaInicio' ? 'Inicio' : 'Fin'} de la vigencia, formato año, mes y día`}
-                  />
-                  <HelperText type="error" visible={errors[campo] != null}>
-                    {errors[campo]?.message}
-                  </HelperText>
-                </View>
+              render={({ field: { value, onChange } }) => (
+                <SelectorFecha
+                  etiqueta={campo === 'fechaInicio' ? 'Inicio de la vigencia' : 'Fin de la vigencia'}
+                  valor={value}
+                  onCambiar={onChange}
+                  // El fin no puede ser antes del inicio.
+                  motivoNoElegible={(dia) =>
+                    campo === 'fechaFin' && inicio && dia < inicio ? 'es antes del inicio' : null
+                  }
+                  mesMinimo={sumarMeses(hoy, -12)}
+                  mesMaximo={sumarMeses(hoy, 24)}
+                  mensajeError={errors[campo]?.message}
+                  deshabilitado={guardando}
+                  permiteQuitar
+                />
               )}
             />
           ))}

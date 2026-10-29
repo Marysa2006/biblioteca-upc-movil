@@ -8,10 +8,10 @@ import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
-import { AvisoError, FilaInterruptor } from '@/components/ui';
+import { AvisoError, CampoNumerico, FilaInterruptor } from '@/components/ui';
 import { espacio } from '@/theme';
 import type { Espacio } from '@/types';
-import { esquemaEspacio } from '@/utils/espacios';
+import { CAPACIDAD_MAXIMA, esquemaEspacio } from '@/utils/espacios';
 
 import { SelectorFoto } from './SelectorFoto';
 
@@ -83,27 +83,40 @@ export function FormularioEspacio({ espacioActual, guardando, mensajeError, onGu
           key={campo.nombre}
           control={control}
           name={campo.nombre}
-          render={({ field: { ref, value, onChange, onBlur } }) => (
-            <View>
-              <TextInput
-                ref={ref}
-                mode="outlined"
-                label={campo.etiqueta}
-                placeholder={campo.ayuda}
-                value={value}
-                onChangeText={onChange}
+          render={({ field: { ref, value, onChange, onBlur } }) =>
+            campo.numerico ? (
+              <CampoNumerico
+                etiqueta={campo.etiqueta}
+                valor={value}
+                onCambiar={onChange}
                 onBlur={onBlur}
-                error={errors[campo.nombre] != null}
-                disabled={guardando}
-                multiline={campo.multilinea}
-                keyboardType={campo.numerico ? 'number-pad' : 'default'}
-                accessibilityLabel={campo.etiqueta}
+                minimo={1}
+                maximo={CAPACIDAD_MAXIMA}
+                placeholder={campo.ayuda}
+                mensajeError={errors[campo.nombre]?.message}
+                deshabilitado={guardando}
               />
-              <HelperText type="error" visible={errors[campo.nombre] != null}>
-                {errors[campo.nombre]?.message}
-              </HelperText>
-            </View>
-          )}
+            ) : (
+              <View>
+                <TextInput
+                  ref={ref}
+                  mode="outlined"
+                  label={campo.etiqueta}
+                  placeholder={campo.ayuda}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors[campo.nombre] != null}
+                  disabled={guardando}
+                  multiline={campo.multilinea}
+                  accessibilityLabel={campo.etiqueta}
+                />
+                <HelperText type="error" visible={errors[campo.nombre] != null}>
+                  {errors[campo.nombre]?.message}
+                </HelperText>
+              </View>
+            )
+          }
         />
       ))}
 

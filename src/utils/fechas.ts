@@ -44,3 +44,19 @@ export function sumarHoras(hora: string, horas: number): string {
   const total = Math.min(h + horas, 23);
   return `${String(total).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
+
+/** Las horas que se eligen con el reloj van cada 30 minutos. */
+export const MINUTOS_PASO_HORA = 30;
+
+/**
+ * Hora y minuto del reloj → "HH:MM" en el múltiplo de 30 minutos más cercano.
+ * 14:37 → "14:30" (ajustada); 23:50 se queda en "23:30" para no pasar al día siguiente.
+ */
+export function horaAlPaso(hora: number, minuto: number): { hora: string; ajustada: boolean } {
+  const total = Math.min(Math.round((hora * 60 + minuto) / MINUTOS_PASO_HORA) * MINUTOS_PASO_HORA, 23 * 60 + 30);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return {
+    hora: `${dos(Math.floor(total / 60))}:${dos(total % 60)}`,
+    ajustada: total !== hora * 60 + minuto,
+  };
+}
