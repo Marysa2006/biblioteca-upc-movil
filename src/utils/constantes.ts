@@ -1,5 +1,5 @@
 /** Nombre visible de la app. Cuando se elija el nombre definitivo, se cambia solo aquí y en app.json. */
-export const NOMBRE_APP = 'Biblioteca UPC';
+export const NOMBRE_APP = 'BiblioUPC';
 
 /** Dominio del correo institucional (HU-05). Confirmar con el ingeniero cuando se defina el login real. */
 export const DOMINIO_CORREO = 'unicesar.edu.co';

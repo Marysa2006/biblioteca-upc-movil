@@ -4,7 +4,7 @@
 
 **La biblioteca de la Universidad Popular del Cesar, en el bolsillo de toda la comunidad universitaria.**
 
-<sub>Nombre definitivo de la app: por definir</sub>
+<sub>La app se llama <b>BiblioUPC</b></sub>
 
 <br/>
 
@@ -296,6 +296,26 @@ npx expo start
 ```
 
 Escanea el código QR de la terminal con Expo Go. El celular y el computador deben estar en la misma red Wi-Fi; si la red no lo permite, usa `npx expo start --tunnel`. Para ver la app en el navegador: `npm run web`.
+
+### Instalar el APK de prueba (Android)
+
+Para usar la app sin Expo Go ni computador (por ejemplo, en una demo), instala el APK del último build:
+
+1. Abre en el celular el enlace del build (está en la descripción del PR o en [expo.dev](https://expo.dev/accounts/biblioupc/projects/biblioteca-upc-movil/builds)) o escanea su código QR, y toca **Install**.
+2. Abre el `.apk` descargado. Si Android lo pide, permite instalar apps de esa fuente; si Play Protect avisa de una app no reconocida, elige **Más detalles → Instalar de todas formas**.
+
+El APK trae los datos de prueba: se entra con los mismos usuarios de abajo, y lo que se crea se borra al cerrar la app. Se instala junto a Expo Go, sin reemplazarla.
+
+### Generar un APK nuevo
+
+El proyecto es de la organización **biblioupc** en Expo; para lanzar builds hay que ser miembro.
+
+```bash
+npx eas-cli@latest login
+npx eas-cli@latest build -p android --profile preview
+```
+
+El build se hace en la nube (entre 10 y 30 minutos en la cola gratis) y al final la terminal muestra el enlace y el código QR. El perfil `preview` de `eas.json` genera un APK con `EXPO_PUBLIC_USAR_MOCKS=true`, porque el `.env` no se sube. La firma de Android la guarda Expo: no se sube al repositorio.
 
 ### Usuarios de prueba
 
