@@ -1,7 +1,8 @@
 /**
  * Vista semanal del calendario de un espacio (HU-17, CA1 y CA2).
- * Arriba, una tira con los 7 días y el resumen de cada uno; debajo, las franjas del día elegido.
- * No es una grilla de 7 columnas por horas: en un celular, el estado quedaría solo con color.
+ * Arriba, una tira de lunes a sábado (los domingos no se reserva) con el resumen de cada día;
+ * debajo, las franjas del día elegido.
+ * No es una grilla de columnas por horas: en un celular, el estado quedaría solo con color.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Icon, Text, TouchableRipple } from 'react-native-paper';
@@ -14,7 +15,7 @@ import { RESUMEN_DIA } from '@/utils/disponibilidad';
 import { FilaFranja } from './FilaFranja';
 
 type Props = {
-  /** Los 7 días de la semana, de lunes a domingo ('AAAA-MM-DD'). */
+  /** Los días de la semana que se muestran, de lunes a sábado ('AAAA-MM-DD'). */
   semana: string[];
   /** La disponibilidad de esos días; un día sin datos se muestra sin resumen. */
   dias: DiaDisponibilidad[];
@@ -131,7 +132,7 @@ function FranjasDelDia({
 
 const estilos = StyleSheet.create({
   vista: { gap: espacio.m },
-  // flexGrow reparte el ancho entre los 7 días; con letra grande, la tira se desplaza de lado.
+  // flexGrow reparte el ancho entre los días; con letra grande, la tira se desplaza de lado.
   tira: { flexGrow: 1, gap: espacio.xs },
   dia: {
     flexGrow: 1,
