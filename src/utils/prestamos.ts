@@ -33,7 +33,7 @@ export const ESTADOS_DE_GRUPO: Record<GrupoPrestamos, readonly EstadoPrestamo[]>
 export const NOMBRE_GRUPO: Record<GrupoPrestamos, string> = {
   entregar: 'Entregar',
   recibir: 'Recibir',
-  devueltos: 'Devueltos',
+  devueltos: 'Historial',
 };
 
 /** Préstamos de un grupo: los pendientes, del más antiguo al más nuevo; los cerrados, al revés. */

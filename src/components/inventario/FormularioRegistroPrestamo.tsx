@@ -106,7 +106,7 @@ export function FormularioRegistroPrestamo({ modo, prestamo, tablet, guardando, 
 
       {retraso > 0 ? (
         <View style={estilos.retraso} accessibilityLiveRegion="polite">
-          <Icon source="clock-alert-outline" size={20} color={coloresEstado.rechazada.texto} />
+          <Icon source="clock-alert-outline" size={20} color={coloresEstado.pendiente.texto} />
           <Text variant="bodyMedium" style={estilos.textoRetraso}>
             {`Llega con ${duracionLegible(retraso)} de retraso (hora límite ${prestamo.horaLimite}). Quedará constancia en el préstamo.`}
           </Text>
@@ -208,8 +208,9 @@ const estilos = StyleSheet.create({
     gap: espacio.s,
     padding: espacio.m,
     borderRadius: radio.boton,
-    backgroundColor: coloresEstado.rechazada.fondo,
+    backgroundColor: coloresEstado.pendiente.fondo,
   },
-  textoRetraso: { flex: 1, color: coloresEstado.rechazada.texto },
+  // Ámbar y no rojo: es un aviso, no un error del sistema.
+  textoRetraso: { flex: 1, color: coloresEstado.pendiente.texto },
   contenidoBoton: { paddingVertical: espacio.xs },
 });

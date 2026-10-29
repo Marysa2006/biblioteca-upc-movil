@@ -4,7 +4,7 @@
  *
  * Los préstamos por grupo, con chips: Por entregar (reservados, con Registrar entrega), Por
  * recibir (entregados y vencidos, con Registrar devolución y el tiempo o el retraso) y
- * Devueltos (lo registrado, con novedades y retrasos). Entregar y recibir van en
+ * Historial (lo devuelto, con novedades y retrasos). Entregar y recibir van en
  * /administracion/prestamo. La alerta de vencidos es de la sección Vencidos (HU-24).
  * El encabezado y los filtros de a 3 (SelectorConteo) la separan del selector de Inventario.
  */

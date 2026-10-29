@@ -4,11 +4,14 @@
  * Bloquear (HU-20) solo aparece en los espacios activos: uno inactivo no recibe reservas.
  */
 import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
 
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Espacio } from '@/types';
+
+/** Con letra más grande que esto, los botones pasan a la línea siguiente para no cortarse. */
+const ESCALA_LETRA_GRANDE = 1.3;
 
 type Props = {
   espacioActual: Espacio;
@@ -27,6 +30,7 @@ export function TarjetaEspacioAdmin({
   onBloquear,
 }: Props) {
   const { activo, nombre } = espacioActual;
+  const enUnaFila = useWindowDimensions().fontScale <= ESCALA_LETRA_GRANDE;
 
   return (
     <View style={estilos.tarjeta}>
@@ -81,10 +85,12 @@ export function TarjetaEspacioAdmin({
         <View style={estilos.acciones}>
           <Button
             mode="contained-tonal"
-            icon="pencil-outline"
             onPress={onEditar}
             disabled={cambiando}
+            compact
+            style={[estilos.boton, enUnaFila && estilos.botonEnFila]}
             contentStyle={estilos.contenidoBoton}
+            labelStyle={estilos.textoBoton}
             accessibilityRole="button"
             accessibilityLabel={`Editar ${nombre}`}
           >
@@ -92,11 +98,13 @@ export function TarjetaEspacioAdmin({
           </Button>
           <Button
             mode="outlined"
-            icon={activo ? 'eye-off-outline' : 'eye-outline'}
             onPress={onCambiarEstado}
             loading={cambiando}
             disabled={cambiando}
+            compact
+            style={[estilos.boton, enUnaFila && estilos.botonEnFila]}
             contentStyle={estilos.contenidoBoton}
+            labelStyle={estilos.textoBoton}
             accessibilityRole="button"
             accessibilityLabel={`${activo ? 'Desactivar' : 'Activar'} ${nombre}`}
           >
@@ -105,10 +113,12 @@ export function TarjetaEspacioAdmin({
           {activo ? (
             <Button
               mode="outlined"
-              icon="lock-outline"
               onPress={onBloquear}
               disabled={cambiando}
+              compact
+              style={[estilos.boton, enUnaFila && estilos.botonEnFila]}
               contentStyle={estilos.contenidoBoton}
+              labelStyle={estilos.textoBoton}
               accessibilityRole="button"
               accessibilityLabel={`Bloquear ${nombre} para un evento institucional`}
             >
@@ -151,6 +161,10 @@ const estilos = StyleSheet.create({
   secundario: { color: colores.textoSecundario },
   dato: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textoDato: { flex: 1, color: colores.texto },
+  // Los botones se reparten la fila en partes iguales; con letra grande, pasan a la siguiente.
   acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
+  boton: { flexGrow: 1 },
+  botonEnFila: { flexBasis: 0 },
   contenidoBoton: { paddingVertical: espacio.xs },
+  textoBoton: { marginHorizontal: espacio.xs },
 });
