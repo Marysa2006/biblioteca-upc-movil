@@ -173,6 +173,6 @@ export function planRecordatorios(
 export function ejemploRecordatorio(texto: string): Pick<RecordatorioPlaneado, 'titulo' | 'cuerpo'> {
   return {
     titulo: 'Recordatorio de prueba',
-    cuerpo: `${texto} Así te avisaremos 24 horas y 1 hora antes de cada reserva aprobada.`,
+    cuerpo: `${texto} Así te avisaremos antes de tus reservas, asesorías y préstamos de tablet.`,
   };
 }

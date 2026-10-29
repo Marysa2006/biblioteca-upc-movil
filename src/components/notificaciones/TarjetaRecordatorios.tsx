@@ -76,7 +76,7 @@ export function TarjetaRecordatorios() {
     icono = 'bell-ring-outline';
     titulo = 'Activa los recordatorios';
     texto =
-      'Te avisaremos en el celular 24 horas y 1 hora antes de cada reserva aprobada, aunque la app esté cerrada.';
+      'Te avisaremos en el celular antes de tus reservas, asesorías y préstamos de tablet, aunque la app esté cerrada.';
     acciones = (
       <Boton
         etiqueta="Activar recordatorios"
@@ -97,9 +97,9 @@ export function TarjetaRecordatorios() {
   } else {
     icono = 'bell-check-outline';
     titulo = 'Recordatorios activos';
-    // HU-27 (reservas) y HU-24 (préstamos de tablet).
+    // HU-27 (reservas), HU-30 (asesorías y recoger la tablet) y HU-24 (devolverla).
     const cuando =
-      'Te avisaremos 24 horas y 1 hora antes de cada reserva aprobada, y 30 minutos antes de devolver una tablet.';
+      'Te avisaremos 24 horas y 1 hora antes de cada reserva y asesoría aprobada, 1 hora antes de recoger una tablet y 30 minutos antes de devolverla.';
     texto = programados === null ? cuando : `${cuando} Programados: ${programados}.`;
     acciones = (
       <Boton etiqueta="Probar un recordatorio" icono="bell-outline" onPress={probar} cargando={ocupado} />

@@ -1,30 +1,13 @@
 /**
- * Mi calendario (HU-30, CA1): las reservas, las asesorías y los préstamos de tablet de la
- * persona, como "compromisos" con fecha, hora, lugar y tipo de servicio. Funciones puras.
- * Solo entra lo que la persona tiene que cumplir: reservas y citas aprobadas, y préstamos con
- * la tablet en sus manos (entregados o vencidos). Los mismos que tienen recordatorio.
+ * Mi calendario (HU-30, CA1): cómo se muestran los compromisos de la persona (ícono, nombre y
+ * color de cada tipo, por día y cuántos hay). Funciones puras.
+ * Qué entra al calendario lo decide construirCompromisos() (src/utils/compromisos.ts, datos).
  * Los días y la semana (de lunes a sábado) son los de la agenda (src/utils/agenda.ts).
  */
-import type { CategoriaServicio, Cita, Prestamo, Reserva } from '@/types';
-import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
+import type { CategoriaServicio } from '@/types';
+import type { Compromiso, TipoCompromiso } from '@/utils/compromisos';
 
-export type TipoCompromiso = 'reserva' | 'asesoria' | 'tablet';
-
-export type Compromiso = {
-  /** Único entre los tres tipos: 'reserva-<id>', 'asesoria-<id>' o 'tablet-<id>'. */
-  id: string;
-  tipo: TipoCompromiso;
-  /** 'AAAA-MM-DD' y 'HH:MM'. En la tablet, horaFin es la hora límite para devolverla. */
-  fecha: string;
-  horaInicio: string;
-  horaFin: string;
-  titulo: string;
-  lugar: string;
-  /** Un dato más: con quién es la asesoría o qué hay que hacer con la tablet. */
-  detalle?: string;
-  /** El préstamo pasó la hora límite y la tablet no se ha devuelto. */
-  vencido?: boolean;
-};
+export type { Compromiso, TipoCompromiso } from '@/utils/compromisos';
 
 /** El tipo de servicio de cada compromiso, para su color (acentoServicio) y su fondo. */
 export const CATEGORIA_COMPROMISO: Record<TipoCompromiso, CategoriaServicio> = {
@@ -48,67 +31,6 @@ export const NOMBRE_COMPROMISO: Record<TipoCompromiso, string> = {
 
 /** Orden de los tipos en el conteo de cada día y en las convenciones. */
 export const TIPOS_COMPROMISO: TipoCompromiso[] = ['reserva', 'asesoria', 'tablet'];
-
-const LUGAR_TABLET = 'Mostrador de la biblioteca';
-
-export type FuentesCalendario = {
-  reservas: Reserva[];
-  citas: Cita[];
-  prestamos: Prestamo[];
-  /** El nombre de un espacio por su id; si no se encuentra, un texto genérico. */
-  nombreEspacio: (espacioId: string) => string;
-};
-
-/** Todos los compromisos, por fecha y hora. */
-export function compromisos({ reservas, citas, prestamos, nombreEspacio }: FuentesCalendario): Compromiso[] {
-  const deReservas = reservas
-    .filter((reserva) => reserva.estado === 'aprobada')
-    .map<Compromiso>((reserva) => ({
-      id: `reserva-${reserva.id}`,
-      tipo: 'reserva',
-      fecha: reserva.fecha,
-      horaInicio: reserva.horaInicio,
-      horaFin: reserva.horaFin,
-      titulo: reserva.proposito,
-      lugar: nombreEspacio(reserva.espacioId),
-    }));
-
-  const deCitas = citas
-    .filter((cita) => cita.estado === 'aprobada')
-    .map<Compromiso>((cita) => ({
-      id: `asesoria-${cita.id}`,
-      tipo: 'asesoria',
-      fecha: cita.fecha,
-      horaInicio: cita.horaInicio,
-      horaFin: cita.horaFin,
-      titulo: cita.tema,
-      lugar: cita.modalidad === 'virtual' ? NOMBRE_MODALIDAD.virtual : 'Biblioteca (presencial)',
-      detalle: `Con ${cita.facilitador}`,
-    }));
-
-  const dePrestamos = prestamos
-    .filter((prestamo) => prestamo.estado === 'entregado' || prestamo.estado === 'vencido')
-    .map<Compromiso>((prestamo) => {
-      const vencido = prestamo.estado === 'vencido';
-      return {
-        id: `tablet-${prestamo.id}`,
-        tipo: 'tablet',
-        fecha: prestamo.fecha,
-        horaInicio: prestamo.horaInicio,
-        horaFin: prestamo.horaLimite,
-        titulo: 'Préstamo de tablet',
-        lugar: LUGAR_TABLET,
-        detalle: vencido
-          ? 'Ya pasó la hora límite: devuélvela cuanto antes.'
-          : `Devuélvela antes de las ${prestamo.horaLimite}.`,
-        vencido,
-      };
-    });
-
-  return [...deReservas, ...deCitas, ...dePrestamos].sort((a, b) =>
-    a.fecha === b.fecha ? a.horaInicio.localeCompare(b.horaInicio) : a.fecha.localeCompare(b.fecha),
-  );
-}
 
 /** Los compromisos de un día (vista Día). */
 export const compromisosDelDia = (lista: Compromiso[], fecha: string) =>

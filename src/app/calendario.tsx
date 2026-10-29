@@ -9,8 +9,8 @@
  * Los recordatorios (CA2 y CA3) los programa SincronizarRecordatorios en el layout raíz.
  * Sin sesión, invita a iniciarla: los compromisos son de cada persona.
  *
- * Patrón de datos: useMisReservas() / useMisCitas() / useMisPrestamos() / useEspacios()
- * (src/hooks) → src/api → mock o API.
+ * Patrón de datos: useMisCompromisos() (src/hooks, HU-30 datos), que une useMisReservas(),
+ * useMisCitas() y useMisPrestamos() → src/api → mock o API.
  */
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -25,40 +25,26 @@ import { TiraDiasCalendario } from '@/components/calendario/TiraDiasCalendario';
 import { NavegacionPeriodo } from '@/components/espacios/NavegacionPeriodo';
 import { TarjetaRecordatorios } from '@/components/notificaciones/TarjetaRecordatorios';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
-import { useMisCitas } from '@/hooks/useAsesorias';
-import { useEspacios } from '@/hooks/useEspacios';
+import { useMisCompromisos } from '@/hooks/useCompromisos';
 import { usePermisoRecordatorios } from '@/hooks/useRecordatorios';
-import { useMisReservas } from '@/hooks/useReservas';
 import { useRol } from '@/hooks/useRol';
-import { useMisPrestamos } from '@/hooks/useTablets';
 import { colores, espacio, radio } from '@/theme';
 import { diaDeAgenda, moverDiaAgenda, tituloSemanaAgenda } from '@/utils/agenda';
 import { fechaCompleta, inicioSemana, rangoMes, rangoSemana, sumarDias, sumarMeses, tituloMes } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
-import { compromisos as armarCompromisos, contarPorDia } from '@/utils/miCalendario';
+import { contarPorDia } from '@/utils/miCalendario';
 
 const TITULO = 'Mi calendario';
 
 export default function MiCalendario() {
   const { usuario } = useRol();
-  const reservas = useMisReservas();
-  const citas = useMisCitas();
-  const prestamos = useMisPrestamos();
-  const { data: espacios } = useEspacios();
+  const { data: todos, isPending, isError, isRefetching, refetch } = useMisCompromisos();
   const { estado: permiso } = usePermisoRecordatorios();
 
   const [hoy] = useState(hoyISO);
   const [vista, setVista] = useState<VistaAgenda>('semana');
   // Día y Semana van de lunes a sábado: un domingo arranca en el lunes siguiente.
   const [dia, setDia] = useState(() => diaDeAgenda(hoy));
-
-  const consultas = [reservas, citas, prestamos];
-  const cargando = consultas.some((consulta) => consulta.isPending);
-  const conError = consultas.some((consulta) => consulta.isError);
-  const recargando = consultas.some((consulta) => consulta.isRefetching);
-  const recargar = () => consultas.forEach((consulta) => consulta.refetch());
-  // Solo vuelve a pedir lo que falló.
-  const reintentar = () => consultas.filter((consulta) => consulta.isError).forEach((consulta) => consulta.refetch());
 
   const mover = (paso: 1 | -1) => {
     if (vista === 'dia') setDia(moverDiaAgenda(dia, paso));
@@ -100,18 +86,12 @@ export default function MiCalendario() {
         </Button>
       </View>
     );
-  } else if (cargando) {
+  } else if (isPending) {
     contenido = <EstadoCarga mensaje="Cargando tu calendario…" />;
-  } else if (conError) {
-    contenido = <EstadoError mensaje="No pudimos cargar tu calendario." onReintentar={reintentar} />;
+  } else if (isError) {
+    contenido = <EstadoError mensaje="No pudimos cargar tu calendario." onReintentar={refetch} />;
   } else {
     const { desde, hasta } = vista === 'mes' ? rangoMes(dia) : rangoSemana(dia);
-    const todos = armarCompromisos({
-      reservas: reservas.data ?? [],
-      citas: citas.data ?? [],
-      prestamos: prestamos.data ?? [],
-      nombreEspacio: (id) => espacios?.find((espacio) => espacio.id === id)?.nombre ?? 'Espacio de la biblioteca',
-    });
     const delPeriodo = todos.filter((compromiso) => compromiso.fecha >= desde && compromiso.fecha <= hasta);
     const conteo = contarPorDia(delPeriodo);
 
@@ -152,7 +132,7 @@ export default function MiCalendario() {
         titulo={TITULO}
         subtitulo="Tus reservas, asesorías y préstamos de tablet."
         conEncabezado
-        recarga={usuario ? { recargando, onRecargar: recargar } : undefined}
+        recarga={usuario ? { recargando: isRefetching, onRecargar: refetch } : undefined}
       >
         {/* CA4: sin permiso, explica cómo activar los recordatorios; el calendario sigue igual. */}
         {usuario && (permiso === 'por_activar' || permiso === 'bloqueado') ? <TarjetaRecordatorios /> : null}
