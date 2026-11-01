@@ -8,14 +8,42 @@
  * El OPAC se abre en el navegador integrado; al cerrarlo, la persona vuelve al mismo
  * punto de la app con la sesión y la pestaña intactas (CA3).
  */
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 
 import {
+  buscarEnCatalogo,
   comprobarDisponibilidadCatalogo,
   urlBusquedaCatalogo,
   urlCatalogoPrincipal,
 } from '@/api/catalogo';
+import { claves } from '@/api/claves';
 import { abrirEnNavegador } from '@/utils/navegador';
+
+export type { ResultadoBusqueda } from '@/utils/busqueda';
+
+/** Los resultados de una búsqueda no cambian a cada rato: se reutilizan por 5 minutos. */
+const VIGENCIA_BUSQUEDA_MS = 5 * 60 * 1000;
+
+/**
+ * Resultados del catálogo dentro de la app, de 20 en 20 (HU-02).
+ * Sin texto no consulta. `fetchNextPage()` trae la página siguiente; `hasNextPage` dice si hay.
+ *
+ *   const { data } = useBusquedaCatalogo(texto);
+ *   data.pages.flatMap((pagina) => pagina.resultados); // todos los cargados
+ *   data.pages[0].total;                           // total de la búsqueda
+ */
+export function useBusquedaCatalogo(texto: string) {
+  const buscado = texto.trim();
+  return useInfiniteQuery({
+    queryKey: claves.busquedaCatalogo(buscado),
+    queryFn: ({ pageParam }) => buscarEnCatalogo(buscado, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: (ultima) => ultima.siguiente ?? undefined,
+    enabled: buscado !== '',
+    staleTime: VIGENCIA_BUSQUEDA_MS,
+  });
+}
 
 export type EstadoCatalogo = 'inactivo' | 'comprobando' | 'no_disponible';
 
