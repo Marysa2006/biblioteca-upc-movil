@@ -1,6 +1,8 @@
 /**
- * Tarjeta de una fuente en la pestaña Catálogo (Koha, repositorio o recursos en línea):
+ * Tarjeta de una fuente en la pestaña Catálogo (Koha, repositorio, recursos en línea o guías):
  * ícono, nombre y qué se encuentra allí. Al tocarla se abre la pantalla de esa fuente.
+ * La marca opcional destaca algo de la fuente con ícono y texto, por ejemplo
+ * "Disponible sin conexión" en las guías (HU-29).
  *
  * Usa TouchableRipple y no Card con onPress, como TarjetaRecurso.
  */
@@ -10,20 +12,23 @@ import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
 
+type FuenteIcono = ComponentProps<typeof Icon>['source'];
+
 type Props = {
-  icono: ComponentProps<typeof Icon>['source'];
+  icono: FuenteIcono;
   titulo: string;
   descripcion: string;
+  marca?: { icono: FuenteIcono; texto: string };
   onPress: () => void;
 };
 
-export function TarjetaFuente({ icono, titulo, descripcion, onPress }: Props) {
+export function TarjetaFuente({ icono, titulo, descripcion, marca, onPress }: Props) {
   return (
     <View style={estilos.tarjeta}>
       <TouchableRipple
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={`${titulo}. ${descripcion}`}
+        accessibilityLabel={[titulo, marca?.texto, descripcion].filter(Boolean).join('. ')}
       >
         <View style={estilos.contenido}>
           <View style={estilos.cuadroIcono}>
@@ -33,6 +38,14 @@ export function TarjetaFuente({ icono, titulo, descripcion, onPress }: Props) {
             <Text variant="titleMedium" style={estilos.titulo}>
               {titulo}
             </Text>
+            {marca ? (
+              <View style={estilos.marca}>
+                <Icon source={marca.icono} size={14} color={colores.primarioOscuro} />
+                <Text variant="labelMedium" style={estilos.textoMarca}>
+                  {marca.texto}
+                </Text>
+              </View>
+            ) : null}
             <Text variant="bodyMedium" style={estilos.descripcion}>
               {descripcion}
             </Text>
@@ -55,5 +68,18 @@ const estilos = StyleSheet.create({
   },
   textos: { flex: 1, gap: espacio.xs },
   titulo: { color: colores.texto, fontFamily: fuentes.negrita },
+  // alignSelf: la marca mide lo que su texto, no todo el ancho.
+  marca: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: espacio.xs,
+    paddingHorizontal: espacio.s,
+    paddingVertical: espacio.xs / 2,
+    borderRadius: radio.boton,
+    backgroundColor: colores.primarioSuave,
+  },
+  // flexShrink: con letra grande, el texto pasa a otra línea en lugar de salirse.
+  textoMarca: { flexShrink: 1, color: colores.primarioOscuro },
   descripcion: { color: colores.textoSecundario },
 });

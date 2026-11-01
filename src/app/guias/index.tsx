@@ -1,5 +1,5 @@
 /**
- * Guías de la biblioteca (HU-29, función plus). Pantalla apilada que se abre desde Servicios.
+ * Guías de la biblioteca (HU-29, función plus). Pantalla apilada que se abre desde Catálogo.
  *
  * - CA1: con conexión, la lista de guías publicadas; cada una se abre.
  * - CA2: cada tarjeta dice si está guardada en el celular. Sin conexión, la lista muestra las
