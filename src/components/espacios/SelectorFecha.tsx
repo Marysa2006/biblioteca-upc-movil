@@ -25,6 +25,8 @@ type Props = {
   /** Primer y último mes que se pueden mostrar ('AAAA-MM-DD' de cualquier día del mes). */
   mesMinimo: string;
   mesMaximo: string;
+  /** Mes que se muestra al abrir si no hay fecha elegida; por defecto, el mes mínimo. */
+  mesInicial?: string;
   /** Debajo del campo: el error, o si no hay, una descripción del día elegido. */
   mensajeError?: string;
   descripcion?: string;
@@ -40,17 +42,19 @@ export function SelectorFecha({
   motivoNoElegible,
   mesMinimo,
   mesMaximo,
+  mesInicial,
   mensajeError,
   descripcion,
   deshabilitado = false,
   permiteQuitar = false,
 }: Props) {
   const [abierto, setAbierto] = useState(false);
-  const [mes, setMes] = useState(() => inicioMes(esFechaValida(valor) ? valor : mesMinimo));
   const valido = esFechaValida(valor);
+  const mesAlAbrir = () => inicioMes(valido ? valor : (mesInicial ?? mesMinimo));
+  const [mes, setMes] = useState(mesAlAbrir);
 
   const abrir = () => {
-    setMes(inicioMes(valido ? valor : mesMinimo));
+    setMes(mesAlAbrir());
     setAbierto(true);
   };
 
