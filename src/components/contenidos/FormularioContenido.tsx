@@ -166,6 +166,8 @@ export function FormularioContenido({ contenido, guardando, mensajeError, onGuar
                     campo === 'fechaFin' && inicio && dia < inicio ? 'es antes del inicio' : null
                   }
                   mesMinimo={sumarMeses(hoy, -12)}
+                  // Sin fecha, abre en el inicio elegido (para el fin) o en el mes actual.
+                  mesInicial={campo === 'fechaFin' && inicio ? inicio : hoy}
                   mesMaximo={sumarMeses(hoy, 24)}
                   mensajeError={errors[campo]?.message}
                   deshabilitado={guardando}

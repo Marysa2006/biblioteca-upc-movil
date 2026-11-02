@@ -6,14 +6,15 @@
  * - Agenda (`asesorias`): las citas de asesoría por día y por semana (HU-15).
  * - Espacios (`espacios`): la configuración de los espacios y sus bloqueos (HU-16 y HU-20).
  * - Portal (`contenidos` o `parametros`): contenidos (HU-04) y parámetros generales (HU-28).
- * Una sección puede traer un botón flotante (Solicitudes: "Reservar para un tercero").
+ * Una sección puede traer un botón flotante (Solicitudes: "Reservar para un tercero";
+ * Espacios: "Nuevo espacio").
  * El selector aparece solo con dos secciones o más. Esta pantalla solo compone: el contenido
  * de cada sección se cambia en su componente, no aquí.
  */
 import { useState, type ComponentType } from 'react';
 
 import { SeccionAgenda } from '@/components/gestion/SeccionAgenda';
-import { SeccionEspacios } from '@/components/gestion/SeccionEspacios';
+import { BotonNuevoEspacio, SeccionEspacios } from '@/components/gestion/SeccionEspacios';
 import { SeccionPortal } from '@/components/gestion/SeccionPortal';
 import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
@@ -28,8 +29,8 @@ type Seccion = {
   valor: ValorSeccion;
   etiqueta: string;
   Componente: ComponentType;
-  /** Botón flotante de la sección, fijo abajo a la derecha (opcional). */
-  Flotante?: ComponentType;
+  /** Botón flotante de la sección, fijo abajo a la derecha (opcional); se encoge al deslizar. */
+  Flotante?: ComponentType<{ extendido: boolean }>;
   /** Se ve con cualquiera de estos permisos. */
   permisos: readonly Permiso[];
 };
@@ -52,6 +53,7 @@ const SECCIONES: Seccion[] = [
     valor: 'espacios',
     etiqueta: 'Espacios',
     Componente: SeccionEspacios,
+    Flotante: BotonNuevoEspacio,
     permisos: ['espacios'],
   },
   {
@@ -70,12 +72,15 @@ export default function Gestion() {
   // Si la elegida dejó de verse (o nunca se vio), se muestra la primera visible.
   const activa: Seccion | undefined =
     visibles.find((seccion) => seccion.valor === elegida) ?? visibles[0];
+  const Flotante = activa?.Flotante;
 
   return (
     <Pantalla
       titulo="Gestión"
       subtitulo="Solicitudes, espacios y administración del portal"
-      flotante={activa?.Flotante ? <activa.Flotante /> : null}
+      flotante={
+        Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null
+      }
     >
       {activa && visibles.length > 1 ? (
         <SelectorSeccion opciones={visibles} valor={activa.valor} onCambiar={setElegida} />

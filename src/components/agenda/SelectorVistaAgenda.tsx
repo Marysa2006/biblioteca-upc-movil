@@ -3,6 +3,7 @@
  * los chips de Gestión, para que no parezca parte del selector de secciones.
  * Los segmentos se reparten el ancho y, con letra grande, el texto pasa a otra línea en lugar
  * de cortarse (no se usa SegmentedButtons por eso).
+ * Con `etiquetas` se renombra una vista: la agenda de Gestión llama "Hoy" a la del día.
  */
 import { StyleSheet, View } from 'react-native';
 import { Text, TouchableRipple } from 'react-native-paper';
@@ -17,14 +18,21 @@ const OPCIONES: VistaAgenda[] = ['dia', 'semana', 'mes'];
 type Props = {
   valor: VistaAgenda;
   onCambiar: (valor: VistaAgenda) => void;
+  /** Nombres propios de algunas vistas, por ejemplo { dia: 'Hoy' }. */
+  etiquetas?: Partial<Record<VistaAgenda, string>>;
 };
 
-export function SelectorVistaAgenda({ valor, onCambiar }: Props) {
+export function SelectorVistaAgenda({ valor, onCambiar, etiquetas }: Props) {
   return (
-    <View style={estilos.control} accessibilityRole="tablist" accessibilityLabel="Vista de la agenda">
+    <View
+      style={estilos.control}
+      accessibilityRole="tablist"
+      accessibilityLabel="Vista de la agenda"
+    >
       {OPCIONES.map((opcion) => {
         const elegida = opcion === valor;
-        const etiqueta = NOMBRE_VISTA[opcion];
+        const propia = etiquetas?.[opcion];
+        const etiqueta = propia ?? NOMBRE_VISTA[opcion];
         return (
           <TouchableRipple
             key={opcion}
@@ -32,7 +40,7 @@ export function SelectorVistaAgenda({ valor, onCambiar }: Props) {
             style={[estilos.segmento, elegida && estilos.segmentoElegido]}
             accessibilityRole="tab"
             accessibilityState={{ selected: elegida }}
-            accessibilityLabel={`Vista por ${etiqueta.toLowerCase()}`}
+            accessibilityLabel={propia ? `Vista: ${propia}` : `Vista por ${etiqueta.toLowerCase()}`}
           >
             <Text variant="labelLarge" style={[estilos.texto, elegida && estilos.textoElegido]}>
               {etiqueta}

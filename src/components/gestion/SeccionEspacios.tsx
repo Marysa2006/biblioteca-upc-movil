@@ -10,15 +10,17 @@
  *
  * Bloqueos (HU-20): "Bloquear" en cada espacio activo abre /administracion/bloqueo, donde se
  * revisan las reservas afectadas antes de confirmar.
+ *
+ * "Nuevo espacio" es el botón flotante de la sección (BotonNuevoEspacio), que Gestión pone en Pantalla.
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Portal, Snackbar } from 'react-native-paper';
+import { Portal, Snackbar } from 'react-native-paper';
 
 import { DialogoDesactivarEspacio } from '@/components/espacios/DialogoDesactivarEspacio';
 import { TarjetaEspacioAdmin } from '@/components/espacios/TarjetaEspacioAdmin';
-import { EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
+import { BotonFlotante, EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
 import {
   useCambiarEstadoEspacio,
   useEspaciosAdministracion,
@@ -108,16 +110,6 @@ export function SeccionEspacios() {
 
   return (
     <View style={estilos.seccion}>
-      <Button
-        mode="contained"
-        icon="plus"
-        onPress={() => router.push('/administracion/espacio')}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo espacio"
-      >
-        Nuevo espacio
-      </Button>
       {lista}
 
       <DialogoDesactivarEspacio
@@ -142,5 +134,16 @@ export function SeccionEspacios() {
 
 const estilos = StyleSheet.create({
   seccion: { gap: espacio.s },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });
+
+/** Botón flotante "Nuevo espacio" de la sección; se encoge al deslizar. */
+export function BotonNuevoEspacio({ extendido }: { extendido: boolean }) {
+  return (
+    <BotonFlotante
+      icono="plus"
+      texto="Nuevo espacio"
+      onPress={() => router.push('/administracion/espacio')}
+      extendido={extendido}
+    />
+  );
+}

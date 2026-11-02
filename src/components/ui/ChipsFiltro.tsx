@@ -1,6 +1,7 @@
 /**
  * Fila horizontal de chips para filtrar una lista: "Todos" más una opción por valor.
- * El elegido va con fondo oscuro y la marca de selección de Paper, no solo con color.
+ * El elegido va con fondo oscuro y en negrita, así no depende solo del color. Sin la marca
+ * de selección de Paper, que ocupa espacio en cada chip.
  */
 import { ScrollView, StyleSheet } from 'react-native';
 import { Chip } from 'react-native-paper';
@@ -38,10 +39,11 @@ export function ChipsFiltro<T extends string>({ opciones, valor, onCambiar, desc
           <Chip
             key={opcion.valor}
             selected={elegido}
+            showSelectedCheck={false}
             onPress={() => onCambiar(opcion.valor)}
             style={elegido ? estilos.chipElegido : estilos.chip}
             selectedColor={elegido ? colores.superficie : colores.primarioOscuro}
-            textStyle={estilos.texto}
+            textStyle={elegido ? estilos.textoElegido : estilos.texto}
             hitSlop={AREA_CHIP}
             accessibilityRole="button"
             accessibilityState={{ selected: elegido }}
@@ -60,4 +62,5 @@ const estilos = StyleSheet.create({
   chip: { backgroundColor: colores.primarioSuave },
   chipElegido: { backgroundColor: colores.primarioOscuro },
   texto: { fontFamily: fuentes.seminegrita },
+  textoElegido: { fontFamily: fuentes.negrita },
 });

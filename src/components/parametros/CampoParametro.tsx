@@ -67,6 +67,7 @@ export function CampoParametro({
               onCambiar={onChange}
               motivoNoElegible={() => null}
               mesMinimo={sumarMeses(hoy, -MESES_ATRAS)}
+              mesInicial={hoy}
               mesMaximo={sumarMeses(hoy, MESES_ADELANTE)}
               mensajeError={error?.message}
               deshabilitado={deshabilitado}

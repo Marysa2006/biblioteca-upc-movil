@@ -4,17 +4,19 @@
  *
  * - Servicios: crear, editar y activar o desactivar (CA1, CA2). Sin orden manual: van por categoría.
  * - Avisos y novedades: crear, editar, publicar u ocultar (CA1, CA2) y cambiar el orden (CA4).
+ * "Nuevo servicio" o "Nuevo aviso" es el botón flotante, según la pestaña; se encoge al deslizar.
  * Patrón de datos: hooks de src/hooks/useServicios.ts y useContenidos.ts → src/api → mock o API.
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Portal, SegmentedButtons, Snackbar } from 'react-native-paper';
+import { Portal, SegmentedButtons, Snackbar } from 'react-native-paper';
 
 import { TarjetaContenido } from '@/components/contenidos/TarjetaContenido';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import { TarjetaServicioAdmin } from '@/components/servicios/TarjetaServicioAdmin';
 import {
+  BotonFlotante,
   EncabezadoApilado,
   EstadoCarga,
   EstadoError,
@@ -76,6 +78,24 @@ function GestionContenidos() {
       titulo="Contenidos del portal"
       subtitulo="Lo que la comunidad ve en Inicio y en Servicios."
       conEncabezado
+      flotante={(desplazada: boolean) =>
+        seccion === 'servicios' ? (
+          <BotonFlotante
+            icono="plus"
+            texto="Nuevo servicio"
+            onPress={() => router.push('/administracion/servicio')}
+            extendido={!desplazada}
+          />
+        ) : (
+          <BotonFlotante
+            icono="plus"
+            texto="Nuevo aviso"
+            etiqueta="Nuevo aviso o novedad"
+            onPress={() => router.push('/administracion/contenido')}
+            extendido={!desplazada}
+          />
+        )
+      }
       recarga={{
         recargando: seccion === 'servicios' ? servicios.isRefetching : contenidos.isRefetching,
         onRecargar: recargar,
@@ -162,16 +182,6 @@ function SeccionServicios({ consulta, onAviso }: PropsServicios) {
 
   return (
     <View style={estilos.seccion}>
-      <Button
-        mode="contained"
-        icon="plus"
-        onPress={() => router.push('/administracion/servicio')}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo servicio"
-      >
-        Nuevo servicio
-      </Button>
       {lista}
     </View>
   );
@@ -256,16 +266,6 @@ function SeccionAvisos({ consulta, onAviso }: PropsAvisos) {
 
   return (
     <View style={estilos.seccion}>
-      <Button
-        mode="contained"
-        icon="plus"
-        onPress={() => router.push('/administracion/contenido')}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo aviso o novedad"
-      >
-        Nuevo aviso o novedad
-      </Button>
       {lista}
     </View>
   );
@@ -273,5 +273,4 @@ function SeccionAvisos({ consulta, onAviso }: PropsAvisos) {
 
 const estilos = StyleSheet.create({
   seccion: { gap: espacio.s },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });

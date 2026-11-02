@@ -1,10 +1,12 @@
 /**
  * Tema de asesoría en la administración (HU-13): nombre, descripción, estado y acciones.
  * Activo o Inactivo va con texto. Un tema inactivo no se ofrece para agendar (HU-14).
+ * Editar y Desactivar o Activar van en el menú de tres puntos, arriba a la derecha.
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 
+import { MenuAcciones } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { TemaAsesoria } from '@/types';
 
@@ -32,6 +34,24 @@ export function TarjetaTema({ tema, jornadas, cambiando, onEditar, onCambiarEsta
             {activo ? 'Activo' : 'Inactivo'}
           </Text>
         </View>
+        <MenuAcciones
+          acciones={[
+            {
+              titulo: 'Editar',
+              icono: 'pencil-outline',
+              onPress: onEditar,
+              etiqueta: `Editar el tema ${tema.nombre}`,
+            },
+            {
+              titulo: activo ? 'Desactivar' : 'Activar',
+              icono: activo ? 'eye-off-outline' : 'eye-outline',
+              onPress: onCambiarEstado,
+              etiqueta: `${activo ? 'Desactivar' : 'Activar'} el tema ${tema.nombre}`,
+            },
+          ]}
+          descripcion={`Acciones del tema ${tema.nombre}`}
+          ocupado={cambiando}
+        />
       </View>
       <Text variant="bodyMedium" style={estilos.secundario}>
         {tema.descripcion}
@@ -41,32 +61,6 @@ export function TarjetaTema({ tema, jornadas, cambiando, onEditar, onCambiarEsta
           ? 'Sin jornadas: todavía no se puede agendar.'
           : `${jornadas} ${jornadas === 1 ? 'jornada' : 'jornadas'}`}
       </Text>
-
-      <View style={estilos.acciones}>
-        <Button
-          mode="contained-tonal"
-          icon="pencil-outline"
-          onPress={onEditar}
-          disabled={cambiando}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel={`Editar el tema ${tema.nombre}`}
-        >
-          Editar
-        </Button>
-        <Button
-          mode="outlined"
-          icon={activo ? 'eye-off-outline' : 'eye-outline'}
-          onPress={onCambiarEstado}
-          loading={cambiando}
-          disabled={cambiando}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel={`${activo ? 'Desactivar' : 'Activar'} el tema ${tema.nombre}`}
-        >
-          {activo ? 'Desactivar' : 'Activar'}
-        </Button>
-      </View>
     </View>
   );
 }
@@ -78,7 +72,7 @@ const estilos = StyleSheet.create({
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
   },
-  encabezado: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.m },
+  encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   nombre: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
   estado: { paddingHorizontal: espacio.s, paddingVertical: espacio.xs, borderRadius: radio.boton },
   estadoActivo: { backgroundColor: colores.primarioSuave },
@@ -86,6 +80,4 @@ const estilos = StyleSheet.create({
   textoActivo: { color: colores.primarioOscuro },
   textoInactivo: { color: coloresEstado.cancelada.texto },
   secundario: { color: colores.textoSecundario },
-  acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });

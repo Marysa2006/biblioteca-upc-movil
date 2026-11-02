@@ -47,6 +47,7 @@ export function ConsultaDisponibilidad({ parametros }: { parametros: Parametros 
         onCambiar={setFecha}
         motivoNoElegible={() => null}
         mesMinimo={sumarMeses(hoy, -12)}
+        mesInicial={hoy}
         mesMaximo={sumarMeses(hoy, 24)}
       />
 

@@ -5,7 +5,7 @@
  */
 import { z } from 'zod';
 
-import type { Cita, EstadoSolicitud } from '@/types';
+import type { Cita, EstadoSolicitud, HorarioAtencion } from '@/types';
 import { diasSemana, mismoMes, numeroDia, sumarDias } from '@/utils/calendario';
 import { fechaLegible } from '@/utils/fechas';
 import { inicioReserva } from '@/utils/recordatorios';
@@ -161,3 +161,78 @@ export const esquemaResultado = z.object({
 
 /** Se llama Datos y no Formulario: FormularioResultado es el componente. */
 export type DatosResultado = z.input<typeof esquemaResultado>;
+
+/** 'HH:MM' → minutos desde la medianoche. */
+export function aMinutos(hora: string): number {
+  const [horas, minutos] = hora.split(':').map(Number);
+  return horas * 60 + minutos;
+}
+
+/** Las horas que muestra la malla de la semana, en minutos y en horas enteras. */
+export type RangoMalla = { inicio: number; fin: number };
+
+/** Sin horarios de atención, la malla va de 7:00 a 19:00. */
+const RANGO_MALLA_PREDETERMINADO: RangoMalla = { inicio: 7 * 60, fin: 19 * 60 };
+
+/**
+ * De la primera apertura a la última hora de cierre de los parámetros (HU-28), en horas
+ * enteras. Si alguna cita queda por fuera, el rango crece para que se vea.
+ */
+export function rangoHorasMalla(
+  horarios: HorarioAtencion[] | undefined,
+  citas: Cita[],
+): RangoMalla {
+  const inicios = [
+    ...(horarios ?? []).map((h) => aMinutos(h.abre)),
+    ...citas.map((c) => aMinutos(c.horaInicio)),
+  ];
+  const fines = [
+    ...(horarios ?? []).map((h) => aMinutos(h.cierra)),
+    ...citas.map((c) => aMinutos(c.horaFin)),
+  ];
+  if (inicios.length === 0) return RANGO_MALLA_PREDETERMINADO;
+  return {
+    inicio: Math.floor(Math.min(...inicios) / 60) * 60,
+    fin: Math.ceil(Math.max(...fines) / 60) * 60,
+  };
+}
+
+/** Una cita en la malla: su columna y cuántas columnas comparten ese momento del día. */
+export type CitaEnMalla = { cita: Cita; columna: number; columnas: number };
+
+/**
+ * Reparte las citas de un día en columnas paralelas para que las simultáneas no se tapen.
+ * Las que se cruzan forman un grupo; cada una toma la primera columna libre del grupo, y
+ * todas las del grupo se dividen el ancho en partes iguales.
+ */
+export function distribuirCitas(citas: Cita[]): CitaEnMalla[] {
+  const ordenadas = [...citas].sort(
+    (a, b) =>
+      aMinutos(a.horaInicio) - aMinutos(b.horaInicio) || aMinutos(b.horaFin) - aMinutos(a.horaFin),
+  );
+  const resultado: CitaEnMalla[] = [];
+  let grupo: CitaEnMalla[] = [];
+  // Hora en que termina cada columna del grupo actual, y el fin más tardío del grupo.
+  let finColumnas: number[] = [];
+  let finGrupo = -1;
+
+  const cerrarGrupo = () => {
+    for (const item of grupo) item.columnas = finColumnas.length;
+    resultado.push(...grupo);
+    grupo = [];
+    finColumnas = [];
+  };
+
+  for (const cita of ordenadas) {
+    const inicio = aMinutos(cita.horaInicio);
+    const fin = aMinutos(cita.horaFin);
+    if (inicio >= finGrupo) cerrarGrupo();
+    let columna = finColumnas.findIndex((finColumna) => finColumna <= inicio);
+    if (columna === -1) columna = finColumnas.length;
+    finColumnas[columna] = fin;
+    finGrupo = Math.max(finGrupo, fin);
+    grupo.push({ cita, columna, columnas: 1 });
+  }
+  cerrarGrupo();
+  return resultado;
+}

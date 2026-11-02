@@ -1,9 +1,11 @@
 import { Image } from 'expo-image';
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   View,
@@ -27,10 +29,16 @@ type Props = {
   conTeclado?: boolean;
   /** Oculta el menú de usuario de arriba (por ejemplo, en el login). En pantallas con barra propia no se muestra. */
   sinMenuUsuario?: boolean;
-  /** Botón flotante abajo a la derecha (por ejemplo, un FAB): queda fijo al deslizar. */
-  flotante?: ReactNode;
+  /**
+   * Botón flotante abajo a la derecha (por ejemplo, un FAB): queda fijo al deslizar.
+   * Como función, recibe si el contenido ya se deslizó hacia abajo, para encogerse.
+   */
+  flotante?: ReactNode | ((desplazada: boolean) => ReactNode);
   children: ReactNode;
 };
+
+/** Cuánto hay que deslizar (en px) para que el botón flotante se encoja. */
+const DESPLAZAMIENTO_PARA_ENCOGER = espacio.xl;
 
 /**
  * Contenedor común de las pantallas: área segura, marca (isotipo + nombre) con el menú de usuario,
@@ -46,10 +54,20 @@ export function Pantalla({
   flotante,
   children,
 }: Props) {
+  // Si el contenido ya bajó un poco, para que el botón flotante se encoja y deje ver la lista.
+  const [desplazada, setDesplazada] = useState(false);
+  const alDesplazar =
+    typeof flotante === 'function'
+      ? ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) =>
+          setDesplazada(nativeEvent.contentOffset.y > DESPLAZAMIENTO_PARA_ENCOGER)
+      : undefined;
+
   const contenido = (
     <ScrollView
       // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
       contentContainerStyle={[estilos.contenido, flotante ? estilos.contenidoConFlotante : null]}
+      onScroll={alDesplazar}
+      scrollEventThrottle={alDesplazar ? 16 : undefined}
       // Con el teclado abierto, el primer toque en un botón lo presiona (y no solo cierra el teclado).
       keyboardShouldPersistTaps="handled"
       refreshControl={
@@ -107,7 +125,11 @@ export function Pantalla({
       ) : (
         contenido
       )}
-      {flotante ? <View style={estilos.flotante}>{flotante}</View> : null}
+      {flotante ? (
+        <View style={estilos.flotante}>
+          {typeof flotante === 'function' ? flotante(desplazada) : flotante}
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }

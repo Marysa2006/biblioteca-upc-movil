@@ -1,8 +1,9 @@
 /**
  * La agenda de un mes (HU-15): cada día con sus citas por estado (ícono y color de las
- * convenciones, y cuántas). Al tocar un día se abre su
- * vista Día. Sigue la grilla de VistaMes (HU-17), con la semana de lunes a domingo; los días
- * pasados también se tocan, porque en ellos se registra el resultado (CA3).
+ * convenciones, y cuántas). Hoy lleva borde verde; al tocar un día, queda elegido en verde
+ * oscuro y la Agenda muestra sus citas debajo. Sigue la grilla de VistaMes (HU-17), con la
+ * semana de lunes a domingo; los días pasados también se tocan, porque en ellos se registra
+ * el resultado (CA3).
  * Las celdas no tienen alto fijo: con letra grande crecen hacia abajo.
  */
 import { StyleSheet, View } from 'react-native';
@@ -20,16 +21,22 @@ type Props = {
   /** Cualquier fecha del mes que se muestra. */
   mes: string;
   hoy: string;
+  /** El día elegido, en verde oscuro; null si ninguno. */
+  elegido: string | null;
   /** Citas de cada día por estado ('AAAA-MM-DD' → conteo). */
   conteo: Map<string, ConteoDia>;
   onElegirDia: (fecha: string) => void;
 };
 
-export function MesAgenda({ mes, hoy, conteo, onElegirDia }: Props) {
+export function MesAgenda({ mes, hoy, elegido, conteo, onElegirDia }: Props) {
   return (
     <View style={estilos.grilla}>
       {/* Las iniciales son visuales: cada día ya dice su nombre al lector de pantalla. */}
-      <View style={estilos.fila} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+      <View
+        style={estilos.fila}
+        importantForAccessibility="no-hide-descendants"
+        accessibilityElementsHidden
+      >
         {INICIALES.map((inicial, i) => (
           <Text key={i} variant="labelMedium" style={estilos.inicial}>
             {inicial}
@@ -44,23 +51,37 @@ export function MesAgenda({ mes, hoy, conteo, onElegirDia }: Props) {
             const delDia = conteo.get(fecha);
             const conCitas = delDia != null && delDia.total > 0;
             const esHoy = fecha === hoy;
+            const esElegido = fecha === elegido;
             return (
               <View
                 key={fecha}
-                style={[estilos.celda, conCitas && estilos.celdaConCitas, esHoy && estilos.celdaHoy]}
+                style={[
+                  estilos.celda,
+                  conCitas && estilos.celdaConCitas,
+                  esHoy && estilos.celdaHoy,
+                  esElegido && estilos.celdaElegida,
+                ]}
               >
                 <TouchableRipple
                   onPress={() => onElegirDia(fecha)}
                   accessibilityRole="button"
-                  accessibilityLabel={`${fechaCompleta(fecha)}${esHoy ? ', hoy' : ''}, ${textoConteoDia(delDia).toLowerCase()}. Ver el día`}
+                  accessibilityState={{ selected: esElegido }}
+                  accessibilityLabel={`${fechaCompleta(fecha)}${esHoy ? ', hoy' : ''}, ${textoConteoDia(delDia).toLowerCase()}. Ver sus citas`}
                 >
                   <View style={estilos.contenido}>
-                    <Text variant="bodyMedium" style={[estilos.numero, esHoy && estilos.numeroHoy]}>
+                    <Text
+                      variant="bodyMedium"
+                      style={[
+                        estilos.numero,
+                        esHoy && estilos.numeroHoy,
+                        esElegido && estilos.numeroElegido,
+                      ]}
+                    >
                       {numeroDia(fecha)}
                     </Text>
                     {/* Las citas por estado; sin citas, un espacio para que la fila no salte. */}
                     {conCitas ? (
-                      <EstadosDelDia conteo={delDia} />
+                      <EstadosDelDia conteo={delDia} sobreOscuro={esElegido} />
                     ) : (
                       <Text variant="labelSmall"> </Text>
                     )}
@@ -90,8 +111,15 @@ const estilos = StyleSheet.create({
   },
   celdaConCitas: { backgroundColor: colores.primarioSuave },
   celdaHoy: { borderColor: colores.primario },
+  celdaElegida: { backgroundColor: colores.primarioOscuro, borderColor: colores.primarioOscuro },
   // minHeight: 44 px de área táctil; crece con la letra.
-  contenido: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingVertical: espacio.xs },
+  contenido: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: espacio.xs,
+  },
   numero: { color: colores.texto, fontFamily: fuentes.seminegrita },
   numeroHoy: { color: colores.primario, fontFamily: fuentes.negrita },
+  numeroElegido: { color: colores.superficie },
 });

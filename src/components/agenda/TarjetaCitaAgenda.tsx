@@ -1,5 +1,6 @@
 /**
  * Una cita en la agenda del facilitador (HU-15, CA1): la hora, el estado, el tema y quién la pidió.
+ * Un ícono pequeño dice la modalidad (presencial o virtual); los temas no tienen ícono propio.
  * La administración ve también al facilitador. Se presiona entera y abre el detalle (CA2).
  */
 import { StyleSheet, View } from 'react-native';
@@ -43,9 +44,16 @@ export function TarjetaCitaAgenda({ cita, mostrarFacilitador, onAbrir }: Props) 
             <Text variant="bodyMedium" style={estilos.texto}>
               {cita.solicitante}
             </Text>
-            <Text variant="bodySmall" style={estilos.secundario}>
-              {mostrarFacilitador ? `${modalidad} · ${cita.facilitador}` : modalidad}
-            </Text>
+            <View style={estilos.modalidad}>
+              <Icon
+                source={cita.modalidad === 'presencial' ? 'account-group-outline' : 'laptop'}
+                size={16}
+                color={colores.textoSecundario}
+              />
+              <Text variant="bodySmall" style={estilos.secundario}>
+                {mostrarFacilitador ? `${modalidad} · ${cita.facilitador}` : modalidad}
+              </Text>
+            </View>
           </View>
           <Icon source="chevron-right" size={24} color={colores.textoSecundario} />
         </View>
@@ -71,4 +79,5 @@ const estilos = StyleSheet.create({
   tema: { color: colores.texto, fontFamily: fuentes.negrita },
   texto: { color: colores.texto },
   secundario: { color: colores.textoSecundario },
+  modalidad: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
 });

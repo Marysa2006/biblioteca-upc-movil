@@ -1,46 +1,53 @@
 /**
- * Sección Agenda de Gestión (permiso `asesorias`): las citas de asesoría por día, semana o mes
- * (HU-15, CA1). El facilitador ve las suyas; la administración, las de todos, con el nombre del
- * facilitador en cada cita. Quién es administración sale de useRol().esAdministrador, no del
- * permiso: el facilitador también tiene `asesorias`.
+ * Sección Agenda de Gestión (permiso `asesorias`): las citas de asesoría en tres vistas, cada una
+ * con su función (HU-15, CA1). El facilitador ve las suyas; la administración, las de todos, con
+ * el nombre del facilitador en cada cita. Quién es administración sale de useRol().esAdministrador,
+ * no del permiso: el facilitador también tiene `asesorias`.
  *
- * Los controles van en su propio panel, como el bloque semanal de la web, para no confundirlos
- * con el selector de secciones de Gestión: la vista (Día · Semana · Mes), el periodo, la tira de
- * días con cuántas citas tiene cada uno y las convenciones. Las citas van debajo del panel.
- * - Día y Semana piden la semana completa: la vista Día filtra sobre ella, así que cambiar de
- *   día dentro de la semana no vuelve a consultar. En Semana, tocar un día abre su vista Día.
- * - Mes pide el mes completo y muestra la cuadrícula; tocar un día abre su vista Día.
- * - Las convenciones filtran por estado (por ejemplo, solo las realizadas del mes).
- * Al tocar una cita se abre su detalle (CA2).
+ * - Hoy (vista inicial): las tarjetas del día, de la primera a la última. Con ‹ › se pasa a otros
+ *   días. Sin citas, el vacío dice por qué si el día no tiene atención (motivoNoDisponible, HU-28).
+ * - Semana: la malla horaria (MallaSemana), con las horas de atención de los parámetros. Tocar
+ *   un día del encabezado lo abre en Hoy.
+ * - Mes: el calendario con las citas de cada día por estado; al tocar un día, sus citas debajo.
+ * Las tres usan los mismos datos y el mismo filtro por estado: el embudo de arriba a la derecha,
+ * con un chip para quitarlo mientras está activo. Cuando el periodo no es
+ * el actual, un botón regresa a hoy, a esta semana o a este mes. Al tocar una cita se abre su
+ * detalle (CA2).
  *
- * Patrón de datos: useAgenda() (src/hooks) → src/api/asesorias.ts → mock o API.
+ * Patrón de datos: useAgenda() y useParametros() (src/hooks) → src/api → mock o API.
  */
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Icon, Text } from 'react-native-paper';
+import { Button, Icon, Text } from 'react-native-paper';
 
-import { ConvencionesAgenda } from '@/components/agenda/ConvencionesAgenda';
+import { BotonFiltroAgenda, ChipFiltroAgenda } from '@/components/agenda/FiltroAgenda';
 import { ListaAgenda } from '@/components/agenda/ListaAgenda';
+import { MallaSemana } from '@/components/agenda/MallaSemana';
 import { MesAgenda } from '@/components/agenda/MesAgenda';
 import { SelectorVistaAgenda, type VistaAgenda } from '@/components/agenda/SelectorVistaAgenda';
-import { TiraDiasAgenda } from '@/components/agenda/TiraDiasAgenda';
 import { NavegacionPeriodo } from '@/components/espacios/NavegacionPeriodo';
 import { EstadoCarga, EstadoError } from '@/components/ui';
 import { useAgenda } from '@/hooks/useAsesorias';
+import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Cita, EstadoSolicitud } from '@/types';
 import {
+  citasAsignadas,
   contarCitasPorDia,
   diaDeAgenda,
+  diasAgenda,
   filtrarPorEstado,
   moverDiaAgenda,
+  nombreEstadoAgenda,
+  rangoHorasMalla,
   tituloSemanaAgenda,
 } from '@/utils/agenda';
 import {
   fechaCompleta,
   inicioSemana,
+  mismoMes,
   rangoMes,
   rangoSemana,
   sumarDias,
@@ -48,61 +55,139 @@ import {
   tituloMes,
 } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
+import { motivoNoDisponible } from '@/utils/parametros';
+
+/** La vista del día se llama "Hoy" en la agenda. */
+const ETIQUETAS_VISTA = { dia: 'Hoy' };
+
+/** El botón que regresa al periodo actual, según la vista. */
+const VOLVER_A: Record<VistaAgenda, string> = {
+  dia: 'Hoy',
+  semana: 'Esta semana',
+  mes: 'Este mes',
+};
 
 export function SeccionAgenda() {
   const { esAdministrador } = useRol();
   const [hoy] = useState(hoyISO);
-  const [vista, setVista] = useState<VistaAgenda>('semana');
-  // Día y Semana van de lunes a sábado: un domingo arranca en el lunes siguiente.
-  const [dia, setDia] = useState(() => diaDeAgenda(hoy));
+  const [vista, setVista] = useState<VistaAgenda>('dia');
+  // En Hoy, el día que se ve; en Semana, cualquier día de la semana; en Mes, el día elegido.
+  const [dia, setDia] = useState(hoy);
 
   const { desde, hasta } = vista === 'mes' ? rangoMes(dia) : rangoSemana(dia);
   const agenda = useAgenda(desde, hasta, esAdministrador ? 'todas' : undefined);
-  // El filtro de las convenciones se aplica a la lista, a la tira y al mes; no vuelve a consultar.
+  // Los parámetros dan las horas de la malla y por qué un día no tiene atención. Si no cargan,
+  // la agenda funciona igual: la malla usa 7:00 a 19:00 y no marca días sin atención.
+  const { data: parametros } = useParametros();
+  const motivoCerrado = (fecha: string) =>
+    parametros ? motivoNoDisponible(fecha, parametros) : null;
+
+  // El filtro por estado se aplica a las tres vistas; no vuelve a consultar.
   const [filtro, setFiltro] = useState<EstadoSolicitud | null>(null);
-  const citasVisibles = filtrarPorEstado(agenda.data ?? [], filtro);
-  const conteo = contarCitasPorDia(citasVisibles);
+  const citasVisibles = filtrarPorEstado(citasAsignadas(agenda.data ?? []), filtro);
+
+  // La semana va de lunes a sábado: un domingo muestra la semana siguiente.
+  const esActual = {
+    dia: dia === hoy,
+    semana: inicioSemana(dia) === inicioSemana(diaDeAgenda(hoy)),
+    mes: mismoMes(dia, hoy),
+  }[vista];
 
   const mover = (paso: 1 | -1) => {
     if (vista === 'dia') setDia(moverDiaAgenda(dia, paso));
     else if (vista === 'semana') setDia(sumarDias(inicioSemana(dia), paso * 7));
-    else setDia(sumarMeses(dia, paso));
+    else {
+      // En otro mes queda elegido el día 1; en el mes actual, hoy.
+      const otroMes = sumarMeses(dia, paso);
+      setDia(mismoMes(otroMes, hoy) ? hoy : otroMes);
+    }
   };
 
-  // Desde el mes, un domingo abre el lunes siguiente.
-  const verDia = (fecha: string) => {
-    setDia(diaDeAgenda(fecha));
-    setVista('dia');
-  };
+  const volverAlActual = () => setDia(vista === 'semana' ? diaDeAgenda(hoy) : hoy);
 
-  // Al dejar el mes, el 1 puede caer en domingo.
   const cambiarVista = (nueva: VistaAgenda) => {
-    if (nueva !== 'mes') setDia(diaDeAgenda(dia));
+    if (nueva === 'semana') setDia(diaDeAgenda(dia));
     setVista(nueva);
+  };
+
+  const verDia = (fecha: string) => {
+    setDia(fecha);
+    setVista('dia');
   };
 
   const abrir = (cita: Cita) =>
     router.push({ pathname: '/agenda/[id]', params: { id: cita.id, desde, hasta } });
 
   let titulo = tituloSemanaAgenda(dia);
-  if (vista === 'dia') titulo = fechaCompleta(dia);
+  if (vista === 'dia')
+    titulo = dia === hoy ? `Hoy, ${fechaCompleta(dia).toLowerCase()}` : fechaCompleta(dia);
   else if (vista === 'mes') titulo = tituloMes(dia);
+
+  // El vacío de un día: por qué no tiene atención o, si la tiene, que no hay citas.
+  const vacioDelDia = (fecha: string) => {
+    const cerrado = motivoCerrado(fecha);
+    if (cerrado) return `Este día no hay atención: ${cerrado}.`;
+    const quien = esAdministrador ? 'No hay citas' : 'No tienes citas';
+    const sinCitas = filtro ? `${quien} ${nombreEstadoAgenda(filtro, 2)}` : quien;
+    return `${sinCitas} ${fecha === hoy ? 'hoy' : 'este día'}.`;
+  };
 
   let citas;
   if (agenda.isPending) {
     citas = <EstadoCarga mensaje="Cargando la agenda…" />;
   } else if (agenda.isError) {
-    citas = <EstadoError mensaje="No pudimos cargar la agenda." onReintentar={() => agenda.refetch()} />;
-  } else if (vista !== 'mes') {
+    citas = (
+      <EstadoError mensaje="No pudimos cargar la agenda." onReintentar={() => agenda.refetch()} />
+    );
+  } else if (vista === 'dia') {
     citas = (
       <ListaAgenda
-        vista={vista}
         fecha={dia}
         citas={citasVisibles}
         mostrarFacilitador={esAdministrador}
-        filtro={filtro}
+        mensajeVacio={vacioDelDia(dia)}
         onAbrir={abrir}
       />
+    );
+  } else if (vista === 'semana') {
+    const dias = diasAgenda(dia);
+    const sinCitas = !citasVisibles.some((cita) => dias.includes(cita.fecha));
+    citas = (
+      <>
+        {sinCitas ? (
+          <Text variant="bodyMedium" style={estilos.aviso}>
+            {filtro
+              ? `No hay citas ${nombreEstadoAgenda(filtro, 2)} esta semana.`
+              : 'No hay citas esta semana.'}
+          </Text>
+        ) : null}
+        <MallaSemana
+          key={dias[0]}
+          dias={dias}
+          hoy={hoy}
+          citas={citasVisibles}
+          rango={rangoHorasMalla(parametros?.horarios, citasVisibles)}
+          mostrarFacilitador={esAdministrador}
+          motivoCerrado={motivoCerrado}
+          onAbrir={abrir}
+          onElegirDia={verDia}
+        />
+      </>
+    );
+  } else {
+    citas = (
+      <View style={estilos.delDia}>
+        <Text variant="titleSmall" style={estilos.tituloDia} accessibilityRole="header">
+          {dia === hoy ? `Hoy, ${fechaCompleta(dia).toLowerCase()}` : fechaCompleta(dia)}
+        </Text>
+        <ListaAgenda
+          fecha={dia}
+          citas={citasVisibles}
+          mostrarFacilitador={esAdministrador}
+          mensajeVacio={vacioDelDia(dia)}
+          onAbrir={abrir}
+        />
+      </View>
     );
   }
 
@@ -121,33 +206,46 @@ export function SeccionAgenda() {
                 : 'Tus citas de asesoría. Toca una para ver el detalle.'}
             </Text>
           </View>
+          <BotonFiltroAgenda filtro={filtro} onCambiar={setFiltro} />
         </View>
 
-        <SelectorVistaAgenda valor={vista} onCambiar={cambiarVista} />
-        <NavegacionPeriodo
-          vista={vista}
-          titulo={titulo}
-          puedeAnterior
-          onAnterior={() => mover(-1)}
-          onSiguiente={() => mover(1)}
-        />
+        <SelectorVistaAgenda valor={vista} onCambiar={cambiarVista} etiquetas={ETIQUETAS_VISTA} />
+        <View>
+          <NavegacionPeriodo
+            vista={vista}
+            titulo={titulo}
+            puedeAnterior
+            onAnterior={() => mover(-1)}
+            onSiguiente={() => mover(1)}
+          />
+          {esActual ? null : (
+            <Button
+              mode="text"
+              icon="calendar-today"
+              compact
+              onPress={volverAlActual}
+              style={estilos.volver}
+              accessibilityRole="button"
+              accessibilityLabel={`Volver a ${VOLVER_A[vista].toLowerCase()}`}
+            >
+              {VOLVER_A[vista]}
+            </Button>
+          )}
+        </View>
 
         {vista === 'mes' ? (
-          <MesAgenda mes={dia} hoy={hoy} conteo={conteo} onElegirDia={verDia} />
-        ) : (
-          <TiraDiasAgenda
-            semana={dia}
-            elegido={vista === 'dia' ? dia : null}
+          <MesAgenda
+            mes={dia}
             hoy={hoy}
-            conteo={conteo}
-            onElegir={verDia}
+            elegido={dia}
+            conteo={contarCitasPorDia(citasVisibles)}
+            onElegirDia={setDia}
           />
-        )}
+        ) : null}
 
-        <ConvencionesAgenda filtro={filtro} onCambiar={setFiltro} />
+        <ChipFiltroAgenda filtro={filtro} onCambiar={setFiltro} />
       </View>
 
-      {/* En Mes, las citas se ven en la cuadrícula: debajo solo la carga o el error. */}
       {citas}
     </View>
   );
@@ -167,4 +265,8 @@ const estilos = StyleSheet.create({
   textosEncabezado: { flex: 1, gap: espacio.xs },
   titulo: { color: colores.texto, fontFamily: fuentes.negrita },
   subtitulo: { color: colores.textoSecundario },
+  volver: { alignSelf: 'center' },
+  aviso: { color: colores.textoSecundario, textAlign: 'center' },
+  delDia: { gap: espacio.s },
+  tituloDia: { color: colores.texto, fontFamily: fuentes.seminegrita },
 });

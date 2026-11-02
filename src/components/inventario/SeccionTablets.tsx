@@ -5,7 +5,7 @@
  * Como el mockup de Inventario: resumen de la flota, búsqueda por código o serial, chips de
  * filtro por estado y una tarjeta por tablet. Registrar y editar van en /administracion/tablet
  * (CA1, CA2); el cambio de estado rápido está en la tarjeta (CA3).
- * El encabezado y los filtros de a 3 (SelectorConteo) la separan del selector de Inventario.
+ * El encabezado y los chips de filtro la separan de las pestañas de Inventario.
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -14,9 +14,8 @@ import { Button, Portal, Searchbar, Snackbar } from 'react-native-paper';
 
 import { EncabezadoSeccion } from '@/components/inventario/EncabezadoSeccion';
 import { ResumenFlota } from '@/components/inventario/ResumenFlota';
-import { SelectorConteo } from '@/components/inventario/SelectorConteo';
 import { TarjetaTablet } from '@/components/inventario/TarjetaTablet';
-import { EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
+import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
 import { useCambiarEstadoTablet, useTablets } from '@/hooks/useTablets';
 import { colores, espacio } from '@/theme';
 import type { EstadoTablet, Tablet } from '@/types';
@@ -113,12 +112,11 @@ export function SeccionTablets() {
         iconColor={colores.textoSecundario}
         accessibilityLabel="Buscar tablet por código, serial o modelo"
       />
-      <SelectorConteo
+      <ChipsFiltro
         opciones={opciones}
         valor={filtro}
         onCambiar={setFiltro}
         descripcion="Filtrar por estado"
-        variante="filtro"
       />
 
       {visibles.length === 0 ? (
