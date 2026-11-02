@@ -1,13 +1,13 @@
 /**
- * Anterior y siguiente del calendario (HU-17), con el título de la semana o el mes.
- * "Anterior" se desactiva en el periodo actual: no se consulta el pasado.
+ * Anterior y siguiente de un calendario (HU-17 y HU-15), con el título del día, la semana o el mes.
+ * Quien la usa decide si hay anterior: el calendario de un espacio no consulta el pasado.
  */
 import { StyleSheet, View } from 'react-native';
 import { IconButton, Text } from 'react-native-paper';
 
 import { colores, espacio, fuentes } from '@/theme';
 
-import type { VistaCalendario } from './SelectorVista';
+import { NOMBRE_VISTA, type VistaCalendario } from './SelectorVista';
 
 type Props = {
   vista: VistaCalendario;
@@ -18,7 +18,7 @@ type Props = {
 };
 
 export function NavegacionPeriodo({ vista, titulo, puedeAnterior, onAnterior, onSiguiente }: Props) {
-  const periodo = vista === 'semana' ? 'Semana' : 'Mes';
+  const periodo = NOMBRE_VISTA[vista];
 
   return (
     <View style={estilos.fila}>

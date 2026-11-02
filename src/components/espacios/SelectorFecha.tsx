@@ -25,10 +25,14 @@ type Props = {
   /** Primer y último mes que se pueden mostrar ('AAAA-MM-DD' de cualquier día del mes). */
   mesMinimo: string;
   mesMaximo: string;
+  /** Mes que se muestra al abrir si no hay fecha elegida; por defecto, el mes mínimo. */
+  mesInicial?: string;
   /** Debajo del campo: el error, o si no hay, una descripción del día elegido. */
   mensajeError?: string;
   descripcion?: string;
   deshabilitado?: boolean;
+  /** Campos opcionales: el calendario ofrece "Quitar fecha" para dejarlo vacío. */
+  permiteQuitar?: boolean;
 };
 
 export function SelectorFecha({
@@ -38,16 +42,19 @@ export function SelectorFecha({
   motivoNoElegible,
   mesMinimo,
   mesMaximo,
+  mesInicial,
   mensajeError,
   descripcion,
   deshabilitado = false,
+  permiteQuitar = false,
 }: Props) {
   const [abierto, setAbierto] = useState(false);
-  const [mes, setMes] = useState(() => inicioMes(esFechaValida(valor) ? valor : mesMinimo));
   const valido = esFechaValida(valor);
+  const mesAlAbrir = () => inicioMes(valido ? valor : (mesInicial ?? mesMinimo));
+  const [mes, setMes] = useState(mesAlAbrir);
 
   const abrir = () => {
-    setMes(inicioMes(valido ? valor : mesMinimo));
+    setMes(mesAlAbrir());
     setAbierto(true);
   };
 
@@ -55,6 +62,16 @@ export function SelectorFecha({
     onCambiar(fecha);
     setAbierto(false);
   };
+
+  const quitar = () => {
+    onCambiar('');
+    setAbierto(false);
+  };
+
+  // La leyenda de los días tachados solo se muestra si este mes tiene alguno.
+  const hayNoElegibles = grillaMes(mes).some((semana) =>
+    semana.some((fecha) => fecha != null && motivoNoElegible(fecha) != null),
+  );
 
   const puedeAnterior = mes > inicioMes(mesMinimo);
   const puedeSiguiente = mes < inicioMes(mesMaximo);
@@ -154,12 +171,25 @@ export function SelectorFecha({
               </View>
             ))}
 
-            <Text variant="bodySmall" style={estilos.leyenda}>
-              Los días tachados no se pueden elegir: ya pasaron, son festivos, no hay atención o ya
-              tienen un bloqueo.
-            </Text>
+            {hayNoElegibles ? (
+              <Text variant="bodySmall" style={estilos.leyenda}>
+                Los días tachados no se pueden elegir: ya pasaron, son festivos, no hay atención o ya
+                tienen un bloqueo.
+              </Text>
+            ) : null}
           </Dialog.Content>
           <Dialog.Actions>
+            {permiteQuitar && valido ? (
+              <Button
+                mode="text"
+                onPress={quitar}
+                contentStyle={estilos.contenidoBoton}
+                accessibilityRole="button"
+                accessibilityLabel={`Quitar la fecha de ${etiqueta.toLowerCase()}`}
+              >
+                Quitar fecha
+              </Button>
+            ) : null}
             <Button
               mode="text"
               onPress={() => setAbierto(false)}

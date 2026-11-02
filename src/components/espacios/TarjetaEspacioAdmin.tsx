@@ -1,12 +1,14 @@
 /**
  * Espacio en la sección Espacios de Gestión (HU-16): foto, estado, capacidad, horario y acciones.
  * Activo o Inactivo va con texto, no solo color. Desactivar lo quita de las reservas (CA3).
+ * Las acciones van en el menú de tres puntos (Editar, Desactivar o Activar, Bloquear).
  * Bloquear (HU-20) solo aparece en los espacios activos: uno inactivo no recibe reservas.
  */
 import { Image } from 'expo-image';
 import { StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Icon, Text } from 'react-native-paper';
 
+import { MenuAcciones, type AccionMenu } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Espacio } from '@/types';
 
@@ -27,6 +29,23 @@ export function TarjetaEspacioAdmin({
   onBloquear,
 }: Props) {
   const { activo, nombre } = espacioActual;
+  const acciones: AccionMenu[] = [
+    { titulo: 'Editar', icono: 'pencil-outline', onPress: onEditar, etiqueta: `Editar ${nombre}` },
+    {
+      titulo: activo ? 'Desactivar' : 'Activar',
+      icono: activo ? 'eye-off-outline' : 'eye-outline',
+      onPress: onCambiarEstado,
+      etiqueta: `${activo ? 'Desactivar' : 'Activar'} ${nombre}`,
+    },
+  ];
+  if (activo) {
+    acciones.push({
+      titulo: 'Bloquear',
+      icono: 'calendar-remove-outline',
+      onPress: onBloquear,
+      etiqueta: `Bloquear ${nombre} para un evento institucional`,
+    });
+  }
 
   return (
     <View style={estilos.tarjeta}>
@@ -59,6 +78,11 @@ export function TarjetaEspacioAdmin({
               {activo ? 'Activo' : 'Inactivo'}
             </Text>
           </View>
+          <MenuAcciones
+            acciones={acciones}
+            descripcion={`Acciones de ${nombre}`}
+            ocupado={cambiando}
+          />
         </View>
 
         <Text variant="bodyMedium" style={estilos.secundario} numberOfLines={2}>
@@ -76,45 +100,6 @@ export function TarjetaEspacioAdmin({
           <Text variant="bodyMedium" style={estilos.textoDato}>
             {espacioActual.horario}
           </Text>
-        </View>
-
-        <View style={estilos.acciones}>
-          <Button
-            mode="contained-tonal"
-            icon="pencil-outline"
-            onPress={onEditar}
-            disabled={cambiando}
-            contentStyle={estilos.contenidoBoton}
-            accessibilityRole="button"
-            accessibilityLabel={`Editar ${nombre}`}
-          >
-            Editar
-          </Button>
-          <Button
-            mode="outlined"
-            icon={activo ? 'eye-off-outline' : 'eye-outline'}
-            onPress={onCambiarEstado}
-            loading={cambiando}
-            disabled={cambiando}
-            contentStyle={estilos.contenidoBoton}
-            accessibilityRole="button"
-            accessibilityLabel={`${activo ? 'Desactivar' : 'Activar'} ${nombre}`}
-          >
-            {activo ? 'Desactivar' : 'Activar'}
-          </Button>
-          {activo ? (
-            <Button
-              mode="outlined"
-              icon="lock-outline"
-              onPress={onBloquear}
-              disabled={cambiando}
-              contentStyle={estilos.contenidoBoton}
-              accessibilityRole="button"
-              accessibilityLabel={`Bloquear ${nombre} para un evento institucional`}
-            >
-              Bloquear
-            </Button>
-          ) : null}
         </View>
       </View>
     </View>
@@ -137,7 +122,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficieVariante,
   },
   cuerpo: { gap: espacio.s, padding: espacio.m },
-  encabezado: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.m },
+  encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   nombre: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
   estado: {
     paddingHorizontal: espacio.s,
@@ -151,6 +136,4 @@ const estilos = StyleSheet.create({
   secundario: { color: colores.textoSecundario },
   dato: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textoDato: { flex: 1, color: colores.texto },
-  acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });

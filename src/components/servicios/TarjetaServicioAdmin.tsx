@@ -1,10 +1,12 @@
 /**
  * Servicio en la administración de contenidos (HU-04): categoría, estado y acciones.
  * Activo o Inactivo va con texto e ícono, no solo color. Desactivar lo oculta a la comunidad (CA2).
+ * Editar y Desactivar o Activar van en el menú de tres puntos, arriba a la derecha.
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 
+import { MenuAcciones } from '@/components/ui';
 import { acentoServicio, colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Servicio } from '@/types';
 import { CATEGORIAS_SERVICIO } from '@/utils/servicios';
@@ -42,37 +44,29 @@ export function TarjetaServicioAdmin({ servicio, cambiando, onEditar, onCambiarE
             {activo ? 'Activo' : 'Inactivo'}
           </Text>
         </View>
+        <MenuAcciones
+          acciones={[
+            {
+              titulo: 'Editar',
+              icono: 'pencil-outline',
+              onPress: onEditar,
+              etiqueta: `Editar ${servicio.nombre}`,
+            },
+            {
+              titulo: activo ? 'Desactivar' : 'Activar',
+              icono: activo ? 'eye-off-outline' : 'eye-outline',
+              onPress: onCambiarEstado,
+              etiqueta: `${activo ? 'Desactivar' : 'Activar'} ${servicio.nombre}`,
+            },
+          ]}
+          descripcion={`Acciones de ${servicio.nombre}`}
+          ocupado={cambiando}
+        />
       </View>
 
       <Text variant="bodyMedium" style={estilos.descripcion} numberOfLines={2}>
         {servicio.descripcion}
       </Text>
-
-      <View style={estilos.acciones}>
-        <Button
-          mode="contained-tonal"
-          icon="pencil-outline"
-          onPress={onEditar}
-          disabled={cambiando}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel={`Editar ${servicio.nombre}`}
-        >
-          Editar
-        </Button>
-        <Button
-          mode="outlined"
-          icon={activo ? 'eye-off-outline' : 'eye-outline'}
-          onPress={onCambiarEstado}
-          loading={cambiando}
-          disabled={cambiando}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel={`${activo ? 'Desactivar' : 'Activar'} ${servicio.nombre}`}
-        >
-          {activo ? 'Desactivar' : 'Activar'}
-        </Button>
-      </View>
     </View>
   );
 }
@@ -84,7 +78,7 @@ const estilos = StyleSheet.create({
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
   },
-  encabezado: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.m },
+  encabezado: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s },
   textos: { flex: 1, gap: espacio.xs },
   nombre: { color: colores.texto, fontFamily: fuentes.negrita },
   estado: {
@@ -100,6 +94,4 @@ const estilos = StyleSheet.create({
   textoActivo: { color: colores.primarioOscuro },
   textoInactivo: { color: coloresEstado.cancelada.texto },
   descripcion: { color: colores.textoSecundario },
-  acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });

@@ -16,7 +16,7 @@ export function SeccionPeriodos({ deshabilitado }: { deshabilitado: boolean }) {
   return (
     <TarjetaSeccion
       titulo="Periodos académicos"
-      ayuda="Fechas en formato AAAA-MM-DD. Los periodos no se pueden cruzar."
+      ayuda="Elige las fechas en el calendario. Los periodos no se pueden cruzar."
     >
       {fields.length === 0 ? (
         <Text variant="bodyMedium" style={estilos.vacio}>
@@ -38,20 +38,14 @@ export function SeccionPeriodos({ deshabilitado }: { deshabilitado: boolean }) {
             />
             <CampoParametro
               nombre={`periodos.${i}.inicio`}
-              etiqueta="Inicio"
-              placeholder="2026-08-03"
-              teclado="numbers-and-punctuation"
-              largoMaximo={10}
-              descripcionAccesible={`Inicio del periodo ${i + 1}, formato año, mes y día`}
+              etiqueta={`Inicio del periodo ${i + 1}`}
+              tipo="fecha"
               deshabilitado={deshabilitado}
             />
             <CampoParametro
               nombre={`periodos.${i}.fin`}
-              etiqueta="Fin"
-              placeholder="2026-11-28"
-              teclado="numbers-and-punctuation"
-              largoMaximo={10}
-              descripcionAccesible={`Fin del periodo ${i + 1}, formato año, mes y día`}
+              etiqueta={`Fin del periodo ${i + 1}`}
+              tipo="fecha"
               deshabilitado={deshabilitado}
             />
             <Button

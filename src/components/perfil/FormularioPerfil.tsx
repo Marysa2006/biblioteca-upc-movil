@@ -97,7 +97,7 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, o
               autoComplete="street-address"
               textContentType="fullStreetAddress"
               returnKeyType="done"
-              onSubmitEditing={guardar}
+              onSubmitEditing={() => guardar()}
               accessibilityLabel="Dirección, opcional"
             />
             <HelperText type="error" visible={errors.direccion != null}>
@@ -121,7 +121,7 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, o
         <Button
           mode="contained"
           icon="content-save-outline"
-          onPress={guardar}
+          onPress={() => guardar()}
           loading={guardando}
           disabled={guardando || !isDirty}
           contentStyle={estilos.contenidoBoton}

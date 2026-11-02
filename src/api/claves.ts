@@ -5,7 +5,7 @@
  * consultan las pantallas. Las claves de la iteración 1 quedaron aquí centralizadas y las
  * de la iteración 2 se suman desde el contrato de tipos.
  */
-import type { EstadoSolicitud } from '@/types';
+import type { EstadoPrestamo, EstadoSolicitud } from '@/types';
 
 export const claves = {
   // ── Iteración 1 ──────────────────────────────────────────────
@@ -16,6 +16,10 @@ export const claves = {
   parametros: ['parametros'] as const,
   usuarios: ['usuarios'] as const,
   recursos: ['recursos'] as const,
+  /** Resultados de Koha para un texto (HU-02); las páginas van dentro de la misma clave. */
+  busquedaCatalogo: (texto: string) => ['catalogo', 'busqueda', texto] as const,
+  /** Resultados del repositorio DSpace para un texto (HU-11), con sus páginas. */
+  busquedaRepositorio: (texto: string) => ['repositorio', 'busqueda', texto] as const,
   /** El id va dentro de la clave: la caché es por usuario. */
   perfil: (usuarioId?: string) => ['perfil', usuarioId] as const,
 
@@ -38,6 +42,45 @@ export const claves = {
   bloqueos: ['bloqueos'] as const,
   bloqueosDeEspacio: (espacioId: string) => ['bloqueos', espacioId] as const,
   notificaciones: ['notificaciones'] as const,
+
+  // ── Iteración 3: asesorías (HU-13, HU-14 y HU-15) ────────────
+  temasAsesoria: ['asesorias', 'temas'] as const,
+  temaAsesoria: (id: string) => ['asesorias', 'temas', id] as const,
+  jornadasAsesoria: ['asesorias', 'jornadas'] as const,
+  jornadaAsesoria: (id: string) => ['asesorias', 'jornadas', id] as const,
+  /** Franjas de un tema en un rango de fechas (HU-14). */
+  franjasAsesoria: (temaId: string, desde?: string, hasta?: string) =>
+    ['asesorias', 'franjas', temaId, desde ?? null, hasta ?? null] as const,
+  /** Prefijo para invalidar todas las franjas a la vez. */
+  franjasTodas: ['asesorias', 'franjas'] as const,
+  citasAsesoria: ['asesorias', 'citas'] as const,
+  citasPorEstado: (estado: EstadoSolicitud | 'todas') => ['asesorias', 'citas', estado] as const,
+  /** Citas del usuario de la sesión (HU-14). */
+  misCitas: (usuarioId?: string) => ['asesorias', 'citas', 'mias', usuarioId] as const,
+  /**
+   * Agenda del facilitador por rango de fechas (HU-15); 'todas' para la administración.
+   * Va bajo el prefijo de citas para que agendar, cancelar o reprogramar también la refresque.
+   */
+  agendaFacilitador: (facilitadorId: string | 'todas', desde?: string, hasta?: string) =>
+    ['asesorias', 'citas', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
+
+  // ── Iteración 3: tablets (HU-21, HU-22, HU-23 y HU-24) ───────
+  tablets: ['tablets'] as const,
+  tablet: (id: string) => ['tablets', id] as const,
+  /** Disponibilidad de tablets para una fecha y franja (HU-22). */
+  disponibilidadTablets: (fecha: string, horaInicio: string, horaLimite: string) =>
+    ['tablets', 'disponibilidad', fecha, horaInicio, horaLimite] as const,
+  /** Disponibilidad de tablets de un día completo (HU-22). */
+  disponibilidadTabletsDia: (fecha: string) => ['tablets', 'disponibilidad', fecha] as const,
+  /** Prefijo para invalidar toda la disponibilidad de tablets a la vez. */
+  disponibilidadTabletsTodas: ['tablets', 'disponibilidad'] as const,
+  condicionesTablet: ['tablets', 'condiciones'] as const,
+  prestamosTablet: ['prestamos'] as const,
+  prestamosPorEstado: (estado: EstadoPrestamo | 'todas') => ['prestamos', estado] as const,
+  /** Préstamos del usuario de la sesión (HU-22). */
+  misPrestamos: (usuarioId?: string) => ['prestamos', 'mios', usuarioId] as const,
+  /** Préstamos pasados de la hora límite (HU-24). */
+  prestamosVencidos: ['prestamos', 'vencidos'] as const,
 
   // ── Función plus: guías sin conexión (HU-29) ─────────────────
   guias: ['guias'] as const,

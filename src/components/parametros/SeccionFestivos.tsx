@@ -32,11 +32,8 @@ export function SeccionFestivos({ deshabilitado }: { deshabilitado: boolean }) {
             </Text>
             <CampoParametro
               nombre={`festivos.${i}.fecha`}
-              etiqueta="Fecha"
-              placeholder="2026-12-08"
-              teclado="numbers-and-punctuation"
-              largoMaximo={10}
-              descripcionAccesible={`Fecha del festivo ${i + 1}, formato año, mes y día`}
+              etiqueta={`Fecha del festivo ${i + 1}`}
+              tipo="fecha"
               deshabilitado={deshabilitado}
             />
             <CampoParametro

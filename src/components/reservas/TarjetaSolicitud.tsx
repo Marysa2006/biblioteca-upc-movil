@@ -4,7 +4,7 @@
  * Las acciones dependen del estado (CA1); lo ya resuelto solo muestra su motivo.
  * No se presiona entera: cada acción es su propio botón.
  */
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { AvisoError, EtiquetaEstado } from '@/components/ui';
@@ -23,6 +23,9 @@ type Props = {
   error: string | null;
 };
 
+/** Con letra más grande que esto, los botones pasan a la línea siguiente para no cortarse. */
+const ESCALA_LETRA_GRANDE = 1.3;
+
 const MODO_BOTON: Record<AccionReserva, 'contained' | 'contained-tonal' | 'outlined'> = {
   aprobar: 'contained',
   nueva_fecha: 'contained-tonal',
@@ -32,6 +35,7 @@ const MODO_BOTON: Record<AccionReserva, 'contained' | 'contained-tonal' | 'outli
 
 export function TarjetaSolicitud({ reserva, nombreEspacio, onAccion, aprobando, error }: Props) {
   const acciones = ACCIONES_POR_ESTADO[reserva.estado];
+  const enUnaFila = useWindowDimensions().fontScale <= ESCALA_LETRA_GRANDE;
   const fecha = fechaLegible(reserva.fecha);
   const horario = `${reserva.horaInicio} – ${reserva.horaFin}`;
   const asistentes = `${reserva.asistentes} ${reserva.asistentes === 1 ? 'asistente' : 'asistentes'}`;
@@ -83,7 +87,8 @@ export function TarjetaSolicitud({ reserva, nombreEspacio, onAccion, aprobando, 
                 loading={accion === 'aprobar' && aprobando}
                 disabled={aprobando}
                 textColor={deRiesgo ? coloresEstado.rechazada.texto : undefined}
-                style={estilos.boton}
+                compact
+                style={[estilos.boton, enUnaFila && estilos.botonEnFila]}
                 contentStyle={estilos.contenidoBoton}
                 labelStyle={estilos.textoBoton}
                 accessibilityRole="button"
@@ -125,9 +130,10 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficieVariante,
   },
   dato: { color: colores.texto, fontFamily: fuentes.seminegrita },
-  // Los botones se reparten la fila y, con letra grande, pasan a la siguiente.
+  // Los botones se reparten la fila en partes iguales; con letra grande, pasan a la siguiente.
   acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
   boton: { flexGrow: 1 },
+  botonEnFila: { flexBasis: 0 },
   contenidoBoton: { paddingVertical: espacio.xs },
-  textoBoton: { fontFamily: fuentes.seminegrita },
+  textoBoton: { marginHorizontal: espacio.xs, fontFamily: fuentes.seminegrita },
 });

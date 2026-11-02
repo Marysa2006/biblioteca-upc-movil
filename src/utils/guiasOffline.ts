@@ -52,7 +52,8 @@ export function guardarGuia(guia: Guia): void {
   if (!archivo.exists) {
     archivo.create({ intermediates: true });
   }
-  archivo.write(JSON.stringify(guardada));
+  // SDK 58: write() pasó a ser asíncrono; writeSync() conserva el guardado inmediato.
+  archivo.writeSync(JSON.stringify(guardada));
 }
 
 /** Lee una guía guardada; null si no está en el celular. */

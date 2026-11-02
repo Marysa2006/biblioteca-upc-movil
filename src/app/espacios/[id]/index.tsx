@@ -22,8 +22,8 @@ import { AvisoError, EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } fro
 import { useDisponibilidad, useEspacios } from '@/hooks/useEspacios';
 import { colores, espacio } from '@/theme';
 import type { FranjaDisponibilidad } from '@/types';
+import { diaDeAgenda, diasAgenda, tituloSemanaAgenda } from '@/utils/agenda';
 import {
-  diasSemana,
   inicioMes,
   inicioSemana,
   rangoMes,
@@ -31,7 +31,6 @@ import {
   sumarDias,
   sumarMeses,
   tituloMes,
-  tituloSemana,
 } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
 
@@ -41,7 +40,8 @@ export default function CalendarioEspacio() {
   // Hoy se fija al abrir la pantalla: es el límite de "anterior" y lo que se marca en el mes.
   const [hoy] = useState(hoyISO);
   const [vista, setVista] = useState<VistaCalendario>('semana');
-  const [diaElegido, setDiaElegido] = useState(hoy);
+  // La semana va de lunes a sábado, como la agenda: un domingo abre en el lunes siguiente.
+  const [diaElegido, setDiaElegido] = useState(() => diaDeAgenda(hoy));
   const [mes, setMes] = useState(() => inicioMes(hoy));
 
   const enSemana = vista === 'semana';
@@ -68,7 +68,7 @@ export default function CalendarioEspacio() {
   };
 
   const abrirSemana = (fecha: string) => {
-    setDiaElegido(fecha);
+    setDiaElegido(diaDeAgenda(fecha));
     setVista('semana');
   };
 
@@ -108,7 +108,7 @@ export default function CalendarioEspacio() {
     } else if (enSemana) {
       calendario = (
         <VistaSemana
-          semana={diasSemana(diaElegido)}
+          semana={diasAgenda(diaElegido)}
           dias={disponibilidad.data}
           diaElegido={diaElegido}
           onElegirDia={setDiaElegido}
@@ -127,7 +127,7 @@ export default function CalendarioEspacio() {
         <LeyendaDisponibilidad />
         <NavegacionPeriodo
           vista={vista}
-          titulo={enSemana ? tituloSemana(diaElegido) : tituloMes(mes)}
+          titulo={enSemana ? tituloSemanaAgenda(diaElegido) : tituloMes(mes)}
           puedeAnterior={puedeAnterior}
           onAnterior={() => mover(-1)}
           onSiguiente={() => mover(1)}

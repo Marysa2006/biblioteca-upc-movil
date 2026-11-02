@@ -1,6 +1,7 @@
 /**
  * Tarjeta de una categoría en la cuadrícula "Servicios ofertados" de Inicio (HU-01).
  * Toda la tarjeta se puede presionar: abre el detalle de su único servicio o sus opciones en Servicios.
+ * El ícono va junto al nombre; la descripción usa todo el ancho, sin sangría.
  *
  * Usa TouchableRipple y no Card con onPress: Card pasa accessibilityRole y accessibilityLabel
  * a su contenedor exterior, no al elemento que se presiona, y no se estira en la fila.
@@ -12,6 +13,7 @@ import { colores, espacio, fondoServicio, fuentes, radio } from '@/theme';
 import type { CategoriaServicio } from '@/types';
 import { CATEGORIAS_SERVICIO } from '@/utils/servicios';
 
+import { IconoCategoria } from './IconoCategoria';
 
 type Props = {
   categoria: CategoriaServicio;
@@ -35,9 +37,12 @@ export function TarjetaCategoria({ categoria, cantidad, onPress }: Props) {
         }
       >
         <View style={estilos.contenido}>
-          <Text variant="titleMedium" style={estilos.nombre}>
-            {info.nombre}
-          </Text>
+          <View style={estilos.filaNombre}>
+            <IconoCategoria categoria={categoria} tamano={20} />
+            <Text variant="titleMedium" style={estilos.nombre}>
+              {info.nombre}
+            </Text>
+          </View>
           <Text variant="bodyMedium" style={estilos.descripcion} numberOfLines={2}>
             {info.descripcion}
           </Text>
@@ -57,6 +62,7 @@ const estilos = StyleSheet.create({
   },
   presionable: { flex: 1 },
   contenido: { flex: 1, gap: espacio.s, padding: espacio.m },
-  nombre: { color: colores.texto, fontFamily: fuentes.negrita },
+  filaNombre: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
+  nombre: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
   descripcion: { color: colores.textoSecundario },
 });

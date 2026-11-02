@@ -1,5 +1,5 @@
 /**
- * Accesos a la administración del portal (HU-04 y HU-28), en la sección "Portal" de Gestión.
+ * Accesos a la administración del portal (HU-04, HU-28 y HU-13), en la sección "Portal" de Gestión.
  * Cada fila se muestra solo con su permiso; toda la fila se puede presionar.
  */
 import { router, type Href } from 'expo-router';
@@ -32,6 +32,13 @@ const ACCESOS: Acceso[] = [
     icono: 'tune-variant',
     destino: '/administracion/parametros',
     permiso: 'parametros',
+  },
+  {
+    titulo: 'Asesorías y jornadas',
+    descripcion: 'Temas de asesoría, jornadas de cada facilitador y sus franjas.',
+    icono: 'calendar-clock-outline',
+    destino: '/administracion/asesorias',
+    permiso: 'asesorias',
   },
 ];
 

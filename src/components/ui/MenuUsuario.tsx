@@ -1,6 +1,6 @@
 /**
  * Menú de usuario, arriba a la derecha de cada pantalla con pestañas (Pantalla lo muestra).
- * - Con sesión: Perfil, Notificaciones (HU-27), cambiar a la vista de la comunidad o del personal
+ * - Con sesión: Perfil, Notificaciones (HU-27), Mi calendario (HU-30), cambiar a la vista de la comunidad o del personal
  *   (solo el personal) y Cerrar sesión. Un globito sobre el botón cuenta los avisos sin leer.
  * - Sin sesión: Iniciar sesión.
  */
@@ -107,6 +107,12 @@ export function MenuUsuario() {
             leadingIcon="bell-outline"
             onPress={() => ir(() => router.push('/notificaciones'))}
             accessibilityLabel={sinLeer > 0 ? `Notificaciones, ${textoSinLeer}` : 'Notificaciones'}
+          />
+          <Menu.Item
+            title="Mi calendario"
+            leadingIcon="calendar-month-outline"
+            onPress={() => ir(() => router.push('/calendario'))}
+            accessibilityLabel="Mi calendario"
           />
           {esPersonal(usuario) ? (
             enVistaPersonal ? (

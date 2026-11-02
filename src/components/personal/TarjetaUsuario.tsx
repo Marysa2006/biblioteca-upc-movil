@@ -84,8 +84,9 @@ export function TarjetaUsuario({ usuario, onCambiarRol }: Props) {
         </Text>
       )}
 
+      {/* Verde sólido: los chips de permisos usan el verde suave y no deben parecer botones. */}
       <Button
-        mode="contained-tonal"
+        mode="contained"
         icon="account-switch-outline"
         onPress={onCambiarRol}
         contentStyle={estilos.contenidoBoton}

@@ -7,20 +7,22 @@ export function SeccionPlazos({ deshabilitado }: { deshabilitado: boolean }) {
     <>
       <TarjetaSeccion
         titulo="Tiempos mínimos"
-        ayuda="Horas de anticipación, en números enteros de 0 a 720."
+        ayuda="Horas de anticipación, de 0 a 720. Escríbelas o ajústalas con − y +."
       >
         <CampoParametro
           nombre="horasMinimasSolicitud"
           etiqueta="Para solicitar un servicio (horas)"
-          teclado="number-pad"
-          largoMaximo={3}
+          tipo="numero"
+          minimo={0}
+          maximo={720}
           deshabilitado={deshabilitado}
         />
         <CampoParametro
           nombre="horasMinimasCancelacion"
           etiqueta="Para cancelar una solicitud (horas)"
-          teclado="number-pad"
-          largoMaximo={3}
+          tipo="numero"
+          minimo={0}
+          maximo={720}
           deshabilitado={deshabilitado}
         />
       </TarjetaSeccion>

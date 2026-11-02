@@ -3,7 +3,8 @@
  * Sin sesión (visitantes y egresados) muestra la bienvenida y la invitación a iniciar sesión;
  * con sesión, el saludo. Muestra las categorías destacadas (el resto, en "Ver todos"): cada
  * una abre el detalle de su servicio o, si tiene varios, sus opciones en la pestaña Servicios.
- * Arriba, "Avisos y novedades" que publica la administración (HU-04).
+ * Arriba, el carrusel de fotos de la biblioteca y, justo debajo, "Avisos y novedades" que publica
+ * la administración (HU-04).
  *
  * Patrón de datos: useServicios() (src/hooks) → obtenerServicios() (src/api) → mock o API.
  * Contempla los tres estados: cargando, error y vacío.
@@ -13,6 +14,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Card, Icon, Text } from 'react-native-paper';
 
 import { AvisosNovedades } from '@/components/contenidos/AvisosNovedades';
+import { CarruselInicio } from '@/components/inicio/CarruselInicio';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useContenidos } from '@/hooks/useContenidos';
@@ -20,6 +22,7 @@ import { useServicios } from '@/hooks/useServicios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { contenidosVisibles, hoyISO } from '@/utils/contenidos';
+import { IMAGENES_INICIO } from '@/utils/inicio';
 import {
   agruparServiciosActivos,
   CATEGORIAS_INICIO,
@@ -69,8 +72,9 @@ export default function Inicio() {
         },
       }}
     >
-      {usuario ? null : <InvitacionSesion />}
+      <CarruselInicio imagenes={IMAGENES_INICIO} />
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
+      {usuario ? null : <InvitacionSesion />}
       <View style={estilos.encabezadoSeccion}>
         <Text variant="titleMedium" style={estilos.tituloSeccion} accessibilityRole="header">
           Servicios ofertados

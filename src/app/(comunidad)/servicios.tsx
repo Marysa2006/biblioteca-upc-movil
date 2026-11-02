@@ -7,6 +7,7 @@
  * Un valor desconocido muestra todas.
  *
  * Patrón de datos: useServicios() (src/hooks) → obtenerServicios() (src/api) → mock o API.
+ * Las guías sin conexión (HU-29) están en la pestaña Catálogo.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';

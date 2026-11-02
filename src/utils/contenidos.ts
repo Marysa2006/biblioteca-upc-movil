@@ -29,7 +29,7 @@ const fechaOpcional = z
   .string()
   .trim()
   .refine((texto) => texto === '' || esFechaValida(texto), {
-    error: 'Usa el formato AAAA-MM-DD, por ejemplo 2026-10-20.',
+    error: 'Elige una fecha en el calendario.',
   });
 
 /** Validación del formulario de aviso o informativo (HU-04, CA3). */

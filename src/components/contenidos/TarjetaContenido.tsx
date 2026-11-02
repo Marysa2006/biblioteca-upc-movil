@@ -1,10 +1,12 @@
 /**
- * Aviso o informativo en la administración (HU-04): tipo, estado, vigencia y acciones.
- * Publicado u Oculto va con texto e ícono (CA2); subir y bajar cambian el orden (CA4).
+ * Aviso o informativo en la administración (HU-04): tipo (con su ícono), estado, vigencia y acciones.
+ * Publicado u Oculto va con texto, no solo color (CA2). Editar, Publicar u Ocultar, y Mover
+ * arriba o abajo (CA4) van en el menú de tres puntos; la flecha que no aplica no aparece.
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, IconButton, Text } from 'react-native-paper';
+import { Icon, Text } from 'react-native-paper';
 
+import { MenuAcciones, type AccionMenu } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Contenido } from '@/types';
 import { fechaLegible, TIPOS_CONTENIDO } from '@/utils/contenidos';
@@ -38,83 +40,76 @@ export function TarjetaContenido({
   onSubir,
   onBajar,
 }: Props) {
-  const { publicado } = contenido;
+  const { publicado, titulo } = contenido;
   const tipo = TIPOS_CONTENIDO[contenido.tipo];
   const vigencia = textoVigencia(contenido);
+
+  const acciones: AccionMenu[] = [
+    { titulo: 'Editar', icono: 'pencil-outline', onPress: onEditar, etiqueta: `Editar ${titulo}` },
+    {
+      titulo: publicado ? 'Ocultar' : 'Publicar',
+      icono: publicado ? 'eye-off-outline' : 'eye-outline',
+      onPress: onCambiarPublicacion,
+      etiqueta: `${publicado ? 'Ocultar' : 'Publicar'} ${titulo}`,
+    },
+  ];
+  if (!esPrimero) {
+    acciones.push({
+      titulo: 'Mover arriba',
+      icono: 'arrow-up',
+      onPress: onSubir,
+      etiqueta: `Mover ${titulo} un puesto arriba`,
+    });
+  }
+  if (!esUltimo) {
+    acciones.push({
+      titulo: 'Mover abajo',
+      icono: 'arrow-down',
+      onPress: onBajar,
+      etiqueta: `Mover ${titulo} un puesto abajo`,
+    });
+  }
 
   return (
     <View style={estilos.tarjeta}>
       <View style={estilos.encabezado}>
         <View style={estilos.tipo}>
+          <Icon source={tipo.icono} size={16} color={colores.primario} />
           <Text variant="labelMedium" style={estilos.textoTipo}>
             {tipo.nombre}
           </Text>
         </View>
-        <View style={[estilos.estado, publicado ? estilos.estadoPublicado : estilos.estadoOculto]}>
-          <Text
-            variant="labelMedium"
-            style={publicado ? estilos.textoPublicado : estilos.textoOculto}
+        <View style={estilos.derecha}>
+          <View
+            style={[estilos.estado, publicado ? estilos.estadoPublicado : estilos.estadoOculto]}
           >
-            {publicado ? 'Publicado' : 'Oculto'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={estilos.cuerpo}>
-        <View style={estilos.textos}>
-          <Text variant="titleMedium" style={estilos.titulo}>
-            {contenido.titulo}
-          </Text>
-          <Text variant="bodyMedium" style={estilos.secundario} numberOfLines={2}>
-            {contenido.descripcion}
-          </Text>
-          {vigencia ? (
-            <View style={estilos.vigencia}>
-              <Text variant="bodySmall" style={estilos.secundario}>
-                {vigencia}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        <View style={estilos.orden}>
-          <IconButton
-            icon="arrow-up"
-            onPress={onSubir}
-            disabled={esPrimero || ocupado}
-            accessibilityLabel={`Subir ${contenido.titulo}`}
-          />
-          <IconButton
-            icon="arrow-down"
-            onPress={onBajar}
-            disabled={esUltimo || ocupado}
-            accessibilityLabel={`Bajar ${contenido.titulo}`}
+            <Text
+              variant="labelMedium"
+              style={publicado ? estilos.textoPublicado : estilos.textoOculto}
+            >
+              {publicado ? 'Publicado' : 'Oculto'}
+            </Text>
+          </View>
+          <MenuAcciones
+            acciones={acciones}
+            descripcion={`Acciones de ${titulo}`}
+            ocupado={ocupado}
           />
         </View>
       </View>
 
-      <View style={estilos.acciones}>
-        <Button
-          mode="contained-tonal"
-          icon="pencil-outline"
-          onPress={onEditar}
-          disabled={ocupado}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel={`Editar ${contenido.titulo}`}
-        >
-          Editar
-        </Button>
-        <Button
-          mode="outlined"
-          icon={publicado ? 'eye-off-outline' : 'eye-outline'}
-          onPress={onCambiarPublicacion}
-          disabled={ocupado}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel={`${publicado ? 'Ocultar' : 'Publicar'} ${contenido.titulo}`}
-        >
-          {publicado ? 'Ocultar' : 'Publicar'}
-        </Button>
+      <View style={estilos.textos}>
+        <Text variant="titleMedium" style={estilos.titulo}>
+          {titulo}
+        </Text>
+        <Text variant="bodyMedium" style={estilos.secundario} numberOfLines={2}>
+          {contenido.descripcion}
+        </Text>
+        {vigencia ? (
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {vigencia}
+          </Text>
+        ) : null}
       </View>
     </View>
   );
@@ -134,6 +129,7 @@ const estilos = StyleSheet.create({
     justifyContent: 'space-between',
     gap: espacio.s,
   },
+  derecha: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   tipo: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
   textoTipo: { color: colores.primario },
   estado: {
@@ -148,12 +144,7 @@ const estilos = StyleSheet.create({
   estadoOculto: { backgroundColor: coloresEstado.cancelada.fondo },
   textoPublicado: { color: colores.primarioOscuro },
   textoOculto: { color: coloresEstado.cancelada.texto },
-  cuerpo: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s },
-  textos: { flex: 1, gap: espacio.xs },
+  textos: { gap: espacio.xs },
   titulo: { color: colores.texto, fontFamily: fuentes.negrita },
   secundario: { color: colores.textoSecundario },
-  vigencia: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
-  orden: { alignItems: 'center' },
-  acciones: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });
