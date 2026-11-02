@@ -1,7 +1,7 @@
 /**
  * Bandeja de solicitudes de reserva del personal (HU-19), en Gestión → Solicitudes.
- * Arriba, un buscador por persona, espacio o propósito; debajo, pestañas por estado con su
- * cantidad (distintas de los chips de las secciones). Cada tarjeta trae las acciones de su estado (CA1).
+ * Arriba, un buscador por persona, espacio o propósito; debajo, chips por estado con su
+ * cantidad (distintos de las pestañas de las secciones). Cada tarjeta trae las acciones de su estado (CA1).
  * "Reservar para un tercero" es el botón flotante de la sección (BotonReservaTercero).
  * Rechazar y cancelar piden el motivo (CA2); otra fecha pide la fecha y el horario.
  * La API impide los choques de horario (CA3) y su error se muestra donde se tomó la decisión.
@@ -13,7 +13,7 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Portal, Searchbar, Snackbar } from 'react-native-paper';
 
-import { EstadoCarga, EstadoError, EstadoVacio, PestanasFiltro, type OpcionFiltro } from '@/components/ui';
+import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
 import { useEspaciosAdministracion } from '@/hooks/useEspacios';
 import { useDecidirReserva, useReservas } from '@/hooks/useReservas';
 import { colores, coloresEstado, espacio } from '@/theme';
@@ -114,15 +114,15 @@ export function BandejaReservas() {
     const encontradas = buscarReservas(reservas, busqueda, nombreEspacio);
     const hay = (estado: EstadoSolicitud) => reservas.some((r) => r.estado === estado);
     const cantidad = (estado: EstadoSolicitud) => encontradas.filter((r) => r.estado === estado).length;
-    // Las pestañas son los estados que tienen solicitudes; la búsqueda solo cambia los números,
-    // así no aparecen ni desaparecen mientras se escribe. "Todas" va al final.
+    // Los chips son los estados que tienen solicitudes; la búsqueda solo cambia los números,
+    // así no aparecen ni desaparecen mientras se escribe. "Todas" va primero.
     const opciones: OpcionFiltro<Filtro>[] = [
+      { valor: 'todas', etiqueta: 'Todas', cantidad: encontradas.length },
       ...ORDEN_ESTADOS.filter(hay).map((estado) => ({
         valor: estado,
         etiqueta: coloresEstado[estado].etiqueta,
         cantidad: cantidad(estado),
       })),
-      { valor: 'todas', etiqueta: 'Todas', cantidad: encontradas.length },
     ];
     // Empieza en Pendiente; si el estado elegido se queda sin solicitudes, vuelve a "Todas".
     const inicial: Filtro = hay('pendiente') ? 'pendiente' : 'todas';
@@ -136,7 +136,7 @@ export function BandejaReservas() {
 
     contenido = (
       <>
-        <PestanasFiltro
+        <ChipsFiltro
           opciones={opciones}
           valor={filtro}
           onCambiar={setFiltroElegido}

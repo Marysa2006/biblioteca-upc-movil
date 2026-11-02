@@ -1,9 +1,10 @@
 /**
  * Jornada de asesoría en la administración (HU-13): tema, facilitador, días, horario,
  * duración, cupos, modalidad, vigencia y fechas excluidas. Activa o Inactiva va con texto.
+ * Toda la tarjeta se presiona para editar; la flecha de la derecha lo indica.
  */
 import { StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Jornada } from '@/types';
@@ -44,57 +45,62 @@ export function TarjetaJornada({ jornada, tema, facilitador, onEditar }: Props) 
 
   return (
     <View style={estilos.tarjeta}>
-      <View style={estilos.encabezado}>
-        <Text variant="titleMedium" style={estilos.tema}>
-          {tema}
-        </Text>
-        <View style={[estilos.estado, activa ? estilos.estadoActivo : estilos.estadoInactivo]}>
-          <Text variant="labelMedium" style={activa ? estilos.textoActivo : estilos.textoInactivo}>
-            {activa ? 'Activa' : 'Inactiva'}
-          </Text>
-        </View>
-      </View>
-
-      {datos.map((dato) => (
-        <View key={dato.icono} style={estilos.dato}>
-          <Icon source={dato.icono} size={18} color={colores.textoSecundario} />
-          <Text variant="bodyMedium" style={estilos.textoDato}>
-            {dato.texto}
-          </Text>
-        </View>
-      ))}
-
-      <Button
-        mode="contained-tonal"
-        icon="pencil-outline"
+      <TouchableRipple
         onPress={onEditar}
-        style={estilos.boton}
-        contentStyle={estilos.contenidoBoton}
+        style={estilos.contenido}
         accessibilityRole="button"
         accessibilityLabel={`Editar la jornada de ${tema} de ${facilitador}`}
       >
-        Editar
-      </Button>
+        <View style={estilos.cuerpo}>
+          <View style={estilos.encabezado}>
+            <Text variant="titleMedium" style={estilos.tema}>
+              {tema}
+            </Text>
+            <View style={[estilos.estado, activa ? estilos.estadoActivo : estilos.estadoInactivo]}>
+              <Text
+                variant="labelMedium"
+                style={activa ? estilos.textoActivo : estilos.textoInactivo}
+              >
+                {activa ? 'Activa' : 'Inactiva'}
+              </Text>
+            </View>
+            <Icon source="chevron-right" size={24} color={colores.textoSecundario} />
+          </View>
+
+          {datos.map((dato) => (
+            <View key={dato.icono} style={estilos.dato}>
+              <Icon source={dato.icono} size={18} color={colores.textoSecundario} />
+              <Text variant="bodyMedium" style={estilos.textoDato}>
+                {dato.texto}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </TouchableRipple>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
+  // overflow: el efecto al presionar no se sale de las esquinas redondeadas.
   tarjeta: {
-    gap: espacio.s,
-    padding: espacio.m,
+    overflow: 'hidden',
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
   },
-  encabezado: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.m },
+  contenido: { padding: espacio.m },
+  cuerpo: { gap: espacio.s },
+  encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   tema: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
-  estado: { paddingHorizontal: espacio.s, paddingVertical: espacio.xs, borderRadius: radio.boton },
+  estado: {
+    paddingHorizontal: espacio.s,
+    paddingVertical: espacio.xs,
+    borderRadius: radio.boton,
+  },
   estadoActivo: { backgroundColor: colores.primarioSuave },
   estadoInactivo: { backgroundColor: coloresEstado.cancelada.fondo },
   textoActivo: { color: colores.primarioOscuro },
   textoInactivo: { color: coloresEstado.cancelada.texto },
   dato: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s },
   textoDato: { flex: 1, color: colores.texto },
-  boton: { alignSelf: 'flex-start', marginTop: espacio.xs },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });

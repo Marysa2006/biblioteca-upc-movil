@@ -1,20 +1,28 @@
 /**
- * Pestañas subrayadas para filtrar una lista ("Pendiente 3"), que se deslizan de lado.
- * Se distinguen de los chips de las secciones: la elegida va en negrita, con el color de marca
+ * Pestañas subrayadas que se deslizan de lado, por ejemplo las secciones de Gestión.
+ * Se distinguen de los chips de filtro: la elegida va en negrita, con el color de marca
  * y una línea debajo, así que no depende solo del color. Cada pestaña mide al menos 44 px.
+ * Si la opción trae cantidad, se muestra al lado ("Pendiente 3").
+ * Con `alerta`, la pestaña lleva un ícono de aviso y el lector dice que tiene campos por revisar.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Text, TouchableRipple } from 'react-native-paper';
+import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
 import { colores, espacio, fuentes } from '@/theme';
 
-import type { OpcionFiltro } from './ChipsFiltro';
+export type OpcionPestana<T extends string> = {
+  valor: T;
+  etiqueta: string;
+  cantidad?: number;
+  /** Por ejemplo, una pestaña de un formulario con errores. */
+  alerta?: boolean;
+};
 
 type Props<T extends string> = {
-  opciones: OpcionFiltro<T>[];
+  opciones: OpcionPestana<T>[];
   valor: T;
   onCambiar: (valor: T) => void;
-  /** Para el lector de pantalla, por ejemplo "Filtrar las solicitudes por estado". */
+  /** Para el lector de pantalla, por ejemplo "Secciones de Gestión". */
   descripcion: string;
 };
 
@@ -36,15 +44,29 @@ export function PestanasFiltro<T extends string>({ opciones, valor, onCambiar, d
               style={[estilos.pestana, elegida && estilos.pestanaElegida]}
               accessibilityRole="tab"
               accessibilityState={{ selected: elegida }}
-              accessibilityLabel={`${opcion.etiqueta}, ${opcion.cantidad}`}
+              accessibilityLabel={[
+                opcion.etiqueta,
+                opcion.cantidad == null ? null : String(opcion.cantidad),
+                opcion.alerta ? 'tiene campos por revisar' : null,
+              ]
+                .filter(Boolean)
+                .join(', ')}
             >
               <View style={estilos.contenido}>
+                {opcion.alerta ? (
+                  <Icon source="alert-circle-outline" size={18} color={colores.error} />
+                ) : null}
                 <Text variant="labelLarge" style={elegida ? estilos.textoElegido : estilos.texto}>
                   {opcion.etiqueta}
                 </Text>
-                <Text variant="labelLarge" style={elegida ? estilos.cantidadElegida : estilos.cantidad}>
-                  {opcion.cantidad}
-                </Text>
+                {opcion.cantidad == null ? null : (
+                  <Text
+                    variant="labelLarge"
+                    style={elegida ? estilos.cantidadElegida : estilos.cantidad}
+                  >
+                    {opcion.cantidad}
+                  </Text>
+                )}
               </View>
             </TouchableRipple>
           );

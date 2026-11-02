@@ -1,4 +1,5 @@
 export { AvisoError } from './AvisoError';
+export { BotonFlotante } from './BotonFlotante';
 export { CampoHora } from './CampoHora';
 export { CampoNumerico } from './CampoNumerico';
 export { ChipsFiltro, type OpcionFiltro } from './ChipsFiltro';
@@ -7,5 +8,6 @@ export { EnConstruccion } from './EnConstruccion';
 export { EstadoCarga, EstadoError, EstadoVacio } from './Estados';
 export { EtiquetaEstado } from './EtiquetaEstado';
 export { FilaInterruptor } from './FilaInterruptor';
+export { MenuAcciones, type AccionMenu } from './MenuAcciones';
 export { Pantalla } from './Pantalla';
-export { PestanasFiltro } from './PestanasFiltro';
+export { PestanasFiltro, type OpcionPestana } from './PestanasFiltro';

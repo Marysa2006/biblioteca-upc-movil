@@ -6,8 +6,8 @@
  * - Vencidos (`tablets`): los préstamos que pasaron la hora límite (HU-24, María).
  * Esta pantalla solo compone: el contenido de cada sección se cambia en su componente, no aquí,
  * para que dos personas no editen el mismo archivo.
- * El selector es SelectorConteo, no el de Gestión: tres casillas iguales, y Vencidos dice
- * debajo cuántos hay (HU-24). Usa la misma consulta que SeccionVencidos, así
+ * El selector es el mismo de Gestión (SelectorSeccion, pestañas subrayadas), y Vencidos dice
+ * al lado cuántos hay (HU-24). Usa la misma consulta que SeccionVencidos, así
  * que la alerta del encargado se crea apenas se abre Inventario.
  */
 import { router } from 'expo-router';
@@ -17,7 +17,7 @@ import { Button } from 'react-native-paper';
 import { SeccionPrestamos } from '@/components/inventario/SeccionPrestamos';
 import { SeccionTablets } from '@/components/inventario/SeccionTablets';
 import { SeccionVencidos } from '@/components/inventario/SeccionVencidos';
-import { SelectorConteo } from '@/components/inventario/SelectorConteo';
+import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 import { usePrestamosVencidos } from '@/hooks/useTablets';
@@ -57,12 +57,11 @@ export default function Inventario() {
   return (
     <Pantalla titulo="Inventario" subtitulo="Tablets, préstamos y vencidos">
       {activa && visibles.length > 1 ? (
-        <SelectorConteo
+        <SelectorSeccion
           opciones={visibles}
           valor={activa.valor}
           onCambiar={setElegida}
-          descripcion="Secciones de Inventario"
-          variante="seccion"
+          etiqueta="Secciones de Inventario"
         />
       ) : null}
 

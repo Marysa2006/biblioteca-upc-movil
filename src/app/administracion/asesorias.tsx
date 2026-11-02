@@ -5,17 +5,19 @@
  *
  * - Jornadas: crear y editar en /administracion/jornada; al guardar se generan las franjas.
  * - Temas: crear y editar en /administracion/tema, y activar o desactivar desde la tarjeta.
+ * "Nueva jornada" o "Nuevo tema" es el botón flotante, según la pestaña; se encoge al deslizar.
  * Patrón de datos: hooks de src/hooks/useAsesorias.ts y useUsuarios.ts → src/api → mock o API.
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Portal, SegmentedButtons, Snackbar } from 'react-native-paper';
+import { Portal, SegmentedButtons, Snackbar } from 'react-native-paper';
 
 import { TarjetaJornada } from '@/components/asesorias/TarjetaJornada';
 import { TarjetaTema } from '@/components/asesorias/TarjetaTema';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import {
+  BotonFlotante,
   EncabezadoApilado,
   EstadoCarga,
   EstadoError,
@@ -96,6 +98,23 @@ function GestionAsesorias() {
       titulo="Asesorías y jornadas"
       subtitulo="Temas de asesoría y horarios de atención de cada facilitador."
       conEncabezado
+      flotante={(desplazada: boolean) =>
+        seccion === 'jornadas' ? (
+          <BotonFlotante
+            icono="plus"
+            texto="Nueva jornada"
+            onPress={() => router.push('/administracion/jornada')}
+            extendido={!desplazada}
+          />
+        ) : (
+          <BotonFlotante
+            icono="plus"
+            texto="Nuevo tema"
+            onPress={() => router.push('/administracion/tema')}
+            extendido={!desplazada}
+          />
+        )
+      }
       recarga={{ recargando, onRecargar: recargar }}
     >
       <SegmentedButtons
@@ -137,16 +156,6 @@ function ordenarJornadas(lista: Jornada[], temas: TemaAsesoria[]): Jornada[] {
 function SeccionJornadas({ jornadas, temas, nombreFacilitador }: PropsJornadas) {
   return (
     <View style={estilos.seccion}>
-      <Button
-        mode="contained"
-        icon="plus"
-        onPress={() => router.push('/administracion/jornada')}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Nueva jornada"
-      >
-        Nueva jornada
-      </Button>
       {jornadas.length === 0 ? (
         <EstadoVacio mensaje="Todavía no hay jornadas. Crea la primera para generar franjas." />
       ) : (
@@ -197,16 +206,6 @@ function SeccionTemas({ temas, jornadas, onAviso }: PropsTemas) {
 
   return (
     <View style={estilos.seccion}>
-      <Button
-        mode="contained"
-        icon="plus"
-        onPress={() => router.push('/administracion/tema')}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo tema"
-      >
-        Nuevo tema
-      </Button>
       {ordenados.length === 0 ? (
         <EstadoVacio mensaje="Todavía no hay temas. Crea el primero." />
       ) : (
@@ -227,5 +226,4 @@ function SeccionTemas({ temas, jornadas, onAviso }: PropsTemas) {
 
 const estilos = StyleSheet.create({
   seccion: { gap: espacio.s },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });

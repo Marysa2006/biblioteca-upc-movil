@@ -1,32 +1,28 @@
 /**
- * Botón flotante "Reservar para un tercero" (HU-19) de Gestión → Solicitudes. Va en el
- * `flotante` de Pantalla, así queda fijo abajo a la derecha mientras se desliza la bandeja.
- * Solo se ve con el permiso `reservas`.
+ * Botón flotante "Reservar para un tercero" (HU-19) de Gestión → Solicitudes.
+ * Se encoge al ícono al deslizar (BotonFlotante). Solo se ve con el permiso `reservas`.
  */
 import { router } from 'expo-router';
-import { StyleSheet } from 'react-native';
-import { FAB } from 'react-native-paper';
 
+import { BotonFlotante } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
-import { colores } from '@/theme';
 
-export function BotonReservaTercero() {
+type Props = {
+  /** Con el texto a la vista; false cuando la lista ya se deslizó. */
+  extendido: boolean;
+};
+
+export function BotonReservaTercero({ extendido }: Props) {
   const { tienePermiso } = useRol();
   if (!tienePermiso('reservas')) return null;
 
   return (
-    <FAB
-      icon="account-plus-outline"
-      label="Reservar para un tercero"
+    <BotonFlotante
+      icono="account-plus-outline"
+      texto="Reservar para un tercero"
+      etiqueta="Reservar un espacio para un tercero"
       onPress={() => router.push('/reservas/tercero')}
-      style={estilos.boton}
-      color={colores.superficie}
-      accessibilityRole="button"
-      accessibilityLabel="Reservar un espacio para un tercero"
+      extendido={extendido}
     />
   );
 }
-
-const estilos = StyleSheet.create({
-  boton: { backgroundColor: colores.primario },
-});
