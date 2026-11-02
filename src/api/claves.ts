@@ -16,6 +16,10 @@ export const claves = {
   parametros: ['parametros'] as const,
   usuarios: ['usuarios'] as const,
   recursos: ['recursos'] as const,
+  /** Resultados de Koha para un texto (HU-02); las páginas van dentro de la misma clave. */
+  busquedaCatalogo: (texto: string) => ['catalogo', 'busqueda', texto] as const,
+  /** Resultados del repositorio DSpace para un texto (HU-11), con sus páginas. */
+  busquedaRepositorio: (texto: string) => ['repositorio', 'busqueda', texto] as const,
   /** El id va dentro de la clave: la caché es por usuario. */
   perfil: (usuarioId?: string) => ['perfil', usuarioId] as const,
 

@@ -1,5 +1,5 @@
 /**
- * Tarjeta de una base de datos o recurso académico (HU-03).
+ * Tarjeta de un recurso en línea (HU-03).
  * Toda la tarjeta se puede presionar; la pantalla decide si lo abre o pide iniciar sesión.
  *
  * Usa TouchableRipple y no Card con onPress: Card pasa accessibilityRole y accessibilityLabel

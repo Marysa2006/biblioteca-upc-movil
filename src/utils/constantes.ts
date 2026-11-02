@@ -7,5 +7,9 @@ export const DOMINIO_CORREO = 'unicesar.edu.co';
 /** Catálogo público (OPAC) de Koha. Confirmar la URL con el ingeniero de la biblioteca (HU-02). */
 export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
 
-/** Repositorio Institucional (DSpace). Confirmar la URL con la biblioteca (HU-11). */
-export const URL_REPOSITORIO = '';
+/**
+ * Repositorio Institucional (DSpace 7.5, HU-11). Va con http porque el servidor todavía no
+ * responde por https: el APK lo permite con usesCleartextTraffic en app.json. Cuando la
+ * Universidad active https, se cambia aquí y se quita esa opción.
+ */
+export const URL_REPOSITORIO: string = 'http://repositorio.unicesar.edu.co';
