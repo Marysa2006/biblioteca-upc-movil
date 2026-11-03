@@ -36,6 +36,7 @@ import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
+import { estadoDePrestamo, registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -264,6 +265,13 @@ export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promi
     if (!actualizado) {
       return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
     }
+    registrarEvento(
+      'prestamo',
+      actualizado.id,
+      estadoDePrestamo(actualizado.estado),
+      'Personal de la biblioteca',
+      `Tablet entregada. Devuélvela antes de las ${actualizado.horaLimite}.`,
+    );
     // HU-25: la entrega deja su registro de uso (el préstamo queda activo).
     registrarUso({
       id: `uso-prestamo-${actualizado.id}`,
@@ -341,6 +349,16 @@ export function registrarDevolucion(
     if (!actualizado) {
       return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
     }
+    const condicion = datos.condicion === 'danado' ? 'dañado' : datos.condicion;
+    registrarEvento(
+      'prestamo',
+      actualizado.id,
+      estadoDePrestamo(actualizado.estado),
+      'Personal de la biblioteca',
+      `Tablet devuelta en estado ${condicion}${
+        retrasoMinutos > 0 ? `, ${retrasoMinutos} min tarde` : ''
+      }.${novedades ? ` Novedad: ${novedades}` : ''}`,
+    );
     // HU-25: el préstamo devuelto deja su registro de uso.
     registrarUso({
       id: `uso-prestamo-${actualizado.id}`,
@@ -656,6 +674,13 @@ export async function solicitarPrestamo(
     titulo: 'Préstamo de tablet reservado',
     mensaje: `Reservamos una tablet para el ${fecha} de ${horaInicio} a ${horaLimite}. Recógela en la biblioteca.`,
   });
+  registrarEvento(
+    'prestamo',
+    nuevo.id,
+    estadoDePrestamo(nuevo.estado),
+    usuario.nombre,
+    'Tablet reservada. Recógela en la biblioteca.',
+  );
 
   // HU-25: la solicitud deja su registro (luego la entrega y la devolución lo actualizan).
   registrarUso({
@@ -734,11 +759,20 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
   }
 
   const ahora = new Date();
-  prestamos = prestamos.map((prestamo) =>
-    prestamo.estado === 'entregado' && minutosDeRetraso(prestamo, ahora) > 0
-      ? { ...prestamo, estado: 'vencido' }
-      : prestamo,
-  );
+  prestamos = prestamos.map((prestamo) => {
+    if (prestamo.estado !== 'entregado' || minutosDeRetraso(prestamo, ahora) <= 0) {
+      return prestamo;
+    }
+    // HU-08: el evento solo se registra al pasar de entregado a vencido, no en cada consulta.
+    registrarEvento(
+      'prestamo',
+      prestamo.id,
+      estadoDePrestamo('vencido'),
+      'Sistema',
+      `Préstamo vencido: pasó la hora límite (${prestamo.horaLimite}) sin devolver la tablet.`,
+    );
+    return { ...prestamo, estado: 'vencido' };
+  });
   const vencidos = prestamos.filter((prestamo) => prestamo.estado === 'vencido');
   vencidos.forEach(avisarVencido);
   return simularRed(ordenarVencidos(vencidos).map(copiarPrestamo));

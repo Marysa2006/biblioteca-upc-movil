@@ -131,6 +131,7 @@ export function useSolicitarPrestamo() {
       queryClient.invalidateQueries({ queryKey: claves.prestamosTablet });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTabletsTodas });
       queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
     },
   });
 }
@@ -162,6 +163,7 @@ export function useRegistrarEntrega() {
       queryClient.invalidateQueries({ queryKey: claves.prestamosTablet });
       queryClient.invalidateQueries({ queryKey: claves.tablets });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTabletsTodas });
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
     },
   });
 }
@@ -196,6 +198,8 @@ export function usePrestamosVencidos() {
     }
 
     queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+    // HU-08: el paso a vencido queda en el historial. ['solicitudes'] no cubre esta consulta.
+    queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
   }, [consulta.data, queryClient]);
 
   return consulta;
@@ -211,6 +215,7 @@ export function useRegistrarDevolucion() {
       queryClient.invalidateQueries({ queryKey: claves.prestamosTablet });
       queryClient.invalidateQueries({ queryKey: claves.tablets });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTabletsTodas });
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
     },
   });
 }

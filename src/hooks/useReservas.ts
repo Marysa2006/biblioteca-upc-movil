@@ -50,6 +50,7 @@ export function useDecidirReserva() {
       queryClient.invalidateQueries({ queryKey: claves.reservas });
       queryClient.invalidateQueries({ queryKey: claves.notificaciones });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
     },
   });
 }
@@ -62,6 +63,7 @@ export function useCrearReservaTercero() {
       queryClient.invalidateQueries({ queryKey: claves.reservas });
       queryClient.invalidateQueries({ queryKey: claves.notificaciones });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
     },
   });
 }
@@ -83,6 +85,7 @@ export function useSolicitarReserva() {
       queryClient.invalidateQueries({ queryKey: claves.reservas });
       queryClient.invalidateQueries({ queryKey: claves.notificaciones });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
     },
   });
 }

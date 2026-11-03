@@ -20,6 +20,7 @@ import { normalizarTexto } from '@/utils/texto';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { registrarUso } from './estadisticas';
+import { registrarEvento } from './historial';
 import { LINEAS_FORMACION, SOLICITUDES_CAPACITACION } from './mocks/capacitaciones';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
@@ -321,6 +322,7 @@ export async function solicitarCapacitacion(
     titulo: 'Solicitud de capacitación recibida',
     mensaje: `Recibimos tu solicitud de ${linea.nombre} para el ${nueva.fecha} a las ${nueva.hora}. Queda pendiente de revisión.`,
   });
+  registrarEvento('capacitacion', nueva.id, 'pendiente', usuario.nombre, 'Solicitud enviada.');
   registrarUso({
     usuario,
     servicio: 'capacitaciones',
