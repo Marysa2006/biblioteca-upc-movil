@@ -4,12 +4,17 @@
  *   const { data } = useBusquedaRepositorio(texto);
  *   data.pages.flatMap((pagina) => pagina.resultados); // todos los cargados
  *   abrirRepositorio(texto);                         // la búsqueda en el navegador; sin texto, el inicio
+ *
+ *   const comprobar = useComprobarRepositorio();     // HU-11: comprobar antes de abrir (CA3)
+ *   await comprobar.mutateAsync();
+ *   await abrirRepositorio();
  */
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
 import {
   buscarEnRepositorio,
+  comprobarRepositorio,
   urlBusquedaRepositorio,
   urlRepositorioPrincipal,
 } from '@/api/repositorio';
@@ -29,6 +34,14 @@ export function useBusquedaRepositorio(texto: string) {
     enabled: buscado !== '',
     staleTime: VIGENCIA_BUSQUEDA_MS,
   });
+}
+
+/**
+ * Comprueba que el repositorio responde (HU-11, CA3). No abre el navegador ni invalida nada:
+ * si pasa, la pantalla llama abrirRepositorio(); si falla, muestra error.message.
+ */
+export function useComprobarRepositorio() {
+  return useMutation({ mutationFn: comprobarRepositorio });
 }
 
 /**
