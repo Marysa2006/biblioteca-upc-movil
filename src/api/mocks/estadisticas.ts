@@ -1,13 +1,13 @@
 /**
  * DATOS DE PRUEBA de los registros de uso (HU-25 y HU-26).
  *
- * PROVISIONAL: son 37 operaciones de octubre repartidas entre servicios, tipos de usuario y
+ * PROVISIONAL: son 38 operaciones de octubre repartidas entre servicios, tipos de usuario y
  * programas, en días hábiles, con algunos datos no informados (HU-25, CA2), para que los
  * indicadores y los filtros de HU-26 tengan qué mostrar. La captura real la hará el Backend.
  */
 import { NO_INFORMADO, type RegistroUso } from '@/types';
 
-/** Fecha de octubre de 2026, por día. Ayuda a repartir los 37 registros. */
+/** Fecha de octubre de 2026, por día. Ayuda a repartir los 38 registros. */
 const dia = (n: number) => `2026-10-${String(n).padStart(2, '0')}`;
 
 type Fila = Omit<RegistroUso, 'id'>;
@@ -45,7 +45,10 @@ const FILAS: Fila[] = [
   { usuarioId: 'u-egresado', nombre: 'Diego Salas', tipoUsuario: 'egresado', programa: 'Contaduría', servicio: 'catalogo', finalidad: 'Normatividad', fecha: dia(7), modalidad: 'virtual', estado: 'completada' },
   { usuarioId: 'u-egresado', nombre: 'Diego Salas', tipoUsuario: 'egresado', programa: 'Contaduría', servicio: 'asesorias', finalidad: 'Trabajo de grado', fecha: dia(20), modalidad: 'virtual', estado: 'completada' },
 
-  // Visitantes (sin sesión): varios datos no informados
+  // Visitante con sesión (tipo `visitante`, sin programa): el tipo sí se conoce
+  { usuarioId: 'u-visitante', nombre: 'Camila Ospina', tipoUsuario: 'visitante', programa: NO_INFORMADO, servicio: 'catalogo', finalidad: 'Consulta general', fecha: dia(8), modalidad: 'virtual', estado: 'completada' },
+
+  // Anónimos (sin sesión): varios datos no informados
   { usuarioId: NO_INFORMADO, nombre: NO_INFORMADO, tipoUsuario: NO_INFORMADO, programa: NO_INFORMADO, servicio: 'catalogo', finalidad: NO_INFORMADO, fecha: dia(5), modalidad: NO_INFORMADO, estado: 'completada' },
   { usuarioId: NO_INFORMADO, nombre: NO_INFORMADO, tipoUsuario: NO_INFORMADO, programa: NO_INFORMADO, servicio: 'guias', finalidad: NO_INFORMADO, fecha: dia(6), modalidad: NO_INFORMADO, estado: 'completada' },
   { usuarioId: NO_INFORMADO, nombre: NO_INFORMADO, tipoUsuario: NO_INFORMADO, programa: NO_INFORMADO, servicio: 'espacios', finalidad: NO_INFORMADO, fecha: dia(12), modalidad: NO_INFORMADO, estado: 'completada' },
