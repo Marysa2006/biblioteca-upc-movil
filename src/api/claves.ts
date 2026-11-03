@@ -5,12 +5,7 @@
  * consultan las pantallas. Las claves de la iteración 1 quedaron aquí centralizadas y las
  * de la iteración 2 se suman desde el contrato de tipos.
  */
-import type {
-  EstadoPrestamo,
-  EstadoSolicitud,
-  FiltrosEstadisticas,
-  TipoSolicitud,
-} from '@/types';
+import type { EstadoPrestamo, EstadoSolicitud } from '@/types';
 
 export const claves = {
   // ── Iteración 1 ──────────────────────────────────────────────
@@ -111,16 +106,16 @@ export const claves = {
   misSolicitudes: (usuarioId: string | 'sin-sesion') =>
     ['solicitudes', 'mias', usuarioId] as const,
   /** Historial de una solicitud concreta (HU-08, CA2). */
-  detalleSolicitud: (tipo: TipoSolicitud, id: string) =>
-    ['solicitudes', 'detalle', tipo, id] as const,
+  detalleSolicitud: (
+    tipo: 'reserva' | 'cita' | 'prestamo' | 'capacitacion',
+    id: string,
+  ) => ['solicitudes', 'detalle', tipo, id] as const,
   /** Prefijo que refrescan todas las mutaciones de solicitudes (HU-08). */
   solicitudesTodas: ['solicitudes'] as const,
 
   // ── Iteración 4: estadísticas (HU-25 y HU-26) ────────────────
   /** Registros de uso, con los filtros dentro de la clave (HU-25, CA3). */
-  registrosUso: (filtros?: FiltrosEstadisticas) =>
-    ['estadisticas', 'registros', filtros ?? {}] as const,
+  registrosUso: (filtros?: object) => ['estadisticas', 'registros', filtros ?? {}] as const,
   /** Indicadores de uso, con los filtros dentro de la clave (HU-26, CA1). */
-  indicadoresUso: (filtros?: FiltrosEstadisticas) =>
-    ['estadisticas', 'indicadores', filtros ?? {}] as const,
+  indicadoresUso: (filtros?: object) => ['estadisticas', 'indicadores', filtros ?? {}] as const,
 };
