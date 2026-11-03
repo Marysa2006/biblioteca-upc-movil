@@ -148,6 +148,20 @@ function Detalle({ servicio }: { servicio: Servicio }) {
           Solicitar tablet
         </Button>
       ) : null}
+
+      {/* HU-11: la orientación de autoarchivo se consulta sin cuenta; el depósito es en DSpace. */}
+      {categoria === 'repositorio' ? (
+        <Button
+          mode="contained"
+          icon="book-open-page-variant-outline"
+          onPress={() => router.push('/autoarchivo')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
+        >
+          Ver orientación
+        </Button>
+      ) : null}
     </Pantalla>
   );
 }
