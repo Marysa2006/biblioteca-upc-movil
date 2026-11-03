@@ -21,8 +21,9 @@ import { normalizarTexto } from '@/utils/texto';
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
-import { LINEAS_FORMACION, SOLICITUDES_CAPACITACION } from './mocks/capacitaciones';
 import { crearNotificacion } from './notificaciones';
+import { LINEAS_FORMACION, SOLICITUDES_CAPACITACION } from './mocks/capacitaciones';
+import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 import { obtenerParametros } from './parametros';
 
 /** Copia de una solicitud para no exponer el almacén mutable. */
@@ -347,4 +348,302 @@ export function obtenerMisCapacitaciones(usuarioId: string): Promise<SolicitudCa
   }
   // Ruta provisional: confirmar con Backend. El usuario sale del token.
   return peticion<SolicitudCapacitacion[]>('/capacitaciones/solicitudes/mias/');
+}
+
+// ── HU-12: gestionar las solicitudes de formación ──────────────────────────
+// Cada cambio de estado deja tres rastros (regla de la iteración 4): una notificación al
+// solicitante, un evento en el historial (HU-08) y la actualización del registro de uso (HU-25).
+// El permiso `formacion` lo comprueba la pantalla con useRol(); la API real lo valida por token.
+
+/** Lo que el personal puede hacer con una solicitud. */
+export type DecisionCapacitacion = 'aprobar' | 'rechazar' | 'nueva_fecha';
+
+/** Estados desde los que se puede decidir: la solicitud sigue en curso. */
+const ESTADOS_GESTIONABLES: readonly EstadoSolicitud[] = ['pendiente', 'nueva_fecha'];
+
+/** Autor que queda en el historial cuando actúa el personal. */
+const AUTOR_PERSONAL = 'Personal de la biblioteca';
+
+/** Largo máximo del resultado al cerrar y del motivo al rechazar. */
+const LARGO_MAXIMO_TEXTO = 300;
+
+/** Copia de la solicitud con el cambio aplicado, o 404 si no existe. */
+function buscarSolicitud(id: string): SolicitudCapacitacion {
+  const solicitud = solicitudes.find((actual) => actual.id === id);
+  if (!solicitud) {
+    throw new ErrorApi(404, 'La solicitud de capacitación no existe.');
+  }
+  return solicitud;
+}
+
+/** Datos del solicitante para el registro de uso, si está en el directorio. */
+function datosDelSolicitante(usuarioId: string) {
+  const persona = USUARIOS_DIRECTORIO.find((usuario) => usuario.id === usuarioId);
+  return persona ? { usuario: { ...persona } } : {};
+}
+
+/** Deja la solicitud en el almacén y avisa al solicitante (CA1 y CA3). */
+function guardarSolicitud(
+  actualizada: SolicitudCapacitacion,
+  titulo: string,
+  mensaje: string,
+): SolicitudCapacitacion {
+  solicitudes = solicitudes.map((actual) => (actual.id === actualizada.id ? actualizada : actual));
+  crearNotificacion({
+    usuarioId: actualizada.solicitante.id,
+    solicitudId: actualizada.id,
+    titulo,
+    mensaje,
+  });
+  // HU-25: el mismo registro de la solicitud se actualiza, no se duplica (regla del #181).
+  registrarUso({
+    id: `uso-capacitacion-${actualizada.id}`,
+    servicio: 'capacitaciones',
+    finalidad: `${actualizada.linea}: ${actualizada.objetivo}`,
+    fecha: actualizada.fecha,
+    modalidad: actualizada.modalidad,
+    estado:
+      actualizada.estado === 'realizada'
+        ? 'completada'
+        : actualizada.estado === 'cancelada' || actualizada.estado === 'rechazada'
+          ? 'cancelada'
+          : 'pendiente',
+    ...datosDelSolicitante(actualizada.solicitante.id),
+  });
+  return { ...actualizada };
+}
+
+/**
+ * Solicitudes para la bandeja de Gestión → Solicitudes (HU-12). Sin estado, todas; con estado,
+ * solo ese. La más reciente primero, para que lo nuevo quede arriba.
+ */
+export function obtenerSolicitudesCapacitacion(
+  estado: EstadoSolicitud | 'todas' = 'todas',
+): Promise<SolicitudCapacitacion[]> {
+  if (USAR_MOCKS) {
+    const lista = (estado === 'todas'
+      ? solicitudes
+      : solicitudes.filter((solicitud) => solicitud.estado === estado)
+    )
+      .slice()
+      .sort((a, b) => b.creada.localeCompare(a.creada));
+    return simularRed(lista.map(copiarSolicitud));
+  }
+  const consulta = estado === 'todas' ? '' : `?estado=${estado}`;
+  return peticion<SolicitudCapacitacion[]>(`/capacitaciones/solicitudes/${consulta}`);
+}
+
+/** Aprueba una solicitud pendiente (CA1). */
+export async function aprobarCapacitacion(id: string): Promise<SolicitudCapacitacion> {
+  if (USAR_MOCKS) {
+    const solicitud = buscarSolicitud(id);
+    if (!ESTADOS_GESTIONABLES.includes(solicitud.estado)) {
+      throw new ErrorApi(400, 'Esta solicitud ya no se puede aprobar.');
+    }
+    const actualizada: SolicitudCapacitacion = {
+      ...solicitud,
+      estado: 'aprobada',
+      motivo: undefined,
+    };
+    const guardada = guardarSolicitud(
+      actualizada,
+      'Capacitación aprobada',
+      `Tu solicitud de ${solicitud.linea} para el ${solicitud.fecha} a las ${solicitud.hora} fue aprobada.`,
+    );
+    registrarEvento('capacitacion', id, 'aprobada', AUTOR_PERSONAL);
+    return simularRed(guardada);
+  }
+  return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/aprobar/`, {
+    method: 'POST',
+  });
+}
+
+/** Rechaza una solicitud; el motivo es obligatorio (CA2). */
+export async function rechazarCapacitacion(
+  id: string,
+  motivo: string,
+): Promise<SolicitudCapacitacion> {
+  if (USAR_MOCKS) {
+    const solicitud = buscarSolicitud(id);
+    if (!ESTADOS_GESTIONABLES.includes(solicitud.estado)) {
+      throw new ErrorApi(400, 'Esta solicitud ya no se puede rechazar.');
+    }
+    const texto = motivo?.trim() ?? '';
+    if (!texto) {
+      throw new ErrorApi(400, 'Escribe el motivo del rechazo.');
+    }
+    if (texto.length > LARGO_MAXIMO_TEXTO) {
+      throw new ErrorApi(400, `El motivo no puede pasar de ${LARGO_MAXIMO_TEXTO} caracteres.`);
+    }
+    const actualizada: SolicitudCapacitacion = { ...solicitud, estado: 'rechazada', motivo: texto };
+    const guardada = guardarSolicitud(
+      actualizada,
+      'Capacitación rechazada',
+      `Tu solicitud de ${solicitud.linea} fue rechazada: ${texto}`,
+    );
+    registrarEvento('capacitacion', id, 'rechazada', AUTOR_PERSONAL, texto);
+    return simularRed(guardada);
+  }
+  return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/rechazar/`, {
+    method: 'POST',
+    body: JSON.stringify({ motivo }),
+  });
+}
+
+/**
+ * Propone otra fecha y hora (CA1 y CA4). La solicitud queda `nueva_fecha` y el usuario debe
+ * aceptarla; la fecha debe ser hábil y con la anticipación mínima (mismas reglas que HU-10).
+ */
+export async function proponerFechaCapacitacion(
+  id: string,
+  fecha: string,
+  hora: string,
+): Promise<SolicitudCapacitacion> {
+  if (USAR_MOCKS) {
+    const solicitud = buscarSolicitud(id);
+    if (!ESTADOS_GESTIONABLES.includes(solicitud.estado)) {
+      throw new ErrorApi(400, 'Esta solicitud ya no se puede reprogramar.');
+    }
+    if (!esFechaValida(fecha) || !esHoraValida(hora)) {
+      throw new ErrorApi(400, 'Elige una fecha y una hora válidas.');
+    }
+    const parametros = await obtenerParametros();
+    if (!esDiaHabil(fecha, parametros)) {
+      throw new ErrorApi(400, `Esa fecha no es hábil: ${motivoNoDisponible(fecha, parametros)}.`);
+    }
+    const actualizada: SolicitudCapacitacion = {
+      ...solicitud,
+      estado: 'nueva_fecha',
+      fechaPropuesta: fecha,
+      horaPropuesta: hora,
+      motivo: undefined,
+    };
+    const guardada = guardarSolicitud(
+      actualizada,
+      'Nueva fecha para tu capacitación',
+      `Proponemos el ${fecha} a las ${hora} para tu capacitación de ${solicitud.linea}. Acepta o rechaza la fecha en Mis solicitudes.`,
+    );
+    registrarEvento(
+      'capacitacion',
+      id,
+      'nueva_fecha',
+      AUTOR_PERSONAL,
+      `Nueva fecha: ${fecha} a las ${hora}.`,
+    );
+    return simularRed(guardada);
+  }
+  return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/nueva-fecha/`, {
+    method: 'POST',
+    body: JSON.stringify({ fecha, hora }),
+  });
+}
+
+/** Asigna el responsable que atenderá la capacitación (CA3, primer paso para cerrarla). */
+export async function asignarResponsable(
+  id: string,
+  usuarioId: string,
+): Promise<SolicitudCapacitacion> {
+  if (USAR_MOCKS) {
+    const solicitud = buscarSolicitud(id);
+    if (solicitud.estado !== 'aprobada') {
+      throw new ErrorApi(400, 'Solo se asigna responsable a una solicitud aprobada.');
+    }
+    const persona = USUARIOS_DIRECTORIO.find((usuario) => usuario.id === usuarioId);
+    if (!persona) {
+      throw new ErrorApi(404, 'La persona responsable no existe.');
+    }
+    const actualizada: SolicitudCapacitacion = {
+      ...solicitud,
+      responsableId: persona.id,
+      responsable: persona.nombre,
+    };
+    solicitudes = solicitudes.map((actual) => (actual.id === id ? actualizada : actual));
+    registrarEvento('capacitacion', id, 'aprobada', AUTOR_PERSONAL, `Responsable: ${persona.nombre}.`);
+    return simularRed({ ...actualizada });
+  }
+  return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/responsable/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ usuarioId }),
+  });
+}
+
+/** Cierra la solicitud con el resultado (CA3): exige responsable y resultado. */
+export async function cerrarCapacitacion(
+  id: string,
+  resultado: string,
+): Promise<SolicitudCapacitacion> {
+  if (USAR_MOCKS) {
+    const solicitud = buscarSolicitud(id);
+    if (solicitud.estado !== 'aprobada') {
+      throw new ErrorApi(400, 'Solo se cierra una solicitud aprobada.');
+    }
+    if (!solicitud.responsableId) {
+      throw new ErrorApi(400, 'Asigna un responsable antes de cerrar la solicitud.');
+    }
+    const texto = resultado?.trim() ?? '';
+    if (!texto) {
+      throw new ErrorApi(400, 'Escribe el resultado de la capacitación.');
+    }
+    if (texto.length > LARGO_MAXIMO_TEXTO) {
+      throw new ErrorApi(400, `El resultado no puede pasar de ${LARGO_MAXIMO_TEXTO} caracteres.`);
+    }
+    const actualizada: SolicitudCapacitacion = { ...solicitud, estado: 'realizada', resultado: texto };
+    const guardada = guardarSolicitud(
+      actualizada,
+      'Capacitación realizada',
+      `Tu capacitación de ${solicitud.linea} quedó cerrada. Resultado: ${texto}`,
+    );
+    registrarEvento('capacitacion', id, 'realizada', AUTOR_PERSONAL, texto);
+    return simularRed(guardada);
+  }
+  return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/cerrar/`, {
+    method: 'POST',
+    body: JSON.stringify({ resultado }),
+  });
+}
+
+/**
+ * La comunidad responde a la nueva fecha (CA4): al aceptar queda `aprobada` y al no aceptar,
+ * `cancelada`. Solo aplica a una solicitud en `nueva_fecha`.
+ */
+export async function responderNuevaFecha(
+  id: string,
+  acepta: boolean,
+): Promise<SolicitudCapacitacion> {
+  if (USAR_MOCKS) {
+    const solicitud = buscarSolicitud(id);
+    if (solicitud.estado !== 'nueva_fecha') {
+      throw new ErrorApi(400, 'Esta solicitud no tiene una nueva fecha por responder.');
+    }
+    const estado: EstadoSolicitud = acepta ? 'aprobada' : 'cancelada';
+    const actualizada: SolicitudCapacitacion = {
+      ...solicitud,
+      estado,
+      // Al aceptar, la fecha propuesta pasa a ser la de la cita.
+      ...(acepta
+        ? { fecha: solicitud.fechaPropuesta ?? solicitud.fecha, hora: solicitud.horaPropuesta ?? solicitud.hora }
+        : { motivo: 'No aceptó la nueva fecha propuesta.' }),
+      fechaPropuesta: undefined,
+      horaPropuesta: undefined,
+    };
+    const guardada = guardarSolicitud(
+      actualizada,
+      acepta ? 'Nueva fecha aceptada' : 'Capacitación cancelada',
+      acepta
+        ? `Tu capacitación de ${solicitud.linea} quedó para el ${actualizada.fecha} a las ${actualizada.hora}.`
+        : `Cancelaste la capacitación de ${solicitud.linea} al no aceptar la nueva fecha.`,
+    );
+    registrarEvento(
+      'capacitacion',
+      id,
+      estado,
+      solicitud.solicitante.nombre,
+      acepta ? 'Aceptó la nueva fecha.' : 'No aceptó la nueva fecha.',
+    );
+    return simularRed(guardada);
+  }
+  return peticion<SolicitudCapacitacion>(
+    `/capacitaciones/solicitudes/${id}/responder-fecha/`,
+    { method: 'POST', body: JSON.stringify({ acepta }) },
+  );
 }
