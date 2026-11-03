@@ -9,8 +9,7 @@ import { esDiaHabil } from '@/utils/parametros';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { RESERVAS } from './mocks/reservas';
-import { registrarUso } from './estadisticas';
-import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -177,11 +176,18 @@ export async function decidirReserva(
 
     // HU-25: cada operación completada deja su registro de uso.
     registrarUso({
+      id: `uso-reserva-${actualizada.id}`,
       servicio: 'espacios',
       finalidad: actualizada.proposito,
       fecha: actualizada.fecha,
       modalidad: 'presencial',
-      estado: decision === 'aprobar' ? 'completada' : decision === 'cancelar' ? 'cancelada' : 'pendiente',
+      // Rechazar o cancelar es una operación cancelada; aprobar, completada; nueva fecha, pendiente.
+      estado:
+        decision === 'aprobar'
+          ? 'completada'
+          : decision === 'rechazar' || decision === 'cancelar'
+            ? 'cancelada'
+            : 'pendiente',
       ...(datosDeSolicitante(actualizada.solicitanteId) ?? {}),
     });
 
@@ -311,6 +317,7 @@ export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva
 
   // HU-25: la solicitud también cuenta como operación (queda pendiente).
   registrarUso({
+    id: `uso-reserva-${nueva.id}`,
     servicio: 'espacios',
     finalidad: nueva.proposito,
     fecha: nueva.fecha,
@@ -332,8 +339,3 @@ export function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
   return peticion<Reserva[]>('/reservas/mias/');
 }
 
-/** HU-25: los datos del solicitante para el registro de uso (sin programa si no lo tiene). */
-function datosDeSolicitante(usuarioId: string) {
-  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
-  return usuario ? { usuario: { ...usuario } } : {};
-}
