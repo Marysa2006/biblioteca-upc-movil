@@ -239,6 +239,16 @@ export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promi
     if (!actualizado) {
       return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
     }
+    // HU-25: la entrega deja su registro de uso (el préstamo queda activo).
+    registrarUso({
+      servicio: 'tablets',
+      finalidad: `Préstamo de ${tablet.modelo}`,
+      fecha: actualizado.fecha,
+      fechaFin: actualizado.fecha,
+      modalidad: 'presencial',
+      estado: 'pendiente',
+      ...datosDeSolicitante(actualizado.solicitanteId),
+    });
     return simularRed(copiarPrestamo(actualizado));
   }
   return peticion<Prestamo>(`/prestamos/${prestamoId}/entrega/`, {

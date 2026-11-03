@@ -364,6 +364,15 @@ export async function agendarCita(
       titulo: 'Asesoría agendada',
       mensaje: `Tu asesoría de ${cita.tema} quedó para el ${cita.fecha} a las ${cita.horaInicio}.`,
     });
+    // HU-25: agendar deja su registro de uso.
+    registrarUso({
+      servicio: 'asesorias',
+      finalidad: cita.tema,
+      fecha: cita.fecha,
+      modalidad: cita.modalidad,
+      estado: 'pendiente',
+      ...datosDeSolicitante(cita.solicitanteId),
+    });
     return simularRed({ ...cita });
   }
   return peticion<Cita>('/asesorias/citas/', {
@@ -394,6 +403,15 @@ export async function cancelarCita(usuario: Usuario, id: string): Promise<Cita> 
       solicitudId: cita.id,
       titulo: 'Asesoría cancelada',
       mensaje: `Tu asesoría de ${cita.tema} del ${cita.fecha} a las ${cita.horaInicio} fue cancelada.`,
+    });
+    // HU-25: cancelar también deja rastro.
+    registrarUso({
+      servicio: 'asesorias',
+      finalidad: cita.tema,
+      fecha: cita.fecha,
+      modalidad: cita.modalidad,
+      estado: 'cancelada',
+      ...datosDeSolicitante(cita.solicitanteId),
     });
     return simularRed({ ...cancelada });
   }
