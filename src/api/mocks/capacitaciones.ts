@@ -5,7 +5,7 @@
  * biblioteca; las fechas, los grupos y los participantes son de ejemplo y se esperan por
  * confirmar con la biblioteca (sección 2 del documento de la iteración 4).
  *
- * Hay una línea inactiva (`lin-busqueda`, no debe ofrecerse) y una con solicitudes activas
+ * Hay una línea inactiva (`lin-zotero`, no debe ofrecerse) y una con solicitudes activas
  * (`lin-apa`, para la advertencia al desactivar de HU-09, CA3).
  */
 import type { LineaFormacion, SolicitudCapacitacion } from '@/types';
@@ -123,7 +123,7 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     grupo: 'Ingeniería de Sistemas · metodología',
     participantes: 40,
     estado: 'rechazada',
-    motivo: 'La fecha pedida es festivo; se pide elegir otra.',
+    motivo: 'No hay facilitador disponible esa semana.',
     creada: '2026-10-27 11:40',
   },
   {
