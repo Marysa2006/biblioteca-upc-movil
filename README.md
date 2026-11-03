@@ -11,7 +11,7 @@
 ![Expo](https://img.shields.io/badge/Expo-SDK%2058-000020?logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?logo=react&logoColor=black)
 ![React](https://img.shields.io/badge/React-19.3-61DAFB?logo=react&logoColor=black)
-![Plataformas](https://img.shields.io/badge/plataformas-Android%20%7C%20iOS-006139)
+![Plataformas](https://img.shields.io/badge/plataformas-Android%20(iOS%20pendiente)-006139)
 ![Release](https://img.shields.io/badge/Release%201.0-5%20nov%202026-E5BC16)
 
 </div>
@@ -305,6 +305,18 @@ Para usar la app sin Expo Go ni computador (por ejemplo, en una demo), instala e
 2. Abre el `.apk` descargado. Si Android lo pide, permite instalar apps de esa fuente; si Play Protect avisa de una app no reconocida, elige **Más detalles → Instalar de todas formas**.
 
 El APK trae los datos de prueba: se entra con los mismos usuarios de abajo, y lo que se crea se borra al cerrar la app. Se instala junto a Expo Go, sin reemplazarla.
+
+### ¿Y en iPhone?
+
+Por ahora la app se prueba y se entrega **solo en Android**. El código sirve igual para iPhone, pero probarlo en uno exige una cuenta de [Apple Developer](https://developer.apple.com/programs/) (99 USD al año):
+
+- El APK solo se instala en Android.
+- Con Expo SDK 58, Expo Go para iPhone no se descarga gratis: se compila con `npx eas-cli@latest go` y se instala por TestFlight, y las dos cosas necesitan esa cuenta.
+- Publicar la app para iPhone también la necesita.
+
+> **Pendiente:** consultar con la bibliotecóloga si el alcance queda solo en Android o si la biblioteca financia la cuenta de Apple Developer para habilitar iOS.
+
+Mientras tanto, quien tenga iPhone revisa el diseño en el navegador con `npm run web`. Esa revisión no reemplaza la prueba en Android, porque el almacenamiento seguro, las notificaciones y la cámara no se comportan igual en la web; las pruebas de aceptación se hacen con el APK.
 
 ### Generar un APK nuevo
 
