@@ -3,6 +3,9 @@
  * Funciones puras, sin hooks ni API: reciben los registros y devuelven los indicadores o el
  * texto del CSV. Los datos que falten vienen ya como 'no_informado' (HU-25, CA2).
  */
+import { MESES } from '@/utils/fechas';
+import { NOMBRE_TIPO } from '@/utils/roles';
+
 import {
   NO_INFORMADO,
   type ConteoIndicador,
@@ -21,13 +24,9 @@ export const NOMBRE_SERVICIO: Record<ServicioEstadistica, string> = {
   catalogo: 'Catálogo',
 };
 
-/** Nombre que se muestra del tipo de usuario. */
+/** Nombre que se muestra del tipo de usuario: reutiliza NOMBRE_TIPO (HU-05). */
 export const NOMBRE_TIPO_USUARIO: Record<string, string> = {
-  estudiante: 'Estudiante',
-  docente: 'Docente',
-  administrativo: 'Administrativo',
-  egresado: 'Egresado',
-  visitante: 'Visitante',
+  ...NOMBRE_TIPO,
   [NO_INFORMADO]: 'No informado',
 };
 
@@ -36,6 +35,18 @@ export const NOMBRE_ESTADO_USO: Record<string, string> = {
   completada: 'Completada',
   cancelada: 'Cancelada',
   pendiente: 'Pendiente',
+};
+
+/** Nombre legible del programa (o de cualquier texto que falte). */
+export const NOMBRE_PROGRAMA: Record<string, string> = {
+  [NO_INFORMADO]: 'No informado',
+};
+
+/** Nombre legible de la modalidad. */
+export const NOMBRE_MODALIDAD_USO: Record<string, string> = {
+  presencial: 'Presencial',
+  virtual: 'Virtual',
+  [NO_INFORMADO]: 'No informado',
 };
 
 /** Nombre legible de un valor de un indicador; si no se conoce, se muestra tal cual. */
@@ -65,12 +76,8 @@ const mes = (fecha: string) => fecha.slice(0, 7);
 
 /** '2026-10' → 'octubre de 2026'. */
 export function mesLegible(anioMes: string): string {
-  const meses = [
-    'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
-  ];
   const [anio, numero] = anioMes.split('-').map(Number);
-  return `${meses[numero - 1] ?? ''} de ${anio}`;
+  return `${MESES[numero - 1] ?? ''} de ${anio}`;
 }
 
 /** Cuenta por mes y devuelve las etiquetas legibles, de enero a diciembre. */
@@ -98,7 +105,7 @@ export function calcularIndicadores(registros: RegistroUso[]): IndicadoresUso {
     total: registros.length,
     porServicio: contarPor(registros, (r) => r.servicio, NOMBRE_SERVICIO),
     porTipoUsuario: contarPor(registros, (r) => r.tipoUsuario, NOMBRE_TIPO_USUARIO),
-    porPrograma: contarPor(registros, (r) => r.programa, {}),
+    porPrograma: contarPor(registros, (r) => r.programa, NOMBRE_PROGRAMA),
     porMes: contarPorMes(registros),
   };
 }
@@ -109,10 +116,10 @@ const COLUMNAS: { titulo: string; valor: (r: RegistroUso) => string }[] = [
   { titulo: 'Fecha fin', valor: (r) => r.fechaFin ?? '' },
   { titulo: 'Servicio', valor: (r) => NOMBRE_SERVICIO[r.servicio] ?? r.servicio },
   { titulo: 'Tipo de usuario', valor: (r) => nombre(r.tipoUsuario, NOMBRE_TIPO_USUARIO) },
-  { titulo: 'Programa', valor: (r) => r.programa },
-  { titulo: 'Nombre', valor: (r) => r.nombre },
-  { titulo: 'Finalidad', valor: (r) => r.finalidad },
-  { titulo: 'Modalidad', valor: (r) => r.modalidad },
+  { titulo: 'Programa', valor: (r) => nombre(r.programa, NOMBRE_PROGRAMA) },
+  { titulo: 'Nombre', valor: (r) => (r.nombre === NO_INFORMADO ? 'No informado' : r.nombre) },
+  { titulo: 'Finalidad', valor: (r) => (r.finalidad === NO_INFORMADO ? 'No informado' : r.finalidad) },
+  { titulo: 'Modalidad', valor: (r) => nombre(r.modalidad, NOMBRE_MODALIDAD_USO) },
   { titulo: 'Estado', valor: (r) => nombre(r.estado, NOMBRE_ESTADO_USO) },
 ];
 
