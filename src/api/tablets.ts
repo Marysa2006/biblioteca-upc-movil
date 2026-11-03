@@ -34,6 +34,7 @@ import {
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+import { registrarUso } from './estadisticas';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -304,6 +305,16 @@ export function registrarDevolucion(
     if (!actualizado) {
       return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
     }
+    // HU-25: el préstamo devuelto deja su registro de uso.
+    registrarUso({
+      servicio: 'tablets',
+      finalidad: `Préstamo de ${tablet.modelo}`,
+      fecha: actualizado.fecha,
+      fechaFin: actualizado.fecha,
+      modalidad: 'presencial',
+      estado: 'completada',
+      ...datosDeSolicitante(actualizado.solicitanteId),
+    });
     return simularRed(copiarPrestamo(actualizado));
   }
   return peticion<Prestamo>(`/prestamos/${prestamoId}/devolucion/`, {
@@ -682,4 +693,11 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
   const vencidos = prestamos.filter((prestamo) => prestamo.estado === 'vencido');
   vencidos.forEach(avisarVencido);
   return simularRed(ordenarVencidos(vencidos).map(copiarPrestamo));
+}
+
+
+/** HU-25: los datos del solicitante del préstamo para el registro de uso. */
+function datosDeSolicitante(usuarioId: string) {
+  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
+  return usuario ? { usuario: { ...usuario } } : {};
 }

@@ -9,6 +9,8 @@ import { esDiaHabil } from '@/utils/parametros';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { RESERVAS } from './mocks/reservas';
+import { registrarUso } from './estadisticas';
+import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -173,6 +175,16 @@ export async function decidirReserva(
       mensaje: mensajeDeDecision(actualizada, decision, motivo),
     });
 
+    // HU-25: cada operación completada deja su registro de uso.
+    registrarUso({
+      servicio: 'espacios',
+      finalidad: actualizada.proposito,
+      fecha: actualizada.fecha,
+      modalidad: 'presencial',
+      estado: decision === 'aprobar' ? 'completada' : decision === 'cancelar' ? 'cancelada' : 'pendiente',
+      ...(datosDeSolicitante(actualizada.solicitanteId) ?? {}),
+    });
+
     return simularRed({ ...actualizada });
   }
   return peticion<Reserva>(`/reservas/${id}/decision/`, {
@@ -297,6 +309,16 @@ export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva
     mensaje: `Recibimos tu solicitud para el ${nueva.fecha} de ${nueva.horaInicio} a ${nueva.horaFin}.`,
   });
 
+  // HU-25: la solicitud también cuenta como operación (queda pendiente).
+  registrarUso({
+    servicio: 'espacios',
+    finalidad: nueva.proposito,
+    fecha: nueva.fecha,
+    modalidad: 'presencial',
+    estado: 'pendiente',
+    ...(datosDeSolicitante(nueva.solicitanteId) ?? {}),
+  });
+
   return { ...nueva };
 }
 
@@ -308,4 +330,10 @@ export function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
   }
   // Ruta provisional: confirmar con Backend.
   return peticion<Reserva[]>('/reservas/mias/');
+}
+
+/** HU-25: los datos del solicitante para el registro de uso (sin programa si no lo tiene). */
+function datosDeSolicitante(usuarioId: string) {
+  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
+  return usuario ? { usuario: { ...usuario } } : {};
 }

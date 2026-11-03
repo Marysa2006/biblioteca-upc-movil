@@ -28,6 +28,7 @@ import {
   TEMAS_ASESORIA,
 } from './mocks/asesorias';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+import { registrarUso } from './estadisticas';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -517,6 +518,15 @@ export async function registrarResultado(
     }
     const actualizada: Cita = { ...cita, estado: 'realizada', asistio: true, resultado: texto };
     citas = citas.map((c) => (c.id === citaId ? actualizada : c));
+    // HU-25: la asesoría realizada deja su registro de uso.
+    registrarUso({
+      servicio: 'asesorias',
+      finalidad: actualizada.tema,
+      fecha: actualizada.fecha,
+      modalidad: actualizada.modalidad,
+      estado: 'completada',
+      ...datosDeSolicitante(actualizada.solicitanteId),
+    });
     return simularRed(aCitaAgenda(actualizada));
   }
   return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/resultado/`, {
@@ -537,4 +547,11 @@ export async function registrarInasistencia(usuario: Usuario, citaId: string): P
     return simularRed(aCitaAgenda(actualizada));
   }
   return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/inasistencia/`, { method: 'POST' });
+}
+
+
+/** HU-25: los datos del solicitante de la cita para el registro de uso. */
+function datosDeSolicitante(usuarioId: string) {
+  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
+  return usuario ? { usuario: { ...usuario } } : {};
 }
