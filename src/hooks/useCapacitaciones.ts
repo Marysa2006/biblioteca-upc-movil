@@ -11,6 +11,7 @@ import {
   crearLinea,
   editarLinea,
   obtenerLineas,
+  solicitudesActivasDeLinea,
   type DatosLinea,
 } from '@/api/capacitaciones';
 import { claves } from '@/api/claves';
@@ -22,6 +23,19 @@ export function useLineas() {
   return useQuery({
     queryKey: claves.lineasFormacion,
     queryFn: obtenerLineas,
+  });
+}
+
+/**
+ * Solicitudes activas de una línea, para advertir ANTES de desactivarla (HU-09, CA3).
+ * cambiarEstadoLinea() también las devuelve, pero ya desactivada. No consulta sin id.
+ * La clave cuelga de las líneas: se refresca con sus mismas invalidaciones.
+ */
+export function useSolicitudesActivasLinea(lineaId: string) {
+  return useQuery({
+    queryKey: [...claves.lineasFormacion, lineaId, 'solicitudes-activas'],
+    queryFn: () => solicitudesActivasDeLinea(lineaId),
+    enabled: lineaId !== '',
   });
 }
 
