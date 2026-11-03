@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 
 import { claves } from '@/api/claves';
 import {
+  buscarTabletPorCodigo,
   cambiarEstadoTablet,
   crearTablet,
   editarTablet,
@@ -211,5 +212,15 @@ export function useRegistrarDevolucion() {
       queryClient.invalidateQueries({ queryKey: claves.tablets });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTabletsTodas });
     },
+  });
+}
+
+/**
+ * Busca una tablet por el código que lee el escáner (HU-31, CA1 y CA2).
+ * Se usa como mutación porque solo corre cuando la persona escanea o escribe el código.
+ */
+export function useBuscarTabletPorCodigo() {
+  return useMutation({
+    mutationFn: (codigo: string) => buscarTabletPorCodigo(codigo),
   });
 }
