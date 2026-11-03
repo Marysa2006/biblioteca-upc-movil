@@ -16,6 +16,10 @@ import {
   type Usuario,
 } from '@/types';
 
+import { hoyISO } from '@/utils/fechas';
+
+import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+
 import { peticion, simularRed, USAR_MOCKS } from './cliente';
 import { REGISTROS_USO } from './mocks/estadisticas';
 
@@ -24,6 +28,8 @@ let registros: RegistroUso[] = REGISTROS_USO.map((registro) => ({ ...registro })
 
 /** Lo que se conoce de la operación al registrarla; el resto se completa o queda no informado. */
 export type OperacionUso = {
+  /** Id estable de la operación: `uso-reserva-<id>`… Si viene, actualiza ese registro. */
+  id?: string;
   /** Quién la hizo; sin sesión (un visitante anónimo) se omite. */
   usuario?: Usuario | null;
   servicio: ServicioEstadistica;
@@ -39,31 +45,39 @@ export type OperacionUso = {
 
 /** Hoy en la hora del celular, 'AAAA-MM-DD'. */
 function hoy(): string {
-  const ahora = new Date();
-  const dos = (n: number) => String(n).padStart(2, '0');
-  return `${ahora.getFullYear()}-${dos(ahora.getMonth() + 1)}-${dos(ahora.getDate())}`;
+  return hoyISO();
 }
 
 /**
- * Agrega un registro de uso (CA1). Sin sesión, el usuario y sus datos quedan 'no_informado';
- * si el perfil no trae programa, también (CA2). Devuelve el registro guardado.
+ * Registra o actualiza el uso de una operación (HU-25, CA1).
+ * **Un solo registro por operación**: el `id` se arma con la operación (`uso-reserva-<id>`,
+ * `uso-prestamo-<id>`, `uso-cita-<id>`, `uso-capacitacion-<id>`), así que al cambiar de estado
+ * se actualiza el mismo registro y la operación no se cuenta dos veces (no duplica los
+ * indicadores de HU-26). El historial de cada cambio lo guarda HU-08.
+ *
+ * Sin sesión, el usuario y sus datos quedan 'no_informado'; si el perfil no trae programa,
+ * también (CA2). Devuelve el registro guardado.
  */
 export function registrarUso(operacion: OperacionUso): RegistroUso {
   const { usuario } = operacion;
+  const id = operacion.id ?? `uso-${Date.now()}-${registros.length + 1}`;
+  const anterior = registros.find((registro) => registro.id === id);
   const registro: RegistroUso = {
-    id: `uso-${Date.now()}-${registros.length + 1}`,
-    usuarioId: usuario?.id ?? NO_INFORMADO,
-    nombre: usuario?.nombre ?? NO_INFORMADO,
-    tipoUsuario: usuario?.tipo ?? NO_INFORMADO,
-    programa: usuario?.programa?.trim() || NO_INFORMADO,
+    id,
+    usuarioId: usuario?.id ?? anterior?.usuarioId ?? NO_INFORMADO,
+    nombre: usuario?.nombre ?? anterior?.nombre ?? NO_INFORMADO,
+    tipoUsuario: usuario?.tipo ?? anterior?.tipoUsuario ?? NO_INFORMADO,
+    programa: usuario?.programa?.trim() || anterior?.programa || NO_INFORMADO,
     servicio: operacion.servicio,
-    finalidad: operacion.finalidad?.trim() || NO_INFORMADO,
-    fecha: operacion.fecha ?? hoy(),
-    fechaFin: operacion.fechaFin,
-    modalidad: operacion.modalidad ?? NO_INFORMADO,
+    finalidad: operacion.finalidad?.trim() || anterior?.finalidad || NO_INFORMADO,
+    fecha: operacion.fecha ?? anterior?.fecha ?? hoy(),
+    fechaFin: operacion.fechaFin ?? anterior?.fechaFin,
+    modalidad: operacion.modalidad ?? anterior?.modalidad ?? NO_INFORMADO,
     estado: operacion.estado ?? 'completada',
   };
-  registros = [...registros, registro];
+  registros = anterior
+    ? registros.map((actual) => (actual.id === id ? registro : actual))
+    : [...registros, registro];
   return { ...registro };
 }
 
@@ -124,3 +138,10 @@ export function reiniciarRegistrosDePrueba(): void {
 
 /** Tipo de usuario tal como lo espera el registro; útil para no repetir el cast en los mocks. */
 export type TipoUsuarioUso = TipoUsuario | typeof NO_INFORMADO;
+
+
+/** Datos del solicitante para el registro de uso (lo comparten reservas, asesorías y tablets). */
+export function datosDeSolicitante(usuarioId: string) {
+  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
+  return usuario ? { usuario: { ...usuario } } : {};
+}

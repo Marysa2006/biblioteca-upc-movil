@@ -100,6 +100,8 @@ export const claves = {
   /** Solicitudes del usuario de la sesión (HU-10). */
   misCapacitaciones: (usuarioId?: string) =>
     ['capacitaciones', 'solicitudes', 'mias', usuarioId] as const,
+  /** Prefijo de todas las solicitudes de capacitación: la bandeja y las del usuario (HU-10). */
+  solicitudesCapacitacionTodas: ['capacitaciones', 'solicitudes'] as const,
 
   // ── Iteración 4: seguimiento de solicitudes (HU-08) ──────────
   /** Todas las solicitudes del usuario, de reservas, citas, préstamos y capacitaciones. */
@@ -118,4 +120,6 @@ export const claves = {
   registrosUso: (filtros?: object) => ['estadisticas', 'registros', filtros ?? {}] as const,
   /** Indicadores de uso, con los filtros dentro de la clave (HU-26, CA1). */
   indicadoresUso: (filtros?: object) => ['estadisticas', 'indicadores', filtros ?? {}] as const,
+  /** Prefijo de todos los registros e indicadores, para refrescarlos al registrar un uso. */
+  estadisticasTodas: ['estadisticas'] as const,
 };

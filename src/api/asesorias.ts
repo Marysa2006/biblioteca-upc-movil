@@ -28,7 +28,7 @@ import {
   TEMAS_ASESORIA,
 } from './mocks/asesorias';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
-import { registrarUso } from './estadisticas';
+import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -366,6 +366,7 @@ export async function agendarCita(
     });
     // HU-25: agendar deja su registro de uso.
     registrarUso({
+      id: `uso-cita-${cita.id}`,
       servicio: 'asesorias',
       finalidad: cita.tema,
       fecha: cita.fecha,
@@ -406,6 +407,7 @@ export async function cancelarCita(usuario: Usuario, id: string): Promise<Cita> 
     });
     // HU-25: cancelar también deja rastro.
     registrarUso({
+      id: `uso-cita-${cita.id}`,
       servicio: 'asesorias',
       finalidad: cita.tema,
       fecha: cita.fecha,
@@ -446,6 +448,16 @@ export async function reprogramarCita(
       solicitudId: cita.id,
       titulo: 'Asesoría reprogramada',
       mensaje: `Tu asesoría de ${actualizada.tema} quedó para el ${actualizada.fecha} a las ${actualizada.horaInicio}.`,
+    });
+    // HU-25: se actualiza el mismo registro de la cita (no se duplica).
+    registrarUso({
+      id: `uso-cita-${actualizada.id}`,
+      servicio: 'asesorias',
+      finalidad: actualizada.tema,
+      fecha: actualizada.fecha,
+      modalidad: actualizada.modalidad,
+      estado: 'pendiente',
+      ...datosDeSolicitante(actualizada.solicitanteId),
     });
     return simularRed({ ...actualizada });
   }
@@ -538,6 +550,7 @@ export async function registrarResultado(
     citas = citas.map((c) => (c.id === citaId ? actualizada : c));
     // HU-25: la asesoría realizada deja su registro de uso.
     registrarUso({
+      id: `uso-cita-${actualizada.id}`,
       servicio: 'asesorias',
       finalidad: actualizada.tema,
       fecha: actualizada.fecha,
@@ -562,14 +575,19 @@ export async function registrarInasistencia(usuario: Usuario, citaId: string): P
     const cita = citaAtendible(usuario.id, citaId, 'la inasistencia');
     const actualizada: Cita = { ...cita, estado: 'realizada', asistio: false, resultado: undefined };
     citas = citas.map((c) => (c.id === citaId ? actualizada : c));
+    // HU-25: la inasistencia cierra el registro de la cita como cancelada.
+    registrarUso({
+      id: `uso-cita-${actualizada.id}`,
+      servicio: 'asesorias',
+      finalidad: actualizada.tema,
+      fecha: actualizada.fecha,
+      modalidad: actualizada.modalidad,
+      estado: 'cancelada',
+      ...datosDeSolicitante(actualizada.solicitanteId),
+    });
     return simularRed(aCitaAgenda(actualizada));
   }
   return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/inasistencia/`, { method: 'POST' });
 }
 
 
-/** HU-25: los datos del solicitante de la cita para el registro de uso. */
-function datosDeSolicitante(usuarioId: string) {
-  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
-  return usuario ? { usuario: { ...usuario } } : {};
-}

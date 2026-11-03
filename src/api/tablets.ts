@@ -35,7 +35,7 @@ import {
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
-import { registrarUso } from './estadisticas';
+import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -266,6 +266,7 @@ export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promi
     }
     // HU-25: la entrega deja su registro de uso (el préstamo queda activo).
     registrarUso({
+      id: `uso-prestamo-${actualizado.id}`,
       servicio: 'tablets',
       finalidad: `Préstamo de ${tablet.modelo}`,
       fecha: actualizado.fecha,
@@ -342,6 +343,7 @@ export function registrarDevolucion(
     }
     // HU-25: el préstamo devuelto deja su registro de uso.
     registrarUso({
+      id: `uso-prestamo-${actualizado.id}`,
       servicio: 'tablets',
       finalidad: `Préstamo de ${tablet.modelo}`,
       fecha: actualizado.fecha,
@@ -655,6 +657,18 @@ export async function solicitarPrestamo(
     mensaje: `Reservamos una tablet para el ${fecha} de ${horaInicio} a ${horaLimite}. Recógela en la biblioteca.`,
   });
 
+  // HU-25: la solicitud deja su registro (luego la entrega y la devolución lo actualizan).
+  registrarUso({
+    id: `uso-prestamo-${nuevo.id}`,
+    servicio: 'tablets',
+    finalidad: 'Préstamo de tablet',
+    fecha: nuevo.fecha,
+    fechaFin: nuevo.fecha,
+    modalidad: 'presencial',
+    estado: 'pendiente',
+    usuario,
+  });
+
   return simularRed(copiarPrestamo(nuevo));
 }
 
@@ -731,8 +745,3 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
 }
 
 
-/** HU-25: los datos del solicitante del préstamo para el registro de uso. */
-function datosDeSolicitante(usuarioId: string) {
-  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
-  return usuario ? { usuario: { ...usuario } } : {};
-}
