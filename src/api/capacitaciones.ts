@@ -9,13 +9,12 @@ import type {
   EstadoSolicitud,
   LineaFormacion,
   ModalidadCapacitacion,
-  Parametros,
   SolicitudCapacitacion,
   Usuario,
 } from '@/types';
 import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
-import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { esDiaHabil, motivoNoDisponible, sugerirFechaHabil } from '@/utils/parametros';
 import { ahoraFechaHora } from '@/utils/tablets';
 import { normalizarTexto } from '@/utils/texto';
 
@@ -182,8 +181,6 @@ export async function cambiarEstadoLinea(
 const MODALIDADES: readonly ModalidadCapacitacion[] = ['presencial', 'virtual'];
 const LARGO_MAXIMO_OBJETIVO = 300;
 const LARGO_MAXIMO_GRUPO = 200;
-/** Días que se recorren para sugerir otra fecha (CA3). */
-const DIAS_BUSQUEDA_SUGERENCIA = 14;
 const HORA_MS = 60 * 60 * 1000;
 
 /**
@@ -254,25 +251,6 @@ function inicioSolicitud(fecha: string, hora: string): Date {
 }
 
 /**
- * La primera fecha desde `desde` que es hábil y cumple la anticipación mínima a la hora pedida,
- * dentro de 14 días (CA3). Así la sugerencia siempre se puede aceptar tal cual.
- */
-function buscarFechaHabil(
-  desde: string,
-  hora: string,
-  parametros: Parametros,
-): string | undefined {
-  const minimo = Date.now() + parametros.horasMinimasSolicitud * HORA_MS;
-  for (let i = 0; i <= DIAS_BUSQUEDA_SUGERENCIA; i += 1) {
-    const dia = sumarDias(desde, i);
-    if (esDiaHabil(dia, parametros) && inicioSolicitud(dia, hora).getTime() >= minimo) {
-      return dia;
-    }
-  }
-  return undefined;
-}
-
-/**
  * Solicita una capacitación a nombre del usuario de la sesión (HU-10).
  * Valida los campos (CA2), que la línea esté activa y que la fecha sea hábil y con la
  * anticipación mínima; si no, lanza ErrorCapacitacion con una fecha sugerida (CA3).
@@ -305,14 +283,14 @@ export async function solicitarCapacitacion(
   if (!esDiaHabil(datos.fecha, parametros)) {
     throw new ErrorCapacitacion(
       `Esa fecha no es un día hábil: ${motivoNoDisponible(datos.fecha, parametros)}. Elige otra.`,
-      buscarFechaHabil(datos.fecha, datos.hora, parametros),
+      sugerirFechaHabil(datos.fecha, datos.hora, parametros),
     );
   }
   const minimo = Date.now() + parametros.horasMinimasSolicitud * HORA_MS;
   if (inicioSolicitud(datos.fecha, datos.hora).getTime() < minimo) {
     throw new ErrorCapacitacion(
       `Solicítala con al menos ${parametros.horasMinimasSolicitud} horas de anticipación.`,
-      buscarFechaHabil(sumarDias(datos.fecha, 1), datos.hora, parametros),
+      sugerirFechaHabil(sumarDias(datos.fecha, 1), datos.hora, parametros),
     );
   }
 
@@ -347,6 +325,7 @@ export async function solicitarCapacitacion(
     usuario,
     servicio: 'capacitaciones',
     finalidad: `${linea.nombre}: ${nueva.objetivo}`,
+    fecha: nueva.fecha,
     modalidad: nueva.modalidad,
     estado: 'pendiente',
   });
