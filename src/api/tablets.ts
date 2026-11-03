@@ -22,6 +22,7 @@ import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { normalizarTexto } from '@/utils/texto';
 import {
   ahoraFechaHora,
   estadoTabletAlDevolver,
@@ -192,6 +193,30 @@ export function obtenerPrestamos(
   }
   const consulta = estado === 'todas' ? '' : `?estado=${estado}`;
   return peticion<Prestamo[]>(`/prestamos/${consulta}`);
+}
+
+/**
+ * Busca una tablet por su código de barras o su código interno (HU-31, CA1 y CA2).
+ * Acepta el código tal como lo lee el escáner (`TAB-001`, `tab001`, con espacios) y devuelve
+ * la tablet del inventario. Si no corresponde a ninguna, rechaza con 404 para que la UI lo
+ * indique y no registre nada (CA2).
+ */
+export function buscarTabletPorCodigo(codigo: string): Promise<Tablet> {
+  if (USAR_MOCKS) {
+    // Sin distinguir mayúsculas, tildes, guiones ni espacios: el escáner no siempre lee igual.
+    const buscado = normalizarTexto(codigo ?? '').replace(/[\s-]/g, '');
+    if (!buscado) {
+      return Promise.reject(new ErrorApi(400, 'Escanea o escribe el código de la tablet.'));
+    }
+    const tablet = tablets.find(
+      (actual) => normalizarTexto(actual.codigo).replace(/[\s-]/g, '') === buscado,
+    );
+    if (!tablet) {
+      return Promise.reject(new ErrorApi(404, 'Ese código no corresponde a ninguna tablet.'));
+    }
+    return simularRed({ ...tablet });
+  }
+  return peticion<Tablet>(`/tablets/codigo/${encodeURIComponent(codigo)}/`);
 }
 
 /**
