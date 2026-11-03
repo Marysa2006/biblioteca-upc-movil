@@ -31,6 +31,8 @@ export function useConfirmarBloqueo() {
       queryClient.invalidateQueries({ queryKey: claves.reservas });
       queryClient.invalidateQueries({ queryKey: claves.notificaciones });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
+      // Cancela reservas: también cambian «Mis solicitudes» y su historial (HU-08).
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
     },
   });
 }
