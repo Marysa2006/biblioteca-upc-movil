@@ -22,12 +22,17 @@ import {
 import { claves } from '@/api/claves';
 import { useSesion } from '@/store/sesion';
 
-/** Asistencia de la sesión: código vigente, registros y total (CA2). */
-export function useAsistencia(sesionId: string) {
+/**
+ * Asistencia de la sesión: código vigente, registros y total (CA2).
+ * Con `actualizar`, se vuelve a pedir cada 5 segundos para que el facilitador vea a quienes
+ * escanean sin recargar (solo mientras la pantalla está abierta).
+ */
+export function useAsistencia(sesionId: string, { actualizar = false } = {}) {
   return useQuery({
     queryKey: claves.asistenciaSesion(sesionId),
     queryFn: () => obtenerAsistentes(sesionId),
     enabled: sesionId !== '',
+    refetchInterval: actualizar ? 5000 : false,
   });
 }
 
