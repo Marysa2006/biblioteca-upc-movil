@@ -66,6 +66,14 @@ const ORDEN_CAMPOS: (keyof ValoresSolicitudCapacitacion)[] = [
   'participantes',
 ];
 
+/** El aviso con el primer campo que falta, en el orden del formulario (CA2); sin errores, null. */
+function mensajeFaltantes(errores: FieldErrors<ValoresSolicitudCapacitacion>): string | null {
+  const primero = ORDEN_CAMPOS.find((campo) => errores[campo]);
+  if (!primero) return null;
+  const mensaje = errores[primero]?.message;
+  return mensaje ? `Revisa el formulario: ${mensaje}` : 'Revisa los campos marcados.';
+}
+
 type Props = {
   /** Solo las líneas activas: la pantalla las filtra. */
   lineas: LineaFormacion[];
@@ -78,10 +86,26 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
   const [enviada, setEnviada] = useState(false);
   const [faltantes, setFaltantes] = useState<string | null>(null);
 
-  const { control, handleSubmit, setValue, trigger } = useForm<ValoresSolicitudCapacitacion>({
-    resolver: zodResolver(esquemaSolicitudCapacitacion(parametros)),
-    defaultValues: VALORES_INICIALES_CAPACITACION,
-  });
+  const { control, handleSubmit, setValue, trigger, subscribe } =
+    useForm<ValoresSolicitudCapacitacion>({
+      resolver: zodResolver(esquemaSolicitudCapacitacion(parametros)),
+      defaultValues: VALORES_INICIALES_CAPACITACION,
+    });
+
+  // Al editar, el aviso de arriba del botón sigue a los errores: pasa al siguiente que falte o
+  // se quita cuando ya no hay. El error de la API también se quita, porque era de otros datos.
+  const reiniciarEnvio = solicitud.reset;
+  useEffect(
+    () =>
+      subscribe({
+        formState: { errors: true, values: true },
+        callback: ({ errors, type }) => {
+          if (type === 'change') reiniciarEnvio();
+          if (errors) setFaltantes((actual) => (actual == null ? null : mensajeFaltantes(errors)));
+        },
+      }),
+    [subscribe, reiniciarEnvio],
+  );
   const fecha = useWatch({ control, name: 'fecha' });
   const hora = useWatch({ control, name: 'hora' });
 
@@ -132,11 +156,8 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
     solicitud.mutate(formulario, { onSuccess: () => setEnviada(true) });
   };
 
-  const alFaltarDatos = (errores: FieldErrors<ValoresSolicitudCapacitacion>) => {
-    const primero = ORDEN_CAMPOS.find((campo) => errores[campo]);
-    const mensaje = primero ? errores[primero]?.message : undefined;
-    setFaltantes(mensaje ? `Revisa el formulario: ${mensaje}` : 'Revisa los campos marcados.');
-  };
+  const alFaltarDatos = (errores: FieldErrors<ValoresSolicitudCapacitacion>) =>
+    setFaltantes(mensajeFaltantes(errores) ?? 'Revisa los campos marcados.');
 
   if (enviada) {
     return (
