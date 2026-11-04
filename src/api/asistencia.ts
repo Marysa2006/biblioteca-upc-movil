@@ -3,6 +3,8 @@
  * El facilitador abre la asistencia de una sesión, muestra un QR temporal, ve quién se
  * registró y puede marcar a mano a quien no pudo escanear. Al cerrarla, el QR deja de aceptar.
  *
+ * La persona registra su asistencia escaneando ese QR (HU-32).
+ *
  * Validar el QR contra el Backend necesita un endpoint: mientras tanto, el mock valida el
  * código, el vencimiento y que la asistencia siga abierta.
  * La ruta es provisional: confírmenla con el equipo de Backend.
@@ -12,10 +14,14 @@ import type {
   CodigoAsistencia,
   MedioAsistencia,
   RegistroAsistencia,
+  Usuario,
 } from '@/types';
+import { leerCodigoAsistencia } from '@/utils/asistencia';
+import { hoyISO } from '@/utils/fechas';
 import { ahoraFechaHora } from '@/utils/tablets';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { registrarUso } from './estadisticas';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
 /** Cuántos minutos sirve el código de una sesión (CA1: tiempo limitado). */
@@ -155,6 +161,34 @@ export function registrarAsistenciaQr(
     method: 'POST',
     body: JSON.stringify({ codigo, usuarioId }),
   });
+}
+
+/**
+ * Registra la asistencia de la persona de la sesión con el texto que escaneó (HU-32).
+ * Lee la sesión y el código del QR, y las reglas son las de registrarAsistenciaQr(): otra
+ * sesión, vencido o cerrada responden 400 (CA2), y volver a escanear no duplica (CA3).
+ * Deja un registro de uso por sesión y persona (HU-25), que se actualiza si vuelve a escanear.
+ */
+export async function registrarAsistencia(
+  codigo: string,
+  usuario: Usuario,
+): Promise<AsistenciaSesion> {
+  const datos = leerCodigoAsistencia(codigo);
+  if (!datos) {
+    throw new ErrorApi(400, 'Ese código no es de una asistencia.');
+  }
+  // Si falla, lanza antes de registrar el uso.
+  const asistencia = await registrarAsistenciaQr(datos.sesionId, datos.codigo, usuario.id);
+  // Con la API real, confirmar con Backend si el servidor también registra este uso.
+  registrarUso({
+    id: `uso-asistencia-${datos.sesionId}-${usuario.id}`,
+    usuario,
+    servicio: 'asesorias',
+    finalidad: 'Asistencia con QR',
+    fecha: hoyISO(),
+    estado: 'completada',
+  });
+  return asistencia;
 }
 
 /** Agrega el registro si la persona no estaba ya; el facilitador puede marcar a cualquiera. */
