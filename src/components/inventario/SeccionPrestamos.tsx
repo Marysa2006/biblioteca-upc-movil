@@ -9,8 +9,9 @@
  * El encabezado y los chips de filtro la separan de las pestañas de Inventario.
  *
  * Escanear (HU-31): el ícono del encabezado abre "Buscar una tablet". Al leer o escribir el
- * código se abre su devolución o su entrega, con la tablet ya verificada (CA1); si el código no
- * es del inventario o la tablet no tiene préstamos activos, el aviso sale en el diálogo (CA2).
+ * código se abre su devolución o su entrega (CA1), verificada si se leyó con la cámara. Si
+ * el código no es del inventario o la tablet no tiene préstamos activos, el aviso sale en el
+ * diálogo (CA2).
  * Si el celular no tiene escáner del sistema, la cámara de la app se abre debajo del
  * encabezado: no va dentro del diálogo porque el Portal queda fuera de la navegación.
  */
@@ -76,7 +77,9 @@ export function SeccionPrestamos() {
 
   // HU-31: busca la tablet leída y abre el registro que le toca. Si no hay, el diálogo
   // (abierto o vuelto a abrir) dice por qué y deja reintentar o escribir el código.
-  const alLeer = (codigo: string) => {
+  // `escaneada`: solo lo que leyó una cámara se marca "Verificada con el escáner"; lo escrito a
+  // mano no.
+  const alLeer = (codigo: string, escaneada = false) => {
     setAvisoEscaneo(null);
     buscar.mutate(codigo, {
       onSuccess: (tablet) => {
@@ -84,7 +87,7 @@ export function SeccionPrestamos() {
         if (accion.tipo === 'abrir') {
           buscar.reset();
           setDialogo(false);
-          abrir(accion.prestamoId, accion.modo, true);
+          abrir(accion.prestamoId, accion.modo, escaneada);
         } else {
           setAvisoEscaneo(accion.mensaje);
           setDialogo(true);
@@ -93,7 +96,7 @@ export function SeccionPrestamos() {
       onError: () => setDialogo(true),
     });
   };
-  const escanerSistema = useEscanerSistema(alLeer);
+  const escanerSistema = useEscanerSistema((codigo) => alLeer(codigo, true));
 
   const abrirDialogo = () => {
     buscar.reset();
@@ -148,7 +151,7 @@ export function SeccionPrestamos() {
             tipos={TIPOS_BARRAS}
             onLeido={(lectura) => {
               setCamara(false);
-              alLeer(lectura.datos);
+              alLeer(lectura.datos, true);
             }}
           />
           <Button
@@ -188,7 +191,8 @@ export function SeccionPrestamos() {
         buscando={buscar.isPending}
         mensaje={mensajeEscaneo}
         onEscanear={() => void escanear()}
-        onBuscar={alLeer}
+        // Escrito a mano: abre el registro, pero no lo marca como verificado.
+        onBuscar={(codigo) => alLeer(codigo)}
         onCerrar={() => setDialogo(false)}
       />
     </View>
