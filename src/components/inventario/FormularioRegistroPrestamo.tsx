@@ -45,12 +45,22 @@ type Props = {
   modo: Modo;
   prestamo: Prestamo;
   tablet: Tablet;
+  /** La tablet se leyó con el escáner (HU-31): el resumen lo confirma. */
+  verificada?: boolean;
   guardando: boolean;
   mensajeError: string | null;
   onGuardar: (datos: DatosRegistro) => void;
 };
 
-export function FormularioRegistroPrestamo({ modo, prestamo, tablet, guardando, mensajeError, onGuardar }: Props) {
+export function FormularioRegistroPrestamo({
+  modo,
+  prestamo,
+  tablet,
+  verificada = false,
+  guardando,
+  mensajeError,
+  onGuardar,
+}: Props) {
   const esDevolucion = modo === 'devolucion';
   // En la entrega se marcan los accesorios de la tablet; en la devolución, los que se entregaron.
   const opcionesAccesorios = esDevolucion ? (prestamo.entrega?.accesorios ?? []) : tablet.accesorios;
@@ -91,6 +101,14 @@ export function FormularioRegistroPrestamo({ modo, prestamo, tablet, guardando, 
         <Text variant="titleSmall" style={estilos.titulo}>
           {`${tablet.modelo} · ${tablet.codigo}`}
         </Text>
+        {verificada ? (
+          <View style={estilos.verificada}>
+            <Icon source="check-circle-outline" size={18} color={colores.primario} />
+            <Text variant="bodyMedium" style={estilos.textoVerificada}>
+              Verificada con el escáner
+            </Text>
+          </View>
+        ) : null}
         <Text variant="bodyMedium" style={estilos.texto}>
           {esDevolucion ? `La devuelve ${prestamo.solicitante}` : `Para ${prestamo.solicitante}`}
         </Text>
@@ -202,6 +220,8 @@ const estilos = StyleSheet.create({
   titulo: { color: colores.texto, fontFamily: fuentes.negrita },
   texto: { color: colores.texto },
   secundario: { color: colores.textoSecundario },
+  verificada: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
+  textoVerificada: { color: colores.primario, fontFamily: fuentes.seminegrita },
   retraso: {
     flexDirection: 'row',
     alignItems: 'flex-start',
