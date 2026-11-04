@@ -61,12 +61,12 @@ export const claves = {
    * Agenda del facilitador por rango de fechas (HU-15); 'todas' para la administración.
    * Va bajo el prefijo de citas para que agendar, cancelar o reprogramar también la refresque.
    */
+  agendaFacilitador: (facilitadorId: string | 'todas', desde?: string, hasta?: string) =>
+    ['asesorias', 'citas', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
   /** Asistencia de una sesión: código vigente y registros (HU-33). */
   asistenciaSesion: (sesionId: string) => ['asesorias', 'asistencia', sesionId] as const,
   /** Prefijo para invalidar la asistencia de todas las sesiones. */
   asistenciasTodas: ['asesorias', 'asistencia'] as const,
-  agendaFacilitador: (facilitadorId: string | 'todas', desde?: string, hasta?: string) =>
-    ['asesorias', 'citas', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
 
   // ── Iteración 3: tablets (HU-21, HU-22, HU-23 y HU-24) ───────
   tablets: ['tablets'] as const,
