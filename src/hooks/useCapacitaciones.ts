@@ -141,11 +141,12 @@ export function useSolicitudesCapacitacion(estado: EstadoSolicitud | 'todas' = '
 
 /** Invalida la bandeja, las de la persona, el historial (HU-08) y las estadísticas (HU-25). */
 function refrescarSolicitudes(queryClient: ReturnType<typeof useQueryClient>) {
-  queryClient.invalidateQueries({ queryKey: claves.solicitudesCapacitacionTodas });
+  // `solicitudesTodas` cubre la bandeja y las de la persona (['solicitudes', ...]).
   queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
-  queryClient.invalidateQueries({ queryKey: ['solicitudes', 'mias'] });
+  // La campana de notificaciones, como en las demás mutaciones.
+  queryClient.invalidateQueries({ queryKey: claves.notificaciones });
   // HU-25: el registro de uso se actualiza, así que los indicadores cambian.
-  queryClient.invalidateQueries({ queryKey: ['estadisticas'] });
+  queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
 }
 
 export function useAprobarCapacitacion() {

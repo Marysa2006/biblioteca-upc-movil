@@ -13,13 +13,13 @@ import type {
   Usuario,
 } from '@/types';
 import { sumarDias } from '@/utils/calendario';
-import { esFechaValida, esHoraValida } from '@/utils/fechas';
+import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { esDiaHabil, motivoNoDisponible, sugerirFechaHabil } from '@/utils/parametros';
 import { ahoraFechaHora } from '@/utils/tablets';
 import { normalizarTexto } from '@/utils/texto';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
-import { registrarUso } from './estadisticas';
+import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
 import { LINEAS_FORMACION, SOLICITUDES_CAPACITACION } from './mocks/capacitaciones';
@@ -325,6 +325,8 @@ export async function solicitarCapacitacion(
   });
   registrarEvento('capacitacion', nueva.id, 'pendiente', usuario.nombre, 'Solicitud enviada.');
   registrarUso({
+    // El mismo id que usará la gestión: así la capacitación no cuenta doble en HU-26.
+    id: `uso-capacitacion-${nueva.id}`,
     usuario,
     servicio: 'capacitaciones',
     finalidad: `${linea.nombre}: ${nueva.objetivo}`,
@@ -376,12 +378,6 @@ function buscarSolicitud(id: string): SolicitudCapacitacion {
   return solicitud;
 }
 
-/** Datos del solicitante para el registro de uso, si está en el directorio. */
-function datosDelSolicitante(usuarioId: string) {
-  const persona = USUARIOS_DIRECTORIO.find((usuario) => usuario.id === usuarioId);
-  return persona ? { usuario: { ...persona } } : {};
-}
-
 /** Deja la solicitud en el almacén y avisa al solicitante (CA1 y CA3). */
 function guardarSolicitud(
   actualizada: SolicitudCapacitacion,
@@ -408,7 +404,7 @@ function guardarSolicitud(
         : actualizada.estado === 'cancelada' || actualizada.estado === 'rechazada'
           ? 'cancelada'
           : 'pendiente',
-    ...datosDelSolicitante(actualizada.solicitante.id),
+    ...datosDeSolicitante(actualizada.solicitante.id),
   });
   return { ...actualizada };
 }
@@ -510,6 +506,17 @@ export async function proponerFechaCapacitacion(
     const parametros = await obtenerParametros();
     if (!esDiaHabil(fecha, parametros)) {
       throw new ErrorApi(400, `Esa fecha no es hábil: ${motivoNoDisponible(fecha, parametros)}.`);
+    }
+    // Mismas reglas que HU-10: ni fechas pasadas ni sin la anticipación mínima.
+    const inicio = new Date(`${fecha}T${hora}:00`);
+    if (fecha < hoyISO()) {
+      throw new ErrorApi(400, 'Esa fecha ya pasó. Elige una futura.');
+    }
+    if (inicio.getTime() < Date.now() + parametros.horasMinimasSolicitud * 60 * 60 * 1000) {
+      throw new ErrorApi(
+        400,
+        `La nueva fecha necesita al menos ${parametros.horasMinimasSolicitud} horas de anticipación.`,
+      );
     }
     const actualizada: SolicitudCapacitacion = {
       ...solicitud,
