@@ -87,7 +87,10 @@ export default function Gestion() {
   const { tienePermiso } = useRol();
   const [elegida, setElegida] = useState<ValorSeccion>('solicitudes');
   // La misma consulta que SeccionVencidos: la alerta del encargado se crea apenas se abre Gestión.
-  const cantidadVencidos = usePrestamosVencidos().data?.length ?? 0;
+  // Solo con el permiso `tablets`: la consulta crea avisos, y un facilitador o un gestor de
+  // espacios también abren Gestión.
+  const cantidadVencidos =
+    usePrestamosVencidos({ activa: tienePermiso('tablets') }).data?.length ?? 0;
 
   const visibles = SECCIONES.filter((seccion) => seccion.permisos.some(tienePermiso)).map(
     (seccion) =>
