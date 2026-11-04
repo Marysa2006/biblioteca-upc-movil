@@ -5,6 +5,7 @@
  * Cuando el Backend publique su API, estos tipos deben coincidir con lo que devuelve.
  */
 export * from './asesorias';
+export * from './asistencia';
 export * from './capacitaciones';
 export * from './contenidos';
 export * from './espacios';
