@@ -38,7 +38,8 @@ export default function DetalleSolicitud() {
   const id = params.id ?? '';
 
   const solicitudes = useMisSolicitudes();
-  const historial = useHistorialSolicitud(tipo, id);
+  // Sin sesión (por ejemplo, un enlace directo) no se consulta el historial: se muestra la invitación.
+  const historial = useHistorialSolicitud(usuario ? tipo : '', usuario ? id : '');
   const solicitud = solicitudes.data?.find((actual) => actual.tipo === tipo && actual.id === id);
 
   const recargar = () => {
