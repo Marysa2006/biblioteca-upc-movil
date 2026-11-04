@@ -141,7 +141,12 @@ export function useSolicitudesCapacitacion(estado: EstadoSolicitud | 'todas' = '
 
 /** Invalida la bandeja, las de la persona, el historial (HU-08) y las estadísticas (HU-25). */
 function refrescarSolicitudes(queryClient: ReturnType<typeof useQueryClient>) {
-  // `solicitudesTodas` cubre la bandeja y las de la persona (['solicitudes', ...]).
+  // La bandeja (['capacitaciones','solicitudes',estado]) y las de la persona
+  // (['capacitaciones','solicitudes','mias',...]) cuelgan de este prefijo. TanStack invalida
+  // por prefijo desde el inicio de la clave, así que `solicitudesTodas` (['solicitudes'])
+  // no las tocaría.
+  queryClient.invalidateQueries({ queryKey: claves.solicitudesCapacitacionTodas });
+  // Las solicitudes de HU-08 (['solicitudes', ...]) son otra rama del árbol.
   queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
   // La campana de notificaciones, como en las demás mutaciones.
   queryClient.invalidateQueries({ queryKey: claves.notificaciones });
