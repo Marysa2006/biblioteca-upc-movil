@@ -1,6 +1,6 @@
 /**
  * Los préstamos vencidos para el encargado de tablets (HU-24). Va dentro de SeccionVencidos
- * (Inventario, #92): la sección pide los vencidos con su hook y los pasa por props.
+ * (Gestión, #92 y #162): la sección pide los vencidos con su hook y los pasa por props.
  * - CA2: con vencidos, un aviso arriba para el responsable, y los más atrasados primero.
  * - CA3: sin vencidos, un mensaje y ningún aviso.
  */
