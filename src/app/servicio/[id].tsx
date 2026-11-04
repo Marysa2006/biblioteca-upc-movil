@@ -162,6 +162,20 @@ function Detalle({ servicio }: { servicio: Servicio }) {
           Ver orientación
         </Button>
       ) : null}
+
+      {/* HU-10: pide cuenta; sin sesión, la pantalla solo invita a iniciarla. */}
+      {categoria === 'capacitaciones' ? (
+        <Button
+          mode="contained"
+          icon="account-group-outline"
+          onPress={() => router.push('/capacitaciones/solicitar')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Solicitar una capacitación para tu grupo"
+        >
+          Solicitar capacitación
+        </Button>
+      ) : null}
     </Pantalla>
   );
 }
