@@ -1,6 +1,6 @@
 /**
  * Sección Registros de Estadísticas (HU-25, CA3): las operaciones registradas, de la más
- * reciente a la más antigua, con todos sus campos. Los indicadores llegan con HU-26.
+ * reciente a la más antigua, con todos sus campos. Los indicadores van en SeccionIndicadores.
  */
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
