@@ -5,6 +5,8 @@
  */
 import type { Contenido } from '@/types';
 
+import { habil } from './fechasDemo';
+
 export const CONTENIDOS: Contenido[] = [
   {
     id: 'con-servicios',
@@ -37,8 +39,9 @@ export const CONTENIDOS: Contenido[] = [
     descripcion: 'La biblioteca no prestará servicio durante la semana de matrícula.',
     publicado: true,
     orden: 4,
-    fechaInicio: '2026-10-13',
-    fechaFin: '2026-10-17',
+    // La próxima semana, relativa a hoy (fechasDemo).
+    fechaInicio: habil(6),
+    fechaFin: habil(10),
   },
   {
     id: 'con-aviso-talleres',
