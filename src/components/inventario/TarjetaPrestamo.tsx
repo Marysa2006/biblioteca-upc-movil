@@ -1,5 +1,5 @@
 /**
- * Préstamo de tablet en Inventario → Préstamos (HU-23), como en el mockup: tablet, solicitante,
+ * Préstamo de tablet en Gestión → Préstamos (HU-23), como en el mockup: tablet, solicitante,
  * franja y la acción que toca. Reservado: Registrar entrega. Entregado o vencido: salida, hora
  * límite, tiempo restante o retraso (CA4) y Registrar devolución. Devuelto: lo que quedó
  * registrado, con novedades (CA3) y retraso.
