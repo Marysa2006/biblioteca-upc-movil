@@ -40,3 +40,41 @@ export function leerCodigoAsistencia(texto: string): DatosQrAsistencia | null {
     return null;
   }
 }
+
+/** Desde cuántos minutos antes de empezar la sesión se puede tomar la asistencia (HU-33). */
+export const MINUTOS_ANTES_ASISTENCIA = 30;
+
+/** 'AAAA-MM-DD' y 'HH:MM' → Date local. */
+function momento(fecha: string, hora: string): Date {
+  const [anio, mes, dia] = fecha.split('-').map(Number);
+  const [h, m] = hora.split(':').map(Number);
+  return new Date(anio, mes - 1, dia, h, m);
+}
+
+/**
+ * Si el facilitador puede tomar la asistencia de la cita (HU-33, CA1): la cita está aprobada y
+ * es de hoy, desde 30 minutos antes de empezar hasta que termina el día.
+ */
+export function puedeTomarAsistencia(
+  cita: { estado: string; fecha: string; horaInicio: string },
+  ahora = new Date(),
+): boolean {
+  if (cita.estado !== 'aprobada') return false;
+  const inicio = momento(cita.fecha, cita.horaInicio);
+  const desde = new Date(inicio.getTime() - MINUTOS_ANTES_ASISTENCIA * 60_000);
+  const finDelDia = momento(cita.fecha, '23:59');
+  return ahora >= desde && ahora <= finDelDia;
+}
+
+/** Minutos que le quedan al código ('AAAA-MM-DD HH:MM'); 0 si ya venció. */
+export function minutosParaVencer(vence: string, ahora = new Date()): number {
+  const [fecha, hora] = vence.split(' ');
+  const restante = momento(fecha, hora).getTime() - ahora.getTime();
+  return Math.max(0, Math.ceil(restante / 60_000));
+}
+
+/** "Vence en 32 min", "Vence en 1 min" o "El código venció". */
+export function textoVencimiento(minutos: number): string {
+  if (minutos <= 0) return 'El código venció';
+  return `Vence en ${minutos} min`;
+}

@@ -5,14 +5,15 @@
  * - CA3: si la cita aprobada ya terminó, se registra el resultado o, con confirmación, que la
  *   persona no asistió. Al guardar, la agenda y el detalle se refrescan solos.
  * Solo con el permiso `asesorias`; la administración ve las citas de todos los facilitadores.
+ * HU-33: el día de la cita aprobada, "Tomar asistencia" abre el control con QR.
  *
  * Patrón de datos: useAgenda() / useRegistrarResultado() / useRegistrarInasistencia()
  * (src/hooks) → src/api/asesorias.ts → mock o API.
  */
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { DetalleCitaAgenda } from '@/components/agenda/DetalleCitaAgenda';
 import { DialogoInasistencia } from '@/components/agenda/DialogoInasistencia';
@@ -23,6 +24,7 @@ import { useAgenda, useRegistrarInasistencia, useRegistrarResultado } from '@/ho
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio, radio } from '@/theme';
 import { puedeRegistrarResultado } from '@/utils/agenda';
+import { puedeTomarAsistencia } from '@/utils/asistencia';
 import { mensajeErrorGuardar } from '@/utils/errores';
 
 type Parametros = { id: string; desde: string; hasta: string };
@@ -96,6 +98,22 @@ function Detalle() {
 
       <DetalleCitaAgenda cita={cita} />
 
+      {puedeTomarAsistencia(cita) ? (
+        <Button
+          mode="contained"
+          icon="qrcode"
+          onPress={() =>
+            router.push({ pathname: '/asistencia/[id]', params: { id: cita.id, desde, hasta } })
+          }
+          style={estilos.tomarAsistencia}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel={`Tomar la asistencia de la cita de ${cita.solicitante} con un código QR`}
+        >
+          Tomar asistencia
+        </Button>
+      ) : null}
+
       {puedeRegistrarResultado(cita) ? (
         <FormularioResultado
           guardando={registrarResultado.isPending}
@@ -123,4 +141,6 @@ const estilos = StyleSheet.create({
   // Sobre el fondo de color, el texto va en colores.texto (contraste AA).
   aviso: { padding: espacio.m, borderRadius: radio.tarjeta, backgroundColor: colores.primarioSuave },
   textoAviso: { color: colores.texto },
+  tomarAsistencia: { alignSelf: 'flex-start' },
+  contenidoBoton: { paddingVertical: espacio.xs },
 });

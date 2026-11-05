@@ -6,6 +6,7 @@
  * confirmar con la biblioteca (sección 2 del documento de la iteración 3).
  */
 import type { Cita, FranjaAsesoria, Jornada, TemaAsesoria } from '@/types';
+import { hoyISO } from '@/utils/fechas';
 
 export const TEMAS_ASESORIA: TemaAsesoria[] = [
   {
@@ -213,6 +214,24 @@ export const CITAS_ASESORIA: Cita[] = [
     horaInicio: '09:00',
     horaFin: '09:30',
     necesidad: 'Revisar las citas y referencias de un trabajo.',
+    modalidad: 'presencial',
+    estado: 'aprobada',
+  },
+  {
+    // Cita de hoy, para tomar la asistencia con QR (HU-33). La fecha es la del día en que se
+    // abre la app; no tiene franja en el calendario de reservas.
+    id: 'cit-6',
+    franjaId: 'fran-prueba-hoy',
+    temaId: 'tema-apa',
+    tema: 'Normas APA 7',
+    facilitadorId: 'u-facilitador',
+    facilitador: 'Julián Mendoza',
+    solicitanteId: 'u-estudiante',
+    solicitante: 'Laura Pérez',
+    fecha: hoyISO(),
+    horaInicio: '08:00',
+    horaFin: '09:00',
+    necesidad: 'Revisar la bibliografía del anteproyecto.',
     modalidad: 'presencial',
     estado: 'aprobada',
   },
