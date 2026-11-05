@@ -48,4 +48,6 @@ export type AsistenciaSesion = {
   registros: RegistroAsistencia[];
   /** Total de asistentes, para no contarlo en cada pantalla. */
   total: number;
+  /** Si ya se cerró (CA4): el QR no acepta más registros y no se puede volver a abrir. */
+  cerrada: boolean;
 };

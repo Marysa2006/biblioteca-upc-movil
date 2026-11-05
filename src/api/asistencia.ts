@@ -92,6 +92,7 @@ function aAsistencia(sesionId: string): AsistenciaSesion {
     codigo,
     registros: estado.registros.map(copiarRegistro),
     total: estado.registros.length,
+    cerrada: estado.cerrada,
   };
 }
 
