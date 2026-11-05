@@ -30,6 +30,11 @@ type Props = {
   /** Oculta el menú de usuario de arriba (por ejemplo, en el login). En pantallas con barra propia no se muestra. */
   sinMenuUsuario?: boolean;
   /**
+   * Reemplaza la fila de marca de arriba (logo, nombre y menú), antes del título. Para pantallas
+   * que muestran la marca a su manera, como el login con el logo grande (#202).
+   */
+  marcaPropia?: ReactNode;
+  /**
    * Botón flotante abajo a la derecha (por ejemplo, un FAB): queda fijo al deslizar.
    * Como función, recibe si el contenido ya se deslizó hacia abajo, para encogerse.
    */
@@ -47,8 +52,8 @@ type Props = {
 const DESPLAZAMIENTO_PARA_ENCOGER = espacio.xl;
 
 /**
- * Contenedor común de las pantallas: área segura, marca (isotipo + nombre) con el menú de usuario,
- * título y contenido desplazable.
+ * Contenedor común de las pantallas: área segura, marca (logo de BiblioUPC + nombre de la app y
+ * de la Universidad) con el menú de usuario, título y contenido desplazable.
  */
 export function Pantalla({
   titulo,
@@ -57,6 +62,7 @@ export function Pantalla({
   recarga,
   conTeclado = false,
   sinMenuUsuario = false,
+  marcaPropia,
   flotante,
   pie,
   children,
@@ -95,23 +101,25 @@ export function Pantalla({
         ) : undefined
       }
     >
-      <View style={estilos.marca}>
-        {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
-        <Image
-          source={require('@/assets/images/isotipo-upc.png')}
-          style={estilos.isotipo}
-          contentFit="contain"
-        />
-        <View style={estilos.textosMarca}>
-          <Text variant="titleMedium" style={estilos.nombreApp}>
-            {NOMBRE_APP}
-          </Text>
-          <Text variant="labelSmall" style={estilos.universidad}>
-            Universidad Popular del Cesar
-          </Text>
+      {marcaPropia ?? (
+        <View style={estilos.marca}>
+          {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
+          <Image
+            source={require('@/assets/images/logo-biblioupc.png')}
+            style={estilos.isotipo}
+            contentFit="contain"
+          />
+          <View style={estilos.textosMarca}>
+            <Text variant="titleMedium" style={estilos.nombreApp}>
+              {NOMBRE_APP}
+            </Text>
+            <Text variant="labelSmall" style={estilos.universidad}>
+              Universidad Popular del Cesar
+            </Text>
+          </View>
+          {conEncabezado || sinMenuUsuario ? null : <MenuUsuario />}
         </View>
-        {conEncabezado || sinMenuUsuario ? null : <MenuUsuario />}
-      </View>
+      )}
       <View style={estilos.encabezado}>
         <Text variant="headlineSmall" style={estilos.titulo}>
           {titulo}
