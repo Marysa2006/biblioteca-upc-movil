@@ -107,13 +107,16 @@ export function nombreModalidad(modalidad: ModalidadCapacitacion): string {
 export type AccionCapacitacion = 'aprobar' | 'nueva_fecha' | 'rechazar' | 'responsable' | 'cerrar';
 
 /**
- * Acciones de cada estado, con las mismas reglas de la API (#188): aprobar, proponer otra fecha
- * y rechazar mientras está pendiente o con nueva fecha; asignar responsable y cerrar cuando
- * está aprobada. Lo ya resuelto no tiene acciones.
+ * Acciones de cada estado: aprobar, proponer otra fecha y rechazar mientras está pendiente;
+ * asignar responsable y cerrar cuando está aprobada. Lo ya resuelto no tiene acciones.
+ * Con nueva fecha no se aprueba: la fecha propuesta la confirma el usuario (CA4), y aprobar
+ * dejaría la fecha original con la propuesta sin respuesta. Mientras tanto, el personal puede
+ * proponer otra o rechazar. La API (#188) todavía deja aprobar en ese estado: el Backend debe
+ * rechazarlo.
  */
 export const ACCIONES_CAPACITACION: Record<EstadoSolicitud, readonly AccionCapacitacion[]> = {
   pendiente: ['aprobar', 'nueva_fecha', 'rechazar'],
-  nueva_fecha: ['aprobar', 'nueva_fecha', 'rechazar'],
+  nueva_fecha: ['nueva_fecha', 'rechazar'],
   aprobada: ['responsable', 'cerrar'],
   rechazada: [],
   cancelada: [],
@@ -219,8 +222,28 @@ export function motivoDiaCapacitacion(
   return esDiaHabil(fecha, parametros) ? null : motivoNoDisponible(fecha, parametros);
 }
 
-/** Proponer otra fecha (CA1): fecha hábil y hora, elegidas en el calendario y el reloj. */
-export function esquemaFechaCapacitacion(parametros: Parametros) {
+/** Una fecha con su hora, para comparar propuestas. */
+type FechaHora = { fecha: string; hora: string };
+
+/**
+ * Las fechas que no se pueden volver a proponer: la que pidió el usuario y, si hay, la que ya
+ * se le propuso. Proponer la misma no cambiaría nada.
+ */
+export function fechasYaUsadas(
+  solicitud: Pick<SolicitudCapacitacion, 'fecha' | 'hora' | 'fechaPropuesta' | 'horaPropuesta'>,
+): FechaHora[] {
+  const usadas: FechaHora[] = [{ fecha: solicitud.fecha, hora: solicitud.hora }];
+  if (solicitud.fechaPropuesta && solicitud.horaPropuesta) {
+    usadas.push({ fecha: solicitud.fechaPropuesta, hora: solicitud.horaPropuesta });
+  }
+  return usadas;
+}
+
+/**
+ * Proponer otra fecha (CA1): fecha hábil y hora, elegidas en el calendario y el reloj, y
+ * distintas de las que ya tiene la solicitud (`usadas`). El mismo día a otra hora sí se puede.
+ */
+export function esquemaFechaCapacitacion(parametros: Parametros, usadas: FechaHora[] = []) {
   return z
     .object({
       fecha: z.string().trim().refine(esFechaValida, { error: 'Elige la nueva fecha.' }),
@@ -232,6 +255,13 @@ export function esquemaFechaCapacitacion(parametros: Parametros) {
           code: 'custom',
           path: ['fecha'],
           message: mensajeDiaNoHabil(datos.fecha, parametros),
+        });
+      }
+      if (usadas.some((usada) => usada.fecha === datos.fecha && usada.hora === datos.hora)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['hora'],
+          message: 'Es la misma fecha y hora que ya tiene la solicitud. Elige otra.',
         });
       }
     });

@@ -4,7 +4,8 @@
  * Arriba, quién pide, el estado y el responsable; luego la información completa y el historial
  * como línea de tiempo (HU-08). Las acciones van en una tarjeta flotante abajo (pie de
  * Pantalla), en una fila y sin íconos, y solo aparece si la persona puede hacer algo.
- * - CA1: pendiente o con nueva fecha, se aprueba, se rechaza o se propone otra fecha.
+ * - CA1: pendiente, se aprueba, se rechaza o se propone otra fecha. Con nueva fecha no se
+ *   aprueba (la confirma el usuario, CA4): solo se propone otra o se rechaza.
  * - CA2: rechazar exige el motivo.
  * - CA3: aprobada y sin responsable, cualquiera con `formacion` puede tomarla ("Asignarme") y la
  *   administración puede asignarla a quien elija; solo la administración cambia al responsable.
@@ -281,7 +282,9 @@ function datosDe(solicitud: SolicitudCapacitacion) {
 }
 
 type Botones = {
-  /** Pendiente o con nueva fecha (CA1): rechazar, otra fecha y aprobar. */
+  /** Pendiente (CA1). Con nueva fecha no: la confirma el usuario (CA4). */
+  aprobar: boolean;
+  /** Pendiente o con nueva fecha (CA1): otra fecha y rechazar. */
   decidir: boolean;
   /** Aprobada sin responsable, para quien no es administración: tomarla. */
   asignarme: boolean;
@@ -295,8 +298,10 @@ type Botones = {
 
 function botonesDe(solicitud: SolicitudCapacitacion, quien: Quien): Botones {
   const tomar = puedeTomarCapacitacion(solicitud);
+  const acciones = ACCIONES_CAPACITACION[solicitud.estado];
   return {
-    decidir: ACCIONES_CAPACITACION[solicitud.estado].includes('aprobar'),
+    aprobar: acciones.includes('aprobar'),
+    decidir: acciones.includes('nueva_fecha') || acciones.includes('rechazar'),
     asignarme: tomar && !quien.esAdministrador,
     asignar: tomar && quien.esAdministrador,
     cambiar: solicitud.responsableId != null && puedeCambiarResponsable(solicitud, quien),
@@ -380,24 +385,27 @@ function BarraAcciones({
     <View style={estilos.barra}>
       {errorBarra ? <AvisoError mensaje={mensajeErrorGuardar(errorBarra)} /> : null}
 
-      {/* Pendiente o con nueva fecha (CA1): la principal primero. */}
+      {/* Pendiente (CA1): la principal primero. Con nueva fecha no hay Aprobar, así que
+          Otra fecha pasa a ser la principal. */}
       {botones.decidir ? (
         <View style={estilos.fila}>
+          {botones.aprobar ? (
+            <Button
+              mode="contained"
+              onPress={() => abrir('aprobar')}
+              loading={aprobar.isPending}
+              disabled={ocupado}
+              style={estilos.boton}
+              contentStyle={estilos.contenidoBoton}
+              labelStyle={estilos.textoBoton}
+              accessibilityRole="button"
+              accessibilityLabel={`Aprobar la solicitud de ${persona}`}
+            >
+              {NOMBRE_ACCION_CAPACITACION.aprobar}
+            </Button>
+          ) : null}
           <Button
-            mode="contained"
-            onPress={() => abrir('aprobar')}
-            loading={aprobar.isPending}
-            disabled={ocupado}
-            style={estilos.boton}
-            contentStyle={estilos.contenidoBoton}
-            labelStyle={estilos.textoBoton}
-            accessibilityRole="button"
-            accessibilityLabel={`Aprobar la solicitud de ${persona}`}
-          >
-            {NOMBRE_ACCION_CAPACITACION.aprobar}
-          </Button>
-          <Button
-            mode="contained-tonal"
+            mode={botones.aprobar ? 'contained-tonal' : 'contained'}
             onPress={() => abrir('nueva_fecha')}
             disabled={ocupado || !parametros.data}
             style={estilos.boton}

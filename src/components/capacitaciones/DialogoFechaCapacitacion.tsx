@@ -1,8 +1,9 @@
 /**
  * Diálogo para proponer otra fecha y hora a una solicitud de capacitación (HU-12, CA1).
  * La fecha se elige en el calendario, sin días pasados ni sin atención (HU-28, con
- * motivoDiaCapacitacion), y la hora en el reloj. La anticipación mínima la revisa la API y su
- * error sale en el aviso. El usuario debe aceptar la fecha propuesta (CA4).
+ * motivoDiaCapacitacion), y la hora en el reloj. Empieza vacío y no acepta la fecha y hora que
+ * ya tiene la solicitud (fechasYaUsadas). La anticipación mínima la revisa la API y su error
+ * sale en el aviso. El usuario debe aceptar la fecha propuesta (CA4).
  * No guarda: el detalle llama a useProponerFechaCapacitacion() con onConfirmar. Va en un
  * Portal, fuera del QueryClientProvider: los parámetros le llegan por props.
  */
@@ -19,6 +20,7 @@ import type { Parametros, SolicitudCapacitacion } from '@/types';
 import { sumarMeses } from '@/utils/calendario';
 import {
   esquemaFechaCapacitacion,
+  fechasYaUsadas,
   MESES_CAPACITACION,
   motivoDiaCapacitacion,
   type ValoresFechaCapacitacion,
@@ -56,14 +58,17 @@ function Contenido({
 }: Omit<Props, 'visible'>) {
   const [hoy] = useState(hoyISO);
   const { control, handleSubmit } = useForm<ValoresFechaCapacitacion>({
-    resolver: zodResolver(esquemaFechaCapacitacion(parametros)),
-    // Empieza en la última fecha propuesta o en la pedida; si ya pasó, vacía.
-    defaultValues: (() => {
-      const fecha = solicitud.fechaPropuesta ?? solicitud.fecha;
-      const hora = solicitud.horaPropuesta ?? solicitud.hora;
-      return fecha >= hoy ? { fecha, hora } : { fecha: '', hora };
-    })(),
+    // No se puede proponer la fecha y hora que ya tiene la solicitud (pedida o propuesta).
+    resolver: zodResolver(esquemaFechaCapacitacion(parametros, fechasYaUsadas(solicitud))),
+    // Empieza vacío: arriba se lee lo que pidió el usuario y la última propuesta.
+    defaultValues: { fecha: '', hora: '' },
   });
+
+  const ultimaPropuesta = solicitud.fechaPropuesta
+    ? ` La última propuesta fue el ${fechaLegible(solicitud.fechaPropuesta)}${
+        solicitud.horaPropuesta ? ` a las ${solicitud.horaPropuesta}` : ''
+      }.`
+    : '';
 
   return (
     <>
@@ -71,7 +76,7 @@ function Contenido({
       <Dialog.ScrollArea style={estilos.area}>
         <ScrollView contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
           <Text variant="bodyMedium" style={estilos.texto}>
-            {`${solicitud.solicitante.nombre} pidió el ${fechaLegible(solicitud.fecha)} a las ${solicitud.hora}. Debe aceptar la nueva fecha para confirmarla.`}
+            {`${solicitud.solicitante.nombre} pidió el ${fechaLegible(solicitud.fecha)} a las ${solicitud.hora}.${ultimaPropuesta} Debe aceptar la nueva fecha para confirmarla.`}
           </Text>
           <CampoFormulario
             control={control}
