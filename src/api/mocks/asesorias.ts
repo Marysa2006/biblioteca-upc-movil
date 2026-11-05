@@ -4,9 +4,31 @@
  * PROVISIONAL: los temas son los que menciona el servicio de asesorías de la biblioteca.
  * Los facilitadores, horarios, cupos y fechas excluidas son de ejemplo y se esperan por
  * confirmar con la biblioteca (sección 2 del documento de la iteración 3).
+ *
+ * Las fechas son relativas a hoy (fechasDemo): las jornadas están vigentes alrededor de hoy, sus
+ * franjas se generan como al guardar una jornada (generarFranjas) y las citas caen en días de su
+ * jornada, las pendientes y aprobadas adelante y las realizadas, canceladas o sin atender atrás.
  */
 import type { Cita, FranjaAsesoria, Jornada, TemaAsesoria } from '@/types';
+import { sumarDias } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
+import { generarFranjas, idFranja } from '@/utils/franjas';
+
+import { HOY, proximo } from './fechasDemo';
+import { PARAMETROS } from './parametros';
+
+/** Días de cada jornada (0 = domingo … 6 = sábado). */
+const DIAS_APA = [1, 3];
+const DIAS_BUSQUEDA = [5];
+
+/** Fechas de las citas; el historial las usa también. */
+export const FECHAS_CITAS = {
+  'cit-1': proximo(DIAS_APA, 1),
+  'cit-2': proximo(DIAS_BUSQUEDA, 1),
+  'cit-3': proximo(DIAS_APA, -2),
+  'cit-4': proximo(DIAS_BUSQUEDA, -1),
+  'cit-5': proximo(DIAS_APA, -1),
+};
 
 export const TEMAS_ASESORIA: TemaAsesoria[] = [
   {
@@ -41,108 +63,54 @@ export const JORNADAS_ASESORIA: Jornada[] = [
     id: 'jor-apa',
     temaId: 'tema-apa',
     facilitadorId: 'u-facilitador',
-    dias: [1, 3],
+    dias: DIAS_APA,
     horaInicio: '09:00',
     horaFin: '12:00',
     duracionMinutos: 30,
     cupos: 2,
     modalidad: 'presencial',
-    vigenciaDesde: '2026-10-01',
-    vigenciaHasta: '2026-11-30',
-    excepciones: ['2026-11-02'],
+    vigenciaDesde: sumarDias(HOY, -30),
+    vigenciaHasta: sumarDias(HOY, 60),
+    // Un día de jornada excluido, para probar las excepciones (HU-13).
+    excepciones: [proximo(DIAS_APA, 4)],
     activa: true,
   },
   {
     id: 'jor-busqueda',
     temaId: 'tema-busqueda',
     facilitadorId: 'u-facilitador',
-    dias: [5],
+    dias: DIAS_BUSQUEDA,
     horaInicio: '10:00',
     horaFin: '12:00',
     duracionMinutos: 60,
     cupos: 3,
     modalidad: 'presencial',
-    vigenciaDesde: '2026-10-01',
-    vigenciaHasta: '2026-11-30',
+    vigenciaDesde: sumarDias(HOY, -30),
+    vigenciaHasta: sumarDias(HOY, 60),
     excepciones: [],
     activa: true,
   },
 ];
 
-export const FRANJAS_ASESORIA: FranjaAsesoria[] = [
-  {
-    id: 'fran-apa-19-0900',
-    jornadaId: 'jor-apa',
-    temaId: 'tema-apa',
-    facilitadorId: 'u-facilitador',
-    fecha: '2026-10-19',
-    horaInicio: '09:00',
-    horaFin: '09:30',
-    cuposLibres: 2,
-  },
-  {
-    id: 'fran-apa-21-0900',
-    jornadaId: 'jor-apa',
-    temaId: 'tema-apa',
-    facilitadorId: 'u-facilitador',
-    fecha: '2026-10-21',
-    horaInicio: '09:00',
-    horaFin: '09:30',
-    cuposLibres: 1,
-  },
-  {
-    id: 'fran-apa-26-0900',
-    jornadaId: 'jor-apa',
-    temaId: 'tema-apa',
-    facilitadorId: 'u-facilitador',
-    fecha: '2026-10-26',
-    horaInicio: '09:00',
-    horaFin: '09:30',
-    cuposLibres: 1,
-  },
-  {
-    id: 'fran-apa-28-0900',
-    jornadaId: 'jor-apa',
-    temaId: 'tema-apa',
-    facilitadorId: 'u-facilitador',
-    fecha: '2026-10-28',
-    horaInicio: '09:00',
-    horaFin: '09:30',
-    cuposLibres: 2,
-  },
-  {
-    id: 'fran-bus-23-1000',
-    jornadaId: 'jor-busqueda',
-    temaId: 'tema-busqueda',
-    facilitadorId: 'u-facilitador',
-    fecha: '2026-10-23',
-    horaInicio: '10:00',
-    horaFin: '11:00',
-    cuposLibres: 3,
-  },
-  {
-    id: 'fran-bus-30-1000',
-    jornadaId: 'jor-busqueda',
-    temaId: 'tema-busqueda',
-    facilitadorId: 'u-facilitador',
-    fecha: '2026-10-30',
-    horaInicio: '10:00',
-    horaFin: '11:00',
-    cuposLibres: 2,
-  },
-];
+/**
+ * Franjas de las jornadas, generadas como al guardarlas (HU-13). Los cupos ya descuentan las
+ * citas pendientes y aprobadas (se calculan al final, cuando existen las citas).
+ */
+export const FRANJAS_ASESORIA: FranjaAsesoria[] = JORNADAS_ASESORIA.flatMap((jornada) =>
+  generarFranjas(jornada, PARAMETROS),
+);
 
 export const CITAS_ASESORIA: Cita[] = [
   {
     id: 'cit-1',
-    franjaId: 'fran-apa-26-0900',
+    franjaId: idFranja('jor-apa', FECHAS_CITAS['cit-1'], '09:00'),
     temaId: 'tema-apa',
     tema: 'Normas APA 7',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
     solicitanteId: 'u-estudiante',
     solicitante: 'Laura Pérez',
-    fecha: '2026-10-26',
+    fecha: FECHAS_CITAS['cit-1'],
     horaInicio: '09:00',
     horaFin: '09:30',
     necesidad: 'Citar un libro y un artículo en APA 7.',
@@ -151,14 +119,14 @@ export const CITAS_ASESORIA: Cita[] = [
   },
   {
     id: 'cit-2',
-    franjaId: 'fran-bus-30-1000',
+    franjaId: idFranja('jor-busqueda', FECHAS_CITAS['cit-2'], '10:00'),
     temaId: 'tema-busqueda',
     tema: 'Búsqueda de información',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
     solicitanteId: 'u-docente',
     solicitante: 'Carlos Ramírez',
-    fecha: '2026-10-30',
+    fecha: FECHAS_CITAS['cit-2'],
     horaInicio: '10:00',
     horaFin: '11:00',
     necesidad: 'Buscar artículos para el proyecto de grado.',
@@ -167,14 +135,14 @@ export const CITAS_ASESORIA: Cita[] = [
   },
   {
     id: 'cit-3',
-    franjaId: 'fran-apa-19-0900',
+    franjaId: idFranja('jor-apa', FECHAS_CITAS['cit-3'], '09:00'),
     temaId: 'tema-apa',
     tema: 'Normas APA 7',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
     solicitanteId: 'u-estudiante',
     solicitante: 'Laura Pérez',
-    fecha: '2026-10-19',
+    fecha: FECHAS_CITAS['cit-3'],
     horaInicio: '09:00',
     horaFin: '09:30',
     necesidad: 'Revisar las referencias del proyecto.',
@@ -185,14 +153,14 @@ export const CITAS_ASESORIA: Cita[] = [
   },
   {
     id: 'cit-4',
-    franjaId: 'fran-bus-23-1000',
+    franjaId: idFranja('jor-busqueda', FECHAS_CITAS['cit-4'], '10:00'),
     temaId: 'tema-busqueda',
     tema: 'Búsqueda de información',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
     solicitanteId: 'u-docente',
     solicitante: 'Carlos Ramírez',
-    fecha: '2026-10-23',
+    fecha: FECHAS_CITAS['cit-4'],
     horaInicio: '10:00',
     horaFin: '11:00',
     necesidad: 'Buscar bases de datos para la asignatura.',
@@ -203,14 +171,14 @@ export const CITAS_ASESORIA: Cita[] = [
   {
     // Cita pasada sin atender, para registrar la inasistencia (HU-15).
     id: 'cit-5',
-    franjaId: 'fran-apa-21-0900',
+    franjaId: idFranja('jor-apa', FECHAS_CITAS['cit-5'], '09:00'),
     temaId: 'tema-apa',
     tema: 'Normas APA 7',
     facilitadorId: 'u-facilitador',
     facilitador: 'Julián Mendoza',
     solicitanteId: 'u-estudiante-2',
     solicitante: 'Andrés Mejía',
-    fecha: '2026-10-21',
+    fecha: FECHAS_CITAS['cit-5'],
     horaInicio: '09:00',
     horaFin: '09:30',
     necesidad: 'Revisar las citas y referencias de un trabajo.',
@@ -236,3 +204,10 @@ export const CITAS_ASESORIA: Cita[] = [
     estado: 'aprobada',
   },
 ];
+
+// Cada cita pendiente o aprobada ocupa un cupo de su franja.
+for (const cita of CITAS_ASESORIA) {
+  if (cita.estado !== 'pendiente' && cita.estado !== 'aprobada') continue;
+  const franja = FRANJAS_ASESORIA.find((actual) => actual.id === cita.franjaId);
+  if (franja) franja.cuposLibres = Math.max(0, franja.cuposLibres - 1);
+}

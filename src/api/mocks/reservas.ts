@@ -1,12 +1,29 @@
 /**
  * DATOS DE PRUEBA de las reservas y los bloqueos (HU-17, HU-18, HU-19 y HU-20).
- * Hay reservas en todos los estados, repartidas entre esta semana y la próxima,
- * para que la disponibilidad, la bandeja y el calendario tengan qué mostrar.
+ * Hay reservas en todos los estados, para que la disponibilidad, la bandeja y el calendario
+ * tengan qué mostrar. Las fechas son relativas a hoy (fechasDemo): lo pendiente o aprobado, en
+ * los próximos días hábiles; lo realizado, en días pasados.
  *
  * PROVISIONAL: usan los dos espacios confirmados por la biblioteca (Virtualteca y
  * Sala de Reuniones). El propósito y los asistentes son de ejemplo.
  */
 import type { Bloqueo, Reserva } from '@/types';
+import { fechaLegible } from '@/utils/fechas';
+
+import { habil } from './fechasDemo';
+
+/** Fechas de las reservas; el historial y las notificaciones las usan también. */
+export const FECHAS_RESERVAS = {
+  'res-1': habil(2),
+  'res-2': habil(3),
+  'res-3': habil(4),
+  'res-4': habil(5),
+  'res-5': habil(-2),
+  'res-6': habil(6),
+  /** La que propuso el personal para res-6. */
+  'res-6-propuesta': habil(7),
+  'blo-1': habil(8),
+};
 
 export const RESERVAS: Reserva[] = [
   {
@@ -14,7 +31,7 @@ export const RESERVAS: Reserva[] = [
     espacioId: 'esp-virtualteca',
     solicitanteId: 'u-estudiante',
     solicitante: 'Laura Pérez',
-    fecha: '2026-10-19',
+    fecha: FECHAS_RESERVAS['res-1'],
     horaInicio: '09:00',
     horaFin: '11:00',
     proposito: 'Consulta de bases de datos académicas',
@@ -26,7 +43,7 @@ export const RESERVAS: Reserva[] = [
     espacioId: 'esp-sala-reuniones',
     solicitanteId: 'u-docente',
     solicitante: 'Carlos Ramírez',
-    fecha: '2026-10-20',
+    fecha: FECHAS_RESERVAS['res-2'],
     horaInicio: '14:00',
     horaFin: '16:00',
     proposito: 'Reunión de comité curricular',
@@ -38,7 +55,7 @@ export const RESERVAS: Reserva[] = [
     espacioId: 'esp-virtualteca',
     solicitanteId: 'u-estudiante',
     solicitante: 'Laura Pérez',
-    fecha: '2026-10-21',
+    fecha: FECHAS_RESERVAS['res-3'],
     horaInicio: '08:00',
     horaFin: '10:00',
     proposito: 'Taller de búsqueda en el catálogo',
@@ -51,7 +68,7 @@ export const RESERVAS: Reserva[] = [
     espacioId: 'esp-sala-reuniones',
     solicitanteId: 'u-estudiante-2',
     solicitante: 'Andrés Mejía',
-    fecha: '2026-10-22',
+    fecha: FECHAS_RESERVAS['res-4'],
     horaInicio: '10:00',
     horaFin: '12:00',
     proposito: 'Reunión de docentes',
@@ -64,7 +81,7 @@ export const RESERVAS: Reserva[] = [
     espacioId: 'esp-virtualteca',
     solicitanteId: 'u-estudiante',
     solicitante: 'Laura Pérez',
-    fecha: '2026-10-23',
+    fecha: FECHAS_RESERVAS['res-5'],
     horaInicio: '15:00',
     horaFin: '17:00',
     proposito: 'Consulta de recursos digitales',
@@ -76,13 +93,13 @@ export const RESERVAS: Reserva[] = [
     espacioId: 'esp-sala-reuniones',
     solicitanteId: 'u-docente',
     solicitante: 'Carlos Ramírez',
-    fecha: '2026-10-26',
+    fecha: FECHAS_RESERVAS['res-6'],
     horaInicio: '11:00',
     horaFin: '13:00',
     proposito: 'Charla con estudiantes',
     asistentes: 20,
     estado: 'nueva_fecha',
-    motivo: 'Se propone mover la reserva al 27 de octubre.',
+    motivo: `Se propone mover la reserva al ${fechaLegible(FECHAS_RESERVAS['res-6-propuesta'])}.`,
   },
 ];
 
@@ -90,8 +107,8 @@ export const BLOQUEOS: Bloqueo[] = [
   {
     id: 'blo-1',
     espacioId: 'esp-sala-reuniones',
-    desde: '2026-10-27',
-    hasta: '2026-10-27',
+    desde: FECHAS_RESERVAS['blo-1'],
+    hasta: FECHAS_RESERVAS['blo-1'],
     horaInicio: '08:00',
     horaFin: '12:00',
     motivo: 'Consejo de facultad',

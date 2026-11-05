@@ -9,6 +9,32 @@
  * (`lin-apa`, para la advertencia al desactivar de HU-09, CA3).
  */
 import type { LineaFormacion, SolicitudCapacitacion } from '@/types';
+import { sumarDias } from '@/utils/calendario';
+import { fechaLegible } from '@/utils/fechas';
+
+import { conHora, habil, HOY } from './fechasDemo';
+
+/**
+ * Fechas de las solicitudes, relativas a hoy (fechasDemo): las que siguen en curso, en los
+ * próximos días hábiles (después de la anticipación mínima); la realizada, en el pasado.
+ * El historial las usa también.
+ */
+export const FECHAS_CAPACITACIONES = {
+  'cap-1': habil(3),
+  'cap-2': habil(4),
+  'cap-3': habil(5),
+  'cap-3-propuesta': habil(6),
+  'cap-4': habil(8),
+  'cap-5': habil(-10),
+};
+
+/** Cuándo se envió cada solicitud: días antes de hoy. */
+const enviada = (dias: number, hora: string) => conHora(sumarDias(HOY, -dias), hora);
+
+const MOTIVO_CAP_3 = `El facilitador no puede el ${fechaLegible(FECHAS_CAPACITACIONES['cap-3'])}; se propone el ${fechaLegible(FECHAS_CAPACITACIONES['cap-3-propuesta'])} a la misma hora.`;
+
+/** El motivo de la nueva fecha de cap-3; el historial lo repite. */
+export const MOTIVOS_CAPACITACIONES = { 'cap-3': MOTIVO_CAP_3 };
 
 export const LINEAS_FORMACION: LineaFormacion[] = [
   {
@@ -53,13 +79,13 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
       programa: 'Enfermería',
     },
     modalidad: 'presencial',
-    fecha: '2026-11-09',
+    fecha: FECHAS_CAPACITACIONES['cap-1'],
     hora: '10:00',
     objetivo: 'Aprender a citar y referenciar el trabajo de grado.',
     grupo: 'Enfermería · octavo semestre',
     participantes: 25,
     estado: 'pendiente',
-    creada: '2026-10-28 09:12',
+    creada: enviada(7, '09:12'),
   },
   {
     id: 'cap-2',
@@ -72,7 +98,7 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
       programa: 'Ingeniería de Sistemas',
     },
     modalidad: 'virtual',
-    fecha: '2026-11-10',
+    fecha: FECHAS_CAPACITACIONES['cap-2'],
     hora: '14:00',
     objetivo: 'Capacitar al grupo en el uso de bases de datos para el proyecto integrador.',
     grupo: 'Ingeniería de Sistemas · Proyecto integrador',
@@ -80,7 +106,7 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     estado: 'aprobada',
     responsableId: 'u-facilitador',
     responsable: 'Julián Mendoza',
-    creada: '2026-10-28 10:05',
+    creada: enviada(7, '10:05'),
   },
   {
     id: 'cap-3',
@@ -93,18 +119,18 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
       programa: 'Enfermería',
     },
     modalidad: 'presencial',
-    fecha: '2026-11-12',
+    fecha: FECHAS_CAPACITACIONES['cap-3'],
     hora: '09:00',
     objetivo: 'Repasar el formato de las referencias antes de la entrega.',
     grupo: 'Enfermería · semillero',
     participantes: 12,
     estado: 'nueva_fecha',
-    fechaPropuesta: '2026-11-13',
+    fechaPropuesta: FECHAS_CAPACITACIONES['cap-3-propuesta'],
     horaPropuesta: '09:00',
     responsableId: 'u-facilitador',
     responsable: 'Julián Mendoza',
-    motivo: 'El facilitador no puede el 12; se propone el 13 a la misma hora.',
-    creada: '2026-10-29 08:20',
+    motivo: MOTIVO_CAP_3,
+    creada: enviada(6, '08:20'),
   },
   {
     id: 'cap-4',
@@ -117,14 +143,14 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
       programa: 'Ingeniería de Sistemas',
     },
     modalidad: 'virtual',
-    fecha: '2026-11-16',
+    fecha: FECHAS_CAPACITACIONES['cap-4'],
     hora: '16:00',
     objetivo: 'Que los estudiantes organicen las fuentes del anteproyecto.',
     grupo: 'Ingeniería de Sistemas · metodología',
     participantes: 40,
     estado: 'rechazada',
     motivo: 'No hay facilitador disponible esa semana.',
-    creada: '2026-10-27 11:40',
+    creada: enviada(8, '11:40'),
   },
   {
     id: 'cap-5',
@@ -137,7 +163,7 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
       programa: 'Enfermería',
     },
     modalidad: 'presencial',
-    fecha: '2026-10-22',
+    fecha: FECHAS_CAPACITACIONES['cap-5'],
     hora: '10:00',
     objetivo: 'Aprender a buscar artículos para la práctica.',
     grupo: 'Enfermería · investigación',
@@ -146,6 +172,6 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     responsableId: 'u-facilitador',
     responsable: 'Julián Mendoza',
     resultado: 'Se trabajó el catálogo y dos bases de datos. El grupo quedó con la guía.',
-    creada: '2026-10-16 15:30',
+    creada: enviada(19, '15:30'),
   },
 ];
