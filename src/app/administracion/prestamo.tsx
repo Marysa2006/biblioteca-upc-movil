@@ -1,6 +1,7 @@
 /**
  * Entregar o recibir una tablet (HU-23), con ?id=<préstamo>&modo=entrega|devolucion.
- * Se abre desde Inventario → Préstamos.
+ * Se abre desde Inventario → Préstamos. Con &verificada=1, la tablet se leyó con el escáner
+ * (HU-31) y el resumen lo dice.
  *
  * Antes del formulario revisa que el préstamo esté en el estado que toca, que la tablet esté
  * disponible para entregar y que no se entregue antes del día del préstamo. Al guardar muestra
@@ -34,7 +35,11 @@ import { fechaLegible, hoyISO } from '@/utils/fechas';
 import { duracionLegible, fechaHoraLegible, NOMBRE_CONDICION } from '@/utils/prestamos';
 
 export default function RegistroPrestamo() {
-  const { id, modo } = useLocalSearchParams<{ id?: string; modo?: string }>();
+  const { id, modo, verificada } = useLocalSearchParams<{
+    id?: string;
+    modo?: string;
+    verificada?: string;
+  }>();
   const { tienePermiso } = useRol();
   const modoValido: Modo | null = modo === 'entrega' || modo === 'devolucion' ? modo : null;
   const titulo = modoValido === 'devolucion' ? 'Registrar devolución' : 'Registrar entrega';
@@ -46,7 +51,7 @@ export default function RegistroPrestamo() {
         {!tienePermiso('tablets') ? (
           <SinPermiso />
         ) : id && modoValido ? (
-          <Registro id={id} modo={modoValido} />
+          <Registro id={id} modo={modoValido} verificada={verificada === '1'} />
         ) : (
           <EstadoVacio mensaje="Elige un préstamo desde Gestión → Préstamos." />
         )}
@@ -55,7 +60,7 @@ export default function RegistroPrestamo() {
   );
 }
 
-function Registro({ id, modo }: { id: string; modo: Modo }) {
+function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada: boolean }) {
   const prestamos = usePrestamos('todas');
   const tablets = useTablets();
   const entregar = useRegistrarEntrega();
@@ -121,6 +126,7 @@ function Registro({ id, modo }: { id: string; modo: Modo }) {
         modo={modo}
         prestamo={prestamo}
         tablet={tablet}
+        verificada={verificada}
         guardando={mutacion.isPending}
         mensajeError={mutacion.error ? mensajeErrorGuardar(mutacion.error) : null}
         onGuardar={guardar}
