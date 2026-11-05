@@ -169,21 +169,23 @@ export function useRegistrarEntrega() {
 }
 
 /**
- * Préstamos vencidos para la sección Vencidos de Inventario (HU-24). No consulta sin sesión.
+ * Préstamos vencidos para la sección Vencidos de Gestión (HU-24). No consulta sin sesión.
  * Ojo: la consulta tiene efectos. Con mocks marca `vencido` los entregados atrasados y crea
  * la alerta del encargado y el aviso del usuario, una vez por préstamo; con la API real, el
  * Backend hace esa revisión programada y la app solo lee.
+ * Con `activa: false` no consulta: Gestión la abre todo el personal, y solo quien tiene el
+ * permiso `tablets` debe lanzar la revisión. El hook no sabe de permisos; los pasa la pantalla.
  * Si hay vencidos, refresca las listas de préstamos y las notificaciones. No invalida
  * claves.prestamosTablet: es el prefijo ['prestamos'] y volvería a lanzar esta consulta.
  */
-export function usePrestamosVencidos() {
+export function usePrestamosVencidos({ activa = true }: { activa?: boolean } = {}) {
   const usuario = useSesion((estado) => estado.usuario);
   const queryClient = useQueryClient();
 
   const consulta = useQuery({
     queryKey: claves.prestamosVencidos,
     queryFn: obtenerPrestamosVencidos,
-    enabled: usuario != null,
+    enabled: usuario != null && activa,
   });
 
   useEffect(() => {

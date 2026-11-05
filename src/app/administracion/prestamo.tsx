@@ -48,7 +48,7 @@ export default function RegistroPrestamo() {
         ) : id && modoValido ? (
           <Registro id={id} modo={modoValido} />
         ) : (
-          <EstadoVacio mensaje="Elige un préstamo desde Inventario → Préstamos." />
+          <EstadoVacio mensaje="Elige un préstamo desde Gestión → Préstamos." />
         )}
       </Pantalla>
     </>
