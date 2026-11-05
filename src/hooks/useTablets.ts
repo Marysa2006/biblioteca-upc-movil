@@ -171,7 +171,7 @@ export function useRegistrarEntrega() {
 /**
  * Préstamos vencidos para la sección Vencidos de Gestión (HU-24). No consulta sin sesión.
  * Ojo: la consulta tiene efectos. Con mocks marca `vencido` los entregados atrasados y crea
- * la alerta del encargado y el aviso del usuario, una vez por préstamo; con la API real, el
+ * la alerta a la administración y el aviso del usuario, una vez por préstamo; con la API real, el
  * Backend hace esa revisión programada y la app solo lee.
  * Con `activa: false` no consulta: Gestión la abre todo el personal, y solo quien tiene el
  * permiso `tablets` debe lanzar la revisión. El hook no sabe de permisos; los pasa la pantalla.
