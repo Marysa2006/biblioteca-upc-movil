@@ -3,7 +3,7 @@
  * apilada para que sus búsquedas no se mezclen.
  * - Catálogo de la biblioteca, en Koha (HU-02): catalogo/koha.
  * - Repositorio institucional, en DSpace (HU-11): catalogo/repositorio.
- * - Recursos en línea, las fuentes académicas digitales (HU-03): catalogo/recursos-en-linea.
+ * - Bibliotecas en línea, las fuentes académicas digitales (HU-03): catalogo/recursos-en-linea.
  * - Guías de la biblioteca, sin conexión (HU-29): guias.
  * No consulta datos: cada pantalla usa sus hooks. Por eso abre siempre, también sin internet,
  * y las guías guardadas quedan a un toque.
@@ -19,7 +19,7 @@ export default function Catalogo() {
   return (
     <Pantalla
       titulo="Catálogo"
-      subtitulo="Material de la biblioteca, trabajos de la Universidad, recursos en línea y guías"
+      subtitulo="Material de la biblioteca, trabajos de la Universidad, bibliotecas en línea y guías"
     >
       <View style={estilos.lista}>
         <TarjetaFuente
@@ -36,7 +36,7 @@ export default function Catalogo() {
         />
         <TarjetaFuente
           icono="database-outline"
-          titulo="Recursos en línea"
+          titulo="Bibliotecas en línea"
           descripcion="Revistas, libros electrónicos y fuentes académicas para consultar desde cualquier lugar."
           onPress={() => router.push('/catalogo/recursos-en-linea')}
         />

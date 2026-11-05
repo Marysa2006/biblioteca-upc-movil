@@ -23,7 +23,7 @@ Cualquier persona puede usar estas partes sin iniciar sesión. Abajo están las 
 3. **Catálogo:**
    - **Catálogo de la biblioteca:** libros, revistas y tesis de la biblioteca.
    - **Repositorio institucional:** trabajos de grado e investigaciones de la Universidad, en texto completo.
-   - **Recursos en línea:** las bases de datos académicas.
+   - **Bibliotecas en línea:** las bases de datos y bibliotecas digitales de la Universidad. Arriba se puede buscar por nombre o tema (por ejemplo, "enfermería") y filtrar por área.
    - **Guías de la biblioteca:** se abren una vez con internet y quedan guardadas para leerlas sin conexión.
 4. **Autoarchivo:** desde el servicio **Depósito de trabajos de grado**, los pasos para preparar el archivo y entrar al repositorio.
 
