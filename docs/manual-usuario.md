@@ -82,9 +82,10 @@ Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 
 ### Mis solicitudes y Mi calendario
 
-1. La pestaña **Mis solicitudes** muestra las reservas, asesorías, préstamos y capacitaciones con su estado: Pendiente, Aprobada, Rechazada o Nueva fecha propuesta. Toca una para ver su detalle y su historial.
-2. En el menú de arriba a la derecha:
-   - **Mi calendario** muestra las citas y reservas por día.
+1. La pestaña **Mis solicitudes** muestra las reservas, asesorías, préstamos y capacitaciones con su estado: Pendiente, Aprobada, Rechazada, Nueva fecha propuesta, Cancelada o Realizada. Toca una para ver su detalle y su historial.
+2. Si la biblioteca propone otro día, la solicitud dice **Nueva fecha propuesta**. Ábrela y toca **Aceptar la nueva fecha**, o **No me sirve** para cancelar la solicitud.
+3. En el menú de arriba a la derecha:
+   - **Mi calendario** muestra por día las citas, las reservas y los préstamos, y envía recordatorios antes de cada uno.
    - **Notificaciones** muestra los avisos de cada cambio.
 
 ![Mis solicitudes](manual-usuario/comunidad-mis-solicitudes.png)
@@ -96,12 +97,13 @@ Al iniciar sesión con una cuenta del personal, abajo aparecen las pestañas **D
 
 ### Gestión
 
-1. **Solicitudes:** las solicitudes que llegan de la comunidad.
+1. **Solicitudes:** las solicitudes que llegan de la comunidad. Arriba, el selector **Reservas · Capacitaciones** elige cuáles ver.
    - Toca **Aprobar** para aceptar una.
    - Toca **Rechazar** para negarla; pide el motivo.
    - Toca **Otra fecha** para proponer otro día u hora.
+   - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como realizada**.
    - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
-2. **Agenda:** las citas de asesoría por día y por semana.
+2. **Agenda:** las citas de asesoría por día, por semana y por mes. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR que los asistentes escanean.
 3. **Préstamos:** la entrega y la devolución de tablets, también leyendo el código de barras con la cámara.
 4. **Vencidos:** las tablets que no se devolvieron a tiempo.
 5. **Espacios:** crear y editar espacios, y bloquearlos por mantenimiento o eventos.
@@ -132,10 +134,9 @@ Al iniciar sesión con una cuenta del personal, abajo aparecen las pestañas **D
 
 ### Qué ve cada rol
 
-- **Administración de la biblioteca:** todo, incluidas la pestaña **Personal**, para asignar roles, y **Parámetros generales**.
-- **Facilitador:** las solicitudes de asesoría y capacitación, y la **Agenda** de sus citas.
+- **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos**, **Vencidos** e **Inventario** de tablets.
+- **Facilitador:** las solicitudes de capacitación y la **Agenda** de sus asesorías.
 - **Gestora de espacios:** las solicitudes de reserva y la sección **Espacios**, con sus bloqueos.
-- **Encargado de préstamos:** **Préstamos**, **Vencidos** e **Inventario** de tablets.
 
 ## 5. Usuarios de prueba
 
@@ -148,7 +149,7 @@ Todos entran con la contraseña **`biblioteca123`**. Basta con escribir el usuar
 | `ana.torres` | Ana Torres | Administrativo | Administración de la biblioteca |
 | `julian.mendoza` | Julián Mendoza | Administrativo | Facilitador |
 | `sofia.vargas` | Sofía Vargas | Administrativo | Gestora de espacios |
-| `mateo.castro` | Mateo Castro | Administrativo | Encargado de préstamos (tablets) |
+| `mateo.castro` | Mateo Castro | Egresado | — |
 
 ## 6. Limitaciones de esta versión
 
