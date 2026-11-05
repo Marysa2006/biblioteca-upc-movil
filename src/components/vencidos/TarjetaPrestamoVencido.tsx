@@ -1,5 +1,5 @@
 /**
- * Un préstamo vencido en Inventario → Vencidos (HU-24): quién la tiene, qué tablet, la hora
+ * Un préstamo vencido en Gestión → Vencidos (HU-24): quién la tiene, qué tablet, la hora
  * límite y cuánto lleva vencido. El estado va con texto, no solo color. No se presiona:
  * la devolución se registra en Préstamos (HU-23).
  */

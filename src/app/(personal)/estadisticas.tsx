@@ -1,21 +1,23 @@
 /**
  * Estadísticas (permiso `estadisticas`): el uso de los servicios de la biblioteca.
+ * - Indicadores: totales y gráficos con filtros, y exportación a CSV (HU-26). Va primero.
  * - Registros: las operaciones registradas con todos sus campos (HU-25).
  * Como en Gestión, cada sección vive en su componente de src/components/estadisticas y el
- * selector aparece solo con dos secciones o más (HU-26 agrega Indicadores).
+ * selector aparece solo con dos secciones o más.
  * Al entrar a la pestaña y al deslizar hacia abajo se vuelve a pedir todo lo de estadísticas.
  */
 import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState, type ComponentType } from 'react';
 
+import { SeccionIndicadores } from '@/components/estadisticas/SeccionIndicadores';
 import { SeccionRegistros } from '@/components/estadisticas/SeccionRegistros';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import { Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 
-type ValorSeccion = 'registros';
+type ValorSeccion = 'indicadores' | 'registros';
 
 type Seccion = {
   valor: ValorSeccion;
@@ -23,7 +25,10 @@ type Seccion = {
   Componente: ComponentType;
 };
 
-const SECCIONES: Seccion[] = [{ valor: 'registros', etiqueta: 'Registros', Componente: SeccionRegistros }];
+const SECCIONES: Seccion[] = [
+  { valor: 'indicadores', etiqueta: 'Indicadores', Componente: SeccionIndicadores },
+  { valor: 'registros', etiqueta: 'Registros', Componente: SeccionRegistros },
+];
 
 /** Prefijo de las consultas de estadísticas (registros e indicadores). */
 const CLAVE_ESTADISTICAS = ['estadisticas'];
@@ -31,7 +36,7 @@ const CLAVE_ESTADISTICAS = ['estadisticas'];
 export default function Estadisticas() {
   const { tienePermiso } = useRol();
   const queryClient = useQueryClient();
-  const [elegida, setElegida] = useState<ValorSeccion>('registros');
+  const [elegida, setElegida] = useState<ValorSeccion>('indicadores');
   const [recargando, setRecargando] = useState(false);
 
   const activa = SECCIONES.find((seccion) => seccion.valor === elegida) ?? SECCIONES[0];

@@ -16,12 +16,20 @@ import {
   ErrorCapacitacion,
   obtenerLineas,
   solicitudesActivasDeLinea,
+  aprobarCapacitacion,
+  asignarResponsable,
+  cerrarCapacitacion,
   obtenerMisCapacitaciones,
+  obtenerSolicitudesCapacitacion,
+  proponerFechaCapacitacion,
+  rechazarCapacitacion,
+  responderNuevaFecha,
   solicitarCapacitacion,
   type DatosLinea,
   type FormularioCapacitacion,
 } from '@/api/capacitaciones';
 import { claves } from '@/api/claves';
+import type { EstadoSolicitud } from '@/types';
 import { useSesion } from '@/store/sesion';
 
 /** Para que las pantallas de HU-09 (Jhon) y HU-10 (María) tipen sin importar de src/api. */
@@ -115,4 +123,87 @@ export function useMisCapacitaciones() {
  */
 export function fechaSugeridaDeError(error: unknown): string | undefined {
   return error instanceof ErrorCapacitacion ? error.fechaSugerida : undefined;
+}
+
+
+// ── HU-12: gestionar las solicitudes de formación ──────────────────────────
+
+/**
+ * Solicitudes para la bandeja de Gestión → Solicitudes. Se refresca sola con cada mutación:
+ * todas cuelgan del prefijo ['capacitaciones', 'solicitudes'].
+ */
+export function useSolicitudesCapacitacion(estado: EstadoSolicitud | 'todas' = 'todas') {
+  return useQuery({
+    queryKey: claves.solicitudesCapacitacion(estado),
+    queryFn: () => obtenerSolicitudesCapacitacion(estado),
+  });
+}
+
+/** Invalida la bandeja, las de la persona, el historial (HU-08) y las estadísticas (HU-25). */
+function refrescarSolicitudes(queryClient: ReturnType<typeof useQueryClient>) {
+  // La bandeja (['capacitaciones','solicitudes',estado]) y las de la persona
+  // (['capacitaciones','solicitudes','mias',...]) cuelgan de este prefijo. TanStack invalida
+  // por prefijo desde el inicio de la clave, así que `solicitudesTodas` (['solicitudes'])
+  // no las tocaría.
+  queryClient.invalidateQueries({ queryKey: claves.solicitudesCapacitacionTodas });
+  // Las solicitudes de HU-08 (['solicitudes', ...]) son otra rama del árbol.
+  queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
+  // La campana de notificaciones, como en las demás mutaciones.
+  queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+  // HU-25: el registro de uso se actualiza, así que los indicadores cambian.
+  queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
+}
+
+export function useAprobarCapacitacion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => aprobarCapacitacion(id),
+    onSuccess: () => refrescarSolicitudes(queryClient),
+  });
+}
+
+export function useRechazarCapacitacion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) =>
+      rechazarCapacitacion(id, motivo),
+    onSuccess: () => refrescarSolicitudes(queryClient),
+  });
+}
+
+export function useProponerFechaCapacitacion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, fecha, hora }: { id: string; fecha: string; hora: string }) =>
+      proponerFechaCapacitacion(id, fecha, hora),
+    onSuccess: () => refrescarSolicitudes(queryClient),
+  });
+}
+
+export function useAsignarResponsable() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, usuarioId }: { id: string; usuarioId: string }) =>
+      asignarResponsable(id, usuarioId),
+    onSuccess: () => refrescarSolicitudes(queryClient),
+  });
+}
+
+export function useCerrarCapacitacion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, resultado }: { id: string; resultado: string }) =>
+      cerrarCapacitacion(id, resultado),
+    onSuccess: () => refrescarSolicitudes(queryClient),
+  });
+}
+
+/** La comunidad acepta o rechaza la nueva fecha propuesta (HU-12, CA4). */
+export function useResponderNuevaFecha() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, acepta }: { id: string; acepta: boolean }) =>
+      responderNuevaFecha(id, acepta),
+    onSuccess: () => refrescarSolicitudes(queryClient),
+  });
 }
