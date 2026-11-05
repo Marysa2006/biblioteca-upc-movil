@@ -566,6 +566,16 @@ export async function asignarResponsable(
     };
     solicitudes = solicitudes.map((actual) => (actual.id === id ? actualizada : actual));
     registrarEvento('capacitacion', id, 'aprobada', AUTOR_PERSONAL, `Responsable: ${persona.nombre}.`);
+    // La persona asignada se entera en su campana (HU-12 UI). No es un cambio de estado: no
+    // toca el registro de uso. Si se reasigna a la misma persona, no se le avisa otra vez.
+    if (solicitud.responsableId !== persona.id) {
+      crearNotificacion({
+        usuarioId: persona.id,
+        solicitudId: id,
+        titulo: 'Te asignaron una capacitación',
+        mensaje: `Atenderás la capacitación de ${solicitud.linea} para ${solicitud.solicitante.nombre} (${solicitud.grupo}), el ${solicitud.fecha} a las ${solicitud.hora}. Está en Gestión → Solicitudes → Capacitaciones.`,
+      });
+    }
     return simularRed({ ...actualizada });
   }
   return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/responsable/`, {
