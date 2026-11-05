@@ -88,11 +88,10 @@ function Asistencia() {
 }
 
 function ControlAsistencia({ cita }: { cita: Cita }) {
-  const [cerradaAqui, setCerradaAqui] = useState(false);
-  const asistencia = useAsistencia(cita.id, { actualizar: !cerradaAqui });
+  const cerrar = useCerrarAsistencia();
+  const asistencia = useAsistencia(cita.id, { actualizar: !cerrar.isSuccess });
   const abrir = useAbrirAsistencia();
   const marcar = useMarcarAsistenciaManual();
-  const cerrar = useCerrarAsistencia();
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ahora, setAhora] = useState(() => new Date());
@@ -119,7 +118,10 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
   }
 
   const { codigo, registros, total } = asistencia.data;
-  const abierta = codigo != null && !cerradaAqui;
+  // Cerrada según la API (también al volver a entrar, #196) o recién cerrada aquí, mientras
+  // la consulta se actualiza.
+  const cerrada = asistencia.data.cerrada || cerrar.isSuccess;
+  const abierta = codigo != null && !cerrada;
   const yaRegistrada = registros.some((registro) => registro.usuarioId === cita.solicitanteId);
 
   const abrirAsistencia = () => {
@@ -139,7 +141,6 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
     cerrar.mutate(cita.id, {
       onSuccess: (resultado) => {
         setConfirmarCierre(false);
-        setCerradaAqui(true);
         setAviso(
           `Cerramos la asistencia con ${resultado.total === 1 ? '1 asistente' : `${resultado.total} asistentes`}.`,
         );
@@ -179,7 +180,7 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
           generando={abrir.isPending}
           onGenerar={abrirAsistencia}
         />
-      ) : cerradaAqui ? (
+      ) : cerrada ? (
         <View style={estilos.cerrada}>
           <Icon source="lock-outline" size={24} color={colores.textoSecundario} />
           <Text variant="bodyMedium" style={estilos.textoCerrada}>

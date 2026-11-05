@@ -25,14 +25,15 @@ import { useSesion } from '@/store/sesion';
 /**
  * Asistencia de la sesión: código vigente, registros y total (CA2).
  * Con `actualizar`, se vuelve a pedir cada 5 segundos para que el facilitador vea a quienes
- * escanean sin recargar (solo mientras la pantalla está abierta).
+ * escanean sin recargar (solo mientras la pantalla está abierta). Una asistencia cerrada ya no
+ * cambia (CA4), así que deja de pedirse.
  */
 export function useAsistencia(sesionId: string, { actualizar = false } = {}) {
   return useQuery({
     queryKey: claves.asistenciaSesion(sesionId),
     queryFn: () => obtenerAsistentes(sesionId),
     enabled: sesionId !== '',
-    refetchInterval: actualizar ? 5000 : false,
+    refetchInterval: (consulta) => (actualizar && !consulta.state.data?.cerrada ? 5000 : false),
   });
 }
 
