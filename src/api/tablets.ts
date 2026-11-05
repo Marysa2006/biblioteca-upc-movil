@@ -22,6 +22,7 @@ import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { tienePermiso } from '@/utils/roles';
 import { normalizarTexto } from '@/utils/texto';
 import {
   ahoraFechaHora,
@@ -717,21 +718,20 @@ function ordenarVencidos(lista: Prestamo[]): Prestamo[] {
 }
 
 /**
- * Alerta a los encargados de tablets y avisa al usuario, una sola vez por préstamo (CA2).
- * Si no hay encargados en el directorio, el aviso al usuario se crea igual.
+ * Alerta a quien maneja el préstamo de tablets (el permiso `tablets`, hoy la administración) y
+ * avisa al usuario, una sola vez por préstamo (CA2). Si nadie lo tiene, el aviso al usuario se
+ * crea igual.
  */
 function avisarVencido(prestamo: Prestamo): void {
   if (avisosVencidos.has(prestamo.id)) return;
 
   const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
   const codigo = tablet?.codigo ?? 'sin código';
-  const encargados = USUARIOS_DIRECTORIO.filter((usuario) =>
-    usuario.rolesPersonal.includes('encargado_tablets'),
-  );
+  const responsables = USUARIOS_DIRECTORIO.filter((usuario) => tienePermiso(usuario, 'tablets'));
 
-  for (const encargado of encargados) {
+  for (const responsable of responsables) {
     crearNotificacion({
-      usuarioId: encargado.id,
+      usuarioId: responsable.id,
       solicitudId: prestamo.id,
       titulo: 'Préstamo vencido',
       mensaje: `El préstamo de ${prestamo.solicitante} venció el ${prestamo.fecha} a las ${prestamo.horaLimite}. Tablet ${codigo}.`,

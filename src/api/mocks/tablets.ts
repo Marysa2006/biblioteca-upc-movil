@@ -4,8 +4,21 @@
  * PROVISIONAL: la cantidad, los códigos, seriales, modelos, accesorios, el plazo y el texto
  * de las condiciones de uso se esperan por confirmar con la biblioteca (sección 2 del
  * documento de la iteración 3).
+ *
+ * Las fechas de los préstamos son relativas a hoy (fechasDemo): uno reservado para el próximo día
+ * hábil, uno entregado hoy, uno vencido el día hábil anterior y uno devuelto antes.
  */
 import type { CondicionesTablet, Prestamo, Tablet } from '@/types';
+
+import { conHora, habil, HOY } from './fechasDemo';
+
+/** Fechas de los préstamos; el historial las usa también. */
+export const FECHAS_PRESTAMOS = {
+  'pre-1': habil(1),
+  'pre-2': HOY,
+  'pre-3': habil(-1),
+  'pre-4': habil(-2),
+};
 
 export const CONDICIONES_TABLET: CondicionesTablet = {
   titulo: 'Condiciones de uso del préstamo de tablets',
@@ -75,7 +88,7 @@ export const PRESTAMOS_TABLET: Prestamo[] = [
     tabletId: 'tab-1',
     solicitanteId: 'u-estudiante',
     solicitante: 'Laura Pérez',
-    fecha: '2026-10-24',
+    fecha: FECHAS_PRESTAMOS['pre-1'],
     horaInicio: '09:00',
     horaLimite: '11:00',
     condicionesAceptadas: true,
@@ -86,13 +99,13 @@ export const PRESTAMOS_TABLET: Prestamo[] = [
     tabletId: 'tab-2',
     solicitanteId: 'u-docente',
     solicitante: 'Carlos Ramírez',
-    fecha: '2026-10-23',
-    horaInicio: '15:00',
-    horaLimite: '18:00',
+    fecha: FECHAS_PRESTAMOS['pre-2'],
+    horaInicio: '08:00',
+    horaLimite: '17:00',
     condicionesAceptadas: true,
     estado: 'entregado',
     entrega: {
-      fechaHora: '2026-10-23 15:05',
+      fechaHora: conHora(FECHAS_PRESTAMOS['pre-2'], '08:05'),
       condicion: 'bueno',
       accesorios: ['cargador'],
     },
@@ -102,13 +115,13 @@ export const PRESTAMOS_TABLET: Prestamo[] = [
     tabletId: 'tab-3',
     solicitanteId: 'u-estudiante-2',
     solicitante: 'Andrés Mejía',
-    fecha: '2026-10-22',
+    fecha: FECHAS_PRESTAMOS['pre-3'],
     horaInicio: '10:00',
     horaLimite: '12:00',
     condicionesAceptadas: true,
     estado: 'vencido',
     entrega: {
-      fechaHora: '2026-10-22 10:03',
+      fechaHora: conHora(FECHAS_PRESTAMOS['pre-3'], '10:03'),
       condicion: 'bueno',
       accesorios: ['cargador', 'estuche'],
     },
@@ -118,18 +131,18 @@ export const PRESTAMOS_TABLET: Prestamo[] = [
     tabletId: 'tab-4',
     solicitanteId: 'u-estudiante',
     solicitante: 'Laura Pérez',
-    fecha: '2026-10-22',
+    fecha: FECHAS_PRESTAMOS['pre-4'],
     horaInicio: '14:00',
     horaLimite: '16:00',
     condicionesAceptadas: true,
     estado: 'devuelto',
     entrega: {
-      fechaHora: '2026-10-22 14:02',
+      fechaHora: conHora(FECHAS_PRESTAMOS['pre-4'], '14:02'),
       condicion: 'bueno',
       accesorios: ['cargador'],
     },
     devolucion: {
-      fechaHora: '2026-10-22 16:15',
+      fechaHora: conHora(FECHAS_PRESTAMOS['pre-4'], '16:15'),
       condicion: 'regular',
       accesorios: ['cargador'],
       novedades: 'La pantalla tiene una marca leve.',

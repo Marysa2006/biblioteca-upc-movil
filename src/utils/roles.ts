@@ -13,18 +13,13 @@ export const ROLES_PERSONAL: readonly RolPersonal[] = [
   'administrador',
   'facilitador',
   'gestor_espacios',
-  'encargado_tablets',
 ];
 
 /**
  * Roles del personal que la administración asigna o retira (HU-07).
  * Administrador no está: es una sola persona y no se asigna desde la app.
  */
-export const ROLES_ASIGNABLES: readonly RolPersonal[] = [
-  'facilitador',
-  'gestor_espacios',
-  'encargado_tablets',
-];
+export const ROLES_ASIGNABLES: readonly RolPersonal[] = ['facilitador', 'gestor_espacios'];
 
 export const NOMBRE_TIPO: Record<TipoUsuario, string> = {
   estudiante: 'Estudiante',
@@ -38,7 +33,6 @@ export const NOMBRE_ROL_PERSONAL: Record<RolPersonal, string> = {
   administrador: 'Administración de la biblioteca',
   facilitador: 'Facilitador',
   gestor_espacios: 'Gestor de espacios',
-  encargado_tablets: 'Encargado de préstamos (tablets)',
 };
 
 /** @deprecated Usa NOMBRE_TIPO o NOMBRE_ROL_PERSONAL. */
@@ -47,6 +41,7 @@ export const NOMBRE_ROL: Record<Rol, string> = { ...NOMBRE_TIPO, ...NOMBRE_ROL_P
 /**
  * Permisos de cada rol del personal (HU-07).
  * La comunidad no administra la biblioteca: lo que puede hacer vive en la vista de la comunidad.
+ * El préstamo de tablets (`tablets`) es solo de la administración: no hay un rol aparte (#200).
  */
 export const PERMISOS_POR_ROL: Record<RolPersonal, readonly Permiso[]> = {
   administrador: [
@@ -62,7 +57,6 @@ export const PERMISOS_POR_ROL: Record<RolPersonal, readonly Permiso[]> = {
   ],
   facilitador: ['asesorias', 'formacion'],
   gestor_espacios: ['espacios', 'reservas'],
-  encargado_tablets: ['tablets'],
 };
 
 /** Nombre visible de cada permiso, para etiquetas en la pantalla de roles. */

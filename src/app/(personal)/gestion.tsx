@@ -86,7 +86,8 @@ const SECCIONES: Seccion[] = [
 export default function Gestion() {
   const { tienePermiso } = useRol();
   const [elegida, setElegida] = useState<ValorSeccion>('solicitudes');
-  // La misma consulta que SeccionVencidos: la alerta del encargado se crea apenas se abre Gestión.
+  // La misma consulta que SeccionVencidos: la alerta a la administración se crea apenas se abre
+  // Gestión.
   // Solo con el permiso `tablets`: la consulta crea avisos, y un facilitador o un gestor de
   // espacios también abren Gestión.
   const cantidadVencidos =
