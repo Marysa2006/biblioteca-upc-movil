@@ -26,6 +26,7 @@ import { EncabezadoSeccion } from '@/components/inventario/EncabezadoSeccion';
 import { TarjetaPrestamo } from '@/components/inventario/TarjetaPrestamo';
 import {
   ChipsFiltro,
+  ListaPaginada,
   EstadoCarga,
   EstadoError,
   EstadoVacio,
@@ -175,15 +176,18 @@ export function SeccionPrestamos() {
       {visibles.length === 0 ? (
         <EstadoVacio mensaje={VACIO[grupo]} />
       ) : (
-        visibles.map((prestamo) => (
-          <TarjetaPrestamo
-            key={prestamo.id}
-            prestamo={prestamo}
-            tablet={tabletPorId.get(prestamo.tabletId)}
-            onEntregar={() => abrir(prestamo.id, 'entrega')}
-            onRecibir={() => abrir(prestamo.id, 'devolucion')}
-          />
-        ))
+        // 10 por página (#161); el filtro vuelve a la página 1.
+        <ListaPaginada elementos={visibles} reinicio={grupo}>
+          {(prestamo) => (
+            <TarjetaPrestamo
+              key={prestamo.id}
+              prestamo={prestamo}
+              tablet={tabletPorId.get(prestamo.tabletId)}
+              onEntregar={() => abrir(prestamo.id, 'entrega')}
+              onRecibir={() => abrir(prestamo.id, 'devolucion')}
+            />
+          )}
+        </ListaPaginada>
       )}
 
       <DialogoBuscarTablet

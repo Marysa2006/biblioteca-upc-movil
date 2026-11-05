@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { type ReactNode, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -7,6 +7,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   View,
 } from 'react-native';
@@ -43,6 +44,14 @@ type Props = {
   children: ReactNode;
 };
 
+/** Sube el contenido de la pantalla al inicio; fuera de una Pantalla no hace nada. */
+const SubirAlInicio = createContext<() => void>(() => {});
+
+/** Para que un componente dentro de la pantalla (por ejemplo, Paginacion) la suba al inicio. */
+export function useSubirAlInicio(): () => void {
+  return useContext(SubirAlInicio);
+}
+
 /** Cuánto hay que deslizar (en px) para que el botón flotante se encoja. */
 const DESPLAZAMIENTO_PARA_ENCOGER = espacio.xl;
 
@@ -66,6 +75,8 @@ export function Pantalla({
   const [altoPie, setAltoPie] = useState(0);
   // Si el contenido ya bajó un poco, para que el botón flotante se encoja y deje ver la lista.
   const [desplazada, setDesplazada] = useState(false);
+  const desplazable = useRef<ScrollViewInstance>(null);
+  const subirAlInicio = useCallback(() => desplazable.current?.scrollTo({ y: 0, animated: true }), []);
   const alDesplazar =
     typeof flotante === 'function'
       ? ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) =>
@@ -74,6 +85,7 @@ export function Pantalla({
 
   const contenido = (
     <ScrollView
+      ref={desplazable}
       // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
       contentContainerStyle={[
         estilos.contenido,
@@ -122,7 +134,7 @@ export function Pantalla({
           </Text>
         ) : null}
       </View>
-      {children}
+      <SubirAlInicio.Provider value={subirAlInicio}>{children}</SubirAlInicio.Provider>
     </ScrollView>
   );
 

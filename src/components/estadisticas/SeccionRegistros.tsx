@@ -6,7 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { TarjetaRegistro } from '@/components/estadisticas/TarjetaRegistro';
-import { EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
+import { EstadoCarga, EstadoError, EstadoVacio, ListaPaginada } from '@/components/ui';
 import { useRegistrosUso } from '@/hooks/useEstadisticas';
 import { colores, espacio } from '@/theme';
 
@@ -28,9 +28,10 @@ export function SeccionRegistros() {
       <Text variant="bodyMedium" style={estilos.total} accessibilityRole="header">
         {data.length === 1 ? '1 operación registrada' : `${data.length} operaciones registradas`}
       </Text>
-      {data.map((registro) => (
-        <TarjetaRegistro key={registro.id} registro={registro} />
-      ))}
+      {/* 10 por página (#161); el total de arriba cuenta todos. */}
+      <ListaPaginada elementos={data}>
+        {(registro) => <TarjetaRegistro key={registro.id} registro={registro} />}
+      </ListaPaginada>
     </View>
   );
 }
