@@ -10,10 +10,10 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { Text } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Surface, Text } from 'react-native-paper';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colores, espacio, fuentes, tamanoLogo } from '@/theme';
+import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
 
 import { MenuUsuario } from './MenuUsuario';
@@ -34,6 +34,12 @@ type Props = {
    * Como función, recibe si el contenido ya se deslizó hacia abajo, para encogerse.
    */
   flotante?: ReactNode | ((desplazada: boolean) => ReactNode);
+  /**
+   * Acciones fijas abajo (por ejemplo, las de un detalle): una tarjeta flotante sobre el
+   * contenido, justo encima de la barra de navegación del sistema, sin taparla. El final del
+   * contenido queda libre para que la tarjeta no tape lo último.
+   */
+  pie?: ReactNode;
   children: ReactNode;
 };
 
@@ -52,8 +58,12 @@ export function Pantalla({
   conTeclado = false,
   sinMenuUsuario = false,
   flotante,
+  pie,
   children,
 }: Props) {
+  const { bottom } = useSafeAreaInsets();
+  // Alto de la tarjeta del pie, para dejar ese espacio libre al final del contenido.
+  const [altoPie, setAltoPie] = useState(0);
   // Si el contenido ya bajó un poco, para que el botón flotante se encoja y deje ver la lista.
   const [desplazada, setDesplazada] = useState(false);
   const alDesplazar =
@@ -65,7 +75,11 @@ export function Pantalla({
   const contenido = (
     <ScrollView
       // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
-      contentContainerStyle={[estilos.contenido, flotante ? estilos.contenidoConFlotante : null]}
+      contentContainerStyle={[
+        estilos.contenido,
+        flotante ? estilos.contenidoConFlotante : null,
+        pie ? { paddingBottom: altoPie + bottom + espacio.xl } : null,
+      ]}
       onScroll={alDesplazar}
       scrollEventThrottle={alDesplazar ? 16 : undefined}
       // Con el teclado abierto, el primer toque en un botón lo presiona (y no solo cierra el teclado).
@@ -112,6 +126,21 @@ export function Pantalla({
     </ScrollView>
   );
 
+  const conPie = pie ? (
+    <>
+      {contenido}
+      <Surface
+        elevation={2}
+        style={[estilos.pie, { bottom: bottom + espacio.s }]}
+        onLayout={({ nativeEvent }) => setAltoPie(nativeEvent.layout.height)}
+      >
+        {pie}
+      </Surface>
+    </>
+  ) : (
+    contenido
+  );
+
   return (
     <SafeAreaView style={estilos.area} edges={conEncabezado ? [] : ['top']}>
       {conTeclado ? (
@@ -120,10 +149,10 @@ export function Pantalla({
           style={estilos.teclado}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {contenido}
+          {conPie}
         </KeyboardAvoidingView>
       ) : (
-        contenido
+        conPie
       )}
       {flotante ? (
         <View style={estilos.flotante}>
@@ -141,6 +170,14 @@ const estilos = StyleSheet.create({
   // El alto del botón flotante más su margen, para que el último elemento quede a la vista.
   contenidoConFlotante: { paddingBottom: espacio.xl * 3 },
   flotante: { position: 'absolute', right: espacio.m, bottom: espacio.m },
+  pie: {
+    position: 'absolute',
+    left: espacio.m,
+    right: espacio.m,
+    padding: espacio.s,
+    borderRadius: radio.tarjeta,
+    backgroundColor: colores.superficie,
+  },
   marca: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textosMarca: { flex: 1 },
   isotipo: { width: tamanoLogo.isotipo, aspectRatio: 1 },
