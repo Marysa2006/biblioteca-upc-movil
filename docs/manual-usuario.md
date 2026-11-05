@@ -103,7 +103,7 @@ Al iniciar sesión con una cuenta del personal, abajo aparecen las pestañas **D
    - Toca **Otra fecha** para proponer otro día u hora.
    - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como realizada**.
    - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
-2. **Agenda:** las citas de asesoría por día, por semana y por mes. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR que los asistentes escanean.
+2. **Agenda:** las citas de asesoría por día, por semana y por mes. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Registrar la asistencia escaneando el QR desde la aplicación llega en la próxima versión.
 3. **Préstamos:** la entrega y la devolución de tablets, también leyendo el código de barras con la cámara.
 4. **Vencidos:** las tablets que no se devolvieron a tiempo.
 5. **Espacios:** crear y editar espacios, y bloquearlos por mantenimiento o eventos.
@@ -155,4 +155,5 @@ Todos entran con la contraseña **`biblioteca123`**. Basta con escribir el usuar
 
 - **Datos de prueba:** todavía no está conectada a los sistemas de la Universidad. Las personas, solicitudes y estadísticas son de ejemplo, y lo que se cambia se borra al cerrar la aplicación.
 - **Solo Android:** por ahora no hay versión para iPhone.
+- **Asistencia con QR:** por ahora la marca el facilitador; el registro escaneando el QR llega en la próxima versión.
 - **Notificaciones y cámara:** los recordatorios y la lectura de códigos QR y de barras funcionan solo en el celular.
