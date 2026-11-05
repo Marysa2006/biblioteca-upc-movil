@@ -15,6 +15,7 @@ import { Portal, Searchbar, Snackbar } from 'react-native-paper';
 
 import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
 import { useEspaciosAdministracion } from '@/hooks/useEspacios';
+import { useParametros } from '@/hooks/useParametros';
 import { useDecidirReserva, useReservas } from '@/hooks/useReservas';
 import { colores, coloresEstado, espacio } from '@/theme';
 import type { EstadoSolicitud, Reserva } from '@/types';
@@ -44,6 +45,9 @@ export function BandejaReservas() {
   const { data: espacios } = useEspaciosAdministracion();
   const nombreEspacio = (espacioId: string) =>
     espacios?.find((e) => e.id === espacioId)?.nombre ?? 'Espacio';
+  // Días hábiles para "Otra fecha" (HU-28). Se piden aquí y no en el diálogo: el Portal queda
+  // fuera del QueryClientProvider. Mientras cargan, el calendario solo bloquea los días pasados.
+  const { data: parametros } = useParametros();
 
   const [filtroElegido, setFiltroElegido] = useState<Filtro | null>(null);
   const [busqueda, setBusqueda] = useState('');
@@ -181,6 +185,7 @@ export function BandejaReservas() {
       />
       <DialogoOtraFecha
         reserva={otraFecha}
+        parametros={parametros}
         guardando={guardando}
         mensajeError={errorDialogo}
         onConfirmar={({ fecha, horaInicio, horaFin, motivo: texto }) =>
