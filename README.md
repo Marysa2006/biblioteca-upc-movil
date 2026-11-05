@@ -82,8 +82,8 @@ Para **toda la comunidad universitaria** y para el **personal de la biblioteca**
 
 | Vista | Tipo de usuario | Quiénes | Acceso |
 |---|---|---|---|
-| 👥 **Comunidad** | 🌐 **Sin cuenta** | Visitantes, invitados y egresados | Servicios y horarios, catálogo, disponibilidad de espacios y guías. |
-| 👥 **Comunidad** | 🎓 **Con cuenta institucional** | Estudiantes, docentes y administrativos | La misma vista, más bases de datos académicas, solicitudes, seguimiento, perfil y funciones plus. |
+| 👥 **Comunidad** | 🌐 **Sin cuenta** | Visitantes e invitados | Servicios y horarios, catálogo, disponibilidad de espacios y guías. |
+| 👥 **Comunidad** | 🎓 **Con cuenta institucional** | Estudiantes, docentes, administrativos y egresados | La misma vista, más bases de datos académicas, solicitudes, seguimiento, perfil y funciones plus. |
 | 🛠️ **Personal** | 🔑 **Con cuenta institucional** | Administración y facilitadores de la biblioteca | Vista propia con la operación del día, la administración de los servicios y las funciones plus de gestión. |
 
 ---
@@ -340,7 +340,7 @@ Mientras el Backend publica el inicio de sesión institucional, la app usa datos
 | `ana.torres` | Ana Torres | Administrativo | Administración de la biblioteca | 🛠️ Personal |
 | `julian.mendoza` | Julián Mendoza | Administrativo | Facilitador | 🛠️ Personal |
 | `sofia.vargas` | Sofía Vargas | Administrativo | Gestor de espacios | 🛠️ Personal |
-| `mateo.castro` | Mateo Castro | Administrativo | Encargado de préstamos (tablets) | 🛠️ Personal |
+| `mateo.castro` | Mateo Castro | Egresado | — | 👥 Comunidad |
 
 Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
 
@@ -351,7 +351,8 @@ Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
 | Administración de la biblioteca | `administrador` | Todos. Una sola persona (la bibliotecóloga); no se asigna desde la app. |
 | Facilitador | `facilitador` | Asesorías y capacitaciones |
 | Gestor de espacios | `gestor_espacios` | Catálogo de espacios y reservas |
-| Encargado de préstamos (tablets) | `encargado_tablets` | Préstamo de tablets |
+
+El préstamo de tablets no tiene un rol aparte: lo maneja la administración de la biblioteca.
 
 Los identificadores son provisionales: se confirman con el portal web y el Backend en la iteración 2. Viven en `src/types/usuarios.ts` y `src/utils/roles.ts`.
 

@@ -45,11 +45,13 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     rolesPersonal: ['gestor_espacios'],
   },
   {
-    id: 'u-encargado-tablets',
+    // Los egresados tienen cuenta institucional (#200).
+    id: 'u-egresado-prueba',
     nombre: 'Mateo Castro',
     correo: 'mateo.castro@unicesar.edu.co',
-    tipo: 'administrativo',
-    rolesPersonal: ['encargado_tablets'],
+    tipo: 'egresado',
+    rolesPersonal: [],
+    programa: 'Contaduría',
   },
 ];
 
