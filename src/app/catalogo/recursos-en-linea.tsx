@@ -1,5 +1,7 @@
 /**
- * Recursos en línea (HU-03): fuentes académicas digitales, suscritas y de acceso abierto.
+ * Bibliotecas en línea (HU-03, "recursos académicos"): fuentes académicas digitales, suscritas y
+ * de acceso abierto. Se llaman así, como en el portal de la Universidad; la ruta y el código
+ * siguen diciendo "recursos". En la búsqueda y el contador, cada una es una "fuente".
  * Pantalla apilada que se abre desde la pestaña Catálogo.
  *
  * Las ve todo el mundo. Las que requieren cuenta piden iniciar sesión si no hay sesión (CA3)
@@ -114,14 +116,17 @@ export default function RecursosEnLinea() {
 
   let lista;
   if (isPending) {
-    lista = <EstadoCarga mensaje="Cargando recursos en línea…" />;
+    lista = <EstadoCarga mensaje="Cargando bibliotecas en línea…" />;
   } else if (isError) {
     lista = (
-      <EstadoError mensaje="No pudimos cargar los recursos en línea." onReintentar={() => refetch()} />
+      <EstadoError
+        mensaje="No pudimos cargar las bibliotecas en línea."
+        onReintentar={() => refetch()}
+      />
     );
   } else if (recursos.length === 0) {
     // CA4
-    lista = <EstadoVacio mensaje="Todavía no hay recursos en línea registrados." />;
+    lista = <EstadoVacio mensaje="Todavía no hay bibliotecas en línea registradas." />;
   } else {
     // Los chips cuentan lo que coincide con la búsqueda en cada área.
     const conBusqueda = buscarRecursos(recursos, busqueda);
@@ -140,7 +145,7 @@ export default function RecursosEnLinea() {
           opciones={areas}
           valor={area}
           onCambiar={setArea}
-          descripcion="Filtrar los recursos por área"
+          descripcion="Filtrar las fuentes por área"
         />
         {resumen ? (
           <Text variant="bodyMedium" style={estilos.nota} accessibilityLiveRegion="polite">
@@ -153,8 +158,8 @@ export default function RecursosEnLinea() {
             <EstadoVacio
               mensaje={
                 busqueda
-                  ? `Ningún recurso coincide con «${busqueda}». Prueba con otro nombre o tema.`
-                  : 'No hay recursos en esta área.'
+                  ? `Ninguna fuente coincide con «${busqueda}». Prueba con otro nombre o tema.`
+                  : 'No hay fuentes en esta área.'
               }
             />
             <Button
@@ -163,7 +168,7 @@ export default function RecursosEnLinea() {
               onPress={limpiar}
               style={estilos.limpiar}
               accessibilityRole="button"
-              accessibilityLabel="Limpiar la búsqueda y ver todos los recursos"
+              accessibilityLabel="Limpiar la búsqueda y ver todas las fuentes"
             >
               Limpiar búsqueda
             </Button>
@@ -171,7 +176,11 @@ export default function RecursosEnLinea() {
         ) : (
           // CA1
           encontrados.map((recurso) => (
-            <TarjetaRecurso key={recurso.id} recurso={recurso} onPress={() => abrirRecurso(recurso)} />
+            <TarjetaRecurso
+              key={recurso.id}
+              recurso={recurso}
+              onPress={() => abrirRecurso(recurso)}
+            />
           ))
         )}
       </>
@@ -180,9 +189,9 @@ export default function RecursosEnLinea() {
 
   return (
     <>
-      <EncabezadoApilado titulo="Recursos en línea" />
+      <EncabezadoApilado titulo="Bibliotecas en línea" />
       <Pantalla
-        titulo="Recursos en línea"
+        titulo="Bibliotecas en línea"
         subtitulo="Fuentes académicas de acceso abierto y suscritas por la Universidad."
         conEncabezado
         recarga={{ recargando: isRefetching, onRecargar: () => refetch() }}
@@ -193,7 +202,7 @@ export default function RecursosEnLinea() {
         {recursos && recursos.length > 0 ? (
           <CampoBusqueda
             key={campo}
-            etiqueta="Buscar entre los recursos"
+            etiqueta="Buscar entre las fuentes"
             ejemplo="Nombre o tema, por ejemplo: enfermería"
             onBuscar={setBusqueda}
           />

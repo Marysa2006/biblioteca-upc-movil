@@ -11,7 +11,13 @@ import { normalizarTexto } from '@/utils/texto';
 export type AreaRecurso = 'salud' | 'derecho' | 'ciencias' | 'educacion' | 'negocios';
 
 /** Las áreas en el orden de los chips. */
-export const AREAS_RECURSO: AreaRecurso[] = ['salud', 'derecho', 'ciencias', 'educacion', 'negocios'];
+export const AREAS_RECURSO: AreaRecurso[] = [
+  'salud',
+  'derecho',
+  'ciencias',
+  'educacion',
+  'negocios',
+];
 
 export const NOMBRE_AREA: Record<AreaRecurso, string> = {
   salud: 'Salud',
@@ -35,7 +41,9 @@ const textoDe = (recurso: Recurso) => normalizarTexto(`${recurso.nombre} ${recur
 /** Las áreas de un recurso, según las palabras de su nombre y descripción. */
 export function areasDeRecurso(recurso: Recurso): AreaRecurso[] {
   const texto = textoDe(recurso);
-  return AREAS_RECURSO.filter((area) => PALABRAS_AREA[area].some((palabra) => texto.includes(palabra)));
+  return AREAS_RECURSO.filter((area) =>
+    PALABRAS_AREA[area].some((palabra) => texto.includes(palabra)),
+  );
 }
 
 /**
@@ -43,12 +51,18 @@ export function areasDeRecurso(recurso: Recurso): AreaRecurso[] {
  * o es el nombre de un área ("derecho" trae las bases jurídicas aunque no digan "derecho").
  * Con `area`, solo los de esa área. Sin texto ni área, todos, en el mismo orden.
  */
-export function buscarRecursos(recursos: Recurso[], busqueda: string, area: AreaRecurso | 'todas' = 'todas'): Recurso[] {
+export function buscarRecursos(
+  recursos: Recurso[],
+  busqueda: string,
+  area: AreaRecurso | 'todas' = 'todas',
+): Recurso[] {
   const texto = normalizarTexto(busqueda.trim());
   // Desde 3 letras, "dere" ya cuenta como el área Derecho.
   const areasBuscadas =
     texto.length >= 3
-      ? AREAS_RECURSO.filter((a) => normalizarTexto(NOMBRE_AREA[a]).startsWith(texto) || a.startsWith(texto))
+      ? AREAS_RECURSO.filter(
+          (a) => normalizarTexto(NOMBRE_AREA[a]).startsWith(texto) || a.startsWith(texto),
+        )
       : [];
 
   return recursos.filter((recurso) => {
@@ -59,7 +73,7 @@ export function buscarRecursos(recursos: Recurso[], busqueda: string, area: Area
   });
 }
 
-/** "1 recurso" o "12 recursos". */
+/** "1 fuente" o "12 fuentes": en la pantalla, cada recurso es una fuente (Bibliotecas en línea). */
 export function textoRecursos(cantidad: number): string {
-  return cantidad === 1 ? '1 recurso' : `${cantidad} recursos`;
+  return cantidad === 1 ? '1 fuente' : `${cantidad} fuentes`;
 }
