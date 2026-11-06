@@ -18,6 +18,7 @@ import {
   EstadoCarga,
   EstadoError,
   EstadoVacio,
+  ListaPaginada,
   type OpcionFiltro,
 } from '@/components/ui';
 import { useSolicitudesCapacitacion } from '@/hooks/useCapacitaciones';
@@ -82,15 +83,18 @@ export function BandejaCapacitaciones() {
         {visibles.length === 0 ? (
           <EstadoVacio mensaje={mensajeVacio} />
         ) : (
-          visibles.map((solicitud) => (
-            <TarjetaSolicitudCapacitacion
-              key={solicitud.id}
-              solicitud={solicitud}
-              onAbrir={({ id }) =>
-                router.push({ pathname: '/capacitaciones/[id]', params: { id } })
-              }
-            />
-          ))
+          // 10 por página (#161); el filtro o la búsqueda vuelven a la página 1.
+          <ListaPaginada elementos={visibles} reinicio={`${filtro}|${busqueda.trim()}`}>
+            {(solicitud) => (
+              <TarjetaSolicitudCapacitacion
+                key={solicitud.id}
+                solicitud={solicitud}
+                onAbrir={({ id }) =>
+                  router.push({ pathname: '/capacitaciones/[id]', params: { id } })
+                }
+              />
+            )}
+          </ListaPaginada>
         )}
       </>
     );
