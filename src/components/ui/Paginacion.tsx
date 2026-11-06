@@ -29,11 +29,17 @@ type Props = {
  * el filtro, la pestaña o la búsqueda.
  */
 export function usePaginacion<T>(lista: T[], reinicio = ''): Pagina<T> & { onCambiar: (pagina: number) => void } {
-  const [estado, setEstado] = useState({ reinicio, pagina: 1 });
-  const pedida = estado.reinicio === reinicio ? estado.pagina : 1;
+  const [pagina, setPagina] = useState(1);
+  const [reinicioPrevio, setReinicioPrevio] = useState(reinicio);
+  // Cualquier cambio de reinicio vuelve a la página 1, también al volver a un filtro que ya
+  // estaba (por ejemplo, Todos → Reservas → Todos). Se ajusta durante el render, sin efecto.
+  if (reinicioPrevio !== reinicio) {
+    setReinicioPrevio(reinicio);
+    setPagina(1);
+  }
   return {
-    ...paginar(lista, pedida),
-    onCambiar: (pagina) => setEstado({ reinicio, pagina }),
+    ...paginar(lista, reinicioPrevio === reinicio ? pagina : 1),
+    onCambiar: setPagina,
   };
 }
 
