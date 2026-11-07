@@ -30,6 +30,42 @@ export function motivoNoDisponible(fecha: string, parametros: Parametros): strin
   return null;
 }
 
+/** Días que se recorren para sugerir otra fecha (HU-10, CA3). */
+const DIAS_BUSQUEDA_SUGERENCIA = 14;
+const HORA_MS = 60 * 60 * 1000;
+
+/**
+ * La fecha 'AAAA-MM-DD' `dias` después (o antes). Local: utils/calendario importa de este
+ * archivo, así que usar su sumarDias aquí haría un ciclo de imports.
+ */
+function sumarDiasFecha(fecha: string, dias: number): string {
+  const [anio, mes, dia] = fecha.split('-').map(Number);
+  const resultado = new Date(anio, mes - 1, dia + dias);
+  const dos = (n: number) => String(n).padStart(2, '0');
+  return `${resultado.getFullYear()}-${dos(resultado.getMonth() + 1)}-${dos(resultado.getDate())}`;
+}
+
+/**
+ * La primera fecha desde `desde` (incluida) que es hábil y cumple la anticipación mínima
+ * (horasMinimasSolicitud) a la hora pedida, buscando hasta 14 días; si no hay, undefined.
+ * Así la sugerencia siempre se puede aceptar tal cual (HU-10, CA3).
+ */
+export function sugerirFechaHabil(
+  desde: string,
+  hora: string,
+  parametros: Parametros,
+  ahora = Date.now(),
+): string | undefined {
+  const minimo = ahora + parametros.horasMinimasSolicitud * HORA_MS;
+  for (let i = 0; i <= DIAS_BUSQUEDA_SUGERENCIA; i += 1) {
+    const dia = sumarDiasFecha(desde, i);
+    if (esDiaHabil(dia, parametros) && new Date(`${dia}T${hora}:00`).getTime() >= minimo) {
+      return dia;
+    }
+  }
+  return undefined;
+}
+
 /** 0 = domingo … 6 = sábado, como HorarioAtencion.dia. */
 export const NOMBRE_DIA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 

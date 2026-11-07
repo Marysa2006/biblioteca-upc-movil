@@ -22,6 +22,8 @@ import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { tienePermiso } from '@/utils/roles';
+import { normalizarTexto } from '@/utils/texto';
 import {
   ahoraFechaHora,
   estadoTabletAlDevolver,
@@ -34,6 +36,8 @@ import {
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+import { datosDeSolicitante, registrarUso } from './estadisticas';
+import { estadoDePrestamo, registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -195,6 +199,30 @@ export function obtenerPrestamos(
 }
 
 /**
+ * Busca una tablet por su código de barras o su código interno (HU-31, CA1 y CA2).
+ * Acepta el código tal como lo lee el escáner (`TAB-001`, `tab001`, con espacios) y devuelve
+ * la tablet del inventario. Si no corresponde a ninguna, rechaza con 404 para que la UI lo
+ * indique y no registre nada (CA2).
+ */
+export function buscarTabletPorCodigo(codigo: string): Promise<Tablet> {
+  if (USAR_MOCKS) {
+    // Sin distinguir mayúsculas, tildes, guiones ni espacios: el escáner no siempre lee igual.
+    const buscado = normalizarTexto(codigo ?? '').replace(/[\s-]/g, '');
+    if (!buscado) {
+      return Promise.reject(new ErrorApi(400, 'Escanea o escribe el código de la tablet.'));
+    }
+    const tablet = tablets.find(
+      (actual) => normalizarTexto(actual.codigo).replace(/[\s-]/g, '') === buscado,
+    );
+    if (!tablet) {
+      return Promise.reject(new ErrorApi(404, 'Ese código no corresponde a ninguna tablet.'));
+    }
+    return simularRed({ ...tablet });
+  }
+  return peticion<Tablet>(`/tablets/codigo/${encodeURIComponent(codigo)}/`);
+}
+
+/**
  * Registra la entrega de un préstamo reservado (CA1): guarda fecha, hora, condición y
  * accesorios, y deja la tablet en préstamo.
  */
@@ -238,6 +266,24 @@ export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promi
     if (!actualizado) {
       return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
     }
+    registrarEvento(
+      'prestamo',
+      actualizado.id,
+      estadoDePrestamo(actualizado.estado),
+      'Personal de la biblioteca',
+      `Tablet entregada. Devuélvela antes de las ${actualizado.horaLimite}.`,
+    );
+    // HU-25: la entrega deja su registro de uso (el préstamo queda activo).
+    registrarUso({
+      id: `uso-prestamo-${actualizado.id}`,
+      servicio: 'tablets',
+      finalidad: `Préstamo de ${tablet.modelo}`,
+      fecha: actualizado.fecha,
+      fechaFin: actualizado.fecha,
+      modalidad: 'presencial',
+      estado: 'pendiente',
+      ...datosDeSolicitante(actualizado.solicitanteId),
+    });
     return simularRed(copiarPrestamo(actualizado));
   }
   return peticion<Prestamo>(`/prestamos/${prestamoId}/entrega/`, {
@@ -304,6 +350,27 @@ export function registrarDevolucion(
     if (!actualizado) {
       return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
     }
+    const condicion = datos.condicion === 'danado' ? 'dañado' : datos.condicion;
+    registrarEvento(
+      'prestamo',
+      actualizado.id,
+      estadoDePrestamo(actualizado.estado),
+      'Personal de la biblioteca',
+      `Tablet devuelta en estado ${condicion}${
+        retrasoMinutos > 0 ? `, ${retrasoMinutos} min tarde` : ''
+      }.${novedades ? ` Novedad: ${novedades}` : ''}`,
+    );
+    // HU-25: el préstamo devuelto deja su registro de uso.
+    registrarUso({
+      id: `uso-prestamo-${actualizado.id}`,
+      servicio: 'tablets',
+      finalidad: `Préstamo de ${tablet.modelo}`,
+      fecha: actualizado.fecha,
+      fechaFin: actualizado.fecha,
+      modalidad: 'presencial',
+      estado: 'completada',
+      ...datosDeSolicitante(actualizado.solicitanteId),
+    });
     return simularRed(copiarPrestamo(actualizado));
   }
   return peticion<Prestamo>(`/prestamos/${prestamoId}/devolucion/`, {
@@ -608,6 +675,25 @@ export async function solicitarPrestamo(
     titulo: 'Préstamo de tablet reservado',
     mensaje: `Reservamos una tablet para el ${fecha} de ${horaInicio} a ${horaLimite}. Recógela en la biblioteca.`,
   });
+  registrarEvento(
+    'prestamo',
+    nuevo.id,
+    estadoDePrestamo(nuevo.estado),
+    usuario.nombre,
+    'Tablet reservada. Recógela en la biblioteca.',
+  );
+
+  // HU-25: la solicitud deja su registro (luego la entrega y la devolución lo actualizan).
+  registrarUso({
+    id: `uso-prestamo-${nuevo.id}`,
+    servicio: 'tablets',
+    finalidad: 'Préstamo de tablet',
+    fecha: nuevo.fecha,
+    fechaFin: nuevo.fecha,
+    modalidad: 'presencial',
+    estado: 'pendiente',
+    usuario,
+  });
 
   return simularRed(copiarPrestamo(nuevo));
 }
@@ -632,21 +718,20 @@ function ordenarVencidos(lista: Prestamo[]): Prestamo[] {
 }
 
 /**
- * Alerta a los encargados de tablets y avisa al usuario, una sola vez por préstamo (CA2).
- * Si no hay encargados en el directorio, el aviso al usuario se crea igual.
+ * Alerta a quien maneja el préstamo de tablets (el permiso `tablets`, hoy la administración) y
+ * avisa al usuario, una sola vez por préstamo (CA2). Si nadie lo tiene, el aviso al usuario se
+ * crea igual.
  */
 function avisarVencido(prestamo: Prestamo): void {
   if (avisosVencidos.has(prestamo.id)) return;
 
   const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
   const codigo = tablet?.codigo ?? 'sin código';
-  const encargados = USUARIOS_DIRECTORIO.filter((usuario) =>
-    usuario.rolesPersonal.includes('encargado_tablets'),
-  );
+  const responsables = USUARIOS_DIRECTORIO.filter((usuario) => tienePermiso(usuario, 'tablets'));
 
-  for (const encargado of encargados) {
+  for (const responsable of responsables) {
     crearNotificacion({
-      usuarioId: encargado.id,
+      usuarioId: responsable.id,
       solicitudId: prestamo.id,
       titulo: 'Préstamo vencido',
       mensaje: `El préstamo de ${prestamo.solicitante} venció el ${prestamo.fecha} a las ${prestamo.horaLimite}. Tablet ${codigo}.`,
@@ -674,12 +759,23 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
   }
 
   const ahora = new Date();
-  prestamos = prestamos.map((prestamo) =>
-    prestamo.estado === 'entregado' && minutosDeRetraso(prestamo, ahora) > 0
-      ? { ...prestamo, estado: 'vencido' }
-      : prestamo,
-  );
+  prestamos = prestamos.map((prestamo) => {
+    if (prestamo.estado !== 'entregado' || minutosDeRetraso(prestamo, ahora) <= 0) {
+      return prestamo;
+    }
+    // HU-08: el evento solo se registra al pasar de entregado a vencido, no en cada consulta.
+    registrarEvento(
+      'prestamo',
+      prestamo.id,
+      estadoDePrestamo('vencido'),
+      'Sistema',
+      `Préstamo vencido: pasó la hora límite (${prestamo.horaLimite}) sin devolver la tablet.`,
+    );
+    return { ...prestamo, estado: 'vencido' };
+  });
   const vencidos = prestamos.filter((prestamo) => prestamo.estado === 'vencido');
   vencidos.forEach(avisarVencido);
   return simularRed(ordenarVencidos(vencidos).map(copiarPrestamo));
 }
+
+

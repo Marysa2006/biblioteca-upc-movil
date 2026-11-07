@@ -7,7 +7,8 @@
  * Patrón de datos: useBusquedaRepositorio() → buscarEnRepositorio() → API pública de DSpace.
  */
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform, StyleSheet } from 'react-native';
+import { router } from 'expo-router';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { CampoBusqueda } from '@/components/catalogo/CampoBusqueda';
@@ -95,6 +96,24 @@ export default function Repositorio() {
             <Text variant="bodySmall" style={estilos.nota}>
               El repositorio completo se abre en el navegador; al cerrarlo vuelves aquí.
             </Text>
+            {/* HU-11: solo sin búsqueda, para no estorbar los resultados. La pregunta va como
+                texto aparte porque la etiqueta de Button es de una sola línea. */}
+            <View style={estilos.orientacion}>
+              <Text variant="bodyMedium" style={estilos.pregunta}>
+                ¿Vas a depositar tu trabajo de grado?
+              </Text>
+              <Button
+                mode="text"
+                icon="book-open-page-variant-outline"
+                onPress={() => router.push('/autoarchivo')}
+                style={estilos.botonOrientacion}
+                contentStyle={estilos.contenidoBoton}
+                accessibilityRole="button"
+                accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
+              >
+                Ver orientación
+              </Button>
+            </View>
           </>
         )}
 
@@ -115,4 +134,7 @@ export default function Repositorio() {
 const estilos = StyleSheet.create({
   contenidoBoton: { paddingVertical: espacio.xs },
   nota: { color: colores.textoSecundario },
+  orientacion: { marginTop: espacio.m, gap: espacio.xs },
+  pregunta: { color: colores.texto },
+  botonOrientacion: { alignSelf: 'flex-start' },
 });

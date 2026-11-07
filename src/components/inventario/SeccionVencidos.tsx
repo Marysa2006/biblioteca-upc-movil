@@ -1,9 +1,10 @@
 /**
- * Sección Vencidos de Inventario (permiso `tablets`). Archivo de HU-24 (María).
- * Se ve con el permiso que define inventario.tsx.
+ * Sección Vencidos de Gestión (permiso `tablets`). Archivo de HU-24 (María).
+ * Se ve con el permiso que define gestion.tsx (estaba en Inventario hasta el #162).
  *
- * Muestra los préstamos vencidos. Marcarlos (CA1) y crear la alerta del encargado y el aviso del
- * usuario (CA2) lo hace la consulta de usePrestamosVencidos() (con la API, el Backend), no la UI.
+ * Muestra los préstamos vencidos. Marcarlos (CA1) y crear la alerta a la administración y el
+ * aviso del usuario (CA2) lo hace la consulta de usePrestamosVencidos() (con la API, el
+ * Backend), no la UI.
  * Con vencidos, ListaVencidos pone el aviso para el responsable (CA2); sin vencidos, solo un
  * mensaje y ningún aviso (CA3). Al registrar la devolución en Préstamos (HU-23), la lista se
  * refresca sola: las mutaciones invalidan el prefijo ['prestamos'].

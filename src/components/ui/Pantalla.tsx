@@ -10,10 +10,10 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { Text } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Surface, Text } from 'react-native-paper';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colores, espacio, fuentes, tamanoLogo } from '@/theme';
+import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
 
 import { MenuUsuario } from './MenuUsuario';
@@ -30,10 +30,21 @@ type Props = {
   /** Oculta el menú de usuario de arriba (por ejemplo, en el login). En pantallas con barra propia no se muestra. */
   sinMenuUsuario?: boolean;
   /**
+   * Reemplaza la fila de marca de arriba (logo, nombre y menú), antes del título. Para pantallas
+   * que muestran la marca a su manera, como el login con el logo grande (#202).
+   */
+  marcaPropia?: ReactNode;
+  /**
    * Botón flotante abajo a la derecha (por ejemplo, un FAB): queda fijo al deslizar.
    * Como función, recibe si el contenido ya se deslizó hacia abajo, para encogerse.
    */
   flotante?: ReactNode | ((desplazada: boolean) => ReactNode);
+  /**
+   * Acciones fijas abajo (por ejemplo, las de un detalle): una tarjeta flotante sobre el
+   * contenido, justo encima de la barra de navegación del sistema, sin taparla. El final del
+   * contenido queda libre para que la tarjeta no tape lo último.
+   */
+  pie?: ReactNode;
   children: ReactNode;
 };
 
@@ -41,8 +52,8 @@ type Props = {
 const DESPLAZAMIENTO_PARA_ENCOGER = espacio.xl;
 
 /**
- * Contenedor común de las pantallas: área segura, marca (isotipo + nombre) con el menú de usuario,
- * título y contenido desplazable.
+ * Contenedor común de las pantallas: área segura, marca (logo de BiblioUPC + nombre de la app y
+ * de la Universidad) con el menú de usuario, título y contenido desplazable.
  */
 export function Pantalla({
   titulo,
@@ -51,9 +62,14 @@ export function Pantalla({
   recarga,
   conTeclado = false,
   sinMenuUsuario = false,
+  marcaPropia,
   flotante,
+  pie,
   children,
 }: Props) {
+  const { bottom } = useSafeAreaInsets();
+  // Alto de la tarjeta del pie, para dejar ese espacio libre al final del contenido.
+  const [altoPie, setAltoPie] = useState(0);
   // Si el contenido ya bajó un poco, para que el botón flotante se encoja y deje ver la lista.
   const [desplazada, setDesplazada] = useState(false);
   const alDesplazar =
@@ -65,7 +81,11 @@ export function Pantalla({
   const contenido = (
     <ScrollView
       // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
-      contentContainerStyle={[estilos.contenido, flotante ? estilos.contenidoConFlotante : null]}
+      contentContainerStyle={[
+        estilos.contenido,
+        flotante ? estilos.contenidoConFlotante : null,
+        pie ? { paddingBottom: altoPie + bottom + espacio.xl } : null,
+      ]}
       onScroll={alDesplazar}
       scrollEventThrottle={alDesplazar ? 16 : undefined}
       // Con el teclado abierto, el primer toque en un botón lo presiona (y no solo cierra el teclado).
@@ -81,23 +101,25 @@ export function Pantalla({
         ) : undefined
       }
     >
-      <View style={estilos.marca}>
-        {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
-        <Image
-          source={require('@/assets/images/isotipo-upc.png')}
-          style={estilos.isotipo}
-          contentFit="contain"
-        />
-        <View style={estilos.textosMarca}>
-          <Text variant="titleMedium" style={estilos.nombreApp}>
-            {NOMBRE_APP}
-          </Text>
-          <Text variant="labelSmall" style={estilos.universidad}>
-            Universidad Popular del Cesar
-          </Text>
+      {marcaPropia ?? (
+        <View style={estilos.marca}>
+          {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
+          <Image
+            source={require('@/assets/images/logo-biblioupc.png')}
+            style={estilos.isotipo}
+            contentFit="contain"
+          />
+          <View style={estilos.textosMarca}>
+            <Text variant="titleMedium" style={estilos.nombreApp}>
+              {NOMBRE_APP}
+            </Text>
+            <Text variant="labelSmall" style={estilos.universidad}>
+              Universidad Popular del Cesar
+            </Text>
+          </View>
+          {conEncabezado || sinMenuUsuario ? null : <MenuUsuario />}
         </View>
-        {conEncabezado || sinMenuUsuario ? null : <MenuUsuario />}
-      </View>
+      )}
       <View style={estilos.encabezado}>
         <Text variant="headlineSmall" style={estilos.titulo}>
           {titulo}
@@ -112,6 +134,21 @@ export function Pantalla({
     </ScrollView>
   );
 
+  const conPie = pie ? (
+    <>
+      {contenido}
+      <Surface
+        elevation={2}
+        style={[estilos.pie, { bottom: bottom + espacio.s }]}
+        onLayout={({ nativeEvent }) => setAltoPie(nativeEvent.layout.height)}
+      >
+        {pie}
+      </Surface>
+    </>
+  ) : (
+    contenido
+  );
+
   return (
     <SafeAreaView style={estilos.area} edges={conEncabezado ? [] : ['top']}>
       {conTeclado ? (
@@ -120,10 +157,10 @@ export function Pantalla({
           style={estilos.teclado}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {contenido}
+          {conPie}
         </KeyboardAvoidingView>
       ) : (
-        contenido
+        conPie
       )}
       {flotante ? (
         <View style={estilos.flotante}>
@@ -141,6 +178,14 @@ const estilos = StyleSheet.create({
   // El alto del botón flotante más su margen, para que el último elemento quede a la vista.
   contenidoConFlotante: { paddingBottom: espacio.xl * 3 },
   flotante: { position: 'absolute', right: espacio.m, bottom: espacio.m },
+  pie: {
+    position: 'absolute',
+    left: espacio.m,
+    right: espacio.m,
+    padding: espacio.s,
+    borderRadius: radio.tarjeta,
+    backgroundColor: colores.superficie,
+  },
   marca: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textosMarca: { flex: 1 },
   isotipo: { width: tamanoLogo.isotipo, aspectRatio: 1 },

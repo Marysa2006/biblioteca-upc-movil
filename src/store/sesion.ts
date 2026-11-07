@@ -59,8 +59,9 @@ export const useSesion = create<EstadoSesion>()(
       storage: createJSONStorage(() => almacen),
       partialize: (estado) => ({ usuario: estado.usuario, token: estado.token }),
       // Versión 1: el usuario pasó de un solo `rol` a `tipo` + `rolesPersonal` (cierre de la iteración 1).
+      // Versión 2: ya no existe el rol `encargado_tablets` (#200).
       // Una sesión guardada con otra versión se descarta y hay que volver a iniciar sesión.
-      version: 1,
+      version: 2,
       migrate: () => ({ usuario: null, token: null }),
       onRehydrateStorage: (estadoInicial) => () => {
         estadoInicial.marcarHidratada();

@@ -89,13 +89,23 @@ export function useMisCitas() {
   });
 }
 
-/** Lo que cambia al agendar, cancelar o reprogramar: citas, cupos y avisos. */
+/** Lo que cambia al agendar, cancelar o reprogramar: citas, cupos, avisos y «Mis solicitudes». */
 function useRefrescarCitas() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: claves.citasAsesoria });
     queryClient.invalidateQueries({ queryKey: claves.franjasTodas });
     queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+    queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
+  };
+}
+
+/** Lo que cambia al registrar lo que pasó en una cita: la agenda, las citas y su historial. */
+function useRefrescarAtencion() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: claves.citasAsesoria });
+    queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
   };
 }
 
@@ -161,7 +171,7 @@ export function useAgenda(desde: string, hasta: string, facilitadorId?: string |
 
 /** Registra el resultado de una cita que ya terminó. Refresca la agenda y las citas. */
 export function useRegistrarResultado() {
-  const queryClient = useQueryClient();
+  const refrescar = useRefrescarAtencion();
   const usuario = useSesion((estado) => estado.usuario);
 
   return useMutation({
@@ -169,13 +179,13 @@ export function useRegistrarResultado() {
       if (!usuario) throw new Error('No hay sesión');
       return registrarResultado(usuario, citaId, resultado);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.citasAsesoria }),
+    onSuccess: refrescar,
   });
 }
 
 /** Registra que la persona no asistió a una cita que ya terminó. Refresca la agenda y las citas. */
 export function useRegistrarInasistencia() {
-  const queryClient = useQueryClient();
+  const refrescar = useRefrescarAtencion();
   const usuario = useSesion((estado) => estado.usuario);
 
   return useMutation({
@@ -183,6 +193,6 @@ export function useRegistrarInasistencia() {
       if (!usuario) throw new Error('No hay sesión');
       return registrarInasistencia(usuario, citaId);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.citasAsesoria }),
+    onSuccess: refrescar,
   });
 }

@@ -11,7 +11,7 @@
 ![Expo](https://img.shields.io/badge/Expo-SDK%2058-000020?logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React%20Native-0.88-61DAFB?logo=react&logoColor=black)
 ![React](https://img.shields.io/badge/React-19.3-61DAFB?logo=react&logoColor=black)
-![Plataformas](https://img.shields.io/badge/plataformas-Android%20%7C%20iOS-006139)
+![Plataformas](https://img.shields.io/badge/plataformas-Android%20(iOS%20pendiente)-006139)
 ![Release](https://img.shields.io/badge/Release%201.0-5%20nov%202026-E5BC16)
 
 </div>
@@ -26,6 +26,7 @@
 - [¿Para quién es?](#-para-quién-es)
 - [Funcionalidades](#-funcionalidades)
 - [Planificación](#-planificación)
+- [Estado del Release 1.0](#-estado-del-release-10)
 - [Arquitectura](#️-arquitectura)
 - [Stack tecnológico](#️-stack-tecnológico)
 - [Cómo empezar](#-cómo-empezar)
@@ -82,8 +83,8 @@ Para **toda la comunidad universitaria** y para el **personal de la biblioteca**
 
 | Vista | Tipo de usuario | Quiénes | Acceso |
 |---|---|---|---|
-| 👥 **Comunidad** | 🌐 **Sin cuenta** | Visitantes, invitados y egresados | Servicios y horarios, catálogo, disponibilidad de espacios y guías. |
-| 👥 **Comunidad** | 🎓 **Con cuenta institucional** | Estudiantes, docentes y administrativos | La misma vista, más bases de datos académicas, solicitudes, seguimiento, perfil y funciones plus. |
+| 👥 **Comunidad** | 🌐 **Sin cuenta** | Visitantes e invitados | Servicios y horarios, catálogo, disponibilidad de espacios y guías. |
+| 👥 **Comunidad** | 🎓 **Con cuenta institucional** | Estudiantes, docentes, administrativos y egresados | La misma vista, más bases de datos académicas, solicitudes, seguimiento, perfil y funciones plus. |
 | 🛠️ **Personal** | 🔑 **Con cuenta institucional** | Administración y facilitadores de la biblioteca | Vista propia con la operación del día, la administración de los servicios y las funciones plus de gestión. |
 
 ---
@@ -153,10 +154,10 @@ Son el valor diferencial de la app frente al portal web.
 |---|---|---|---|
 | 📷 **Registro de asistencia con QR** | Comunidad con cuenta y personal | La biblioteca sabe quién pidió un servicio, pero no quién asistió. | Estadísticas de uso real sin trabajo manual, y liberación de salas reservadas que nadie ocupa. |
 | 📴 **Guías y material sin internet** | Toda la comunidad | El internet falla en los talleres prácticos. | Guías de APA, Mendeley, depósito de tesis y material de taller disponibles sin conexión. |
-| 📅 **Citas en el calendario con recordatorios** | Comunidad con cuenta y facilitadores | Las citas olvidadas dejan franjas perdidas. | Cada asesoría, reserva o capacitación queda en el calendario del celular y se actualiza si cambia. |
-| 🏷️ **Préstamos con código de barras** *(planeada)* | Personal | Registrar a mano la entrega y devolución de tablets es lento y propenso a errores. | El personal escanea el código del equipo con el celular y el préstamo queda registrado en segundos. |
+| 📅 **Mi calendario con recordatorios** | Comunidad con cuenta | Las citas olvidadas dejan franjas perdidas. | Cada asesoría, reserva o préstamo de tablet aparece en **Mi calendario**, dentro de la app, con recordatorios en el celular que se actualizan solos si la solicitud cambia. |
+| 🏷️ **Préstamos con código de barras** | Personal | Registrar a mano la entrega y devolución de tablets es lento y propenso a errores. | El personal escanea el código del equipo con el celular y el préstamo queda registrado en segundos. |
 
-Las tres primeras fueron aprobadas por la Dirección de la Biblioteca; la cuarta se incorporará más adelante.
+Las tres primeras fueron aprobadas por la Dirección de la Biblioteca. La cuarta ya está en la app y espera la aprobación para etiquetar las tablets.
 
 > [!IMPORTANT]
 > Las funciones plus **no forman parte** de las 28 HU ni de los 103 SP del backlog general. Se estimarán como historias de usuario adicionales del equipo Móvil.
@@ -234,6 +235,48 @@ Prioridad: 1 = alta, 2 = media, 3 = baja. La columna *En la app* indica en qué 
 
 ---
 
+## ✅ Estado del Release 1.0
+
+La versión **1.0.0** cierra la iteración 4 (5 de noviembre de 2026).
+
+**Historias del plan: 28 de 28.** Todas están en la app con datos de prueba. HU-24 y HU-25 son procesos del backend: mientras llega, los datos de prueba hacen su parte (marcar los préstamos vencidos y registrar cada uso).
+
+**Funciones plus:**
+
+| Función | HU | Estado |
+|---|:---:|---|
+| 📴 Guías sin conexión | HU-29 | ✅ Entregada |
+| 📅 Mi calendario con recordatorios | HU-30 | ✅ Entregada |
+| 🏷️ Préstamos con código de barras | HU-31 | ✅ Entregada. Falta la aprobación para etiquetar las tablets; mientras tanto, el código se busca a mano |
+| 📷 Control de asistencia con QR (facilitador) | HU-33 | ✅ Entregada |
+| 📷 Registro de asistencia con QR (comunidad) | HU-32 | 🟡 Los datos están listos; la pantalla queda para la versión 1.1 (#171) |
+
+**También en esta versión:** **Bibliotecas en línea** (antes "Recursos en línea"), con búsqueda por nombre, tema o área (#201); el logo de BiblioUPC en el encabezado y el de la UPC en el login (#202), y fotos reales en el carrusel de Inicio (#164).
+
+### Limitaciones conocidas
+
+- **Datos de prueba:** la app aún no está conectada al Backend en Django ni a los sistemas de la Universidad. Lo que se crea se borra al cerrar la app, y las fechas de prueba se calculan a partir del día en que se abre.
+- **Datos de la biblioteca de ejemplo:** espacios, tablets, temas de asesoría, líneas de formación, horarios y festivos, hasta que la biblioteca confirme los reales.
+- **Solo Android:** ver [¿Y en iPhone?](#y-en-iphone).
+- **Sin pantalla de registro:** se entra con los usuarios de prueba. Cómo se crean las cuentas se define con el Backend (#203).
+- **Repositorio institucional por HTTP** y sin disponibilidad de ejemplares de Koha: dependen del área de sistemas (#165).
+- **Notificaciones:** son recordatorios locales del celular; el push desde el servidor llega con el Backend.
+
+### Lo que sigue (versión 1.1)
+
+| Issue | Qué |
+|---|---|
+| #161 | Paginación de 10 en 10 en las listas largas |
+| #171 | HU-32: registrar la asistencia escaneando el QR |
+| #203 | Pantalla de registro provisional |
+| #205 | Días no hábiles iguales en todos los calendarios |
+| #163 | Préstamo de tablet por varias horas |
+| #165 | Repositorio por HTTPS y ejemplares de Koha *(bloqueado)* |
+
+Después: la conexión con el Backend en Django, el push desde el servidor, iOS, el tutorial del primer ingreso y el ingreso con huella.
+
+---
+
 ## 🏗️ Arquitectura
 
 ```mermaid
@@ -268,12 +311,16 @@ flowchart LR
 | [Zustand](https://zustand.docs.pmnd.rs/) | Estado global (sesión del usuario) |
 | [TanStack Query](https://tanstack.com/query) | Consumo de la API: carga, errores y caché |
 | [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) | Formularios con validación antes de enviar |
-| [react-native-calendars](https://github.com/wix/react-native-calendars) | Vistas semanales y mensuales de disponibilidad (HU-14, HU-17) |
 | expo-secure-store | Sesión guardada de forma cifrada |
-| expo-notifications | Notificaciones push y recordatorios (HU-27) |
+| expo-notifications | Recordatorios en el celular (HU-27 y HU-30). El push desde el servidor llega con el Backend |
+| expo-image y expo-image-picker | Logos y fotos, y la foto de cada espacio (HU-16) |
+| expo-web-browser | Catálogo, repositorio y bibliotecas en línea en el navegador integrado (HU-02 y HU-03) |
+| expo-sharing | Compartir el CSV de las estadísticas (HU-26) |
 | expo-camera | Escaneo de códigos QR y de barras *(funciones plus)* |
-| expo-calendar | Sincronización con el calendario del celular *(función plus)* |
+| react-native-qrcode-svg | El QR de asistencia que muestra el facilitador (HU-33) |
 | expo-file-system | Guías y material sin conexión *(función plus)* |
+
+> **Calendarios sin paquetes.** Las vistas de semana y de mes, y el selector de fecha, son componentes propios: así cada día dice en texto por qué no está disponible (festivo o sin atención, según los parámetros de HU-28), las celdas crecen con letra grande y todo usa el tema de la UPC. Mi calendario (HU-30) vive dentro de la app con recordatorios locales, en lugar de escribir en el calendario del celular: no pide permisos y se actualiza solo cuando una solicitud cambia.
 
 ---
 
@@ -301,10 +348,22 @@ Escanea el código QR de la terminal con Expo Go. El celular y el computador deb
 
 Para usar la app sin Expo Go ni computador (por ejemplo, en una demo), instala el APK del último build:
 
-1. Abre en el celular el enlace del build (está en la descripción del PR o en [expo.dev](https://expo.dev/accounts/biblioupc/projects/biblioteca-upc-movil/builds)) o escanea su código QR, y toca **Install**.
+1. Descarga en el celular `biblioupc-v1.0.0.apk` desde el [Release v1.0.0](https://github.com/Marysa2006/biblioteca-upc-movil/releases/tag/v1.0.0). Para un build más reciente, abre su enlace (está en la descripción del PR o en [expo.dev](https://expo.dev/accounts/biblioupc/projects/biblioteca-upc-movil/builds)) o escanea su código QR, y toca **Install**.
 2. Abre el `.apk` descargado. Si Android lo pide, permite instalar apps de esa fuente; si Play Protect avisa de una app no reconocida, elige **Más detalles → Instalar de todas formas**.
 
 El APK trae los datos de prueba: se entra con los mismos usuarios de abajo, y lo que se crea se borra al cerrar la app. Se instala junto a Expo Go, sin reemplazarla.
+
+### ¿Y en iPhone?
+
+Por ahora la app se prueba y se entrega **solo en Android**. El código sirve igual para iPhone, pero probarlo en uno exige una cuenta de [Apple Developer](https://developer.apple.com/programs/) (99 USD al año):
+
+- El APK solo se instala en Android.
+- Con Expo SDK 58, Expo Go para iPhone no se descarga gratis: se compila con `npx eas-cli@latest go` y se instala por TestFlight, y las dos cosas necesitan esa cuenta.
+- Publicar la app para iPhone también la necesita.
+
+> **Pendiente:** consultar con la bibliotecóloga si el alcance queda solo en Android o si la biblioteca financia la cuenta de Apple Developer para habilitar iOS.
+
+Mientras tanto, quien tenga iPhone revisa el diseño en el navegador con `npm run web`. Esa revisión no reemplaza la prueba en Android, porque el almacenamiento seguro, las notificaciones y la cámara no se comportan igual en la web; las pruebas de aceptación se hacen con el APK.
 
 ### Generar un APK nuevo
 
@@ -328,7 +387,7 @@ Mientras el Backend publica el inicio de sesión institucional, la app usa datos
 | `ana.torres` | Ana Torres | Administrativo | Administración de la biblioteca | 🛠️ Personal |
 | `julian.mendoza` | Julián Mendoza | Administrativo | Facilitador | 🛠️ Personal |
 | `sofia.vargas` | Sofía Vargas | Administrativo | Gestor de espacios | 🛠️ Personal |
-| `mateo.castro` | Mateo Castro | Administrativo | Encargado de préstamos (tablets) | 🛠️ Personal |
+| `mateo.castro` | Mateo Castro | Egresado | — | 👥 Comunidad |
 
 Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
 
@@ -339,7 +398,8 @@ Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
 | Administración de la biblioteca | `administrador` | Todos. Una sola persona (la bibliotecóloga); no se asigna desde la app. |
 | Facilitador | `facilitador` | Asesorías y capacitaciones |
 | Gestor de espacios | `gestor_espacios` | Catálogo de espacios y reservas |
-| Encargado de préstamos (tablets) | `encargado_tablets` | Préstamo de tablets |
+
+El préstamo de tablets no tiene un rol aparte: lo maneja la administración de la biblioteca.
 
 Los identificadores son provisionales: se confirman con el portal web y el Backend en la iteración 2. Viven en `src/types/usuarios.ts` y `src/utils/roles.ts`.
 

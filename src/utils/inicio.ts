@@ -16,8 +16,18 @@ export type ImagenInicio = {
   descripcion: string;
 };
 
+/** Fotos de la biblioteca y del campus (#164), recortadas a 16:9 y de menos de 300 KB. */
 export const IMAGENES_INICIO: ImagenInicio[] = [
-  { fuente: null, descripcion: 'Foto de la biblioteca 1' },
-  { fuente: null, descripcion: 'Foto de la biblioteca 2' },
-  { fuente: null, descripcion: 'Foto de la biblioteca 3' },
+  {
+    fuente: require('@/assets/images/inicio-coleccion.jpg'),
+    descripcion: 'Estanterías de la colección y mesas de estudio de la biblioteca',
+  },
+  {
+    fuente: require('@/assets/images/inicio-sala-lectura.jpg'),
+    descripcion: 'Sala de lectura de la biblioteca con estudiantes en las mesas',
+  },
+  {
+    fuente: require('@/assets/images/inicio-campus.jpg'),
+    descripcion: 'Campus de la Universidad Popular del Cesar con el letrero Yo amo UPC',
+  },
 ];

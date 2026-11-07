@@ -1,7 +1,8 @@
 /**
  * Gestión de reservas del personal (HU-19).
  * El personal aprueba, rechaza, propone otra fecha o cancela, y reserva para terceros.
- * Cada decisión deja una notificación en los datos de prueba (HU-27).
+ * Cada decisión deja una notificación (HU-27) y un evento en el historial (HU-08) en los
+ * datos de prueba.
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { Bloqueo, EstadoSolicitud, Reserva } from '@/types';
@@ -9,6 +10,8 @@ import { esDiaHabil } from '@/utils/parametros';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { RESERVAS } from './mocks/reservas';
+import { datosDeSolicitante, registrarUso } from './estadisticas';
+import { registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
 
@@ -172,6 +175,38 @@ export async function decidirReserva(
       titulo: tituloDeDecision(decision),
       mensaje: mensajeDeDecision(actualizada, decision, motivo),
     });
+    // HU-08: la nota es el motivo y, con nueva fecha, la fecha propuesta.
+    registrarEvento(
+      'reserva',
+      actualizada.id,
+      actualizada.estado,
+      'Personal de la biblioteca',
+      [
+        motivo?.trim(),
+        decision === 'nueva_fecha'
+          ? `Nueva fecha: ${actualizada.fecha} de ${actualizada.horaInicio} a ${actualizada.horaFin}.`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+    );
+
+    // HU-25: cada operación completada deja su registro de uso.
+    registrarUso({
+      id: `uso-reserva-${actualizada.id}`,
+      servicio: 'espacios',
+      finalidad: actualizada.proposito,
+      fecha: actualizada.fecha,
+      modalidad: 'presencial',
+      // Rechazar o cancelar es una operación cancelada; aprobar, completada; nueva fecha, pendiente.
+      estado:
+        decision === 'aprobar'
+          ? 'completada'
+          : decision === 'rechazar' || decision === 'cancelar'
+            ? 'cancelada'
+            : 'pendiente',
+      ...(datosDeSolicitante(actualizada.solicitanteId) ?? {}),
+    });
 
     return simularRed({ ...actualizada });
   }
@@ -211,6 +246,13 @@ export async function crearReservaTercero(datos: DatosReservaTercero): Promise<R
       titulo: 'Reserva creada',
       mensaje: `El personal reservó el ${nueva.fecha} a las ${nueva.horaInicio} a tu nombre.`,
     });
+    registrarEvento(
+      'reserva',
+      nueva.id,
+      'aprobada',
+      'Personal de la biblioteca',
+      'Creada por el personal.',
+    );
 
     return simularRed({ ...nueva });
   }
@@ -260,6 +302,7 @@ export function cancelarReservas(ids: string[], motivo: string): Reserva[] {
       titulo: 'Reserva cancelada',
       mensaje: `Tu reserva del ${cancelada.fecha} a las ${cancelada.horaInicio} fue cancelada: ${motivo}`,
     });
+    registrarEvento('reserva', cancelada.id, 'cancelada', 'Personal de la biblioteca', motivo);
     return cancelada;
   });
   return canceladas;
@@ -296,6 +339,18 @@ export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva
     titulo: 'Solicitud recibida',
     mensaje: `Recibimos tu solicitud para el ${nueva.fecha} de ${nueva.horaInicio} a ${nueva.horaFin}.`,
   });
+  registrarEvento('reserva', nueva.id, 'pendiente', nueva.solicitante, 'Solicitud enviada.');
+
+  // HU-25: la solicitud también cuenta como operación (queda pendiente).
+  registrarUso({
+    id: `uso-reserva-${nueva.id}`,
+    servicio: 'espacios',
+    finalidad: nueva.proposito,
+    fecha: nueva.fecha,
+    modalidad: 'presencial',
+    estado: 'pendiente',
+    ...(datosDeSolicitante(nueva.solicitanteId) ?? {}),
+  });
 
   return { ...nueva };
 }
@@ -309,3 +364,4 @@ export function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
   // Ruta provisional: confirmar con Backend.
   return peticion<Reserva[]>('/reservas/mias/');
 }
+

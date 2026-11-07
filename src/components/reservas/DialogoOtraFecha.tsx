@@ -1,8 +1,10 @@
 /**
  * Diálogo para proponer otra fecha u horario a una reserva (HU-19, CA1 "modificar").
- * La fecha se elige en el calendario (sin días pasados) y las horas en el reloj, en punto.
- * Valida que el fin sea después del inicio; los choques de horario (CA3) y el día no hábil
- * (HU-28) los responde la API y se muestran en el aviso.
+ * La fecha se elige en el calendario y las horas en el reloj, en punto. Los días pasados y los
+ * no hábiles (fines de semana sin horario y festivos, HU-28) salen tachados con su motivo y no
+ * se pueden elegir. Valida que el fin sea después del inicio; los choques de horario (CA3) los
+ * responde la API y se muestran en el aviso.
+ * Los parámetros llegan por props desde la bandeja: el Portal queda fuera del QueryClientProvider.
  * No guarda: la bandeja llama a useDecidirReserva() con onConfirmar.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,7 +15,7 @@ import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError } from '@/components/ui';
 import { colores, espacio, fuentes } from '@/theme';
-import type { Reserva } from '@/types';
+import type { Parametros, Reserva } from '@/types';
 import { sumarMeses } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
 import {
@@ -28,13 +30,15 @@ import { CampoFormulario } from './CampoFormulario';
 type Props = {
   /** El diálogo se muestra mientras no sea null. */
   reserva: Reserva | null;
+  /** Para tachar los días no hábiles (HU-28); mientras cargan, solo se bloquean los pasados. */
+  parametros?: Parametros;
   guardando: boolean;
   mensajeError: string | null;
   onConfirmar: (datos: FormularioOtraFecha) => void;
   onCerrar: () => void;
 };
 
-export function DialogoOtraFecha({ reserva, guardando, mensajeError, onConfirmar, onCerrar }: Props) {
+export function DialogoOtraFecha({ reserva, parametros, guardando, mensajeError, onConfirmar, onCerrar }: Props) {
   return (
     <Portal>
       <Dialog visible={reserva != null} onDismiss={onCerrar} style={estilos.dialogo}>
@@ -43,6 +47,7 @@ export function DialogoOtraFecha({ reserva, guardando, mensajeError, onConfirmar
           <Contenido
             key={reserva.id}
             reserva={reserva}
+            parametros={parametros}
             guardando={guardando}
             mensajeError={mensajeError}
             onConfirmar={onConfirmar}
@@ -56,6 +61,7 @@ export function DialogoOtraFecha({ reserva, guardando, mensajeError, onConfirmar
 
 function Contenido({
   reserva,
+  parametros,
   guardando,
   mensajeError,
   onConfirmar,
@@ -85,7 +91,7 @@ function Contenido({
             nombre="fecha"
             etiqueta="Nueva fecha"
             tipo="fecha"
-            motivoNoElegible={(dia) => motivoDiaReserva(dia, undefined, hoy)}
+            motivoNoElegible={(dia) => motivoDiaReserva(dia, parametros, hoy)}
             mesMinimo={hoy}
             mesMaximo={sumarMeses(hoy, MESES_RESERVA)}
             deshabilitado={guardando}

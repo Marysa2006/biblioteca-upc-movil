@@ -23,7 +23,7 @@ export function DialogoIniciarSesion({ recurso, onIniciarSesion, onCerrar }: Pro
         <Dialog.Title style={estilos.titulo}>Inicia sesión para continuar</Dialog.Title>
         <Dialog.Content>
           <Text variant="bodyMedium" style={estilos.texto}>
-            {`${recurso?.nombre ?? 'Este recurso'} requiere tu cuenta institucional. Inicia sesión para abrirlo.`}
+            {`${recurso?.nombre ?? 'Esta fuente'} requiere tu cuenta institucional. Inicia sesión para abrirlo.`}
           </Text>
         </Dialog.Content>
         <Dialog.Actions style={estilos.acciones}>
