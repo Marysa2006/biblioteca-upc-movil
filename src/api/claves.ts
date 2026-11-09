@@ -63,6 +63,10 @@ export const claves = {
    */
   agendaFacilitador: (facilitadorId: string | 'todas', desde?: string, hasta?: string) =>
     ['asesorias', 'citas', 'agenda', facilitadorId, desde ?? null, hasta ?? null] as const,
+  /** Asistencia de una sesión: código vigente y registros (HU-33). */
+  asistenciaSesion: (sesionId: string) => ['asesorias', 'asistencia', sesionId] as const,
+  /** Prefijo para invalidar la asistencia de todas las sesiones. */
+  asistenciasTodas: ['asesorias', 'asistencia'] as const,
 
   // ── Iteración 3: tablets (HU-21, HU-22, HU-23 y HU-24) ───────
   tablets: ['tablets'] as const,
@@ -86,4 +90,40 @@ export const claves = {
   guias: ['guias'] as const,
   guia: (id: string) => ['guias', id] as const,
   guiasGuardadas: ['guias', 'guardadas'] as const,
+
+  // ── Iteración 4: autoarchivo (HU-11) ─────────────────────────
+  /** Contenido de orientación de autoarchivo (HU-11). */
+  orientacionAutoarchivo: ['autoarchivo', 'orientacion'] as const,
+
+  // ── Iteración 4: capacitaciones (HU-09, HU-10 y HU-12) ───────
+  /** Todas las líneas de formación, también las inactivas (HU-09). */
+  lineasFormacion: ['capacitaciones', 'lineas'] as const,
+  /** Solicitudes de capacitación por estado (HU-12). */
+  solicitudesCapacitacion: (estado?: EstadoSolicitud | 'todas') =>
+    ['capacitaciones', 'solicitudes', estado ?? 'todas'] as const,
+  /** Solicitudes del usuario de la sesión (HU-10). */
+  misCapacitaciones: (usuarioId?: string) =>
+    ['capacitaciones', 'solicitudes', 'mias', usuarioId] as const,
+  /** Prefijo de todas las solicitudes de capacitación: la bandeja y las del usuario (HU-10). */
+  solicitudesCapacitacionTodas: ['capacitaciones', 'solicitudes'] as const,
+
+  // ── Iteración 4: seguimiento de solicitudes (HU-08) ──────────
+  /** Todas las solicitudes del usuario, de reservas, citas, préstamos y capacitaciones. */
+  misSolicitudes: (usuarioId: string | 'sin-sesion') =>
+    ['solicitudes', 'mias', usuarioId] as const,
+  /** Historial de una solicitud concreta (HU-08, CA2). */
+  detalleSolicitud: (
+    tipo: 'reserva' | 'cita' | 'prestamo' | 'capacitacion',
+    id: string,
+  ) => ['solicitudes', 'detalle', tipo, id] as const,
+  /** Prefijo que refrescan todas las mutaciones de solicitudes (HU-08). */
+  solicitudesTodas: ['solicitudes'] as const,
+
+  // ── Iteración 4: estadísticas (HU-25 y HU-26) ────────────────
+  /** Registros de uso, con los filtros dentro de la clave (HU-25, CA3). */
+  registrosUso: (filtros?: object) => ['estadisticas', 'registros', filtros ?? {}] as const,
+  /** Indicadores de uso, con los filtros dentro de la clave (HU-26, CA1). */
+  indicadoresUso: (filtros?: object) => ['estadisticas', 'indicadores', filtros ?? {}] as const,
+  /** Prefijo de todos los registros e indicadores, para refrescarlos al registrar un uso. */
+  estadisticasTodas: ['estadisticas'] as const,
 };

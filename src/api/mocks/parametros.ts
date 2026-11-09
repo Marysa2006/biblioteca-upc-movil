@@ -12,6 +12,10 @@ export const PARAMETROS: Parametros = {
   festivos: [
     { fecha: '2026-10-13', motivo: 'Semana de receso' },
     { fecha: '2026-11-02', motivo: 'Día festivo institucional' },
+    // Festivos de Colombia que quedan en 2026.
+    { fecha: '2026-11-16', motivo: 'Independencia de Cartagena' },
+    { fecha: '2026-12-08', motivo: 'Día de la Inmaculada Concepción' },
+    { fecha: '2026-12-25', motivo: 'Navidad' },
   ],
   horarios: [
     { dia: 1, abre: '07:00', cierra: '18:00' },

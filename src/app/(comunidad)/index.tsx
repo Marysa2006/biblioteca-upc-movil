@@ -1,6 +1,6 @@
 /**
  * Inicio de la comunidad (HU-01): portada pública con las categorías de servicio.
- * Sin sesión (visitantes y egresados) muestra la bienvenida y la invitación a iniciar sesión;
+ * Sin sesión (visitantes) muestra la bienvenida y la invitación a iniciar sesión;
  * con sesión, el saludo. Muestra las categorías destacadas (el resto, en "Ver todos"): cada
  * una abre el detalle de su servicio o, si tiene varios, sus opciones en la pestaña Servicios.
  * Arriba, el carrusel de fotos de la biblioteca y, justo debajo, "Avisos y novedades" que publica

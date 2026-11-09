@@ -1,29 +1,24 @@
 /**
- * Inventario: el préstamo de tablets del lado del personal.
+ * Inventario: los equipos de la biblioteca del lado del personal.
  * Cada sección vive en su propio componente de src/components/inventario y se ve con su permiso:
  * - Tablets (`tablets`): el inventario de tablets (HU-21, Jhon).
- * - Préstamos (`tablets`): la entrega y la devolución (HU-23, Jhon).
- * - Vencidos (`tablets`): los préstamos que pasaron la hora límite (HU-24, María).
+ * Préstamos y Vencidos pasaron a Gestión en el #162: son trabajo del día a día, y aquí quedan
+ * solo los equipos. Si llegan más equipos, cada uno es una sección más y el selector (el mismo
+ * de Gestión) aparece solo con dos o más.
  * Esta pantalla solo compone: el contenido de cada sección se cambia en su componente, no aquí,
  * para que dos personas no editen el mismo archivo.
- * El selector es el mismo de Gestión (SelectorSeccion, pestañas subrayadas), y Vencidos dice
- * al lado cuántos hay (HU-24). Usa la misma consulta que SeccionVencidos, así
- * que la alerta del encargado se crea apenas se abre Inventario.
  */
 import { router } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 import { Button } from 'react-native-paper';
 
-import { SeccionPrestamos } from '@/components/inventario/SeccionPrestamos';
 import { SeccionTablets } from '@/components/inventario/SeccionTablets';
-import { SeccionVencidos } from '@/components/inventario/SeccionVencidos';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
-import { usePrestamosVencidos } from '@/hooks/useTablets';
 import type { Permiso } from '@/types';
 
-type ValorSeccion = 'tablets' | 'prestamos' | 'vencidos';
+type ValorSeccion = 'tablets';
 
 type Seccion = {
   valor: ValorSeccion;
@@ -35,27 +30,18 @@ type Seccion = {
 
 const SECCIONES: Seccion[] = [
   { valor: 'tablets', etiqueta: 'Tablets', Componente: SeccionTablets, permisos: ['tablets'] },
-  { valor: 'prestamos', etiqueta: 'Préstamos', Componente: SeccionPrestamos, permisos: ['tablets'] },
-  { valor: 'vencidos', etiqueta: 'Vencidos', Componente: SeccionVencidos, permisos: ['tablets'] },
 ];
 
 export default function Inventario() {
   const { tienePermiso } = useRol();
   const [elegida, setElegida] = useState<ValorSeccion>('tablets');
-  const cantidadVencidos = usePrestamosVencidos().data?.length ?? 0;
-
-  const visibles = SECCIONES.filter((seccion) => seccion.permisos.some(tienePermiso)).map(
-    (seccion) =>
-      seccion.valor === 'vencidos' && cantidadVencidos > 0
-        ? { ...seccion, cantidad: cantidadVencidos }
-        : seccion,
-  );
+  const visibles = SECCIONES.filter((seccion) => seccion.permisos.some(tienePermiso));
   // Si la elegida dejó de verse (o nunca se vio), se muestra la primera visible.
   const activa: Seccion | undefined =
     visibles.find((seccion) => seccion.valor === elegida) ?? visibles[0];
 
   return (
-    <Pantalla titulo="Inventario" subtitulo="Tablets, préstamos y vencidos">
+    <Pantalla titulo="Inventario" subtitulo="Tablets del inventario">
       {activa && visibles.length > 1 ? (
         <SelectorSeccion
           opciones={visibles}

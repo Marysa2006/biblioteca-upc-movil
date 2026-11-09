@@ -4,9 +4,13 @@
  * el layout raíz la muestra como modal. El personal siempre entra al Panel; la comunidad, con
  * ?volver=1, regresa a la pantalla de origen.
  *
+ * Arriba, el logo de BiblioUPC grande en lugar de la fila de marca, y al pie, el logo de la UPC
+ * (#202).
+ *
  * Patrón de datos: useIniciarSesion() (src/hooks) → iniciarSesionApi() (src/api) → mock o API.
  * Con mocks, todos los usuarios de prueba usan la contraseña biblioteca123.
  */
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
@@ -15,7 +19,8 @@ import { Button, Text } from 'react-native-paper';
 import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
 import { AvisoError, Pantalla } from '@/components/ui';
 import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
-import { colores, espacio, radio } from '@/theme';
+import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
+import { NOMBRE_APP } from '@/utils/constantes';
 import { esPersonal } from '@/utils/roles';
 
 export default function Login() {
@@ -56,6 +61,7 @@ export default function Login() {
       subtitulo="Usa tus credenciales institucionales para solicitar servicios, préstamos y salas de estudio."
       conTeclado
       sinMenuUsuario
+      marcaPropia={<MarcaLogin />}
     >
       <View style={estilos.tarjeta}>
         {mensajeError ? <AvisoError mensaje={mensajeError} /> : null}
@@ -81,11 +87,50 @@ export default function Login() {
       >
         Explorar sin iniciar sesión
       </Button>
+
+      {/* La UPC, con su logo oficial, al pie (#202). */}
+      <View style={estilos.universidad}>
+        <Text variant="labelMedium" style={estilos.textoSeparador}>
+          Un servicio de
+        </Text>
+        <Image
+          source={require('@/assets/images/logo-upc-horizontal.png')}
+          style={estilos.logoUpc}
+          contentFit="contain"
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel="Universidad Popular del Cesar"
+        />
+      </View>
     </Pantalla>
   );
 }
 
+/** Arriba del login, en lugar de la fila de marca: el logo de BiblioUPC grande y su nombre. */
+function MarcaLogin() {
+  return (
+    <View style={estilos.marca}>
+      {/* Decorativo: el nombre va escrito debajo. */}
+      <Image
+        source={require('@/assets/images/logo-biblioupc.png')}
+        style={estilos.logoApp}
+        contentFit="contain"
+      />
+      <Text variant="titleLarge" style={estilos.nombreApp}>
+        {NOMBRE_APP}
+      </Text>
+    </View>
+  );
+}
+
 const estilos = StyleSheet.create({
+  marca: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.m },
+  // maxWidth en %: en pantallas angostas o con letra grande, el logo se encoge en vez de salirse.
+  logoApp: { width: tamanoLogo.app, maxWidth: '40%', aspectRatio: 1 },
+  nombreApp: { color: colores.primario, fontFamily: fuentes.negrita },
+  universidad: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.l },
+  // Proporción del archivo (607 × 207) para que no se deforme.
+  logoUpc: { width: tamanoLogo.upcHorizontal, maxWidth: '60%', aspectRatio: 607 / 207 },
   tarjeta: {
     gap: espacio.m,
     padding: espacio.m,

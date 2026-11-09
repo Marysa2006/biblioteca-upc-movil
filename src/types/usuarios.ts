@@ -9,9 +9,10 @@ export type TipoUsuario = 'estudiante' | 'docente' | 'administrativo' | 'egresad
 /**
  * Roles del personal de la biblioteca: qué hace en la biblioteca. Una persona puede tener varios.
  * Administrador: una sola persona (la bibliotecóloga); los demás los asigna ella (HU-07).
+ * No hay rol de préstamo de tablets: ese servicio lo maneja la administración (#200).
  * PROVISIONAL: los identificadores se confirman con Jorge y Rigoberto frente al portal web.
  */
-export type RolPersonal = 'administrador' | 'facilitador' | 'gestor_espacios' | 'encargado_tablets';
+export type RolPersonal = 'administrador' | 'facilitador' | 'gestor_espacios';
 
 /** @deprecated Usa TipoUsuario o RolPersonal: el tipo de usuario y los roles del personal van separados. */
 export type Rol = TipoUsuario | RolPersonal;

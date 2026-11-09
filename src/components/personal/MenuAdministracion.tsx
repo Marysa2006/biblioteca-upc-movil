@@ -1,5 +1,5 @@
 /**
- * Accesos a la administración del portal (HU-04, HU-28 y HU-13), en la sección "Portal" de Gestión.
+ * Accesos a la administración del portal (HU-04, HU-28, HU-13 y HU-09), en la sección "Portal" de Gestión.
  * Cada fila se muestra solo con su permiso; toda la fila se puede presionar.
  */
 import { router, type Href } from 'expo-router';
@@ -39,6 +39,13 @@ const ACCESOS: Acceso[] = [
     icono: 'calendar-clock-outline',
     destino: '/administracion/asesorias',
     permiso: 'asesorias',
+  },
+  {
+    titulo: 'Líneas de formación',
+    descripcion: 'Las capacitaciones que la comunidad puede solicitar.',
+    icono: 'school-outline',
+    destino: '/administracion/lineas',
+    permiso: 'formacion',
   },
 ];
 

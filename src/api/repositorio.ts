@@ -4,10 +4,14 @@
  *
  * No usa peticion() de ./cliente: DSpace no es nuestra API y no debe recibir el token de la
  * sesión. Tampoco usa los mocks: los datos son públicos y reales.
+ *
+ * Antes de abrir el repositorio, la orientación de autoarchivo comprueba que responde (CA3).
  */
 import { RESULTADOS_POR_PAGINA, type PaginaResultados } from '@/utils/busqueda';
 import { URL_REPOSITORIO } from '@/utils/constantes';
 import { leerResultadosRepositorio } from '@/utils/repositorio';
+
+import { ErrorApi } from './cliente';
 
 const TIEMPO_LIMITE_MS = 8000;
 
@@ -41,6 +45,29 @@ export async function buscarEnRepositorio(texto: string, pagina = 0): Promise<Pa
       throw new Error(`El repositorio respondió ${respuesta.status}.`);
     }
     return leerResultadosRepositorio(await respuesta.json(), URL_REPOSITORIO);
+  } finally {
+    clearTimeout(temporizador);
+  }
+}
+
+/**
+ * Comprueba que el repositorio responde, antes de abrirlo (HU-11, CA3). No abre el navegador.
+ * Si no responde, tarda demasiado o devuelve un error, lanza un ErrorApi 503 con un mensaje
+ * para la persona, nunca el error técnico.
+ */
+export async function comprobarRepositorio(): Promise<void> {
+  const controlador = new AbortController();
+  const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
+  try {
+    const respuesta = await fetch(`${URL_REPOSITORIO}/server/api`, {
+      headers: { Accept: 'application/json' },
+      signal: controlador.signal,
+    });
+    if (!respuesta.ok) {
+      throw new Error(`El repositorio respondió ${respuesta.status}.`);
+    }
+  } catch {
+    throw new ErrorApi(503, 'El repositorio no está disponible. Intenta más tarde.');
   } finally {
     clearTimeout(temporizador);
   }

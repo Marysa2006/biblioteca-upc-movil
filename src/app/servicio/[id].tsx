@@ -148,6 +148,34 @@ function Detalle({ servicio }: { servicio: Servicio }) {
           Solicitar tablet
         </Button>
       ) : null}
+
+      {/* HU-11: la orientación de autoarchivo se consulta sin cuenta; el depósito es en DSpace. */}
+      {categoria === 'repositorio' ? (
+        <Button
+          mode="contained"
+          icon="book-open-page-variant-outline"
+          onPress={() => router.push('/autoarchivo')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
+        >
+          Ver orientación
+        </Button>
+      ) : null}
+
+      {/* HU-10: pide cuenta; sin sesión, la pantalla solo invita a iniciarla. */}
+      {categoria === 'capacitaciones' ? (
+        <Button
+          mode="contained"
+          icon="account-group-outline"
+          onPress={() => router.push('/capacitaciones/solicitar')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Solicitar una capacitación para tu grupo"
+        >
+          Solicitar capacitación
+        </Button>
+      ) : null}
     </Pantalla>
   );
 }
