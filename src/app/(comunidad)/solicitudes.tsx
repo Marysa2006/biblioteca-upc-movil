@@ -20,6 +20,7 @@ import { InvitarSesion } from '@/components/reservas/InvitarSesion';
 import { TarjetaMiSolicitud } from '@/components/solicitudes/TarjetaMiSolicitud';
 import {
   ChipsFiltro,
+  ListaPaginada,
   EstadoCarga,
   EstadoError,
   EstadoVacio,
@@ -171,18 +172,21 @@ function ListaSolicitudes({
       {visibles.length === 0 ? (
         <EstadoVacio mensaje={VACIO_POR_GRUPO[grupo]} />
       ) : (
-        visibles.map((solicitud) => {
-          const prestamo =
-            solicitud.tipo === 'prestamo' ? prestamoPorId.get(solicitud.id) : undefined;
-          return (
-            <TarjetaMiSolicitud
-              key={`${solicitud.tipo}-${solicitud.id}`}
-              solicitud={solicitud}
-              nota={prestamo ? notaDePrestamo(prestamo) : null}
-              onAbrir={abrir}
-            />
-          );
-        })
+        // 10 por página (#161); la pestaña o el tipo vuelven a la página 1.
+        <ListaPaginada elementos={visibles} reinicio={`${grupo}|${tipo}`}>
+          {(solicitud) => {
+            const prestamo =
+              solicitud.tipo === 'prestamo' ? prestamoPorId.get(solicitud.id) : undefined;
+            return (
+              <TarjetaMiSolicitud
+                key={`${solicitud.tipo}-${solicitud.id}`}
+                solicitud={solicitud}
+                nota={prestamo ? notaDePrestamo(prestamo) : null}
+                onAbrir={abrir}
+              />
+            );
+          }}
+        </ListaPaginada>
       )}
     </View>
   );

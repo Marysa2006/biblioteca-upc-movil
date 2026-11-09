@@ -13,7 +13,14 @@ import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Portal, Searchbar, Snackbar } from 'react-native-paper';
 
-import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
+import {
+  ChipsFiltro,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  ListaPaginada,
+  type OpcionFiltro,
+} from '@/components/ui';
 import { useEspaciosAdministracion } from '@/hooks/useEspacios';
 import { useParametros } from '@/hooks/useParametros';
 import { useDecidirReserva, useReservas } from '@/hooks/useReservas';
@@ -149,16 +156,19 @@ export function BandejaReservas() {
         {visibles.length === 0 ? (
           <EstadoVacio mensaje={mensajeVacio} />
         ) : (
-          visibles.map((reserva) => (
-            <TarjetaSolicitud
-              key={reserva.id}
-              reserva={reserva}
-              nombreEspacio={nombreEspacio(reserva.espacioId)}
-              onAccion={(accion) => alElegirAccion(reserva, accion)}
-              aprobando={aprobando === reserva.id}
-              error={errorAprobar?.id === reserva.id ? errorAprobar.mensaje : null}
-            />
-          ))
+          // 10 por página (#161); el filtro o la búsqueda vuelven a la página 1.
+          <ListaPaginada elementos={visibles} reinicio={`${filtro}|${busqueda.trim()}`}>
+            {(reserva) => (
+              <TarjetaSolicitud
+                key={reserva.id}
+                reserva={reserva}
+                nombreEspacio={nombreEspacio(reserva.espacioId)}
+                onAccion={(accion) => alElegirAccion(reserva, accion)}
+                aprobando={aprobando === reserva.id}
+                error={errorAprobar?.id === reserva.id ? errorAprobar.mensaje : null}
+              />
+            )}
+          </ListaPaginada>
         )}
       </>
     );
