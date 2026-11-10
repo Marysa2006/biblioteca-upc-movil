@@ -544,6 +544,9 @@ export async function aprobarCita(usuario: Usuario, id: string): Promise<Cita> {
  */
 export async function rechazarCita(usuario: Usuario, id: string, motivo: string): Promise<Cita> {
   if (USAR_MOCKS) {
+    // Primero quién puede decidir y si sigue pendiente: un rechazo sin permiso es 403 aunque
+    // el motivo falte, para no revelar el estado de una cita ajena.
+    const cita = citaDecidible(usuario, id);
     const texto = motivo?.trim() ?? '';
     if (!texto) {
       throw new ErrorApi(400, 'El motivo del rechazo es obligatorio.');
@@ -551,7 +554,6 @@ export async function rechazarCita(usuario: Usuario, id: string, motivo: string)
     if (texto.length > 200) {
       throw new ErrorApi(400, 'Máximo 200 caracteres.');
     }
-    const cita = citaDecidible(usuario, id);
     const rechazada: Cita = { ...cita, estado: 'rechazada', motivo: texto };
     citas = citas.map((actual) => (actual.id === id ? rechazada : actual));
     ajustarCupo(cita.franjaId, 1);
