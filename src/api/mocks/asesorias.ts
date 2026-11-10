@@ -28,6 +28,9 @@ export const FECHAS_CITAS = {
   'cit-3': proximo(DIAS_APA, -2),
   'cit-4': proximo(DIAS_BUSQUEDA, -1),
   'cit-5': proximo(DIAS_APA, -1),
+  // Citas pendientes de la 1.1: dos para que la agenda tenga qué aprobar y rechazar.
+  'cit-7': proximo(DIAS_APA, 1),
+  'cit-8': proximo(DIAS_APA, 3),
 };
 
 export const TEMAS_ASESORIA: TemaAsesoria[] = [
@@ -202,6 +205,40 @@ export const CITAS_ASESORIA: Cita[] = [
     necesidad: 'Revisar la bibliografía del anteproyecto.',
     modalidad: 'presencial',
     estado: 'aprobada',
+  },
+  {
+    // Pendiente de la 1.1: la agenda tiene qué aprobar (HU-14).
+    id: 'cit-7',
+    franjaId: idFranja('jor-apa', FECHAS_CITAS['cit-7'], '10:30'),
+    temaId: 'tema-apa',
+    tema: 'Normas APA 7',
+    facilitadorId: 'u-facilitador',
+    facilitador: 'Julián Mendoza',
+    solicitanteId: 'u-administrativo',
+    solicitante: 'Diana Ospina',
+    fecha: FECHAS_CITAS['cit-7'],
+    horaInicio: '10:30',
+    horaFin: '11:00',
+    necesidad: 'Aprender a citar fuentes en un informe de gestión.',
+    modalidad: 'presencial',
+    estado: 'pendiente',
+  },
+  {
+    // Segunda pendiente de la 1.1: la agenda tiene qué rechazar (HU-14).
+    id: 'cit-8',
+    franjaId: idFranja('jor-apa', FECHAS_CITAS['cit-8'], '11:00'),
+    temaId: 'tema-apa',
+    tema: 'Normas APA 7',
+    facilitadorId: 'u-facilitador',
+    facilitador: 'Julián Mendoza',
+    solicitanteId: 'u-estudiante-2',
+    solicitante: 'Andrés Mejía',
+    fecha: FECHAS_CITAS['cit-8'],
+    horaInicio: '11:00',
+    horaFin: '11:30',
+    necesidad: 'Revisar si las referencias del trabajo están completas.',
+    modalidad: 'presencial',
+    estado: 'pendiente',
   },
 ];
 
