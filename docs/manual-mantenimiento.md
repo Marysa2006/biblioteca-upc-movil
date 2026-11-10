@@ -83,8 +83,9 @@ docs/               manual de usuario, manual de mantenimiento, paleta, mockups
 assets/images/      íconos, splash, logos y fotos
 ```
 
-Tamaño actual: **51 pantallas**, **153 componentes**, **25 módulos de API**, **25 hooks**,
-**44 utilidades**, **16 archivos de tipos** y **18 mocks**.
+Tamaño actual: **48 pantallas**, **153 componentes**, **22 módulos de API** (20 con
+`peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **25 hooks**, **44 utilidades**,
+**16 archivos de tipos** y **18 mocks**.
 
 ### El flujo de datos, siempre igual
 
@@ -92,12 +93,17 @@ Tamaño actual: **51 pantallas**, **153 componentes**, **25 módulos de API**, *
 Pantalla (src/app)
    └── usa un hook (src/hooks)          ← nunca llama a la API directamente
          └── llama a src/api/<módulo>   ← decide mock o API real
-               └── src/api/cliente.ts   ← el único sitio que hace fetch
+               └── src/api/cliente.ts   ← el `peticion()` de la API del Backend
 ```
 
-Una consecuencia práctica: **`src/api/cliente.ts` es el único punto de salida a la red**. Si
-algún día hay que añadir cabeceras, reintentos o telemetría, se hace ahí y vale para las 90
-llamadas de los 21 módulos que hablan con la API.
+Una consecuencia práctica: **todo el Backend entra por `src/api/cliente.ts`**. Si algún día hay
+que añadir cabeceras, reintentos o telemetría para la API propia, se hace ahí y vale para las 90
+llamadas de los 20 módulos que la usan.
+
+**La excepción son Koha y DSpace**, el catálogo y el repositorio: `src/api/catalogo.ts` y
+`src/api/repositorio.ts` llaman a `fetch()` directamente porque son servicios externos con su
+propio formato (RSS y la API de DSpace), no la API del Backend. Si algún día se añade
+instrumentación a `peticion()`, esos dos no la reciben: hay que tocarlos aparte.
 
 ### Las pantallas y el enrutado
 
@@ -276,7 +282,14 @@ package-lock.json → "version": "1.1.0"  y  packages[""].version: "1.1.0"
 **2. Actualiza el README** con el estado de la versión, lo que quedó fuera y las limitaciones.
 
 **3. Abre el PR `develop` → `main`** con **merge commit**, nunca squash: el historial de `develop`
-tiene que quedar en `main`. El aviso «out-of-date» es normal; no uses «Update branch».
+tiene que quedar completo en `main`. El aviso «out-of-date» es normal; no uses «Update branch».
+
+Las dos ramas no se fusionan igual:
+
+| Rama | Cómo se fusiona | Por qué |
+|---|---|---|
+| PR hacia `develop` | **Squash** | Un commit por PR en el historial de la iteración |
+| PR `develop` → `main` | **Merge commit** | El cierre de la versión conserva la historia y se etiqueta |
 
 **4. Crea la etiqueta sobre `main`**, ya fusionado:
 
