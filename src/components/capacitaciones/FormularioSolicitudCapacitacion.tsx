@@ -2,10 +2,11 @@
  * Formulario de la comunidad para solicitar una capacitación (HU-10).
  * - CA2: valida antes de enviar con esquemaSolicitudCapacitacion; cada error va bajo su campo y,
  *   si falta algo, un aviso arriba del botón lo anuncia. La API vuelve a validar.
- * - CA3: el calendario solo bloquea los días pasados. Si se elige un día no hábil, el motivo sale
- *   en rojo bajo el campo y, aparte y en verde, la fecha sugerida (sugerirFechaHabil) con
- *   "Usar esta fecha". Si la API rechaza la fecha al enviar (por ejemplo, menos de 24 h), su
- *   mensaje sale en rojo y la misma sugerencia va debajo, fuera del aviso.
+ * - CA3: el calendario tacha los días pasados y los no hábiles, como los demás (#205), pero se
+ *   pueden tocar: el calendario se cierra, el motivo sale en rojo bajo el campo y, aparte y en
+ *   verde, la fecha sugerida (sugerirFechaHabil) con "Usar esta fecha". El día tocado no queda
+ *   elegido. Si la API rechaza la fecha al enviar (por ejemplo, menos de 24 h), su mensaje sale
+ *   en rojo y la misma sugerencia va debajo, fuera del aviso.
  * - CA1: al registrarse, el formulario cambia a una confirmación.
  * El solicitante sale de la sesión: el formulario no lo pide.
  */
@@ -38,6 +39,7 @@ import {
   esquemaSolicitudCapacitacion,
   LARGO_MAXIMO_GRUPO,
   mensajeDiaNoHabil,
+  motivoDiaCapacitacion,
   LARGO_MAXIMO_OBJETIVO,
   MAXIMO_PARTICIPANTES,
   MESES_CAPACITACION,
@@ -85,6 +87,9 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
   const solicitud = useSolicitarCapacitacion();
   const [enviada, setEnviada] = useState(false);
   const [faltantes, setFaltantes] = useState<string | null>(null);
+  // CA3: el día tachado que se tocó, con la fecha que tenía el campo en ese momento. Si el campo
+  // cambia (Usar esta fecha u otro día), el aviso ya no aplica.
+  const [tocado, setTocado] = useState<{ dia: string; fechaCampo: string } | null>(null);
 
   const { control, handleSubmit, setValue, trigger, subscribe } =
     useForm<ValoresSolicitudCapacitacion>({
@@ -109,11 +114,24 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
   const fecha = useWatch({ control, name: 'fecha' });
   const hora = useWatch({ control, name: 'hora' });
 
-  // CA3 al elegir: si el día no es hábil, su motivo y la primera fecha que sí sirve.
+  // CA3 al tocar un día tachado: su motivo y la primera fecha que sí sirve. El campo también
+  // puede traer un día no hábil (por ejemplo, si cambian los parámetros): se avisa igual.
+  const diaTocado = tocado && tocado.fechaCampo === fecha ? tocado.dia : null;
   const diaNoHabil = esFechaValida(fecha) && !esDiaHabil(fecha, parametros);
-  const sugeridaAlElegir = diaNoHabil
-    ? sugerirFechaHabil(fecha, esHoraValida(hora) ? hora : HORA_REFERENCIA, parametros)
+  const diaRevisado = diaTocado ?? (diaNoHabil ? fecha : null);
+  const sugeridaAlElegir = diaRevisado
+    ? sugerirFechaHabil(
+        diaRevisado < hoy ? hoy : diaRevisado,
+        esHoraValida(hora) ? hora : HORA_REFERENCIA,
+        parametros,
+      )
     : undefined;
+  // El motivo del día tocado va bajo el campo; el del campo ya lo pone la validación.
+  const motivoTocado = diaTocado
+    ? diaTocado < hoy
+      ? 'Esa fecha ya pasó.'
+      : mensajeDiaNoHabil(diaTocado, parametros)
+    : null;
   // CA3 al enviar: la API trae su propia sugerencia (por ejemplo, por las 24 h).
   const sugeridaPorApi = fechaSugeridaDeError(solicitud.error);
 
@@ -124,9 +142,9 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
   }, [fecha, trigger]);
 
   const aviso = enviada ? CONFIRMACION : faltantes;
-  const avisoFecha = diaNoHabil
-    ? `${mensajeDiaNoHabil(fecha, parametros)}${
-        sugeridaAlElegir ? ` Próximo día con atención: ${fechaCompleta(sugeridaAlElegir)}.` : ''
+  const avisoFecha = diaRevisado
+    ? `${motivoTocado ?? mensajeDiaNoHabil(diaRevisado, parametros)}${
+        sugeridaAlElegir ? ` ¿Te sirve el ${fechaCompleta(sugeridaAlElegir).toLowerCase()}?` : ''
       }`
     : null;
   // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.
@@ -254,16 +272,25 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
           nombre="fecha"
           etiqueta="Fecha"
           tipo="fecha"
-          // Solo los días pasados no se eligen: un día no hábil se avisa abajo (CA3).
-          motivoNoElegible={(dia) => (dia < hoy ? 'ya pasó' : null)}
+          // Tachados como en los demás calendarios; al tocar uno, se avisa abajo (CA3).
+          motivoNoElegible={(dia) => motivoDiaCapacitacion(dia, parametros, hoy)}
+          alTocarNoElegible={(dia) => {
+            setTocado({ dia, fechaCampo: fecha });
+            solicitud.reset();
+          }}
           mesMinimo={hoy}
           mesMaximo={sumarMeses(hoy, MESES_CAPACITACION)}
           deshabilitado={guardando}
         />
+        {motivoTocado ? (
+          <HelperText type="error" visible accessibilityLiveRegion="polite">
+            {motivoTocado}
+          </HelperText>
+        ) : null}
         {/* El motivo ya sale en rojo bajo el campo; aquí solo va la salida. */}
         {sugeridaAlElegir ? (
           <FechaSugerida
-            titulo="Próximo día con atención"
+            titulo="¿Te sirve el próximo día con atención?"
             sugerida={sugeridaAlElegir}
             onUsar={usarFecha}
           />

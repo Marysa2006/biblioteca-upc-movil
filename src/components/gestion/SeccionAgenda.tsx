@@ -240,6 +240,7 @@ export function SeccionAgenda() {
             elegido={dia}
             conteo={contarCitasPorDia(citasVisibles)}
             onElegirDia={setDia}
+            motivoCerrado={motivoCerrado}
           />
         ) : null}
 

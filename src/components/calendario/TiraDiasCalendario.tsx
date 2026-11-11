@@ -3,7 +3,7 @@
  * (HU-17) y la agenda (HU-15): el día ("Mié"), el número grande y, debajo, sus compromisos por
  * tipo. De lunes a sábado. Los seis días se reparten el ancho, sin deslizar; con letra grande
  * cada día crece y la tira se desplaza de lado. El día elegido va en el bloque oscuro y hoy
- * lleva borde.
+ * lleva borde. Los días sin atención se ven grises y dicen "Sin atención" (#205).
  * Es TiraDiasAgenda con el conteo por tipo en vez de por estado; se pueden unir más adelante.
  */
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -25,9 +25,18 @@ type Props = {
   /** Compromisos de cada día por tipo ('AAAA-MM-DD' → conteo). */
   conteo: Map<string, ConteoTipos>;
   onElegir: (fecha: string) => void;
+  /** Por qué un día no tiene atención, o null; sin parámetros todavía, ningún día se marca. */
+  motivoCerrado?: (fecha: string) => string | null;
 };
 
-export function TiraDiasCalendario({ semana, elegido, hoy, conteo, onElegir }: Props) {
+export function TiraDiasCalendario({
+  semana,
+  elegido,
+  hoy,
+  conteo,
+  onElegir,
+  motivoCerrado = () => null,
+}: Props) {
   return (
     <ScrollView
       horizontal
@@ -40,17 +49,23 @@ export function TiraDiasCalendario({ semana, elegido, hoy, conteo, onElegir }: P
         const esHoy = fecha === hoy;
         const delDia = conteo.get(fecha);
         const conCompromisos = delDia != null && delDia.total > 0;
+        const cerrado = motivoCerrado(fecha);
         const colorTexto = esElegido ? colores.superficie : colores.texto;
         return (
           <View
             key={fecha}
-            style={[estilos.dia, esHoy && estilos.diaHoy, esElegido && estilos.diaElegido]}
+            style={[
+              estilos.dia,
+              cerrado != null && estilos.diaCerrado,
+              esHoy && estilos.diaHoy,
+              esElegido && estilos.diaElegido,
+            ]}
           >
             <TouchableRipple
               onPress={() => onElegir(fecha)}
               accessibilityRole="button"
               accessibilityState={{ selected: esElegido }}
-              accessibilityLabel={`${fechaCompleta(fecha)}${esHoy ? ', hoy' : ''}, ${textoConteoTipos(delDia).toLowerCase()}`}
+              accessibilityLabel={`${fechaCompleta(fecha)}${esHoy ? ', hoy' : ''}, ${cerrado ? `sin atención: ${cerrado}, ` : ''}${textoConteoTipos(delDia).toLowerCase()}`}
             >
               <View style={estilos.contenidoDia}>
                 <Text variant="labelMedium" style={{ color: colorTexto }}>
@@ -63,7 +78,7 @@ export function TiraDiasCalendario({ semana, elegido, hoy, conteo, onElegir }: P
                   <TiposDelDia conteo={delDia} sobreOscuro={esElegido} />
                 ) : (
                   <Text variant="labelSmall" style={esElegido ? estilos.textoElegido : estilos.vacio}>
-                    —
+                    {cerrado ? 'Sin atención' : '—'}
                   </Text>
                 )}
               </View>
@@ -88,6 +103,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
     overflow: 'hidden',
   },
+  diaCerrado: { backgroundColor: colores.superficieVariante, borderColor: colores.superficieVariante },
   diaHoy: { borderColor: colores.primario },
   diaElegido: { backgroundColor: colores.primarioOscuro, borderColor: colores.primarioOscuro },
   contenidoDia: {
