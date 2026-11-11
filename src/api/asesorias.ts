@@ -493,17 +493,21 @@ function puedeDecidirCita(usuario: Usuario, cita: Cita): boolean {
   return usuario.rolesPersonal.includes('administrador');
 }
 
-/** Cita pendiente que el usuario puede aprobar o rechazar. */
+/**
+ * Cita pendiente que el usuario puede aprobar o rechazar. El permiso se comprueba antes que
+ * el estado: quien no puede decidir recibe 403 aunque la cita ya no esté pendiente, así no
+ * averigua el estado de una cita ajena.
+ */
 function citaDecidible(usuario: Usuario, id: string): Cita {
   const cita = citas.find((actual) => actual.id === id);
   if (!cita) {
     throw new ErrorApi(404, 'La cita no existe.');
   }
-  if (cita.estado !== 'pendiente') {
-    throw new ErrorApi(400, 'Esta cita ya no está pendiente de aprobación.');
-  }
   if (!puedeDecidirCita(usuario, cita)) {
     throw new ErrorApi(403, 'Solo el facilitador de la cita o la administración pueden decidirla.');
+  }
+  if (cita.estado !== 'pendiente') {
+    throw new ErrorApi(400, 'Esta cita ya no está pendiente de aprobación.');
   }
   return cita;
 }
