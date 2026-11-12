@@ -10,6 +10,25 @@ import { diasSemana, mismoMes, numeroDia, sumarDias } from '@/utils/calendario';
 import { fechaLegible } from '@/utils/fechas';
 import { inicioReserva } from '@/utils/recordatorios';
 
+/** Máximo del motivo de rechazo de una cita; la API acepta hasta 200 caracteres (#216). */
+export const LARGO_MAXIMO_RECHAZO = 200;
+
+/** Rechazar una cita (#217): el motivo es obligatorio porque la persona lo recibe. */
+export const esquemaRechazoCita = z.object({
+  motivo: z
+    .string()
+    .trim()
+    .min(1, { error: 'Escribe el motivo: la persona lo recibe en la notificación.' })
+    .max(LARGO_MAXIMO_RECHAZO, { error: `Máximo ${LARGO_MAXIMO_RECHAZO} caracteres.` }),
+});
+
+export type FormularioRechazoCita = z.input<typeof esquemaRechazoCita>;
+
+/** Cuántas citas esperan que el personal las apruebe (#217, CA2). */
+export function contarPendientes(citas: Cita[]): number {
+  return citas.filter((cita) => cita.estado === 'pendiente').length;
+}
+
 /** Estados que aparecen en la agenda; las rechazadas y canceladas no se atienden. */
 export const ESTADOS_AGENDA: EstadoSolicitud[] = ['pendiente', 'aprobada', 'realizada'];
 
