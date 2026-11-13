@@ -86,6 +86,19 @@ export const SERVICIOS: Servicio[] = [
     activo: true,
   },
   {
+    // Informativo (versión 1.1): la gestión desde la app queda para una HU nueva (HU-34).
+    id: 'prestamo-computadores',
+    nombre: 'Préstamo de computadores',
+    descripcion:
+      'Préstamo de computadores para uso en la Virtualteca. Por ahora, el préstamo se gestiona directamente allí; pronto podrás gestionarlo desde la app.',
+    categoria: 'prestamo',
+    publico: 'Comunidad universitaria',
+    formaSolicitud: 'Acércate a la Virtualteca y solicita un equipo allí.',
+    horario: 'Por confirmar con la biblioteca',
+    requiereCuenta: false,
+    activo: true,
+  },
+  {
     id: 'prestamo-virtual',
     nombre: 'Préstamo virtual',
     descripcion: 'Servicio inactivo de prueba: no debe aparecer en la app.',
