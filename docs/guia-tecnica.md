@@ -242,6 +242,10 @@ mantiene los datos de prueba, que es lo que se quiere en el APK.
 export const USAR_MOCKS = process.env.EXPO_PUBLIC_USAR_MOCKS !== 'false';
 ```
 
+**Y `npm ci` después de cada merge que toque el lockfile.** Si un PR cambia `package.json` o
+`package-lock.json`, todo el equipo corre `npm ci` al bajar los cambios. Con `npm install` en su
+lugar se puede reescribir el lockfile y meter ruido en el PR.
+
 ### Lo que configura `app.json`
 
 | Clave | Qué hace |
@@ -621,6 +625,13 @@ Release exista, ese enlace da 404.
   ninguna de las dos.**
 - Los nombres son `feature/huNN-ui-…`, `feature/huNN-datos-…`, `fix/…`, `chore/…` o `docs/…`.
 - Una rama vive pocos días y nace de `develop` actualizado.
+
+| Prefijo | Para qué | Ejemplo |
+|---|---|---|
+| `feature/` | Una capa de una HU | `feature/hu14-datos-aprobacion-citas` |
+| `fix/` | Corregir algo ya fusionado | `fix/calendarios-dias-habiles` |
+| `chore/` | Base, configuración o dependencias | `chore/icono-upecito` |
+| `docs/` | Documentación | `docs/guia-tecnica` |
 
 ### Los commits y los PR
 
