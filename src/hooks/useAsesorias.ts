@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   agendarCita,
+  aprobarCita,
   cancelarCita,
   guardarJornada,
   guardarTema,
@@ -21,6 +22,7 @@ import {
   obtenerJornadas,
   obtenerMisCitas,
   obtenerTemas,
+  rechazarCita,
   registrarInasistencia,
   registrarResultado,
   reprogramarCita,
@@ -146,6 +148,40 @@ export function useReprogramarCita() {
     mutationFn: ({ id, nuevaFranjaId }: { id: string; nuevaFranjaId: string }) => {
       if (!usuario) throw new Error('No hay sesión');
       return reprogramarCita(usuario, id, nuevaFranjaId);
+    },
+    onSuccess: refrescar,
+  });
+}
+
+/**
+ * Aprueba una cita pendiente (HU-14, 1.1). Solo el facilitador de la cita o la administración;
+ * la API responde 403 si no puede. Refresca la agenda, las citas y las notificaciones.
+ */
+export function useAprobarCita() {
+  const refrescar = useRefrescarCitas();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return aprobarCita(usuario, id);
+    },
+    onSuccess: refrescar,
+  });
+}
+
+/**
+ * Rechaza una cita pendiente con un motivo (HU-14, 1.1). El motivo es obligatorio y el cupo
+ * se libera. Refresca la agenda, las citas y las notificaciones.
+ */
+export function useRechazarCita() {
+  const refrescar = useRefrescarCitas();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return rechazarCita(usuario, id, motivo);
     },
     onSuccess: refrescar,
   });
