@@ -458,7 +458,7 @@ Con `EXPO_PUBLIC_USAR_MOCKS=true` en el `.env`, la app usa los datos de prueba. 
 | Documento | Para qué |
 |---|---|
 | [Manual de usuario](docs/manual-usuario.md) | Cómo se usa la app: qué hace cada pantalla, con capturas. Es lo que se entrega a la biblioteca. |
-| [Manual de mantenimiento](docs/manual-mantenimiento.md) | Cómo está hecho el proyecto: estructura, cómo agregar una pantalla, mocks y paso a la API, cómo generar el APK y cómo publicar una versión. |
+| [Guía técnica](docs/guia-tecnica.md) | Cómo está hecha la app: arquitectura, datos, programación, especificaciones de diseño, cómo generar el APK y cómo publicar una versión. Para quien desarrolle, mantenga o integre. |
 | [Paleta de colores](docs/paleta-colores.md) | Los colores y la tipografía exactos, tomados del manual de identidad de la UPC. |
 | [Spike de cámara](docs/spike-camara.md) | La prueba del escáner de códigos (HU-31 y HU-32). |
 
