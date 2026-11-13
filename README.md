@@ -105,7 +105,7 @@ Visitantes y usuarios con cuenta ven la misma app; iniciar sesión desbloquea lo
 | Inicio de sesión institucional y perfil | 05, 06 | — | ✅ | 1 |
 | Disponibilidad de espacios (vista semanal y mensual) | 17 | ✅ | ✅ | 2 |
 | Solicitud de reserva de espacios | 18 | — | ✅ | 2 |
-| Asesorías: agendar, cancelar y reprogramar | 14 | — | ✅ | 3 |
+| Asesorías: agendar, cancelar y reprogramar; la cita queda pendiente hasta que el personal la aprueba | 14 | — | ✅ | 3 |
 | Disponibilidad y solicitud de tablets | 22 | — | ✅ | 3 |
 | Mis solicitudes: estado e historial en un solo lugar | 08 | — | ✅ | 4 |
 | Solicitud de capacitaciones | 10 | — | ✅ | 4 |
