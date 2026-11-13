@@ -36,6 +36,7 @@ import type { Cita, EstadoSolicitud } from '@/types';
 import {
   citasAsignadas,
   contarCitasPorDia,
+  contarPendientes,
   diaDeAgenda,
   diasAgenda,
   filtrarPorEstado,
@@ -85,6 +86,8 @@ export function SeccionAgenda() {
   // El filtro por estado se aplica a las tres vistas; no vuelve a consultar.
   const [filtro, setFiltro] = useState<EstadoSolicitud | null>(null);
   const citasVisibles = filtrarPorEstado(citasAsignadas(agenda.data ?? []), filtro);
+  // #217, CA2: las citas del periodo que esperan respuesta, sin importar el filtro.
+  const pendientes = contarPendientes(agenda.data ?? []);
 
   // La semana va de lunes a sábado: un domingo muestra la semana siguiente.
   const esActual = {
@@ -243,7 +246,7 @@ export function SeccionAgenda() {
           />
         ) : null}
 
-        <ChipFiltroAgenda filtro={filtro} onCambiar={setFiltro} />
+        <ChipFiltroAgenda filtro={filtro} onCambiar={setFiltro} pendientes={pendientes} />
       </View>
 
       {citas}
