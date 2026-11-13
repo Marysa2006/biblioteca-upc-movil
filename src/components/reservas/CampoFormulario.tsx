@@ -22,6 +22,8 @@ type Props<T extends FieldValues> = {
   multilinea?: boolean;
   /** Fecha: por qué no se puede elegir un día, y el primer y último mes del calendario. */
   motivoNoElegible?: (fecha: string) => string | null;
+  /** Fecha: tocar un día tachado avisa a la pantalla en vez de no hacer nada (SelectorFecha). */
+  alTocarNoElegible?: (fecha: string) => void;
   mesMinimo?: string;
   mesMaximo?: string;
   /** Hora: 30 (por defecto) o 60 minutos. */
@@ -41,6 +43,7 @@ export function CampoFormulario<T extends FieldValues>({
   teclado,
   multilinea,
   motivoNoElegible = () => null,
+  alTocarNoElegible,
   mesMinimo = '',
   mesMaximo = '',
   pasoMinutos,
@@ -62,6 +65,7 @@ export function CampoFormulario<T extends FieldValues>({
               valor={texto}
               onCambiar={onChange}
               motivoNoElegible={motivoNoElegible}
+              alTocarNoElegible={alTocarNoElegible}
               mesMinimo={mesMinimo}
               mesMaximo={mesMaximo}
               mensajeError={error?.message}
