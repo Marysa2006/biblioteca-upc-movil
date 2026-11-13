@@ -77,6 +77,26 @@ comprobar `Platform.OS`.
 
 ## 2. Arquitectura
 
+### La estructura del proyecto
+
+```
+src/
+├── app/            las pantallas (Expo Router: cada archivo es una ruta)
+├── components/     componentes por módulo (asesorias/, tablets/, ui/, …)
+├── hooks/          un archivo por módulo; envuelven TanStack Query
+├── api/            llamadas: un archivo por módulo + cliente.ts + mocks/
+├── types/          tipos por módulo (base compartida: los aprueba un guardián)
+├── utils/          funciones puras: fechas, calendario, roles, validaciones
+├── store/          estado global (Zustand): la sesión y los recordatorios
+└── theme/          colores, tipografía y espaciados de la UPC
+docs/               manual de usuario, guía técnica, paleta y mockups
+assets/images/      íconos, splash, logos y fotos
+```
+
+Tamaño, **en la versión 1.1**: **48 pantallas**, **153 componentes**, **22 módulos de API** (20
+con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **25 hooks**, **44 utilidades**,
+**16 archivos de tipos** y **18 mocks**.
+
 ### El stack
 
 | Pieza | Versión | Para qué |
@@ -393,6 +413,24 @@ Qué hace cada pieza:
   abre la app**. No se escriben fechas fijas: la demo quedaría vieja al día siguiente.
 - Cada cambio de estado deja **notificación, evento del historial y registro de uso**, igual que
   en la API real (ver [El rastro de cada cambio de estado](#el-rastro-de-cada-cambio-de-estado)).
+
+### El paso a la API real, módulo por módulo
+
+Cuando un módulo deje de usar datos de prueba:
+
+1. **Confirma la ruta y la forma de la respuesta** con el equipo de Backend. La app espera
+   `'AAAA-MM-DD'` para las fechas y `'HH:MM'` para las horas.
+2. **Deja el `peticion<T>(...)` escrito** en la rama `else` **aunque el endpoint todavía no
+   exista**. Así, el día que el Backend responda, solo hace falta apagar el mock.
+3. **Ajusta el tipo de `src/types`** si la respuesta no coincide. Es base compartida: necesita la
+   aprobación de un guardián.
+4. **Quita el mock solo cuando la API responda** en desarrollo. Hasta entonces, el mock sigue
+   siendo el camino de la demo y de las pruebas de aceptación.
+5. **`EXPO_PUBLIC_API_URL` apunta a la IP del computador, no a `localhost`**: `localhost` desde el
+   celular es el propio celular.
+
+Un módulo a la vez, con su PR y su prueba. **No se apaga `USAR_MOCKS` de golpe**: con el Backend a
+medias, la app quedaría vacía en el resto de pantallas.
 
 ### Cómo agregar una pantalla
 
