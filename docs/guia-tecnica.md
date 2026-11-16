@@ -93,9 +93,9 @@ docs/               manual de usuario, guía técnica, paleta y mockups
 assets/images/      íconos, splash, logos y fotos
 ```
 
-Tamaño, **en la versión 1.1**: **48 pantallas**, **153 componentes**, **22 módulos de API** (20
-con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **25 hooks**, **44 utilidades**,
-**16 archivos de tipos** y **18 mocks**.
+Tamaño **al 16 de noviembre de 2026**: **48 pantallas**, **153 componentes**, **22 módulos de API**
+(20 con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **25 hooks**, **44
+utilidades**, **16 archivos de tipos** y **18 mocks**. Van a cambiar antes del cierre de la 1.1.
 
 ### El stack
 
@@ -107,7 +107,7 @@ con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **25 hooks**, 
 | React Native Paper | 5 (MD3) | Componentes, con el tema de `src/theme`. Íconos MaterialCommunityIcons |
 | TanStack Query | 5 | Datos del servidor: consultas y mutaciones |
 | Zustand | 5 | Estado global, con `persist` sobre `expo-secure-store` |
-| react-hook-form + zod | 4 | Formularios y validación |
+| react-hook-form + zod | 7 / 4 | Formularios y validación |
 
 ### Las capas, siempre igual
 
@@ -146,9 +146,11 @@ viejos.
 ### La sesión persistida
 
 `src/store/sesion.ts` guarda el usuario en `expo-secure-store`, con `version` y `migrate`.
-`src/store/recordatorios.ts` guarda, aparte, el estado de los recordatorios programados.
 Si cambia la forma del usuario guardado, **se sube la versión y se amplía la migración**; si no,
 las sesiones guardadas se rompen en silencio.
+
+`src/store/recordatorios.ts` es aparte y **no se guarda en el celular**: vive en memoria, con el
+permiso de notificaciones, cuántos quedaron programados y el último error.
 
 ### La navegación
 
@@ -220,8 +222,9 @@ npm run lint       # expo lint
 npm run typecheck  # tsc --noEmit
 ```
 
-Recuerda que **la app se entrega solo en Android**: `npm run ios` sirve para revisar el diseño,
-no para probar el flujo real.
+Recuerda que **la app se entrega solo en Android**. Para revisar el diseño sin un Android a mano
+se usa **`npm run web`**: sirve para ver la interfaz, no para probar el flujo real, porque el
+almacenamiento seguro, las notificaciones y la cámara no se comportan igual en el navegador.
 
 **Antes de abrir un PR, `lint` y `typecheck` tienen que pasar sin errores.** No hay framework de
 pruebas unitarias: la verificación es el tipado, el lint y la prueba manual en Expo Go.
@@ -272,9 +275,10 @@ inyectado en el build (el `.env` no se sube, así que el APK siempre sale con da
 
 ### Los tipos
 
-Un archivo por módulo en `src/types/`: `usuarios`, `asesorias`, `espacios`, `tablets`,
-`capacitaciones`, `solicitudes`, `estadisticas`, `parametros`, `servicios`, `contenidos`,
-`recursos`, `notificaciones`, `guias`, `historial`, `perfil` y `autoarchivo`.
+Un archivo por módulo en `src/types/`: `usuarios`, `asesorias`, `asistencia`, `espacios`,
+`tablets`, `capacitaciones`, `solicitudes`, `estadisticas`, `parametros`, `servicios`,
+`contenidos`, `recursos`, `notificaciones`, `guias` y `perfil`. Más `index.ts`, que solo
+reexporta.
 
 `src/types` es **base compartida**: un cambio ahí necesita la aprobación de un guardián.
 
@@ -396,6 +400,7 @@ import { CITAS_ASESORIA } from './mocks/asesorias';
 
 let citas: Cita[] = CITAS_ASESORIA.map((cita) => ({ ...cita }));
 
+// simplificado
 export async function obtenerMisCitas(usuarioId: string): Promise<Cita[]> {
   if (USAR_MOCKS) {
     return simularRed(citas.filter((c) => c.solicitanteId === usuarioId));
@@ -411,7 +416,9 @@ Qué hace cada pieza:
 - **`src/api/<módulo>.ts`** guarda una **copia mutable** (así lo que se crea durante la sesión se
   ve, y se pierde al cerrar la app) y elige entre mock y API.
 - **`simularRed()`** imita la latencia, para que los estados de carga se vean de verdad.
-- Los mocks **validan** como la API: lanzan `ErrorApi` 400 (datos inválidos) o 404 (no existe).
+- Los mocks **validan** como la API: lanzan `ErrorApi` 400 (datos inválidos), 403 (no tiene
+  permiso, por ejemplo al aprobar una cita que no le toca) o 404 (no existe).
+  Ojo: `mensajeErrorGuardar()` muestra el mensaje genérico para el 403, no el de la API.
   Así la pantalla se prueba contra los mismos errores que dará el Backend.
 - Las fechas de los mocks salen de `src/api/mocks/fechasDemo.ts`, **relativas al día en que se
   abre la app**. No se escriben fechas fijas: la demo quedaría vieja al día siguiente.
@@ -638,8 +645,7 @@ Release exista, ese enlace da 404.
 - **Conventional Commits con la HU como alcance**: `feat(hu14): selector de franjas por semana`.
 - El título del PR usa el mismo formato, porque será el commit que quede en `develop`.
 - Cada PR enlaza su issue con `Closes #N` y necesita **una aprobación**.
-- No se fusiona con conversaciones abiertas.
-- **Nunca `--force`.** Si hay que reescribir una rama, `--force-with-lease` y solo si es tuya.
+- **Nunca `--force`**, sin excepción.
 
 ### La base compartida (CODEOWNERS)
 
