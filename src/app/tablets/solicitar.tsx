@@ -2,7 +2,8 @@
  * Solicitar el préstamo de una tablet (HU-22). Pantalla apilada; se llega desde el detalle del
  * servicio Préstamo de tablets.
  * Pide cuenta desde el principio: sin sesión, solo invita a iniciarla y no consulta nada; con
- * ?volver=1, el login regresa aquí y ya se muestra el formulario.
+ * ?volver=1, el login regresa aquí y ya se muestra el formulario. Los egresados no piden tablets
+ * (#240): se les explica en lugar del formulario.
  * - CA1: con tablets libres, condiciones aceptadas y Confirmar, la solicitud queda registrada
  *   y se notifica; la confirmación sale en el mismo lugar.
  * - CA2: sin tablets, se sugieren otras franjas (las del día o las que manda la API). Si al
@@ -15,6 +16,7 @@
 import { useState } from 'react';
 
 import { InvitarSesion } from '@/components/reservas/InvitarSesion';
+import { ServicioNoPermitido } from '@/components/reservas/ServicioNoPermitido';
 import { FormularioPrestamoTablet } from '@/components/tablets/FormularioPrestamoTablet';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useParametros } from '@/hooks/useParametros';
@@ -27,6 +29,7 @@ import {
   type FormularioPrestamo,
 } from '@/hooks/useTablets';
 import { mensajeErrorGuardar } from '@/utils/errores';
+import { MENSAJE_NO_PIDE_TABLET, puedePedirTablet } from '@/utils/roles';
 
 const TITULO = 'Solicitar tablet';
 
@@ -41,7 +44,9 @@ export default function SolicitarTablet() {
         subtitulo="Para usarla dentro de la biblioteca. Se recoge en el mostrador."
         conEncabezado
       >
-        {usuario ? (
+        {usuario && !puedePedirTablet(usuario.tipo) ? (
+          <ServicioNoPermitido mensaje={MENSAJE_NO_PIDE_TABLET} tipo={usuario.tipo} />
+        ) : usuario ? (
           <SolicitudConSesion />
         ) : (
           <InvitarSesion

@@ -112,3 +112,34 @@ export function describirRoles(usuario: Pick<Usuario, 'tipo' | 'rolesPersonal'>)
   if (usuario.rolesPersonal.length === 0) return NOMBRE_TIPO[usuario.tipo];
   return usuario.rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(' · ');
 }
+
+/**
+ * Quién de la comunidad puede pedir cada servicio, según su tipo (respuesta de la biblioteca
+ * del 15 de noviembre de 2026):
+ * - los espacios los reservan docentes y administrativos; los estudiantes no, y los egresados
+ *   no están en la lista;
+ * - las tablets, estudiantes, docentes y administrativos; los egresados no, porque no tienen un
+ *   vínculo directo con la Universidad.
+ * La reserva que el personal hace a nombre de otra persona (HU-19) no pasa por esta regla.
+ */
+export const TIPOS_QUE_RESERVAN_ESPACIOS: readonly TipoUsuario[] = ['docente', 'administrativo'];
+export const TIPOS_QUE_PIDEN_TABLETS: readonly TipoUsuario[] = [
+  'estudiante',
+  'docente',
+  'administrativo',
+];
+
+export const MENSAJE_NO_RESERVA_ESPACIOS =
+  'Los espacios de la biblioteca los reservan docentes y administrativos.';
+export const MENSAJE_NO_PIDE_TABLET =
+  'El préstamo de tablets es para estudiantes, docentes y administrativos.';
+
+/** ¿Este tipo de usuario puede reservar un espacio? */
+export function puedeReservarEspacios(tipo: TipoUsuario): boolean {
+  return TIPOS_QUE_RESERVAN_ESPACIOS.includes(tipo);
+}
+
+/** ¿Este tipo de usuario puede pedir una tablet? */
+export function puedePedirTablet(tipo: TipoUsuario): boolean {
+  return TIPOS_QUE_PIDEN_TABLETS.includes(tipo);
+}

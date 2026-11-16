@@ -22,7 +22,7 @@ import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
-import { tienePermiso } from '@/utils/roles';
+import { MENSAJE_NO_PIDE_TABLET, puedePedirTablet, tienePermiso } from '@/utils/roles';
 import { normalizarTexto } from '@/utils/texto';
 import {
   ahoraFechaHora,
@@ -599,8 +599,8 @@ export function obtenerCondicionesTablet(): Promise<CondicionesTablet> {
 }
 
 /**
- * Solicita una tablet a nombre del usuario de la sesión (HU-22). Exige aceptar las
- * condiciones (CA3); si no hay tablets libres en la franja, lanza ErrorPrestamo con
+ * Solicita una tablet a nombre del usuario de la sesión (HU-22). Los egresados no pueden
+ * (403, #240). Exige aceptar las condiciones (CA3); si no hay tablets libres en la franja, lanza ErrorPrestamo con
  * alternativas (CA2). El préstamo queda reservado y se notifica (CA1). La tablet no cambia
  * de estado hasta que se entregue (HU-23).
  */
@@ -613,6 +613,9 @@ export async function solicitarPrestamo(
     return peticion<Prestamo>('/prestamos/', { method: 'POST', body: JSON.stringify(datos) });
   }
 
+  if (!puedePedirTablet(usuario.tipo)) {
+    throw new ErrorApi(403, MENSAJE_NO_PIDE_TABLET);
+  }
   if (!datos.aceptaCondiciones) {
     throw new ErrorApi(400, 'Debes aceptar las condiciones de uso para solicitar la tablet.');
   }
