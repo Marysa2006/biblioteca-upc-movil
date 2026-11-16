@@ -26,6 +26,7 @@ import { NavegacionPeriodo } from '@/components/espacios/NavegacionPeriodo';
 import { TarjetaRecordatorios } from '@/components/notificaciones/TarjetaRecordatorios';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useMisCompromisos } from '@/hooks/useCompromisos';
+import { useParametros } from '@/hooks/useParametros';
 import { usePermisoRecordatorios } from '@/hooks/useRecordatorios';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio, radio } from '@/theme';
@@ -33,6 +34,7 @@ import { diaDeAgenda, moverDiaAgenda, tituloSemanaAgenda } from '@/utils/agenda'
 import { fechaCompleta, inicioSemana, rangoMes, rangoSemana, sumarDias, sumarMeses, tituloMes } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
 import { contarPorDia } from '@/utils/miCalendario';
+import { motivoNoDisponible } from '@/utils/parametros';
 
 const TITULO = 'Mi calendario';
 
@@ -40,6 +42,9 @@ export default function MiCalendario() {
   const { usuario } = useRol();
   const { data: todos, isPending, isError, isRefetching, refetch } = useMisCompromisos();
   const { estado: permiso } = usePermisoRecordatorios();
+  // Días sin atención en gris (#205). Opcional: si no cargan, el calendario funciona igual.
+  const { data: parametros } = useParametros();
+  const motivoCerrado = (fecha: string) => (parametros ? motivoNoDisponible(fecha, parametros) : null);
 
   const [hoy] = useState(hoyISO);
   const [vista, setVista] = useState<VistaAgenda>('semana');
@@ -107,7 +112,13 @@ export default function MiCalendario() {
             onSiguiente={() => mover(1)}
           />
           {vista === 'mes' ? (
-            <MesCalendario mes={dia} hoy={hoy} conteo={conteo} onElegirDia={verDia} />
+            <MesCalendario
+              mes={dia}
+              hoy={hoy}
+              conteo={conteo}
+              onElegirDia={verDia}
+              motivoCerrado={motivoCerrado}
+            />
           ) : (
             <TiraDiasCalendario
               semana={dia}
@@ -115,6 +126,7 @@ export default function MiCalendario() {
               hoy={hoy}
               conteo={conteo}
               onElegir={verDia}
+              motivoCerrado={motivoCerrado}
             />
           )}
           <ConvencionesCalendario />
