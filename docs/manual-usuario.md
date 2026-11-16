@@ -56,7 +56,9 @@ La reserva queda **Pendiente** hasta que la biblioteca la apruebe.
 2. Elige el día y una franja libre.
 3. Escribe qué necesitas y toca **Confirmar**.
 
-Las citas se pueden cancelar o reprogramar desde **Mis citas**, dentro del plazo.
+Tu solicitud queda **Pendiente** hasta que el facilitador que la atiende o la administración la apruebe: el cupo se aparta desde el primer momento, así que nadie más puede tomarlo. Cuando la aprueben te llega una notificación; si la rechazan, el aviso trae el motivo.
+
+Las citas se pueden cancelar o reprogramar desde **Mis citas**, dentro del plazo. Si las reprogramas, la cita vuelve a quedar **Pendiente** y hay que aprobarla otra vez.
 
 ![Agendar una asesoría](manual-usuario/comunidad-agendar-asesoria.png)
 
@@ -103,7 +105,7 @@ Al iniciar sesión con una cuenta del personal, abajo aparecen las pestañas **D
    - Toca **Otra fecha** para proponer otro día u hora.
    - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como realizada**.
    - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
-2. **Agenda:** las citas de asesoría por día, por semana y por mes. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Registrar la asistencia escaneando el QR desde la aplicación llega en la próxima versión.
+2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Registrar la asistencia escaneando el QR desde la aplicación llega en la próxima versión.
 3. **Préstamos:** la entrega y la devolución de tablets, también leyendo el código de barras con la cámara.
 4. **Vencidos:** las tablets que no se devolvieron a tiempo.
 5. **Espacios:** crear y editar espacios, y bloquearlos por mantenimiento o eventos.
