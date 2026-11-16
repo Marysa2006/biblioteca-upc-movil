@@ -151,14 +151,13 @@ export function problemaHorario(inicio: string, fin: string): ProblemaHorario | 
   return null;
 }
 
-/** Al menos 1 asistente y no más que la capacidad del espacio (HU-18, CA3). */
-export function problemaCapacidad(asistentes: string, espacio: Espacio | undefined): string | null {
+/**
+ * Al menos 1 asistente (HU-18, CA3). La capacidad del espacio es orientativa: la biblioteca
+ * agrega sillas si hace falta, así que no limita la reserva (15 de noviembre de 2026).
+ */
+export function problemaCapacidad(asistentes: string): string | null {
   if (!/^\d+$/.test(asistentes)) return null;
-  const cantidad = Number(asistentes);
-  if (cantidad < 1) return 'Debe asistir al menos 1 persona.';
-  if (espacio && cantidad > espacio.capacidad) {
-    return `${espacio.nombre} admite hasta ${espacio.capacidad} personas. Ajusta el número.`;
-  }
+  if (Number(asistentes) < 1) return 'Debe asistir al menos 1 persona.';
   return null;
 }
 
@@ -187,7 +186,7 @@ type DatosReglas = { fecha: string; horaInicio: string; horaFin: string; asisten
 function aplicarReglas(
   datos: DatosReglas,
   ctx: z.RefinementCtx,
-  { parametros, hoy, espacio }: { parametros: Parametros; hoy: string; espacio: Espacio | undefined },
+  { parametros, hoy }: { parametros: Parametros; hoy: string },
 ) {
   const fecha = problemaFecha(datos.fecha, parametros, hoy);
   if (fecha) ctx.addIssue({ code: 'custom', path: ['fecha'], message: fecha });
@@ -195,7 +194,7 @@ function aplicarReglas(
   const horario = problemaHorario(datos.horaInicio, datos.horaFin);
   if (horario) ctx.addIssue({ code: 'custom', path: [horario.campo], message: horario.mensaje });
 
-  const capacidad = problemaCapacidad(datos.asistentes, espacio);
+  const capacidad = problemaCapacidad(datos.asistentes);
   if (capacidad) ctx.addIssue({ code: 'custom', path: ['asistentes'], message: capacidad });
 }
 
@@ -207,20 +206,14 @@ type ContextoReserva = { parametros: Parametros; espacios: Espacio[]; hoy: strin
  * Valida antes de enviar las reglas de la reserva; la API vuelve a validar el día hábil y los
  * choques de horario (CA3).
  */
-export function esquemaReservaTercero({ parametros, espacios, hoy }: ContextoReserva) {
+export function esquemaReservaTercero({ parametros, hoy }: ContextoReserva) {
   return z
     .object({
       solicitanteId: z.string().min(1, { error: 'Elige a la persona que reserva.' }),
       espacioId: z.string().min(1, { error: 'Elige el espacio.' }),
       ...camposReserva,
     })
-    .superRefine((datos, ctx) =>
-      aplicarReglas(datos, ctx, {
-        parametros,
-        hoy,
-        espacio: espacios.find((e) => e.id === datos.espacioId),
-      }),
-    );
+    .superRefine((datos, ctx) => aplicarReglas(datos, ctx, { parametros, hoy }));
 }
 
 export type FormularioReservaTercero = z.input<ReturnType<typeof esquemaReservaTercero>>;
@@ -230,13 +223,14 @@ type ContextoSolicitud = { parametros: Parametros; espacio: Espacio; hoy: string
 
 /**
  * Solicitud de reserva de la comunidad (HU-18): el espacio ya viene del calendario y el
- * solicitante sale de la sesión. Valida antes de enviar las reglas de la reserva (CA3: la
- * capacidad); la API vuelve a validar y responde la disponibilidad con alternativas (CA2).
+ * solicitante sale de la sesión. Valida antes de enviar las reglas de la reserva (CA3: al menos
+ * 1 asistente; la capacidad ya no limita); la API vuelve a validar y responde la disponibilidad
+ * con alternativas (CA2).
  */
-export function esquemaSolicitudReserva({ parametros, espacio, hoy }: ContextoSolicitud) {
+export function esquemaSolicitudReserva({ parametros, hoy }: ContextoSolicitud) {
   return z
     .object(camposReserva)
-    .superRefine((datos, ctx) => aplicarReglas(datos, ctx, { parametros, hoy, espacio }));
+    .superRefine((datos, ctx) => aplicarReglas(datos, ctx, { parametros, hoy }));
 }
 
 export type FormularioSolicitud = z.input<ReturnType<typeof esquemaSolicitudReserva>>;

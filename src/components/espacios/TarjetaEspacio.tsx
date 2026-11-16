@@ -17,7 +17,7 @@ type Props = {
 };
 
 export function TarjetaEspacio({ espacio: lugar, onPress }: Props) {
-  const capacidad = `Hasta ${lugar.capacidad} ${lugar.capacidad === 1 ? 'persona' : 'personas'}`;
+  const capacidad = `Capacidad: unas ${lugar.capacidad} ${lugar.capacidad === 1 ? 'persona' : 'personas'}`;
 
   return (
     <View style={estilos.tarjeta}>

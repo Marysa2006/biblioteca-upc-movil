@@ -76,5 +76,8 @@ export function minutosParaVencer(vence: string, ahora = new Date()): number {
 /** "Vence en 32 min", "Vence en 1 min" o "El código venció". */
 export function textoVencimiento(minutos: number): string {
   if (minutos <= 0) return 'El código venció';
-  return `Vence en ${minutos} min`;
+  if (minutos < 60) return `Vence en ${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  const resto = minutos % 60;
+  return resto === 0 ? `Vence en ${horas} h` : `Vence en ${horas} h ${resto} min`;
 }
