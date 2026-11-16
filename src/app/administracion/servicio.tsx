@@ -74,7 +74,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar el servicio." onReintentar={() => refetch()} />;
   }
   const servicio = data.find((s) => s.id === id);
-  if (!servicio) return <EstadoVacio mensaje="Este servicio ya no existe." />;
+  if (!servicio) return <EstadoVacio pose="buscando" mensaje="Este servicio ya no existe." />;
 
   return (
     <FormularioServicio

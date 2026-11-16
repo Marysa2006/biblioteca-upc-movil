@@ -45,7 +45,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar el inventario." onReintentar={() => refetch()} />;
   }
   const original = id ? data.find((tablet) => tablet.id === id) : undefined;
-  if (id && !original) return <EstadoVacio mensaje="Esta tablet ya no existe." />;
+  if (id && !original) return <EstadoVacio pose="buscando" mensaje="Esta tablet ya no existe." />;
 
   return (
     <FormularioTablet

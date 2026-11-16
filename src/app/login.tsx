@@ -17,7 +17,7 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
-import { AvisoError, Pantalla } from '@/components/ui';
+import { AvisoError, Pantalla, Upecito } from '@/components/ui';
 import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
 import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
@@ -111,11 +111,7 @@ function MarcaLogin() {
   return (
     <View style={estilos.marca}>
       {/* Decorativo: el nombre va escrito debajo. */}
-      <Image
-        source={require('@/assets/images/upecito.png')}
-        style={estilos.logoApp}
-        contentFit="contain"
-      />
+      <Upecito />
       <Text variant="titleLarge" style={estilos.nombreApp}>
         {NOMBRE_APP}
       </Text>
@@ -125,8 +121,6 @@ function MarcaLogin() {
 
 const estilos = StyleSheet.create({
   marca: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.m },
-  // maxWidth en %: en pantallas angostas o con letra grande, el logo se encoge en vez de salirse.
-  logoApp: { width: tamanoLogo.app, maxWidth: '40%', aspectRatio: 1 },
   nombreApp: { color: colores.primario, fontFamily: fuentes.negrita },
   universidad: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.l },
   // Proporción del archivo (607 × 207) para que no se deforme.

@@ -70,7 +70,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar el contenido." onReintentar={() => refetch()} />;
   }
   const contenido = data.find((c) => c.id === id);
-  if (!contenido) return <EstadoVacio mensaje="Este contenido ya no existe." />;
+  if (!contenido) return <EstadoVacio pose="buscando" mensaje="Este contenido ya no existe." />;
 
   return (
     <FormularioContenido

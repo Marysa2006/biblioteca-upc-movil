@@ -101,7 +101,7 @@ export default function ConfirmarCita() {
         onElegirOtra={() => router.back()}
       />
     ) : (
-      <EstadoVacio mensaje="No encontramos la cita que querías reprogramar." />
+      <EstadoVacio pose="buscando" mensaje="No encontramos la cita que querías reprogramar." />
     );
   } else {
     contenido = (

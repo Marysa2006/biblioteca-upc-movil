@@ -42,7 +42,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar los temas." onReintentar={() => refetch()} />;
   }
   const original = id ? data.find((tema) => tema.id === id) : undefined;
-  if (id && !original) return <EstadoVacio mensaje="Este tema ya no existe." />;
+  if (id && !original) return <EstadoVacio pose="buscando" mensaje="Este tema ya no existe." />;
 
   return (
     <FormularioTema

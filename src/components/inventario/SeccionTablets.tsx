@@ -121,6 +121,7 @@ export function SeccionTablets() {
 
       {visibles.length === 0 ? (
         <EstadoVacio
+          pose={busqueda ? 'buscando' : 'leyendo'}
           mensaje={busqueda ? `Ninguna tablet coincide con "${busqueda.trim()}".` : 'No hay tablets con este estado.'}
         />
       ) : (

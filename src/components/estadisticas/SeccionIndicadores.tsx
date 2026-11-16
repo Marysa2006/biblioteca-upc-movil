@@ -92,7 +92,10 @@ export function SeccionIndicadores() {
   } else if (indicadores.data.total === 0) {
     contenido = hayFiltros(filtros) ? (
       <View style={estilos.vacio}>
-        <EstadoVacio mensaje="No hay resultados con estos filtros. Prueba con otro periodo u otros valores." />
+        <EstadoVacio
+          pose="buscando"
+          mensaje="No hay resultados con estos filtros. Prueba con otro periodo u otros valores."
+        />
         <Button
           mode="contained-tonal"
           icon="filter-remove-outline"

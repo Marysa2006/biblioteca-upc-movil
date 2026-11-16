@@ -76,7 +76,8 @@ function Asistencia() {
       <EstadoError mensaje="No pudimos cargar la cita." onReintentar={() => agenda.refetch()} />
     );
   }
-  if (!cita) return <EstadoVacio mensaje="No encontramos esta cita en la agenda." />;
+  if (!cita)
+    return <EstadoVacio pose="buscando" mensaje="No encontramos esta cita en la agenda." />;
   if (!puedeTomarAsistencia(cita)) {
     return (
       <EstadoVacio

@@ -154,7 +154,7 @@ export function BandejaReservas() {
           descripcion="Filtrar las solicitudes por estado"
         />
         {visibles.length === 0 ? (
-          <EstadoVacio mensaje={mensajeVacio} />
+          <EstadoVacio pose={busqueda.trim() ? 'buscando' : 'leyendo'} mensaje={mensajeVacio} />
         ) : (
           // 10 por página (#161); el filtro o la búsqueda vuelven a la página 1.
           <ListaPaginada elementos={visibles} reinicio={`${filtro}|${busqueda.trim()}`}>

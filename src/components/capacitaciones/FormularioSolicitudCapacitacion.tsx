@@ -26,7 +26,7 @@ import {
 } from 'react-native-paper';
 
 import { CampoFormulario } from '@/components/reservas/CampoFormulario';
-import { AvisoError } from '@/components/ui';
+import { AvisoError, Upecito } from '@/components/ui';
 import {
   fechaSugeridaDeError,
   useSolicitarCapacitacion,
@@ -180,7 +180,7 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
   if (enviada) {
     return (
       <View style={estilos.confirmacion} accessibilityLiveRegion="polite">
-        <Icon source="check-circle-outline" size={40} color={colores.primario} />
+        <Upecito pose="listo" />
         <Text variant="bodyLarge" style={estilos.textoConfirmacion}>
           {CONFIRMACION}
         </Text>
