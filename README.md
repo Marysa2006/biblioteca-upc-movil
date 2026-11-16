@@ -391,7 +391,7 @@ Mientras el Backend publica el inicio de sesión institucional, la app usa datos
 
 Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
 
-**Roles del personal (provisionales).** Un usuario tiene un **tipo** (estudiante, docente, administrativo, egresado o visitante) y una lista de **roles del personal**, vacía para la comunidad. Sus permisos son la suma de los de sus roles:
+**Roles del personal (provisionales).** Un usuario tiene un **tipo** (estudiante, docente, administrativo o egresado; `visitante` es el valor cuando no hay sesión) y una lista de **roles del personal**, vacía para la comunidad. Sus permisos son la suma de los de sus roles:
 
 | Rol | Identificador | Permisos |
 |---|---|---|
