@@ -5,6 +5,12 @@
  * Las fechas van como texto 'AAAA-MM-DD' y las horas como 'HH:MM', como en los parámetros
  * de HU-28.
  */
+import type { DatosSolicitante } from './solicitudes';
+
+/** Cuándo aceptó la persona un documento, 'AAAA-MM-DD HH:MM' (versión 1.1). */
+export type MomentoAceptacion = {
+  fechaHora: string;
+};
 
 /** Estado operativo de una tablet en el inventario (HU-21). */
 export type EstadoTablet = 'disponible' | 'en_prestamo' | 'mantenimiento' | 'de_baja';
@@ -12,19 +18,29 @@ export type EstadoTablet = 'disponible' | 'en_prestamo' | 'mantenimiento' | 'de_
 /** Condición física del equipo al entregarlo o recibirlo (HU-23). */
 export type CondicionTablet = 'bueno' | 'regular' | 'danado';
 
+/** Estado del equipo como lo nombra el formato de constancia (versión 1.1). */
+export type EstadoEquipo = 'nuevo' | 'optimo' | 'otro';
+
 /** Estado de un préstamo (HU-21, HU-22, HU-23 y HU-24). */
 export type EstadoPrestamo = 'reservado' | 'entregado' | 'devuelto' | 'vencido' | 'cancelado';
 
 /** Tablet del inventario (HU-21). */
 export type Tablet = {
   id: string;
-  /** Código interno de la biblioteca. */
+  /** Código interno de la biblioteca (COD INT en el formato de la constancia). */
   codigo: string;
   /** Serial del fabricante. */
   serial: string;
   modelo: string;
   accesorios: string[];
   estado: EstadoTablet;
+
+  // ── Versión 1.1: datos del formato de constancia (#252) ────
+  /** Tipo de equipo; en el formato siempre es «Tablet». */
+  tipo?: string;
+  marca?: string;
+  /** Valor del equipo en pesos. */
+  valor?: number;
 };
 
 /** Entrega o devolución de una tablet (HU-23). */
@@ -39,6 +55,15 @@ export type RegistroTablet = {
   tardia?: boolean;
   /** Solo en la devolución: minutos de retraso, si fue tardía. */
   retrasoMinutos?: number;
+  /** Quién entrega y quién recibe, para la constancia (versión 1.1). */
+  responsable?: ResponsableTablet;
+};
+
+/** Persona del personal que entrega o recibe, con su cargo (versión 1.1). */
+export type ResponsableTablet = {
+  id: string;
+  nombre: string;
+  cargo?: string;
 };
 
 /** Préstamo o reserva de una tablet (HU-22, HU-23 y HU-24). */
@@ -60,6 +85,17 @@ export type Prestamo = {
   entrega?: RegistroTablet;
   /** Registro de la devolución (HU-23), si ya se devolvió. */
   devolucion?: RegistroTablet;
+
+  // ── Versión 1.1: constancia del préstamo (#252) ────────────
+  /** Horas del préstamo; el máximo lo fija `Parametros.horasMaximasPrestamo`. */
+  horas?: number;
+  /** Identificación, programa y semestre de quien recibe. */
+  datosSolicitante?: DatosSolicitante;
+  /** Estado del equipo al entregarlo, como lo nombra el formato. */
+  estadoEquipo?: EstadoEquipo;
+  notas?: string;
+  /** Si la persona aceptó el formato de responsabilidad, y cuándo. */
+  responsabilidadAceptada?: MomentoAceptacion;
 };
 
 /** Condiciones de uso del préstamo de tablets (HU-22), provisionales. */

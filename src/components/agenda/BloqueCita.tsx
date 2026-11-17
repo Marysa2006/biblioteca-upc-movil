@@ -25,7 +25,7 @@ type Props = {
 export function BloqueCita({ cita, posicion, mostrarFacilitador, onAbrir }: Props) {
   const { fondo, texto, etiqueta } = coloresEstado[cita.estado];
   const horas = `${cita.horaInicio} – ${cita.horaFin}`;
-  const persona = mostrarFacilitador ? cita.facilitador : cita.solicitante;
+  const persona = mostrarFacilitador ? (cita.facilitador ?? 'Sin asignar') : cita.solicitante;
 
   return (
     <View style={[estilos.bloque, posicion, { backgroundColor: fondo, borderLeftColor: texto }]}>
@@ -33,7 +33,7 @@ export function BloqueCita({ cita, posicion, mostrarFacilitador, onAbrir }: Prop
         onPress={() => onAbrir(cita)}
         style={estilos.toque}
         accessibilityRole="button"
-        accessibilityLabel={`${horas}, ${cita.tema}, ${cita.solicitante}${mostrarFacilitador ? `, con ${cita.facilitador}` : ''}. ${etiqueta}. Ver el detalle`}
+        accessibilityLabel={`${horas}, ${cita.tema}, ${cita.solicitante}${mostrarFacilitador && cita.facilitador ? `, con ${cita.facilitador}` : ''}. ${etiqueta}. Ver el detalle`}
       >
         <View style={estilos.contenido}>
           <View style={estilos.fila}>

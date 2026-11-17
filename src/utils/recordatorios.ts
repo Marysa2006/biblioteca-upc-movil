@@ -112,7 +112,7 @@ export function recordatoriosDeCita(
       identificador: `${PREFIJO_RECORDATORIO}cita-${cita.id}-${CLAVE}`,
       cuando,
       titulo: 'Tu asesoría es en 3 días',
-      cuerpo: `${texto} ${cita.tema} con ${cita.facilitador}${modalidad}, ${cuandoLegible(inicio)}.${cancelar}`,
+      cuerpo: `${texto} ${cita.tema}${cita.facilitador ? ` con ${cita.facilitador}` : ''}${modalidad}, ${cuandoLegible(inicio)}.${cancelar}`,
     },
   ];
 }

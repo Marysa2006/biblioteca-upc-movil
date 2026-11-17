@@ -217,7 +217,12 @@ function ordenarPorFecha<T extends { fecha: string; horaInicio: string }>(lista:
 }
 
 /** Suma `cambio` a los cupos libres de la franja, entre 0 y los cupos de la jornada. */
-function ajustarCupo(franjaId: string, cambio: number) {
+/**
+ * Ajusta los cupos de una franja. Desde la versión 1.1 la cita puede no tener franja (#248),
+ * y entonces no hay cupo que ajustar.
+ */
+function ajustarCupo(franjaId: string | undefined, cambio: number) {
+  if (!franjaId) return;
   franjas = franjas.map((franja) => {
     if (franja.id !== franjaId) return franja;
     const maximo = jornadas.find((j) => j.id === franja.jornadaId)?.cupos ?? Infinity;

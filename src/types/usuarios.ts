@@ -17,6 +17,9 @@ export type RolPersonal = 'administrador' | 'facilitador' | 'gestor_espacios';
 /** @deprecated Usa TipoUsuario o RolPersonal: el tipo de usuario y los roles del personal van separados. */
 export type Rol = TipoUsuario | RolPersonal;
 
+/** Nivel de formación de la persona (formularios de la bibliotecóloga, versión 1.1). */
+export type NivelFormacion = 'pregrado' | 'posgrado';
+
 export type Usuario = {
   id: string;
   nombre: string;
@@ -26,6 +29,18 @@ export type Usuario = {
   rolesPersonal: RolPersonal[];
   programa?: string;
   semestre?: number;
+  /** Número de identificación, para las constancias y los formularios (versión 1.1). */
+  identificacion?: string;
+  nivel?: NivelFormacion;
+  facultad?: string;
+  sede?: string;
+  /** Cargo del personal de la biblioteca; sale en la constancia del préstamo (versión 1.1). */
+  cargo?: string;
+  /**
+   * Permisos que la administración le da a una persona aparte de sus roles (versión 1.1).
+   * Por ahora solo `novedades`. No es un rol nuevo: se suma a los de `rolesPersonal`.
+   */
+  permisosExtra?: Permiso[];
 };
 
 /**
@@ -42,4 +57,6 @@ export type Permiso =
   | 'asesorias'
   | 'tablets'
   | 'formacion'
-  | 'estadisticas';
+  | 'estadisticas'
+  /** Publicar avisos e informativos en Inicio, sin tocar los servicios (versión 1.1). */
+  | 'novedades';

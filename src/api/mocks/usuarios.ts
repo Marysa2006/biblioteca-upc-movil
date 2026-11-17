@@ -14,6 +14,10 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     rolesPersonal: [],
     programa: 'Enfermería',
     semestre: 8,
+    identificacion: '1065123456',
+    nivel: 'pregrado',
+    facultad: 'Ciencias de la Salud',
+    sede: 'Valledupar',
   },
   {
     id: 'u-docente',
@@ -22,6 +26,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     tipo: 'docente',
     rolesPersonal: [],
     programa: 'Ingeniería de Sistemas',
+    identificacion: '12564321',
+    facultad: 'Ingenierías y Tecnologías',
+    sede: 'Valledupar',
   },
   {
     id: 'u-administrador',
@@ -29,6 +36,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'ana.torres@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['administrador'],
+    identificacion: '12547896',
+    sede: 'Valledupar',
+    cargo: 'Bibliotecóloga',
   },
   {
     id: 'u-facilitador',
@@ -36,6 +46,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'julian.mendoza@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['facilitador'],
+    identificacion: '1098765432',
+    sede: 'Valledupar',
+    cargo: 'Facilitador de la biblioteca',
   },
   {
     id: 'u-gestor-espacios',
@@ -43,6 +56,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'sofia.vargas@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['gestor_espacios'],
+    identificacion: '1032547896',
+    sede: 'Valledupar',
+    cargo: 'Gestora de espacios',
   },
   {
     // Los egresados tienen cuenta institucional (#200).
@@ -52,6 +68,8 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     tipo: 'egresado',
     rolesPersonal: [],
     programa: 'Contaduría',
+    facultad: 'Ciencias Administrativas, Contables y Económicas',
+    sede: 'Aguachica',
   },
 ];
 
@@ -78,6 +96,8 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     correo: 'andres.mejia@unicesar.edu.co',
     tipo: 'estudiante',
     rolesPersonal: [],
+    facultad: 'Ingenierías y Tecnologías',
+    sede: 'Valledupar',
     programa: 'Ingeniería Ambiental',
     semestre: 5,
   },
@@ -87,5 +107,8 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     correo: 'paula.rincon@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['facilitador'],
+    identificacion: '1064782135',
+    sede: 'Valledupar',
+    cargo: 'Facilitador de la biblioteca',
   },
 ];

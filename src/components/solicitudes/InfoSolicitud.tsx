@@ -76,7 +76,7 @@ function InfoReserva({ solicitud }: { solicitud: ResumenSolicitud }) {
         { etiqueta: 'Horario', valor: `${reserva.horaInicio} a ${reserva.horaFin}` },
         { etiqueta: 'Propósito', valor: reserva.proposito },
         { etiqueta: 'Asistentes', valor: reserva.asistentes },
-        { etiqueta: 'Requerimientos', valor: reserva.requerimientos },
+        { etiqueta: 'Novedades', valor: reserva.requerimientos },
         { etiqueta: 'Motivo', valor: reserva.motivo },
       ]}
     />
@@ -125,7 +125,7 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
       <ListaDatos
         datos={[
           { etiqueta: 'Tema', valor: cita.tema },
-          { etiqueta: 'Facilitador', valor: cita.facilitador },
+          { etiqueta: 'Facilitador', valor: cita.facilitador ?? 'Sin asignar' },
           { etiqueta: 'Fecha', valor: fechaCompleta(cita.fecha) },
           { etiqueta: 'Horario', valor: `${cita.horaInicio} a ${cita.horaFin}` },
           { etiqueta: 'Modalidad', valor: NOMBRE_MODALIDAD[cita.modalidad] },
