@@ -37,6 +37,13 @@ Cualquier persona puede usar estas partes sin iniciar sesión. Abajo están las 
 1. Toca el botón de arriba a la derecha y elige **Iniciar sesión**.
 2. Escribe el usuario (por ejemplo, `laura.perez`) y la contraseña.
 3. Toca **Iniciar sesión**.
+4. La primera vez en este celular, la aplicación muestra la **autorización de tratamiento de datos personales**, con el texto del Acuerdo 019 de la Universidad (puntos I a VI). Léela, marca la casilla **He leído y acepto…** y toca **Aceptar y continuar**. El enlace **Tratamiento de datos personales** abre la política completa.
+
+Si tocas **No acepto**, se cierra la sesión y puedes seguir explorando la app sin cuenta. La aceptación queda guardada para tu usuario: no se vuelve a pedir, salvo que la Universidad publique una política nueva.
+
+En **Perfil** y en el formulario de datos de contacto siempre está el enlace **Tratamiento de datos personales**, y el formulario dice para qué se usa el teléfono. En Perfil también aparecen el NIT de la Universidad y los plazos para ejercer tus derechos: 10 días hábiles para consultas y 15 para reclamos.
+
+Para ejercer esos derechos hay dos caminos, los dos del Acuerdo 019: el correo **tratamientodedatos@unicesar.edu.co** y el botón **Ejercer mis derechos por PQRS**, que abre el módulo de peticiones y quejas de la Universidad.
 
 ![Iniciar sesión](manual-usuario/comunidad-iniciar-sesion.png)
 

@@ -36,6 +36,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'ana.torres@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['administrador'],
+    identificacion: '12547896',
+    sede: 'Valledupar',
+    cargo: 'Bibliotecóloga',
   },
   {
     id: 'u-facilitador',
@@ -53,6 +56,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'sofia.vargas@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['gestor_espacios'],
+    identificacion: '1032547896',
+    sede: 'Valledupar',
+    cargo: 'Gestora de espacios',
   },
   {
     // Los egresados tienen cuenta institucional (#200).
@@ -101,7 +107,7 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     correo: 'paula.rincon@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['facilitador'],
-    identificacion: '1098765432',
+    identificacion: '1064782135',
     sede: 'Valledupar',
     cargo: 'Facilitador de la biblioteca',
   },

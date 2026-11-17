@@ -126,21 +126,4 @@ export const claves = {
   indicadoresUso: (filtros?: object) => ['estadisticas', 'indicadores', filtros ?? {}] as const,
   /** Prefijo de todos los registros e indicadores, para refrescarlos al registrar un uso. */
   estadisticasTodas: ['estadisticas'] as const,
-
-  // ── Versión 1.1 (#247): lo que suman las tareas del contrato ──
-  /** Citas sin jornadas: las pendientes de asignar, para la agenda (#248). */
-  citasPendientes: ['asesorias', 'citas', 'pendientes'] as const,
-  /** Calificación de una asesoría o una capacitación (#254 y #255). */
-  calificacionCita: (id: string) => ['asesorias', 'citas', id, 'calificacion'] as const,
-  calificacionCapacitacion: (id: string) =>
-    ['capacitaciones', 'solicitudes', id, 'calificacion'] as const,
-  /** Constancia del préstamo de tablet (#252 y #253). */
-  constanciaPrestamo: (id: string) => ['prestamos', id, 'constancia'] as const,
-  /** Permisos que la administración puede dar aparte de los roles (#256 y #257). */
-  permisosAsignables: ['usuarios', 'permisos'] as const,
-  /** Guías que publica la biblioteca con enlace (#258). */
-  guiasConEnlace: ['guias', 'enlace'] as const,
-  /** Estadísticas por facultad, sede y semestre, y su PDF (#259 y #260). */
-  indicadoresPorFacultad: (filtros?: object) =>
-    ['estadisticas', 'indicadores', 'facultad', filtros ?? {}] as const,
 };

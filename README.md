@@ -144,6 +144,7 @@ Todo lo que la administración y los facilitadores hacen en el portal web tambi�
 |---|---|:---:|
 | Vistas según el rol del usuario y asignación de roles | 07 | 1 |
 | Notificaciones: el backend envía el correo y la app suma notificaciones push | 27 | 2 |
+| Tratamiento de datos personales: la política de la UPC (Acuerdo 019 de 2020) y la autorización en el primer ingreso | Ley 1581 de 2012 | 1.1 |
 
 El control de préstamos vencidos (HU-24) y el registro estadístico (HU-25) son procesos automáticos del backend; la app muestra sus resultados.
 

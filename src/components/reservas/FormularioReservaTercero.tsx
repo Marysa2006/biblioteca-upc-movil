@@ -12,6 +12,7 @@ import { Controller, useForm, useWatch, type Control } from 'react-hook-form';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Chip, HelperText, Icon, Text, TextInput, TouchableRipple } from 'react-native-paper';
 
+import { NotaDatosPersonales } from '@/components/privacidad/NotaDatosPersonales';
 import { AvisoError } from '@/components/ui';
 import { useCrearReservaTercero } from '@/hooks/useReservas';
 import { colores, espacio, fuentes, radio } from '@/theme';
@@ -141,6 +142,8 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
           onElegir={(id) => setValue('solicitanteId', id, { shouldValidate: id !== '' })}
           deshabilitado={guardando}
         />
+        {/* #225, CA3: aquí se usan los datos de otra persona, así que se dice para qué. */}
+        <NotaDatosPersonales mensaje="De la persona para la que reservas usamos su nombre y su cuenta institucional, solo para la reserva y sus notificaciones." />
       </Seccion>
 
       <Seccion titulo="Espacio">
