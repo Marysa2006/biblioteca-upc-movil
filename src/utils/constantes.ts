@@ -33,6 +33,14 @@ export const VERSION_POLITICA_DATOS = '2020-10-05';
 /** Correo de la UPC para ejercer los derechos sobre los datos personales (numeral IV de la autorización). */
 export const CORREO_DATOS_PERSONALES = 'tratamientodedatos@unicesar.edu.co';
 
+/**
+ * Módulo PQRS de la Universidad, la otra vía que da el Acuerdo para ejercer los derechos
+ * (numerales 9.3 y 9.4: «o ingresando al enlace ubicado en el módulo PQRS de la página web»).
+ * Es el enlace que publica la Universidad en «Atención al ciudadano».
+ */
+export const URL_PQRS: string =
+  'https://orfeo2022.unicesar.edu.co/pqrs/frontend/web/index.php';
+
 /** NIT de la Universidad como responsable del tratamiento (Acuerdo 019, numeral 2, literal b). */
 export const NIT_UNIVERSIDAD = '892.300.285-6';
 

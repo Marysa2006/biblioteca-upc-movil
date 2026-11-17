@@ -60,6 +60,26 @@ const PUNTOS_AUTORIZACION: readonly string[] = [
   'La UPC garantiza la confidencialidad, libertad, seguridad, veracidad, transparencia, acceso y circulación restringida de mis datos y se reservan el derecho de modificar su Política de Tratamiento de Datos Personales en cualquier momento. Cualquier cambio será publicado oportunamente en la página WEB. informado y Teniendo en cuenta lo anterior, autorizo de manera voluntaria, previa, explicita, informada e inequívoca a la UPC, para tratar mis datos personales de acuerdo con la Política de Tratamiento de Datos Personales de la UPC y para los fines relacionados con su Misión y en especial para fines legales, contractuales, comerciales descritos en la Política de Tratamiento de Datos Personales de la UPC. La información obtenida para el Tratamiento de mis datos personales la he suministrado de forma voluntaria y es verídica.',
 ];
 
+/**
+ * Las finalidades del numeral 6.1 del Acuerdo que aplican a lo que hace esta app: son las cuatro
+ * que señaló la revisión del #225 (a, e, h y j). Texto literal del Acuerdo.
+ */
+const FINALIDADES_QUE_APLICAN: readonly { letra: string; texto: string }[] = [
+  {
+    letra: 'a',
+    texto:
+      'Proveer información o servicios institucionales derivados de la relación existente entre el Titular y La UNIVERSIDAD.',
+  },
+  { letra: 'e', texto: 'Evaluar la calidad de programas o servicios institucionales.' },
+  // La h) está cortada en el PDF del Acuerdo: se transcribe hasta donde llega el texto.
+  { letra: 'h', texto: 'Adelantar encuestas de satisfacción y percepción de los grupos de valor' },
+  {
+    letra: 'j',
+    texto:
+      'Recopilar información de asistentes a eventos de capacitación desarrollados por la UNIVERSIDAD',
+  },
+];
+
 const NUMERALES = ['I', 'II', 'III', 'IV', 'V', 'VI'] as const;
 
 export function AceptacionTratamientoDatos() {
@@ -140,7 +160,15 @@ export function AceptacionTratamientoDatos() {
                 <Text variant="bodySmall" style={estilos.fuente}>
                   {`Responsable: Universidad Popular del Cesar, NIT ${NIT_UNIVERSIDAD}. Responde las consultas en máximo ${DIAS_HABILES_CONSULTA} días hábiles y los reclamos en máximo ${DIAS_HABILES_RECLAMO} días hábiles.`}
                 </Text>
-                <EnlacePoliticaDatos nota="Lee la política completa antes de aceptar:" />
+                <Text variant="bodyMedium" style={estilos.texto}>
+                  Finalidades del tratamiento que aplican a esta app (numeral 6.1 del Acuerdo):
+                </Text>
+                {FINALIDADES_QUE_APLICAN.map(({ letra, texto }) => (
+                  <Text key={letra} variant="bodySmall" style={estilos.fuente}>
+                    {`${letra}) ${texto}`}
+                  </Text>
+                ))}
+                <EnlacePoliticaDatos nota="Lee la política completa antes de aceptar:" conPqrs />
               </ScrollView>
             </Dialog.ScrollArea>
             {/* La casilla va fuera del texto desplazable: siempre se ve, aunque el texto sea largo. */}
