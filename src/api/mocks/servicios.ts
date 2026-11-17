@@ -75,17 +75,6 @@ export const SERVICIOS: Servicio[] = [
     activo: true,
   },
   {
-    id: 'hemeroteca',
-    nombre: 'Hemeroteca',
-    descripcion: 'Consulta de revistas y publicaciones periódicas.',
-    categoria: 'prestamo',
-    publico: 'Comunidad universitaria',
-    formaSolicitud: 'Acércate a la hemeroteca',
-    horario: 'Por confirmar con la biblioteca',
-    requiereCuenta: false,
-    activo: true,
-  },
-  {
     // Informativo (versión 1.1): la gestión desde la app queda para una HU nueva (HU-34).
     id: 'prestamo-computadores',
     nombre: 'Préstamo de computadores',
