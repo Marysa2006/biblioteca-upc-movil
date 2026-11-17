@@ -1,7 +1,8 @@
 /**
  * Solicitar la reserva de un espacio (HU-18). Pantalla apilada; se llega desde el calendario
  * de HU-17 al tocar una franja disponible, con la fecha y la hora en la ruta.
- * Reservar pide cuenta: sin sesión, invita a iniciarla y vuelve aquí después.
+ * Reservar pide cuenta: sin sesión, invita a iniciarla y vuelve aquí después. Con sesión, solo
+ * docentes y administrativos reservan (#240): a los demás se les explica en lugar del formulario.
  *
  * Patrón de datos: useEspacios() / useParametros() / useSolicitarReserva() (src/hooks)
  * → src/api → mock o API.
@@ -12,11 +13,13 @@ import { Button, Icon, Text } from 'react-native-paper';
 
 import { FormularioSolicitudReserva } from '@/components/reservas/FormularioSolicitudReserva';
 import { InvitarSesion } from '@/components/reservas/InvitarSesion';
+import { ServicioNoPermitido } from '@/components/reservas/ServicioNoPermitido';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useEspacios } from '@/hooks/useEspacios';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio } from '@/theme';
+import { MENSAJE_NO_RESERVA_ESPACIOS, puedeReservarEspacios } from '@/utils/roles';
 
 const TITULO = 'Solicitar reserva';
 
@@ -46,6 +49,8 @@ export default function ReservarEspacio() {
         etiqueta="Iniciar sesión para solicitar la reserva"
       />
     );
+  } else if (!puedeReservarEspacios(usuario.tipo)) {
+    contenido = <ServicioNoPermitido mensaje={MENSAJE_NO_RESERVA_ESPACIOS} tipo={usuario.tipo} />;
   } else {
     contenido = (
       <FormularioSolicitudReserva
@@ -58,7 +63,7 @@ export default function ReservarEspacio() {
   }
 
   const subtitulo = lugar
-    ? `${lugar.nombre} · hasta ${lugar.capacidad} personas · ${lugar.horario}`
+    ? `${lugar.nombre} · unas ${lugar.capacidad} personas · ${lugar.horario}`
     : undefined;
 
   return (

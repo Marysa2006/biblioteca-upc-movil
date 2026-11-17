@@ -164,9 +164,9 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
                       hitSlop={AREA_CHIP}
                       accessibilityRole="radio"
                       accessibilityState={{ checked: elegido }}
-                      accessibilityLabel={`${lugar.nombre}, hasta ${lugar.capacidad} personas`}
+                      accessibilityLabel={`${lugar.nombre}, unas ${lugar.capacidad} personas`}
                     >
-                      {`${lugar.nombre} · hasta ${lugar.capacidad}`}
+                      {`${lugar.nombre} · unas ${lugar.capacidad}`}
                     </Chip>
                   );
                 })}
