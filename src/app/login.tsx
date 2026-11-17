@@ -17,6 +17,7 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
+import { EnlacePoliticaDatos } from '@/components/privacidad/EnlacePoliticaDatos';
 import { AvisoError, Pantalla } from '@/components/ui';
 import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
 import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
@@ -88,6 +89,14 @@ export default function Login() {
         Explorar sin iniciar sesión
       </Button>
 
+      {/* La Ley 1581: la política de la Universidad, a la vista antes de entrar (#225, CA1). */}
+      <View style={estilos.privacidad}>
+        <EnlacePoliticaDatos
+          centrado
+          nota="La Universidad es la responsable de tus datos personales. Lee la política antes de entrar."
+        />
+      </View>
+
       {/* La UPC, con su logo oficial, al pie (#202). */}
       <View style={estilos.universidad}>
         <Text variant="labelMedium" style={estilos.textoSeparador}>
@@ -129,6 +138,7 @@ const estilos = StyleSheet.create({
   logoApp: { width: tamanoLogo.app, maxWidth: '40%', aspectRatio: 1 },
   nombreApp: { color: colores.primario, fontFamily: fuentes.negrita },
   universidad: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.l },
+  privacidad: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.s },
   // Proporción del archivo (607 × 207) para que no se deforme.
   logoUpc: { width: tamanoLogo.upcHorizontal, maxWidth: '60%', aspectRatio: 607 / 207 },
   tarjeta: {
