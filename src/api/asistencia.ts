@@ -38,6 +38,25 @@ type EstadoAsistencia = {
 
 const asistencias = new Map<string, EstadoAsistencia>();
 
+/**
+ * DATOS DE PRUEBA (HU-32): la cita de hoy de Laura (cit-6) empieza con la asistencia abierta y
+ * un código fijo. Los datos de prueba viven en la memoria de cada celular, así que el QR que
+ * muestra el facilitador en otro equipo no existe en el de Laura; con este código, el QR se
+ * puede imprimir o mostrar en un computador y probar el registro en un solo celular. Si el
+ * facilitador abre la asistencia de cit-6, ve este mismo código (abrirAsistencia lo reutiliza).
+ */
+export const CITA_ASISTENCIA_PRUEBA = 'cit-6';
+export const CODIGO_ASISTENCIA_PRUEBA = '246810';
+
+if (USAR_MOCKS) {
+  asistencias.set(CITA_ASISTENCIA_PRUEBA, {
+    codigo: CODIGO_ASISTENCIA_PRUEBA,
+    vence: `${hoyISO()} 23:59`,
+    cerrada: false,
+    registros: [],
+  });
+}
+
 /** Estado de la sesión, creándolo vacío la primera vez. */
 function estadoDe(sesionId: string): EstadoAsistencia {
   const actual = asistencias.get(sesionId) ?? {

@@ -4,11 +4,13 @@
  * - Dentro del plazo, "Reprogramar" y "Cancelar" (CA3).
  * - Fuera del plazo, explica cuántas horas antes se podía (horasMinimasCancelacion, HU-28).
  * - Ya resuelta, muestra el motivo o el resultado si lo hay.
+ * - El día de la cita aprobada, "Registrar asistencia" con el QR del facilitador (HU-32).
  * No se presiona entera: cada acción es su propio botón.
  */
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
+import { BotonRegistrarAsistencia } from '@/components/asistencia/BotonRegistrarAsistencia';
 import { EtiquetaEstado } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Cita } from '@/types';
@@ -65,6 +67,8 @@ export function TarjetaCita({ cita, horasCancelacion, onCancelar, onReprogramar 
           {`Resultado: ${cita.resultado}`}
         </Text>
       ) : null}
+
+      <BotonRegistrarAsistencia cita={cita} />
 
       {fueraDePlazo ? (
         <Text variant="bodySmall" style={estilos.secundario}>
