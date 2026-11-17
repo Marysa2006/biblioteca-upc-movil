@@ -1,7 +1,8 @@
 /**
  * Confirmación para reprogramar una cita de asesoría (HU-14, CA3): la franja de antes y la
  * nueva, sin volver a pedir la necesidad. Si la nueva se ocupó al confirmar (CA2), lo explica
- * y ofrece elegir otra. Reprogramada, la confirmación queda en el mismo lugar.
+ * y ofrece elegir otra. Reprogramada, la confirmación queda en el mismo lugar: la cita vuelve a
+ * quedar pendiente hasta que el personal la apruebe.
  * No guarda: la pantalla llama al hook con onConfirmar y le pasa guardando y los errores.
  */
 import { router } from 'expo-router';
@@ -21,7 +22,7 @@ type Props = {
   /** Solo lo que se muestra: si la franja se ocupa, ya no llega en la consulta. */
   nueva: Pick<FranjaAsesoria, 'fecha' | 'horaInicio' | 'horaFin'>;
   guardando: boolean;
-  /** La cita ya quedó en la franja nueva; se muestra la confirmación. */
+  /** La cita ya quedó en la franja nueva, pendiente de aprobación; se muestra la confirmación. */
   reprogramada: boolean;
   /** CA2: la franja nueva ya no tiene cupo. */
   franjaOcupada: boolean;
@@ -46,7 +47,7 @@ export function ConfirmarReprogramacion({
 }: Props) {
   const antes = textoCuando(cita);
   const ahora = textoCuando(nueva);
-  const confirmacion = `Tu asesoría de ${cita.tema} quedó para el ${ahora}. Te dejamos una notificación con el cambio.`;
+  const confirmacion = `Tu solicitud de asesoría de ${cita.tema} quedó pendiente de aprobación para el ${ahora}. Te dejamos una notificación con el cambio.`;
   const error = franjaOcupada ? FRANJA_OCUPADA : mensajeError;
   const aviso = reprogramada ? confirmacion : error;
 
