@@ -45,9 +45,6 @@ const FILAS: Fila[] = [
   { usuarioId: 'u-egresado', nombre: 'Diego Salas', tipoUsuario: 'egresado', programa: 'Contaduría', servicio: 'catalogo', finalidad: 'Normatividad', fecha: dia(7), modalidad: 'virtual', estado: 'completada' },
   { usuarioId: 'u-egresado', nombre: 'Diego Salas', tipoUsuario: 'egresado', programa: 'Contaduría', servicio: 'asesorias', finalidad: 'Trabajo de grado', fecha: dia(20), modalidad: 'virtual', estado: 'completada' },
 
-  // Visitante con sesión (tipo `visitante`, sin programa): el tipo sí se conoce
-  { usuarioId: 'u-visitante', nombre: 'Camila Ospina', tipoUsuario: 'visitante', programa: NO_INFORMADO, servicio: 'catalogo', finalidad: 'Consulta general', fecha: dia(8), modalidad: 'virtual', estado: 'completada' },
-
   // Anónimos (sin sesión): varios datos no informados
   { usuarioId: NO_INFORMADO, nombre: NO_INFORMADO, tipoUsuario: NO_INFORMADO, programa: NO_INFORMADO, servicio: 'catalogo', finalidad: NO_INFORMADO, fecha: dia(5), modalidad: NO_INFORMADO, estado: 'completada' },
   { usuarioId: NO_INFORMADO, nombre: NO_INFORMADO, tipoUsuario: NO_INFORMADO, programa: NO_INFORMADO, servicio: 'guias', finalidad: NO_INFORMADO, fecha: dia(6), modalidad: NO_INFORMADO, estado: 'completada' },
