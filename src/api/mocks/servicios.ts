@@ -9,7 +9,7 @@ export const SERVICIOS: Servicio[] = [
     id: 'asesorias',
     nombre: 'Asesorías especializadas',
     descripcion:
-      'Asesoría personalizada o grupal en Normas APA 7, el gestor bibliográfico Mendeley y búsqueda especializada de información.',
+      'Asesoría para una persona o un grupo pequeño en búsqueda en bases de datos, búsqueda de información de impacto, gestores bibliográficos, Normas APA y Turnitin, y repositorio institucional.',
     categoria: 'asesorias',
     publico: 'Estudiantes y docentes',
     formaSolicitud: 'Agenda tu cita en la app con tu cuenta institucional',
@@ -21,7 +21,7 @@ export const SERVICIOS: Servicio[] = [
     id: 'capacitaciones',
     nombre: 'Capacitaciones',
     descripcion:
-      'Formación para grupos y asignaturas en búsqueda de información, evaluación de fuentes, creación de contenidos y seguridad digital.',
+      'Formación para grupos de 20 a 25 personas en Normas APA, búsqueda de información de impacto, gestores bibliográficos y repositorio institucional.',
     categoria: 'capacitaciones',
     publico: 'Docentes y grupos de estudiantes',
     formaSolicitud: 'Solicítala en la app indicando grupo, fecha y modalidad',

@@ -137,7 +137,7 @@ export default function CalendarioEspacio() {
     );
   }
 
-  const capacidad = lugar ? `Hasta ${lugar.capacidad} personas · ${lugar.horario}` : undefined;
+  const capacidad = lugar ? `Capacidad: unas ${lugar.capacidad} personas · ${lugar.horario}` : undefined;
 
   return (
     <>
