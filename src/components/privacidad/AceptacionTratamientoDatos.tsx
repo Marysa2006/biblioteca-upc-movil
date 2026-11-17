@@ -42,7 +42,7 @@ export function AceptacionTratamientoDatos() {
   const cerrarSesion = useCerrarSesion();
   // El texto se desplaza dentro del diálogo: en un celular bajo o con letra grande, ocupa menos.
   const { height } = useWindowDimensions();
-  const altoTexto = Math.max(160, Math.min(380, Math.round(height * 0.42)));
+  const altoTexto = Math.max(200, Math.min(460, Math.round(height * 0.55)));
 
   // La casilla vale para este usuario y esta política: si cambia cualquiera de los dos, vuelve a
   // estar desmarcada. Así la autorización siempre es expresa, sin reiniciarla desde un efecto.
@@ -111,17 +111,22 @@ export function AceptacionTratamientoDatos() {
                   {`Puedes conocer, actualizar, rectificar o pedir la supresión de tus datos, y revocar esta autorización, escribiendo a ${CORREO_DATOS_PERSONALES}.`}
                 </Text>
                 <EnlacePoliticaDatos nota="Lee la política completa antes de aceptar:" />
-                <Checkbox.Item
-                  label="He leído y acepto la autorización para el tratamiento de mis datos personales del Acuerdo 019 de 2020."
-                  status={aceptada ? 'checked' : 'unchecked'}
-                  onPress={alternarCasilla}
-                  position="leading"
-                  style={estilos.casilla}
-                  labelStyle={estilos.etiquetaCasilla}
-                  accessibilityLabel="Acepto la autorización para el tratamiento de mis datos personales"
-                />
               </ScrollView>
             </Dialog.ScrollArea>
+            {/* La casilla va fuera del texto desplazable: siempre se ve, aunque el texto sea largo. */}
+            <Checkbox.Item
+              label="He leído y acepto la autorización para el tratamiento de mis datos personales del Acuerdo 019 de 2020."
+              status={aceptada ? 'checked' : 'unchecked'}
+              onPress={alternarCasilla}
+              position="leading"
+              mode="android"
+              color={colores.primario}
+              uncheckedColor={colores.bordeFuerte}
+              style={estilos.casilla}
+              labelStyle={estilos.etiquetaCasilla}
+              labelVariant="bodySmall"
+              accessibilityLabel="Acepto la autorización para el tratamiento de mis datos personales"
+            />
             <Dialog.Actions style={estilos.acciones}>
               <Button
                 mode="text"
@@ -178,8 +183,9 @@ const estilos = StyleSheet.create({
   area: { paddingHorizontal: 0 },
   contenido: { gap: espacio.s, paddingHorizontal: espacio.l, paddingBottom: espacio.s },
   texto: { color: colores.texto },
-  casilla: { paddingHorizontal: 0, marginTop: espacio.xs },
-  etiquetaCasilla: { color: colores.texto },
+  // Igual que la casilla de las condiciones de uso del préstamo de tablets.
+  casilla: { paddingHorizontal: espacio.l, marginTop: espacio.xs },
+  etiquetaCasilla: { color: colores.texto, textAlign: 'left' },
   // Con letra grande, los botones pasan a otra línea en vez de cortarse.
   acciones: { flexWrap: 'wrap', gap: espacio.s },
   contenidoBoton: { paddingVertical: espacio.xs },
