@@ -61,7 +61,7 @@ export function useSubirAlInicio(): () => void {
 const DESPLAZAMIENTO_PARA_ENCOGER = espacio.xl;
 
 /**
- * Contenedor común de las pantallas: área segura, marca (logo de BiblioUPC + nombre de la app y
+ * Contenedor común de las pantallas: área segura, marca (Upecito + nombre de la app y
  * de la Universidad) con el menú de usuario, título y contenido desplazable.
  */
 export function Pantalla({
@@ -117,7 +117,7 @@ export function Pantalla({
         <View style={estilos.marca}>
           {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
           <Image
-            source={require('@/assets/images/logo-biblioupc.png')}
+            source={require('@/assets/images/upecito.png')}
             style={estilos.isotipo}
             contentFit="contain"
           />

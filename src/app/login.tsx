@@ -4,7 +4,7 @@
  * el layout raíz la muestra como modal. El personal siempre entra al Panel; la comunidad, con
  * ?volver=1, regresa a la pantalla de origen.
  *
- * Arriba, el logo de BiblioUPC grande en lugar de la fila de marca, y al pie, el logo de la UPC
+ * Arriba, Upecito grande en lugar de la fila de marca, y al pie, el logo de la UPC
  * (#202).
  *
  * Patrón de datos: useIniciarSesion() (src/hooks) → iniciarSesionApi() (src/api) → mock o API.
@@ -106,13 +106,13 @@ export default function Login() {
   );
 }
 
-/** Arriba del login, en lugar de la fila de marca: el logo de BiblioUPC grande y su nombre. */
+/** Arriba del login, en lugar de la fila de marca: Upecito grande y el nombre de la app. */
 function MarcaLogin() {
   return (
     <View style={estilos.marca}>
       {/* Decorativo: el nombre va escrito debajo. */}
       <Image
-        source={require('@/assets/images/logo-biblioupc.png')}
+        source={require('@/assets/images/upecito.png')}
         style={estilos.logoApp}
         contentFit="contain"
       />
