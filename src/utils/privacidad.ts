@@ -11,8 +11,9 @@ import { VERSION_POLITICA_DATOS } from './constantes';
 import { MESES } from './fechas';
 
 /**
- * Autorización aceptada: qué política y cuándo. La fecha de la aceptación es la prueba de la
- * autorización que reconoce la política (numeral III, literal b).
+ * Autorización aceptada: qué política y cuándo. Guardar el momento de la aceptación es lo que
+ * permite responder a la solicitud de prueba de la autorización, que la política reconoce como
+ * derecho del titular (sección 7, literal b).
  */
 export type AceptacionDatos = {
   /** Fecha de la política aceptada; se compara con la vigente. */
