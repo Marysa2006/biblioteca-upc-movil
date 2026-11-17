@@ -229,7 +229,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
         <CampoFormulario
           control={control}
           nombre="requerimientos"
-          etiqueta="Requerimientos (opcional)"
+          etiqueta="Novedades (opcional)"
           multilinea
           deshabilitado={guardando}
         />

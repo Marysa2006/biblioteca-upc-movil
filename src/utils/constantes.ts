@@ -1,3 +1,5 @@
+import type { NivelFormacion } from '@/types';
+
 /** Nombre visible de la app. Cuando se elija el nombre definitivo, se cambia solo aquí y en app.json. */
 export const NOMBRE_APP = 'BiblioUPC';
 
@@ -20,26 +22,28 @@ export const URL_REPOSITORIO: string = 'http://repositorio.unicesar.edu.co';
  * de formación. Las confirmará la biblioteca; mientras tanto, son las que pidió en su documento.
  */
 export const FACULTADES: readonly string[] = [
+  'Ciencias Administrativas, Contables y Económicas',
   'Bellas Artes',
-  'Ciencias Agrarias y del Ambiente',
-  'Ciencias Básicas y Aplicadas',
+  'Derecho, Ciencias Políticas y Sociales',
+  'Ciencias Básicas',
+  'Ingenierías y Tecnologías',
   'Ciencias de la Salud',
-  'Ciencias Económicas y Administrativas',
-  'Ciencias Jurídicas y Políticas',
   'Educación',
-  'Ingenierías',
 ];
 
 /** Sedes de la Universidad (provisional). */
 export const SEDES: readonly string[] = ['Valledupar', 'Aguachica'];
 
-/** Niveles de formación (provisional). */
-export const NIVELES_FORMACION: readonly string[] = ['pregrado', 'posgrado'];
+/** Niveles de formación (provisional), con el tipo que usa `Usuario.nivel`. */
+export const NIVELES_FORMACION: readonly NivelFormacion[] = ['pregrado', 'posgrado'];
 
-/** Semestres del I al X, como los escribe la biblioteca (provisional). */
-export const SEMESTRES: readonly string[] = Array.from({ length: 10 }, (_, i) =>
-  String(i + 1),
-);
+/**
+ * Semestres del I al X, como los escribe la biblioteca (provisional). Es la lista para mostrar;
+ * lo que se guarda en `semestre` es el número, así que el formulario usa la posición + 1.
+ */
+export const SEMESTRES: readonly string[] = [
+  'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+];
 
 /** Duración de una asesoría, en minutos, igual para todas (#248). */
 export const DURACION_ASESORIA_MINUTOS = 60;

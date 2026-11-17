@@ -27,7 +27,7 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     rolesPersonal: [],
     programa: 'Ingeniería de Sistemas',
     identificacion: '12564321',
-    facultad: 'Ingenierías',
+    facultad: 'Ingenierías y Tecnologías',
     sede: 'Valledupar',
   },
   {
@@ -62,7 +62,7 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     tipo: 'egresado',
     rolesPersonal: [],
     programa: 'Contaduría',
-    facultad: 'Ciencias Económicas y Administrativas',
+    facultad: 'Ciencias Administrativas, Contables y Económicas',
     sede: 'Aguachica',
   },
 ];
@@ -90,7 +90,7 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     correo: 'andres.mejia@unicesar.edu.co',
     tipo: 'estudiante',
     rolesPersonal: [],
-    facultad: 'Ingenierías',
+    facultad: 'Ingenierías y Tecnologías',
     sede: 'Valledupar',
     programa: 'Ingeniería Ambiental',
     semestre: 5,

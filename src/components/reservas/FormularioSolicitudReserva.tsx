@@ -199,7 +199,7 @@ export function FormularioSolicitudReserva({ espacio: lugar, parametros, fecha, 
         <CampoFormulario
           control={control}
           nombre="requerimientos"
-          etiqueta="Requerimientos (opcional)"
+          etiqueta="Novedades (opcional)"
           placeholder="Por ejemplo: videobeam"
           multilinea
           deshabilitado={guardando}

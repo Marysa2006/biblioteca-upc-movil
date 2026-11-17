@@ -42,7 +42,8 @@ export function TarjetaCita({ cita, horasCancelacion, onCancelar, onReprogramar 
           {cita.tema}
         </Text>
         <Text variant="bodyMedium" style={estilos.secundario}>
-          {`Con ${cita.facilitador}`}
+          {/* La cita nace sin facilitador: se asigna al aprobar (versión 1.1). */}
+          {cita.facilitador ? `Con ${cita.facilitador}` : 'Sin facilitador asignado'}
         </Text>
       </View>
 

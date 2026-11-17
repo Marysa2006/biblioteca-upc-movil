@@ -18,11 +18,11 @@ type Fila = Omit<RegistroUso, 'id' | 'facultad' | 'sede' | 'semestre'>;
  */
 const PERSONA: Record<string, { facultad: string; sede: string; semestre: string }> = {
   'u-estudiante': { facultad: 'Ciencias de la Salud', sede: 'Valledupar', semestre: '8' },
-  'u-estudiante-2': { facultad: 'Ingenierías', sede: 'Valledupar', semestre: '4' },
-  'u-docente': { facultad: 'Ingenierías', sede: 'Valledupar', semestre: NO_INFORMADO },
+  'u-estudiante-2': { facultad: 'Ingenierías y Tecnologías', sede: 'Valledupar', semestre: '4' },
+  'u-docente': { facultad: 'Ingenierías y Tecnologías', sede: 'Valledupar', semestre: NO_INFORMADO },
   'u-administrador': { facultad: NO_INFORMADO, sede: 'Valledupar', semestre: NO_INFORMADO },
   'u-facilitador': { facultad: NO_INFORMADO, sede: 'Valledupar', semestre: NO_INFORMADO },
-  'u-egresado': { facultad: 'Ciencias Económicas y Administrativas', sede: 'Aguachica', semestre: NO_INFORMADO },
+  'u-egresado': { facultad: 'Ciencias Administrativas, Contables y Económicas', sede: 'Aguachica', semestre: NO_INFORMADO },
 };
 
 const dePersona = (usuarioId: string) =>
