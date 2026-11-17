@@ -69,9 +69,16 @@ export default function FranjasTema() {
   } else if (temas.isError || franjas.isError || (reprogramar && misCitas.isError)) {
     contenido = <EstadoError mensaje="No pudimos cargar las franjas." onReintentar={reintentar} />;
   } else if (!tema?.activo) {
-    contenido = <EstadoVacio mensaje="Este tema ya no se ofrece. Elige otro tema de asesoría." />;
+    contenido = (
+      <EstadoVacio
+        pose="buscando"
+        mensaje="Este tema ya no se ofrece. Elige otro tema de asesoría."
+      />
+    );
   } else if (reprogramar && !cita) {
-    contenido = <EstadoVacio mensaje="No encontramos la cita que querías reprogramar." />;
+    contenido = (
+      <EstadoVacio pose="buscando" mensaje="No encontramos la cita que querías reprogramar." />
+    );
   } else {
     const disponibles = cita ? franjas.data.filter((f) => f.id !== cita.franjaId) : franjas.data;
     contenido = (

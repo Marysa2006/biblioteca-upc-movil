@@ -67,9 +67,9 @@ export const coloresEstado: Record<EstadoSolicitud, { fondo: string; texto: stri
 export const espacio = { xs: 4, s: 8, m: 16, l: 24, xl: 32 } as const;
 export const radio = { boton: 12, tarjeta: 16 } as const;
 /**
- * Ancho de los logos (#202):
- * - isotipo: el logo pequeño del encabezado de Pantalla (hoy el de BiblioUPC), entre 32 y 40 px;
- * - app: el logo de BiblioUPC grande, arriba del login;
+ * Ancho de los logos (#202 y #222):
+ * - isotipo: Upecito pequeño, en el encabezado de Pantalla, entre 32 y 40 px;
+ * - app: Upecito grande, arriba del login;
  * - upcHorizontal: el logo horizontal de la UPC, al pie del login.
  */
 export const tamanoLogo = { isotipo: 36, app: 80, upcHorizontal: 140 } as const;

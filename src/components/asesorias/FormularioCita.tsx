@@ -11,10 +11,10 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { CampoFormulario } from '@/components/reservas/CampoFormulario';
-import { AvisoError } from '@/components/ui';
+import { AvisoError, Upecito } from '@/components/ui';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { FranjaAsesoria } from '@/types';
 import { esquemaCita, type FormularioCita as DatosCita } from '@/utils/asesorias';
@@ -67,7 +67,7 @@ export function FormularioCita({
   if (agendada) {
     return (
       <View style={estilos.confirmacion} accessibilityLiveRegion="polite">
-        <Icon source="check-circle-outline" size={40} color={colores.primario} />
+        <Upecito pose="listo" />
         <Text variant="bodyLarge" style={estilos.textoConfirmacion}>
           {confirmacion}
         </Text>

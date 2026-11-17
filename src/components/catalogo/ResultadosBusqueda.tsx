@@ -100,7 +100,7 @@ export function ResultadosBusqueda({
   if (resultados.length === 0) {
     return (
       <View style={estilos.contenedor}>
-        <EstadoVacio
+        <EstadoVacio pose="buscando"
           mensaje={`No encontramos «${buscado}» en ${textos.nombre}. Prueba con otras palabras o con el apellido del autor.`}
         />
         {botonFiltrar}

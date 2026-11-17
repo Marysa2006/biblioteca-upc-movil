@@ -25,7 +25,7 @@ import { registrarUso } from './estadisticas';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
 /** Cuántos minutos sirve el código de una sesión (CA1: tiempo limitado). */
-export const MINUTOS_VIGENCIA_CODIGO = 45;
+export const MINUTOS_VIGENCIA_CODIGO = 4 * 60; // 4 horas, como pidió la biblioteca
 
 /** Estado en memoria de la asistencia de cada sesión, solo para los datos de prueba. */
 type EstadoAsistencia = {

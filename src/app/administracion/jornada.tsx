@@ -67,7 +67,7 @@ function Formulario({ id }: { id?: string }) {
   }
 
   const original = id ? jornadas.data.find((jornada) => jornada.id === id) : undefined;
-  if (id && !original) return <EstadoVacio mensaje="Esta jornada ya no existe." />;
+  if (id && !original) return <EstadoVacio pose="buscando" mensaje="Esta jornada ya no existe." />;
 
   if (franjasGeneradas != null) {
     return (

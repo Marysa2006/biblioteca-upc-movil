@@ -31,6 +31,7 @@
 - [Stack tecnológico](#️-stack-tecnológico)
 - [Cómo empezar](#-cómo-empezar)
 - [Estructura del proyecto](#-estructura-del-proyecto)
+- [Documentación](#-documentación)
 - [Cómo trabajamos](#-cómo-trabajamos)
 - [Equipo](#-equipo)
 
@@ -392,7 +393,7 @@ Mientras el Backend publica el inicio de sesión institucional, la app usa datos
 
 Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
 
-**Roles del personal (provisionales).** Un usuario tiene un **tipo** (estudiante, docente, administrativo, egresado o visitante) y una lista de **roles del personal**, vacía para la comunidad. Sus permisos son la suma de los de sus roles:
+**Roles del personal (provisionales).** Un usuario tiene un **tipo** (estudiante, docente, administrativo o egresado; `visitante` es el valor cuando no hay sesión) y una lista de **roles del personal**, vacía para la comunidad. Sus permisos son la suma de los de sus roles:
 
 | Rol | Identificador | Permisos |
 |---|---|---|
@@ -450,6 +451,17 @@ biblioteca-upc-movil/
 | Datos de prueba | `src/api/mocks/servicios.ts` | Integración |
 
 Con `EXPO_PUBLIC_USAR_MOCKS=true` en el `.env`, la app usa los datos de prueba. Cuando el Backend publique un endpoint, integración lo conecta en la función de API y la pantalla no cambia.
+
+---
+
+## 📚 Documentación
+
+| Documento | Para qué |
+|---|---|
+| [Manual de usuario](docs/manual-usuario.md) | Cómo se usa la app: qué hace cada pantalla, con capturas. Es lo que se entrega a la biblioteca. |
+| [Guía técnica](docs/guia-tecnica.md) | Cómo está hecha la app: arquitectura, datos, programación, especificaciones de diseño, cómo generar el APK y cómo publicar una versión. Para quien desarrolle, mantenga o integre. |
+| [Paleta de colores](docs/paleta-colores.md) | Los colores y la tipografía exactos, tomados del manual de identidad de la UPC. |
+| [Spike de cámara](docs/spike-camara.md) | La prueba del escáner de códigos (HU-31 y HU-32). |
 
 ---
 

@@ -47,7 +47,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar las líneas de formación." onReintentar={() => refetch()} />;
   }
   const original = id ? data.find((linea) => linea.id === id) : undefined;
-  if (id && !original) return <EstadoVacio mensaje="Esta línea ya no existe." />;
+  if (id && !original) return <EstadoVacio pose="buscando" mensaje="Esta línea ya no existe." />;
 
   return (
     <FormularioLinea

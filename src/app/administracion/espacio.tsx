@@ -77,7 +77,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar el espacio." onReintentar={() => refetch()} />;
   }
   const actual = data.find((e) => e.id === id);
-  if (!actual) return <EstadoVacio mensaje="Este espacio ya no existe." />;
+  if (!actual) return <EstadoVacio pose="buscando" mensaje="Este espacio ya no existe." />;
 
   const guardar = (datos: DatosEspacio) => {
     editar.reset();

@@ -96,7 +96,7 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
     );
   }
   const actual = espacios.data.find((e) => e.id === espacioId);
-  if (!actual) return <EstadoVacio mensaje="Este espacio ya no existe." />;
+  if (!actual) return <EstadoVacio pose="buscando" mensaje="Este espacio ya no existe." />;
 
   const revisar = (formulario: DatosFormularioBloqueo) => {
     const datos = aDatosBloqueo(espacioId, formulario);

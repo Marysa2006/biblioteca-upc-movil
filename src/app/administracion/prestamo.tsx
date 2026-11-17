@@ -84,9 +84,15 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
   }
 
   const prestamo = prestamos.data.find((p) => p.id === id);
-  if (!prestamo) return <EstadoVacio mensaje="Este préstamo ya no existe." />;
+  if (!prestamo) return <EstadoVacio pose="buscando" mensaje="Este préstamo ya no existe." />;
   const tablet = tablets.data.find((t) => t.id === prestamo.tabletId);
-  if (!tablet) return <EstadoVacio mensaje="La tablet de este préstamo ya no está en el inventario." />;
+  if (!tablet)
+    return (
+      <EstadoVacio
+        pose="buscando"
+        mensaje="La tablet de este préstamo ya no está en el inventario."
+      />
+    );
 
   // El préstamo debe estar en el estado que toca.
   if (modo === 'entrega' && prestamo.estado !== 'reservado') {

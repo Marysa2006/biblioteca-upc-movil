@@ -15,10 +15,10 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Icon, Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
 
 import { SelectorFecha } from '@/components/espacios/SelectorFecha';
-import { AvisoError, EstadoCarga, EstadoError } from '@/components/ui';
+import { AvisoError, EstadoCarga, EstadoError, Upecito } from '@/components/ui';
 import type { AlternativaPrestamo, FormularioPrestamo, FranjaTablets } from '@/hooks/useTablets';
 import { colores, espacio, fuentes } from '@/theme';
 import type { CondicionesTablet, Parametros } from '@/types';
@@ -131,7 +131,7 @@ export function FormularioPrestamoTablet({
   if (enviada) {
     return (
       <View style={estilos.confirmacion} accessibilityLiveRegion="polite">
-        <Icon source="check-circle-outline" size={40} color={colores.primario} />
+        <Upecito pose="listo" />
         <Text variant="bodyLarge" style={estilos.textoConfirmacion}>
           {CONFIRMACION}
         </Text>
