@@ -32,3 +32,13 @@ export const VERSION_POLITICA_DATOS = '2020-10-05';
 
 /** Correo de la UPC para ejercer los derechos sobre los datos personales (numeral IV de la autorización). */
 export const CORREO_DATOS_PERSONALES = 'tratamientodedatos@unicesar.edu.co';
+
+/** NIT de la Universidad como responsable del tratamiento (Acuerdo 019, numeral 2, literal b). */
+export const NIT_UNIVERSIDAD = '892.300.285-6';
+
+/**
+ * Plazos con que la Universidad responde (Acuerdo 019, numerales 9.3 y 9.4): días hábiles.
+ * Se muestran en la autorización porque son lo que la persona necesita saber al ejercer un derecho.
+ */
+export const DIAS_HABILES_CONSULTA = 10;
+export const DIAS_HABILES_RECLAMO = 15;

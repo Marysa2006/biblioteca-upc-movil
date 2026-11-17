@@ -26,7 +26,13 @@ import { Button, Checkbox, Dialog, Portal, Text } from 'react-native-paper';
 import { useCerrarSesion } from '@/hooks/useAutenticacion';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes } from '@/theme';
-import { CORREO_DATOS_PERSONALES, VERSION_POLITICA_DATOS } from '@/utils/constantes';
+import {
+  CORREO_DATOS_PERSONALES,
+  DIAS_HABILES_CONSULTA,
+  DIAS_HABILES_RECLAMO,
+  NIT_UNIVERSIDAD,
+  VERSION_POLITICA_DATOS,
+} from '@/utils/constantes';
 import { aceptoPoliticaVigente } from '@/utils/privacidad';
 
 import { EnlacePoliticaDatos } from './EnlacePoliticaDatos';
@@ -97,9 +103,7 @@ export function AceptacionTratamientoDatos() {
             <Dialog.ScrollArea style={[estilos.area, { maxHeight: altoTexto }]}>
               <ScrollView contentContainerStyle={estilos.contenido}>
                 <Text variant="bodyMedium" style={estilos.texto}>
-                  La Universidad Popular del Cesar es la responsable del tratamiento de tus datos
-                  personales. Su política es el Acuerdo 019 del 5 de octubre de 2020, que desarrolla
-                  la Ley 1581 de 2012.
+                  {`La Universidad Popular del Cesar (NIT ${NIT_UNIVERSIDAD}) es la responsable del tratamiento de tus datos personales. Su política es el Acuerdo 019 del 5 de octubre de 2020, que desarrolla la Ley 1581 de 2012.`}
                 </Text>
                 <Text variant="bodyMedium" style={estilos.texto}>
                   Esta app maneja tu nombre, correo institucional, tipo de usuario y programa, y los
@@ -108,7 +112,7 @@ export function AceptacionTratamientoDatos() {
                   Universidad, dentro de las finalidades de la política.
                 </Text>
                 <Text variant="bodyMedium" style={estilos.texto}>
-                  {`Puedes conocer, actualizar, rectificar o pedir la supresión de tus datos, y revocar esta autorización, escribiendo a ${CORREO_DATOS_PERSONALES}.`}
+                  {`Puedes conocer, actualizar, rectificar o pedir la supresión de tus datos, y revocar esta autorización, escribiendo a ${CORREO_DATOS_PERSONALES}. La Universidad responde las consultas en máximo ${DIAS_HABILES_CONSULTA} días hábiles y los reclamos en máximo ${DIAS_HABILES_RECLAMO} días hábiles.`}
                 </Text>
                 <EnlacePoliticaDatos nota="Lee la política completa antes de aceptar:" />
               </ScrollView>

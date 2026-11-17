@@ -20,7 +20,12 @@ import { useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { DatosEditablesPerfil, Usuario } from '@/types';
-import { CORREO_DATOS_PERSONALES } from '@/utils/constantes';
+import {
+  CORREO_DATOS_PERSONALES,
+  DIAS_HABILES_CONSULTA,
+  DIAS_HABILES_RECLAMO,
+  NIT_UNIVERSIDAD,
+} from '@/utils/constantes';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { aceptoPoliticaVigente, fechaDeAceptacion } from '@/utils/privacidad';
 import { describirRoles } from '@/utils/roles';
@@ -155,9 +160,7 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
           Privacidad y datos personales
         </Text>
         <Text variant="bodySmall" style={estilos.notaTarjeta}>
-          La Universidad es la responsable del tratamiento de tus datos. La política es el Acuerdo
-          019 del 5 de octubre de 2020. Para ejercer tus derechos, escribe a{' '}
-          {CORREO_DATOS_PERSONALES}.
+          {`La Universidad Popular del Cesar (NIT ${NIT_UNIVERSIDAD}) es la responsable del tratamiento de tus datos. La política es el Acuerdo 019 del 5 de octubre de 2020. Para ejercer tus derechos, escribe a ${CORREO_DATOS_PERSONALES}: la Universidad responde las consultas en máximo ${DIAS_HABILES_CONSULTA} días hábiles y los reclamos en máximo ${DIAS_HABILES_RECLAMO} días hábiles.`}
         </Text>
         {aceptacion ? (
           <Text variant="bodySmall" style={estilos.notaTarjeta}>
