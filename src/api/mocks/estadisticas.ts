@@ -10,7 +10,23 @@ import { NO_INFORMADO, type RegistroUso } from '@/types';
 /** Fecha de octubre de 2026, por día. Ayuda a repartir los 38 registros. */
 const dia = (n: number) => `2026-10-${String(n).padStart(2, '0')}`;
 
-type Fila = Omit<RegistroUso, 'id'>;
+type Fila = Omit<RegistroUso, 'id' | 'facultad' | 'sede' | 'semestre'>;
+
+/**
+ * Facultad, sede y semestre de cada persona de prueba (versión 1.1, #259). Se resuelven por
+ * usuario para no repetirlos en las 38 filas; quien no esté aquí queda 'no_informado'.
+ */
+const PERSONA: Record<string, { facultad: string; sede: string; semestre: string }> = {
+  'u-estudiante': { facultad: 'Ciencias de la Salud', sede: 'Valledupar', semestre: '8' },
+  'u-estudiante-2': { facultad: 'Ingenierías', sede: 'Valledupar', semestre: '4' },
+  'u-docente': { facultad: 'Ingenierías', sede: 'Valledupar', semestre: NO_INFORMADO },
+  'u-administrador': { facultad: NO_INFORMADO, sede: 'Valledupar', semestre: NO_INFORMADO },
+  'u-facilitador': { facultad: NO_INFORMADO, sede: 'Valledupar', semestre: NO_INFORMADO },
+  'u-egresado': { facultad: 'Ciencias Económicas y Administrativas', sede: 'Aguachica', semestre: NO_INFORMADO },
+};
+
+const dePersona = (usuarioId: string) =>
+  PERSONA[usuarioId] ?? { facultad: NO_INFORMADO, sede: NO_INFORMADO, semestre: NO_INFORMADO };
 
 const FILAS: Fila[] = [
   // Laura Pérez (estudiante, Enfermería): reservas y asesorías
@@ -66,5 +82,6 @@ const FILAS: Fila[] = [
 /** Los registros de uso, con un id estable `uso-1`, `uso-2`… */
 export const REGISTROS_USO: RegistroUso[] = FILAS.map((fila, indice) => ({
   id: `uso-${indice + 1}`,
+  ...dePersona(fila.usuarioId),
   ...fila,
 }));

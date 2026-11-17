@@ -102,14 +102,31 @@ function contarPorMes(registros: RegistroUso[]): ConteoIndicador[] {
  */
 export function calcularIndicadores(registros: RegistroUso[]): IndicadoresUso {
   if (registros.length === 0) {
-    return { total: 0, porServicio: [], porTipoUsuario: [], porPrograma: [], porMes: [] };
+    return {
+      total: 0,
+      porServicio: [],
+      porTipoUsuario: [],
+      porPrograma: [],
+      porMes: [],
+      porFacultad: [],
+      porSede: [],
+      porSemestre: [],
+    };
   }
+  const calificadas = registros.filter((r) => r.calificacion != null);
   return {
     total: registros.length,
     porServicio: contarPor(registros, (r) => r.servicio, NOMBRE_SERVICIO),
     porTipoUsuario: contarPor(registros, (r) => r.tipoUsuario, NOMBRE_TIPO_USUARIO),
     porPrograma: contarPor(registros, (r) => r.programa, NOMBRE_PROGRAMA),
     porMes: contarPorMes(registros),
+    porFacultad: contarPor(registros, (r) => r.facultad, NOMBRE_PROGRAMA),
+    porSede: contarPor(registros, (r) => r.sede, NOMBRE_PROGRAMA),
+    porSemestre: contarPor(registros, (r) => r.semestre, NOMBRE_PROGRAMA),
+    calificacionPromedio:
+      calificadas.length === 0
+        ? undefined
+        : calificadas.reduce((suma, r) => suma + (r.calificacion ?? 0), 0) / calificadas.length,
   };
 }
 

@@ -6,7 +6,13 @@
  * de HU-28. Las dos parejas comparten estos tipos: el contrato se fusiona antes que las HU.
  */
 
-import type { EstadoSolicitud } from './solicitudes';
+import type { DatosSolicitante, EstadoSolicitud } from './solicitudes';
+
+/**
+ * Recursos de apoyo que se pueden pedir con un espacio (formularios de la bibliotecóloga,
+ * versión 1.1).
+ */
+export type RecursoApoyo = 'portatil' | 'hdmi' | 'cable_red' | 'mouse' | 'marcadores';
 
 /** Espacio reservable de la biblioteca (HU-16). */
 export type Espacio = {
@@ -21,6 +27,8 @@ export type Espacio = {
   horario: string;
   /** Un espacio inactivo no se ofrece para reservar (HU-16, CA3). */
   activo: boolean;
+  /** Sede de la biblioteca donde está el espacio (versión 1.1). */
+  sede?: string;
 };
 
 /** Reserva de un espacio (HU-17, HU-18 y HU-19). */
@@ -43,8 +51,21 @@ export type Reserva = {
   estado: EstadoSolicitud;
   /** Motivo del rechazo o la cancelación (HU-19, CA2); vacío mientras no aplique. */
   motivo?: string;
-  /** Requerimientos adicionales que pide el usuario (HU-18). */
+  /**
+   * Requerimientos adicionales que pide el usuario (HU-18).
+   * En la interfaz se muestra como «Novedades» desde la versión 1.1.
+   */
   requerimientos?: string;
+
+  // ── Versión 1.1 ────────────────────────────────────────────
+  /** Sede de la biblioteca (versión 1.1). */
+  sede?: string;
+  /** Recursos de apoyo que se piden con el espacio. */
+  recursos?: RecursoApoyo[];
+  /** Datos de quien reserva, copiados en la solicitud. */
+  datosSolicitante?: DatosSolicitante;
+  /** Si la persona aceptó los términos del uso del espacio al pedirlo. */
+  terminosAceptados?: boolean;
 };
 
 /** Bloqueo institucional de un espacio (HU-20). */

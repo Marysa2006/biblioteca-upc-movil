@@ -36,4 +36,9 @@ export type Parametros = {
   /** Textos de las comunicaciones automáticas. */
   textoRecordatorio: string;
   textoCancelacion: string;
+  /**
+   * Horas máximas de un préstamo de tablet (versión 1.1). El formato de la biblioteca dice 3;
+   * mientras no se confirme, vale 3.
+   */
+  horasMaximasPrestamo: number;
 };

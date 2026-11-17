@@ -40,7 +40,8 @@ export function DetalleCitaAgenda({ cita }: { cita: CitaAgenda }) {
           valor={`${fechaCompleta(cita.fecha)}, ${cita.horaInicio} – ${cita.horaFin}`}
         />
         <Dato etiqueta="Modalidad" valor={modalidad} />
-        <Dato etiqueta="Facilitador" valor={cita.facilitador} />
+        {/* La cita nace sin facilitador: se asigna al aprobar (versión 1.1). */}
+        <Dato etiqueta="Facilitador" valor={cita.facilitador ?? 'Sin asignar'} />
         {cita.motivo ? <Dato etiqueta="Motivo" valor={cita.motivo} /> : null}
       </Bloque>
 

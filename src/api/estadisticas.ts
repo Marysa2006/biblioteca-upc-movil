@@ -41,6 +41,8 @@ export type OperacionUso = {
   fechaFin?: string;
   modalidad?: ModalidadUso;
   estado?: EstadoUso;
+  /** Calificación de la calidad, de 1 a 5, si la persona la dejó (versión 1.1). */
+  calificacion?: number;
 };
 
 /** Hoy en la hora del celular, 'AAAA-MM-DD'. */
@@ -74,6 +76,13 @@ export function registrarUso(operacion: OperacionUso): RegistroUso {
     fechaFin: operacion.fechaFin ?? anterior?.fechaFin,
     modalidad: operacion.modalidad ?? anterior?.modalidad ?? NO_INFORMADO,
     estado: operacion.estado ?? 'completada',
+    facultad: usuario?.facultad?.trim() || anterior?.facultad || NO_INFORMADO,
+    sede: usuario?.sede?.trim() || anterior?.sede || NO_INFORMADO,
+    semestre:
+      (usuario?.semestre != null ? String(usuario.semestre) : '') ||
+      anterior?.semestre ||
+      NO_INFORMADO,
+    calificacion: operacion.calificacion ?? anterior?.calificacion,
   };
   registros = anterior
     ? registros.map((actual) => (actual.id === id ? registro : actual))

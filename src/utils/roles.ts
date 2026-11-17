@@ -29,6 +29,12 @@ export const NOMBRE_TIPO: Record<TipoUsuario, string> = {
   visitante: 'Visitante',
 };
 
+/**
+ * Permisos que la administración puede dar aparte de los roles (versión 1.1).
+ * Por ahora solo `novedades`: publicar avisos e informativos en Inicio sin tocar los servicios.
+ */
+export const PERMISOS_ASIGNABLES: readonly Permiso[] = ['novedades'];
+
 export const NOMBRE_ROL_PERSONAL: Record<RolPersonal, string> = {
   administrador: 'Administración de la biblioteca',
   facilitador: 'Facilitador',
@@ -70,9 +76,10 @@ export const NOMBRE_PERMISO: Record<Permiso, string> = {
   tablets: 'Préstamo de tablets',
   formacion: 'Capacitaciones',
   estadisticas: 'Estadísticas',
+  novedades: 'Novedades y avisos',
 };
 
-type ConRoles = Pick<Usuario, 'rolesPersonal'> | null | undefined;
+type ConRoles = Pick<Usuario, 'rolesPersonal' | 'permisosExtra'> | null | undefined;
 
 const esRolPersonal = (rol: Rol): rol is RolPersonal =>
   (ROLES_PERSONAL as readonly string[]).includes(rol);
@@ -97,9 +104,16 @@ export function permisosDeRoles(roles: readonly RolPersonal[]): Permiso[] {
   return (Object.keys(NOMBRE_PERMISO) as Permiso[]).filter((permiso) => suma.has(permiso));
 }
 
-/** Permisos del usuario. Sin sesión, o de la comunidad, no hay ninguno. */
+/**
+ * Permisos del usuario: los de sus roles más los que le dio la administración en `permisosExtra`
+ * (versión 1.1). Sin sesión, o de la comunidad, solo puede tener los extra.
+ */
 export function permisosDe(usuario: ConRoles): Permiso[] {
-  return permisosDeRoles(usuario?.rolesPersonal ?? []);
+  const suma = new Set([
+    ...permisosDeRoles(usuario?.rolesPersonal ?? []),
+    ...(usuario?.permisosExtra ?? []),
+  ]);
+  return (Object.keys(NOMBRE_PERMISO) as Permiso[]).filter((permiso) => suma.has(permiso));
 }
 
 /** ¿El usuario tiene este permiso? */

@@ -124,6 +124,8 @@ export const esquemaParametros = z
     horasMinimasCancelacion: horas,
     textoRecordatorio: textoAutomatico,
     textoCancelacion: textoAutomatico,
+    /** Horas máximas de un préstamo de tablet (versión 1.1). */
+    horasMaximasPrestamo: horas,
   })
   .superRefine((datos, ctx) => {
     // Periodos: fechas cruzadas y periodos que se superponen.
@@ -206,6 +208,7 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
     horasMinimasCancelacion: String(parametros.horasMinimasCancelacion),
     textoRecordatorio: parametros.textoRecordatorio,
     textoCancelacion: parametros.textoCancelacion,
+    horasMaximasPrestamo: String(parametros.horasMaximasPrestamo),
   };
 }
 
@@ -230,5 +233,6 @@ export function aParametros(datos: FormularioParametros): Parametros {
     horasMinimasCancelacion: Number(datos.horasMinimasCancelacion),
     textoRecordatorio: datos.textoRecordatorio.trim(),
     textoCancelacion: datos.textoCancelacion.trim(),
+    horasMaximasPrestamo: Number(datos.horasMaximasPrestamo),
   };
 }

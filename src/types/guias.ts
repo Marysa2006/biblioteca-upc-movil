@@ -17,6 +17,15 @@ export type Guia = {
   actualizada: string;
   /** Solo las publicadas se ofrecen a la comunidad (CA1). */
   publicado: boolean;
+
+  // ── Versión 1.1: guías que publica la biblioteca (#258) ────
+  /**
+   * Enlace al documento (PDF o Drive), cuando la guía no está escrita dentro de la app.
+   * `contenido` queda para las guías que sí se escriben aquí.
+   */
+  enlace?: string;
+  /** Sede de la biblioteca a la que aplica la guía. */
+  sede?: string;
 };
 
 /** Guía guardada en el celular para leerla sin conexión (CA2). */

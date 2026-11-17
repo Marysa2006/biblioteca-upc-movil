@@ -3,6 +3,8 @@
  * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
  */
 
+import type { NivelFormacion, TipoUsuario } from './usuarios';
+
 /** Estado común de todas las solicitudes (capacitaciones, asesorías, reservas, tablets). */
 export type EstadoSolicitud =
   | 'pendiente'
@@ -44,4 +46,34 @@ export type EventoSolicitud = {
   autor: string;
   /** Nota del cambio: el motivo del rechazo, el resultado, la fecha propuesta… */
   nota?: string;
+};
+
+/**
+ * Datos de quien pide un servicio, copiados en la solicitud (versión 1.1).
+ * Se guardan en el momento de pedir porque el perfil puede cambiar y la solicitud debe conservar
+ * lo que se pidió. Lo que la sesión ya sabe llega prellenado al formulario.
+ */
+export type DatosSolicitante = {
+  tipo: TipoUsuario;
+  /** Nombre y apellidos, como se pide en los formularios de la biblioteca. */
+  nombreCompleto: string;
+  identificacion: string;
+  correo: string;
+  celular: string;
+  nivel?: NivelFormacion;
+  facultad?: string;
+  programa?: string;
+  semestre?: number;
+};
+
+/**
+ * Calificación de la calidad del servicio (versión 1.1). La pide la bibliotecóloga al terminar
+ * la asesoría o la capacitación, junto con la asistencia.
+ */
+export type Calificacion = {
+  /** De 1 a 5. */
+  puntaje: number;
+  comentario?: string;
+  /** 'AAAA-MM-DD'. */
+  fecha: string;
 };

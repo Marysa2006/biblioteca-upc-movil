@@ -51,6 +51,13 @@ export type RegistroUso = {
   fechaFin?: string;
   modalidad: ModalidadUso | typeof NO_INFORMADO;
   estado: EstadoUso;
+
+  // ── Versión 1.1: cruces y filtros nuevos (#259) ────────────
+  facultad: DatoUso;
+  sede: DatoUso;
+  semestre: DatoUso;
+  /** Calificación que dejó la persona, de 1 a 5; si no calificó, no viene. */
+  calificacion?: number;
 };
 
 /**
@@ -63,6 +70,9 @@ export type FiltrosEstadisticas = {
   servicio?: ServicioEstadistica | 'todos';
   tipoUsuario?: TipoUsuario | typeof NO_INFORMADO | 'todos';
   programa?: DatoUso | 'todos';
+  facultad?: DatoUso | 'todos';
+  sede?: DatoUso | 'todos';
+  semestre?: DatoUso | 'todos';
 };
 
 /** Un grupo de un indicador: su nombre y cuántos registros tiene. */
@@ -82,4 +92,11 @@ export type IndicadoresUso = {
   porPrograma: ConteoIndicador[];
   /** Un elemento por mes con datos, 'AAAA-MM', en orden. */
   porMes: ConteoIndicador[];
+
+  // ── Versión 1.1 (#259) ─────────────────────────────────────
+  porFacultad: ConteoIndicador[];
+  porSede: ConteoIndicador[];
+  porSemestre: ConteoIndicador[];
+  /** Promedio de las calificaciones recibidas; no viene si nadie calificó. */
+  calificacionPromedio?: number;
 };
