@@ -24,6 +24,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { queryClient } from '@/api/queryClient';
 import { SincronizarRecordatorios } from '@/components/notificaciones/SincronizarRecordatorios';
+import { AceptacionTratamientoDatos } from '@/components/privacidad/AceptacionTratamientoDatos';
 import { tema } from '@/theme';
 
 // La pantalla de carga sigue visible hasta que Open Sans esté lista.
@@ -55,6 +56,8 @@ export default function LayoutRaiz() {
           <StatusBar style="dark" />
           {/* HU-27: los recordatorios de las reservas aprobadas, aunque no se abra Notificaciones. */}
           <SincronizarRecordatorios />
+          {/* #225: antes de usar la app con cuenta, la autorización de tratamiento de datos. */}
+          <AceptacionTratamientoDatos />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(comunidad)" />
             <Stack.Screen name="(personal)" />

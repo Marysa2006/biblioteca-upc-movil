@@ -3,6 +3,9 @@
  * Solo valida y entrega los datos: la pantalla llama a useActualizarPerfil() y muestra
  * la confirmación o el error de la API (mensajeError).
  *
+ * #225 (CA3): antes de los campos dice para qué se usan y enlaza la política de la UPC, porque
+ * aquí es donde la persona escribe datos que no vienen de su cuenta institucional.
+ *
  * La dirección es provisional: no está en el esquema del Backend (ver src/types).
  */
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,10 +13,15 @@ import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 import { Button, HelperText, TextInput } from 'react-native-paper';
 
+import { NotaDatosPersonales } from '@/components/privacidad/NotaDatosPersonales';
 import { AvisoError } from '@/components/ui';
 import { espacio } from '@/theme';
 import type { DatosEditablesPerfil, Perfil } from '@/types';
 import { esquemaPerfil, LARGO_MAXIMO_DIRECCION, limpiarTelefono } from '@/utils/perfil';
+
+/** Para qué se usan los datos de contacto (#225, CA3), con lo que respondió la bibliotecóloga. */
+const PARA_QUE_SIRVEN =
+  'Tu teléfono lo usa la biblioteca para confirmar tus solicitudes; la dirección es opcional. El tratamiento de estos datos se rige por la política de la Universidad.';
 
 type Props = {
   perfil: Perfil;
@@ -47,6 +55,8 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, o
           <AvisoError mensaje={mensajeError} />
         </View>
       ) : null}
+
+      <NotaDatosPersonales mensaje={PARA_QUE_SIRVEN} />
 
       <Controller
         control={control}

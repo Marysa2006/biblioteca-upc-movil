@@ -45,7 +45,7 @@ export function DatosContacto({
         <View style={estilos.faltante}>
           <Icon source="information-outline" size={20} color={colores.primarioOscuro} />
           <Text variant="bodyMedium" style={estilos.textoFaltante}>
-            Completa tu teléfono para recibir avisos de tus solicitudes.
+            Completa tu teléfono para que la biblioteca pueda confirmar tus solicitudes.
           </Text>
         </View>
       )}
