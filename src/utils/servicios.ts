@@ -63,9 +63,9 @@ export const CATEGORIAS_SERVICIO: Record<CategoriaServicio, InfoCategoria> = {
   prestamo: {
     nombre: 'Préstamo de libros',
     icono: 'book-arrow-right-outline',
-    descripcion: 'Préstamo de material y hemeroteca.',
+    descripcion: 'Préstamo de material bibliográfico.',
     presentacion:
-      'Préstamo de libros y material bibliográfico, y consulta de la hemeroteca. Elige el servicio para ver su público, horarios y cómo solicitarlo.',
+      'Préstamo de libros y material bibliográfico. Elige el servicio para ver su público, horarios y cómo solicitarlo.',
   },
 };
 
