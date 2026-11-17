@@ -6,9 +6,11 @@
  *   persona no asistió. Al guardar, la agenda y el detalle se refrescan solos.
  * Solo con el permiso `asesorias`; la administración ve las citas de todos los facilitadores.
  * HU-33: el día de la cita aprobada, "Tomar asistencia" abre el control con QR.
+ * #217: la cita pendiente se aprueba o se rechaza con motivo (DialogoRechazarCita). La API solo
+ * deja decidir al facilitador de la cita o a la administración.
  *
- * Patrón de datos: useAgenda() / useRegistrarResultado() / useRegistrarInasistencia()
- * (src/hooks) → src/api/asesorias.ts → mock o API.
+ * Patrón de datos: useAgenda() / useAprobarCita() / useRechazarCita() / useRegistrarResultado()
+ * / useRegistrarInasistencia() (src/hooks) → src/api/asesorias.ts → mock o API.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -17,12 +19,26 @@ import { Button, Text } from 'react-native-paper';
 
 import { DetalleCitaAgenda } from '@/components/agenda/DetalleCitaAgenda';
 import { DialogoInasistencia } from '@/components/agenda/DialogoInasistencia';
+import { DialogoRechazarCita } from '@/components/agenda/DialogoRechazarCita';
 import { FormularioResultado } from '@/components/agenda/FormularioResultado';
 import { SinPermiso } from '@/components/personal/SinPermiso';
-import { EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
-import { useAgenda, useRegistrarInasistencia, useRegistrarResultado } from '@/hooks/useAsesorias';
+import {
+  AvisoError,
+  EncabezadoApilado,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  Pantalla,
+} from '@/components/ui';
+import {
+  useAgenda,
+  useAprobarCita,
+  useRechazarCita,
+  useRegistrarInasistencia,
+  useRegistrarResultado,
+} from '@/hooks/useAsesorias';
 import { useRol } from '@/hooks/useRol';
-import { colores, espacio, radio } from '@/theme';
+import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import { puedeRegistrarResultado } from '@/utils/agenda';
 import { puedeTomarAsistencia } from '@/utils/asistencia';
 import { mensajeErrorGuardar } from '@/utils/errores';
@@ -50,7 +66,10 @@ function Detalle() {
   const agenda = useAgenda(desde ?? '', hasta ?? '', esAdministrador ? 'todas' : undefined);
   const registrarResultado = useRegistrarResultado();
   const registrarInasistencia = useRegistrarInasistencia();
+  const aprobar = useAprobarCita();
+  const rechazar = useRechazarCita();
   const [preguntarInasistencia, setPreguntarInasistencia] = useState(false);
+  const [preguntarRechazo, setPreguntarRechazo] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
 
   // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.
@@ -77,6 +96,34 @@ function Detalle() {
     setPreguntarInasistencia(true);
   };
 
+  // #217: mientras se aprueba o se rechaza, los dos botones quedan ocupados (CA3).
+  const decidiendo = aprobar.isPending || rechazar.isPending;
+
+  const aprobarCita = () => {
+    rechazar.reset();
+    aprobar.mutate(cita.id, {
+      onSuccess: () => setAviso(`Aprobaste la cita de ${cita.solicitante}. Le avisamos.`),
+    });
+  };
+
+  const abrirRechazo = () => {
+    aprobar.reset();
+    rechazar.reset();
+    setPreguntarRechazo(true);
+  };
+
+  const confirmarRechazo = (motivo: string) => {
+    rechazar.mutate(
+      { id: cita.id, motivo },
+      {
+        onSuccess: () => {
+          setPreguntarRechazo(false);
+          setAviso(`Rechazaste la cita de ${cita.solicitante}. Le avisamos y el cupo quedó libre.`);
+        },
+      },
+    );
+  };
+
   const confirmarInasistencia = () => {
     registrarInasistencia.mutate(cita.id, {
       onSuccess: () => {
@@ -97,6 +144,45 @@ function Detalle() {
       ) : null}
 
       <DetalleCitaAgenda cita={cita} />
+
+      {cita.estado === 'pendiente' ? (
+        <View style={estilos.decision}>
+          <Text variant="titleSmall" style={estilos.tituloDecision} accessibilityRole="header">
+            Esta cita espera tu aprobación
+          </Text>
+          <Text variant="bodySmall" style={estilos.textoDecision}>
+            La persona recibe un aviso con tu respuesta. Si la rechazas, el cupo queda libre.
+          </Text>
+          {aprobar.error ? <AvisoError mensaje={mensajeErrorGuardar(aprobar.error)} /> : null}
+          <View style={estilos.botonesDecision}>
+            <Button
+              mode="contained"
+              icon="check"
+              onPress={aprobarCita}
+              loading={aprobar.isPending}
+              disabled={decidiendo}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="button"
+              accessibilityLabel={`Aprobar la cita de ${cita.solicitante}`}
+            >
+              Aprobar
+            </Button>
+            <Button
+              mode="outlined"
+              icon="close"
+              onPress={abrirRechazo}
+              disabled={decidiendo}
+              textColor={coloresEstado.rechazada.texto}
+              style={estilos.botonRechazar}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="button"
+              accessibilityLabel={`Rechazar la cita de ${cita.solicitante}`}
+            >
+              Rechazar
+            </Button>
+          </View>
+        </View>
+      ) : null}
 
       {puedeTomarAsistencia(cita) ? (
         <Button
@@ -123,6 +209,14 @@ function Detalle() {
         />
       ) : null}
 
+      <DialogoRechazarCita
+        cita={preguntarRechazo ? cita : null}
+        guardando={rechazar.isPending}
+        mensajeError={rechazar.error ? mensajeErrorGuardar(rechazar.error) : null}
+        onConfirmar={confirmarRechazo}
+        onCerrar={() => setPreguntarRechazo(false)}
+      />
+
       <DialogoInasistencia
         cita={preguntarInasistencia ? cita : null}
         guardando={registrarInasistencia.isPending}
@@ -142,5 +236,17 @@ const estilos = StyleSheet.create({
   aviso: { padding: espacio.m, borderRadius: radio.tarjeta, backgroundColor: colores.primarioSuave },
   textoAviso: { color: colores.texto },
   tomarAsistencia: { alignSelf: 'flex-start' },
+  decision: {
+    gap: espacio.s,
+    padding: espacio.m,
+    borderRadius: radio.tarjeta,
+    backgroundColor: coloresEstado.pendiente.fondo,
+  },
+  // Sobre el fondo de Pendiente, el texto va en su color de estado (contraste AA).
+  tituloDecision: { color: coloresEstado.pendiente.texto, fontFamily: fuentes.negrita },
+  textoDecision: { color: colores.texto },
+  // Con letra grande, Rechazar pasa debajo de Aprobar en vez de cortarse.
+  botonesDecision: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
+  botonRechazar: { borderColor: coloresEstado.rechazada.texto, backgroundColor: colores.superficie },
   contenidoBoton: { paddingVertical: espacio.xs },
 });
