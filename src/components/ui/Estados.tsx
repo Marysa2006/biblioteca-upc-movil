@@ -1,10 +1,13 @@
 /**
  * Los tres estados que toda pantalla con datos debe contemplar: cargando, error y vacío.
+ * El error y el vacío llevan a Upecito (#223); el texto sigue diciendo qué pasa.
  */
 import { StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Icon, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Text } from 'react-native-paper';
 
 import { colores, espacio } from '@/theme';
+
+import { Upecito } from './Upecito';
 
 export function EstadoCarga({ mensaje = 'Cargando…' }: { mensaje?: string }) {
   return (
@@ -28,7 +31,7 @@ export function EstadoError({
 }: PropsError) {
   return (
     <View style={estilos.contenedor}>
-      <Icon source="alert-circle-outline" size={40} color={colores.error} />
+      <Upecito pose="preocupado" />
       <Text variant="bodyMedium" style={estilos.texto}>
         {mensaje}
       </Text>
@@ -41,10 +44,22 @@ export function EstadoError({
   );
 }
 
-export function EstadoVacio({ mensaje = 'No hay nada para mostrar todavía.' }: { mensaje?: string }) {
+type PropsVacio = {
+  mensaje?: string;
+  /**
+   * `leyendo` (por defecto): todavía no hay nada. `buscando`, con la lupa: «no encontramos»,
+   * «ya no existe» o una búsqueda sin resultados.
+   */
+  pose?: 'leyendo' | 'buscando';
+};
+
+export function EstadoVacio({
+  mensaje = 'No hay nada para mostrar todavía.',
+  pose = 'leyendo',
+}: PropsVacio) {
   return (
     <View style={estilos.contenedor}>
-      <Icon source="inbox-outline" size={40} color={colores.textoSecundario} />
+      <Upecito pose={pose} />
       <Text variant="bodyMedium" style={estilos.texto}>
         {mensaje}
       </Text>

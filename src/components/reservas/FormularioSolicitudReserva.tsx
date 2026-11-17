@@ -15,7 +15,7 @@ import { useForm } from 'react-hook-form';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Icon, Text, TouchableRipple } from 'react-native-paper';
 
-import { AvisoError } from '@/components/ui';
+import { AvisoError, Upecito } from '@/components/ui';
 import {
   alternativasDeError,
   useSolicitarReserva,
@@ -109,7 +109,7 @@ export function FormularioSolicitudReserva({ espacio: lugar, parametros, fecha, 
   if (enviada) {
     return (
       <View style={estilos.confirmacion} accessibilityLiveRegion="polite">
-        <Icon source="check-circle-outline" size={40} color={colores.primario} />
+        <Upecito pose="listo" />
         <Text variant="bodyLarge" style={estilos.textoConfirmacion}>
           {CONFIRMACION}
         </Text>

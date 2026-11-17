@@ -12,3 +12,4 @@ export { MenuAcciones, type AccionMenu } from './MenuAcciones';
 export { ListaPaginada, Paginacion, usePaginacion } from './Paginacion';
 export { Pantalla, useSubirAlInicio } from './Pantalla';
 export { PestanasFiltro, type OpcionPestana } from './PestanasFiltro';
+export { Upecito, type PoseUpecito } from './Upecito';

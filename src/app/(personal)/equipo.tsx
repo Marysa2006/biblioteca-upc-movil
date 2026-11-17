@@ -187,7 +187,7 @@ function GestionRoles() {
       } else {
         mensaje = 'Todavía no hay usuarios registrados.';
       }
-      lista = <EstadoVacio mensaje={mensaje} />;
+      lista = <EstadoVacio pose={texto ? 'buscando' : 'leyendo'} mensaje={mensaje} />;
     } else {
       lista = encontrados.map((usuario) => (
         <TarjetaUsuario key={usuario.id} usuario={usuario} onCambiarRol={() => abrir(usuario)} />

@@ -82,7 +82,9 @@ function Detalle() {
     return <EstadoError mensaje="No pudimos cargar la cita." onReintentar={() => agenda.refetch()} />;
   }
   const cita = agenda.data.find((actual) => actual.id === id);
-  if (!cita) return <EstadoVacio mensaje="No encontramos esta cita en la agenda." />;
+  if (!cita) {
+    return <EstadoVacio pose="buscando" mensaje="No encontramos esta cita en la agenda." />;
+  }
 
   const guardarResultado = (resultado: string) => {
     registrarResultado.mutate(

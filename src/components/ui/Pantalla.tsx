@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -14,10 +13,11 @@ import {
 import { Surface, Text } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
+import { colores, espacio, fuentes, radio } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
 
 import { MenuUsuario } from './MenuUsuario';
+import { Upecito } from './Upecito';
 
 type Props = {
   titulo: string;
@@ -115,12 +115,8 @@ export function Pantalla({
     >
       {marcaPropia ?? (
         <View style={estilos.marca}>
-          {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
-          <Image
-            source={require('@/assets/images/upecito.png')}
-            style={estilos.isotipo}
-            contentFit="contain"
-          />
+          {/* Decorativo: el nombre ya va escrito al lado. */}
+          <Upecito tamano="encabezado" />
           <View style={estilos.textosMarca}>
             <Text variant="titleMedium" style={estilos.nombreApp}>
               {NOMBRE_APP}
@@ -200,7 +196,6 @@ const estilos = StyleSheet.create({
   },
   marca: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textosMarca: { flex: 1 },
-  isotipo: { width: tamanoLogo.isotipo, aspectRatio: 1 },
   nombreApp: { color: colores.primario, fontFamily: fuentes.negrita },
   universidad: { color: colores.texto },
   encabezado: { gap: espacio.xs },
