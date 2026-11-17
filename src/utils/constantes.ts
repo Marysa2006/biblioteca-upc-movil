@@ -84,3 +84,15 @@ export const NIT_UNIVERSIDAD = '892.300.285-6';
  */
 export const DIAS_HABILES_CONSULTA = 10;
 export const DIAS_HABILES_RECLAMO = 15;
+
+
+/**
+ * Las tres notas del formato de responsabilidad sobre el préstamo (versión 1.1, #252).
+ * La tercera lleva el valor del bien; se arma con `notasDelPrestamo()` de `utils/prestamos`,
+ * que lo toma de la tablet del préstamo.
+ */
+export const NOTAS_PRESTAMO: readonly string[] = [
+  'Préstamo a la comunidad universitaria activa: estudiantes, docentes y administrativos.',
+  'Los bienes objeto de préstamo deben ser entregados en las condiciones iniciales al préstamo.',
+  'Los bienes son de propiedad de la Universidad Popular del Cesar. En caso de pérdida (robo, etcétera) o cualquier tipo de daño, la UPC deberá hacer efectiva la garantía y exigir al responsable del bien el valor de este.',
+];
