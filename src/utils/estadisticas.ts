@@ -24,10 +24,13 @@ export const NOMBRE_SERVICIO: Record<ServicioEstadistica, string> = {
   catalogo: 'Catálogo',
 };
 
-/** Nombre que se muestra del tipo de usuario: reutiliza NOMBRE_TIPO (HU-05). */
+/**
+ * Nombre que se muestra del tipo de usuario: reutiliza NOMBRE_TIPO (HU-05). Sin sesión no hay
+ * tipo, y ese uso es el de un visitante: la biblioteca lo quiere ver así en los indicadores.
+ */
 export const NOMBRE_TIPO_USUARIO: Record<string, string> = {
   ...NOMBRE_TIPO,
-  [NO_INFORMADO]: 'No informado',
+  [NO_INFORMADO]: 'Visitante (sin sesión)',
 };
 
 /** Nombre que se muestra del estado de la operación. */

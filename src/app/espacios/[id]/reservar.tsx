@@ -63,7 +63,7 @@ export default function ReservarEspacio() {
   }
 
   const subtitulo = lugar
-    ? `${lugar.nombre} · hasta ${lugar.capacidad} personas · ${lugar.horario}`
+    ? `${lugar.nombre} · unas ${lugar.capacidad} personas · ${lugar.horario}`
     : undefined;
 
   return (

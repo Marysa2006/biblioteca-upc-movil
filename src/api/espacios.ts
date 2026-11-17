@@ -410,12 +410,9 @@ export async function solicitarReserva(
   if (!datos.proposito?.trim()) {
     throw new ErrorApi(400, 'El propósito de la reserva es obligatorio.');
   }
-  if (
-    !Number.isInteger(datos.asistentes) ||
-    datos.asistentes < 1 ||
-    datos.asistentes > espacio.capacidad
-  ) {
-    throw new ErrorApi(400, `Este espacio admite entre 1 y ${espacio.capacidad} asistentes.`);
+  // La capacidad es orientativa: no limita la reserva (la biblioteca agrega sillas).
+  if (!Number.isInteger(datos.asistentes) || datos.asistentes < 1) {
+    throw new ErrorApi(400, 'Debe asistir al menos 1 persona.');
   }
 
   const parametros = await obtenerParametros();

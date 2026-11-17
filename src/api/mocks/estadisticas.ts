@@ -18,7 +18,7 @@ const FILAS: Fila[] = [
   { usuarioId: 'u-estudiante', nombre: 'Laura Pérez', tipoUsuario: 'estudiante', programa: 'Enfermería', servicio: 'asesorias', finalidad: 'Citas y referencias', fecha: dia(5), modalidad: 'presencial', estado: 'completada' },
   { usuarioId: 'u-estudiante', nombre: 'Laura Pérez', tipoUsuario: 'estudiante', programa: 'Enfermería', servicio: 'tablets', finalidad: 'Consulta de artículos', fecha: dia(7), fechaFin: dia(7), modalidad: 'presencial', estado: 'completada' },
   { usuarioId: 'u-estudiante', nombre: 'Laura Pérez', tipoUsuario: 'estudiante', programa: 'Enfermería', servicio: 'guias', finalidad: 'Normas APA', fecha: dia(9), modalidad: 'virtual', estado: 'completada' },
-  { usuarioId: 'u-estudiante', nombre: 'Laura Pérez', tipoUsuario: 'estudiante', programa: 'Enfermería', servicio: 'capacitaciones', finalidad: 'Búsqueda de información', fecha: dia(12), modalidad: 'presencial', estado: 'completada' },
+  { usuarioId: 'u-estudiante', nombre: 'Laura Pérez', tipoUsuario: 'estudiante', programa: 'Enfermería', servicio: 'capacitaciones', finalidad: 'Búsqueda de información de impacto', fecha: dia(12), modalidad: 'presencial', estado: 'completada' },
   { usuarioId: 'u-docente', nombre: 'Carlos Ramírez', tipoUsuario: 'docente', programa: 'Ingeniería de Sistemas', servicio: 'espacios', finalidad: 'Trabajo de grado', fecha: dia(15), modalidad: 'presencial', estado: 'cancelada' },
 
   // Carlos Ramírez (docente, Ingeniería de Sistemas)
@@ -40,7 +40,7 @@ const FILAS: Fila[] = [
   { usuarioId: 'u-estudiante-2', nombre: 'Andrés Mejía', tipoUsuario: 'estudiante', programa: 'Derecho', servicio: 'tablets', finalidad: 'Lectura de jurisprudencia', fecha: dia(14), fechaFin: dia(14), modalidad: 'presencial', estado: 'completada' },
   { usuarioId: 'u-administrativo', nombre: 'Diana Ospina', tipoUsuario: 'administrativo', programa: NO_INFORMADO, servicio: 'espacios', finalidad: 'Sustentación', fecha: dia(19), modalidad: 'presencial', estado: 'completada' },
   { usuarioId: 'u-estudiante-3', nombre: 'Valentina Ríos', tipoUsuario: 'estudiante', programa: 'Licenciatura en Educación', servicio: 'guias', finalidad: 'Normas APA', fecha: dia(2), modalidad: 'virtual', estado: 'completada' },
-  { usuarioId: 'u-estudiante-3', nombre: 'Valentina Ríos', tipoUsuario: 'estudiante', programa: 'Licenciatura en Educación', servicio: 'capacitaciones', finalidad: 'Mendeley', fecha: dia(16), modalidad: 'virtual', estado: 'completada' },
+  { usuarioId: 'u-estudiante-3', nombre: 'Valentina Ríos', tipoUsuario: 'estudiante', programa: 'Licenciatura en Educación', servicio: 'capacitaciones', finalidad: 'Gestores bibliográficos', fecha: dia(16), modalidad: 'virtual', estado: 'completada' },
   { usuarioId: 'u-estudiante-3', nombre: 'Valentina Ríos', tipoUsuario: 'estudiante', programa: 'Licenciatura en Educación', servicio: 'catalogo', finalidad: 'Libros de pedagogía', fecha: dia(21), modalidad: 'virtual', estado: 'completada' },
   { usuarioId: 'u-egresado', nombre: 'Diego Salas', tipoUsuario: 'egresado', programa: 'Contaduría', servicio: 'catalogo', finalidad: 'Normatividad', fecha: dia(7), modalidad: 'virtual', estado: 'completada' },
   { usuarioId: 'u-egresado', nombre: 'Diego Salas', tipoUsuario: 'egresado', programa: 'Contaduría', servicio: 'asesorias', finalidad: 'Trabajo de grado', fecha: dia(20), modalidad: 'virtual', estado: 'completada' },

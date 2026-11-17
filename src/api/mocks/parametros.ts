@@ -1,6 +1,7 @@
 /**
  * DATOS DE PRUEBA de los parámetros generales (HU-28).
- * Las fechas y horas son de ejemplo; la biblioteca confirmará los valores reales.
+ * El horario de atención y los plazos son los que confirmó la biblioteca (15 de noviembre de 2026);
+ * los periodos y los festivos institucionales siguen siendo de ejemplo.
  */
 import type { Parametros } from '@/types';
 
@@ -18,14 +19,16 @@ export const PARAMETROS: Parametros = {
     { fecha: '2026-12-25', motivo: 'Navidad' },
   ],
   horarios: [
-    { dia: 1, abre: '07:00', cierra: '18:00' },
-    { dia: 2, abre: '07:00', cierra: '18:00' },
-    { dia: 3, abre: '07:00', cierra: '18:00' },
-    { dia: 4, abre: '07:00', cierra: '18:00' },
-    { dia: 5, abre: '07:00', cierra: '17:00' },
+    { dia: 1, abre: '07:00', cierra: '21:00' },
+    { dia: 2, abre: '07:00', cierra: '21:00' },
+    { dia: 3, abre: '07:00', cierra: '21:00' },
+    { dia: 4, abre: '07:00', cierra: '21:00' },
+    { dia: 5, abre: '07:00', cierra: '21:00' },
+    { dia: 6, abre: '08:00', cierra: '14:00' },
   ],
-  horasMinimasSolicitud: 24,
-  horasMinimasCancelacion: 12,
+  // 3 días para solicitar y 1 día para cancelar, iguales para todos los servicios.
+  horasMinimasSolicitud: 72,
+  horasMinimasCancelacion: 24,
   textoRecordatorio: 'Recuerda tu compromiso con la biblioteca.',
   textoCancelacion: 'Tu solicitud fue cancelada.',
 };
