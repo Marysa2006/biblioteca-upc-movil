@@ -43,6 +43,8 @@ Si tocas **No acepto**, se cierra la sesión y puedes seguir explorando la app s
 
 En **Perfil** y en el formulario de datos de contacto siempre está el enlace **Tratamiento de datos personales**, y el formulario dice para qué se usa el teléfono. En Perfil también aparecen el NIT de la Universidad y los plazos para ejercer tus derechos: 10 días hábiles para consultas y 15 para reclamos.
 
+Para ejercer esos derechos hay dos caminos, los dos del Acuerdo 019: el correo **tratamientodedatos@unicesar.edu.co** y el botón **Ejercer mis derechos por PQRS**, que abre el módulo de peticiones y quejas de la Universidad.
+
 ![Iniciar sesión](manual-usuario/comunidad-iniciar-sesion.png)
 
 ### Solicitar un espacio

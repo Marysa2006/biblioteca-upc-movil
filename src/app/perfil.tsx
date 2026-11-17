@@ -167,7 +167,7 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
             {`Aceptaste esta autorización el ${fechaDeAceptacion(aceptacion.fecha)}.`}
           </Text>
         ) : null}
-        <EnlacePoliticaDatos />
+        <EnlacePoliticaDatos conPqrs />
       </View>
 
       <Button
