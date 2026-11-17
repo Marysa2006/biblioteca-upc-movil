@@ -19,13 +19,13 @@ export const URL_REPOSITORIO: string = 'http://repositorio.unicesar.edu.co';
  * 5 de octubre de 2020 (#225). Es el texto legal de la Universidad, no uno redactado por
  * el equipo.
  *
- * Es la copia que publica la Universidad en ORFEO (verificada el 16 de noviembre de 2026:
- * es el mismo documento que está en la carpeta del proyecto). El enlace «Política de
- * Tratamiento de Datos Personales» del portal apunta a un SharePoint que exige cuenta
- * institucional, así que desde la app no se puede abrir.
+ * Es el PDF del portal institucional de normatividad (verificado el 17 de noviembre de 2026):
+ * abre sin cuenta y es el mismo documento byte a byte que el Acuerdo archivado en el proyecto
+ * (591 KB, 19 páginas, md5 af6029a2…ef1). La misma copia está en ORFEO:
+ * https://orfeo2022.unicesar.edu.co/pqrs/frontend/web/manuales/acuerdo_No-019_del_5_de_octubre_de_2020_Pol%C3%ADtica_tratamiento_de_datos_personales.pdf
  */
 export const URL_POLITICA_DATOS: string =
-  'https://orfeo2022.unicesar.edu.co/pqrs/frontend/web/manuales/acuerdo_No-019_del_5_de_octubre_de_2020_Pol%C3%ADtica_tratamiento_de_datos_personales.pdf';
+  'https://ant.unicesar.edu.co/index.php/en/normatividad/doc_download/6061-acuerdo-no-019-del-5-de-octubre-de-2020-politica-tratamiento-de-datos-personales';
 
 /** Fecha del Acuerdo 019. Si la Universidad publica otra política, se cambia y se vuelve a pedir la aceptación. */
 export const VERSION_POLITICA_DATOS = '2020-10-05';

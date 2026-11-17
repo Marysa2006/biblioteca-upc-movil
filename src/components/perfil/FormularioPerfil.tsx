@@ -19,9 +19,9 @@ import { espacio } from '@/theme';
 import type { DatosEditablesPerfil, Perfil } from '@/types';
 import { esquemaPerfil, LARGO_MAXIMO_DIRECCION, limpiarTelefono } from '@/utils/perfil';
 
-/** Para qué se usan los datos de contacto (#225, CA3), sin prometer nada que la política no diga. */
+/** Para qué se usan los datos de contacto (#225, CA3), con lo que respondió la bibliotecóloga. */
 const PARA_QUE_SIRVEN =
-  'Tu teléfono lo usamos para avisarte de tus solicitudes y préstamos; la dirección es opcional. El tratamiento de estos datos se rige por la política de la Universidad.';
+  'Tu teléfono lo usa la biblioteca para confirmar tus solicitudes; la dirección es opcional. El tratamiento de estos datos se rige por la política de la Universidad.';
 
 type Props = {
   perfil: Perfil;
