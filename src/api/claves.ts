@@ -15,6 +15,11 @@ export const claves = {
   contenidos: ['contenidos'] as const,
   parametros: ['parametros'] as const,
   usuarios: ['usuarios'] as const,
+  /**
+   * El directorio del personal de la biblioteca (#256). Va aparte de `usuarios` porque no
+   * devuelve lo mismo: el equipo excluye a la comunidad. Con la misma clave, la caché se pisa.
+   */
+  equipo: ['usuarios', 'equipo'] as const,
   recursos: ['recursos'] as const,
   /** Resultados de Koha para un texto (HU-02); las páginas van dentro de la misma clave. */
   busquedaCatalogo: (texto: string) => ['catalogo', 'busqueda', texto] as const,

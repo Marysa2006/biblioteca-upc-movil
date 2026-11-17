@@ -59,6 +59,8 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     identificacion: '1032547896',
     sede: 'Valledupar',
     cargo: 'Gestora de espacios',
+    // Datos de prueba del #256: la administración le dio el permiso de novedades.
+    permisosExtra: ['novedades'],
   },
   {
     // Los egresados tienen cuenta institucional (#200).
