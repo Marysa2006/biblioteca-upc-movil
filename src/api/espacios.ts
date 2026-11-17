@@ -18,6 +18,7 @@ import type {
 } from '@/types';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { MENSAJE_NO_RESERVA_ESPACIOS, puedeReservarEspacios } from '@/utils/roles';
 
 import { obtenerBloqueos } from './bloqueos';
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -377,8 +378,9 @@ async function buscarAlternativas(
 
 /**
  * Solicita una reserva a nombre del usuario de la sesión (HU-18); queda pendiente.
- * Valida formato, capacidad (CA3), día hábil, anticipación y disponibilidad con la misma
- * regla de HU-17. Si el horario no está libre, lanza ErrorReserva con alternativas (CA2).
+ * Solo docentes y administrativos reservan (403 para los demás, #240). Valida formato,
+ * asistentes (CA3), día hábil, anticipación y disponibilidad con la misma regla de HU-17. Si el
+ * horario no está libre, lanza ErrorReserva con alternativas (CA2).
  */
 export async function solicitarReserva(
   usuario: Usuario,
@@ -387,6 +389,10 @@ export async function solicitarReserva(
   if (!USAR_MOCKS) {
     // Ruta provisional: confirmar con Backend. El solicitante sale del token.
     return peticion<Reserva>('/reservas/', { method: 'POST', body: JSON.stringify(datos) });
+  }
+
+  if (!puedeReservarEspacios(usuario.tipo)) {
+    throw new ErrorApi(403, MENSAJE_NO_RESERVA_ESPACIOS);
   }
 
   if (

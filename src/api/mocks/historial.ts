@@ -26,18 +26,19 @@ const PERSONAL = 'Personal de la biblioteca';
 const LAURA = 'Laura Pérez';
 const CARLOS = 'Carlos Ramírez';
 const ANDRES = 'Andrés Mejía';
+const DIANA = 'Diana Ospina';
 const JULIAN = 'Julián Mendoza';
 
 export const HISTORIAL_SOLICITUDES: EventoGuardado[] = [
   // ── Reservas ──
-  { id: 'evt-res-1-a', tipo: 'reserva', solicitudId: 'res-1', fecha: hace(3, '10:20'), estado: 'pendiente', autor: LAURA, nota: 'Solicitud enviada.' },
+  { id: 'evt-res-1-a', tipo: 'reserva', solicitudId: 'res-1', fecha: hace(3, '10:20'), estado: 'pendiente', autor: CARLOS, nota: 'Solicitud enviada.' },
   { id: 'evt-res-2-a', tipo: 'reserva', solicitudId: 'res-2', fecha: hace(5, '09:00'), estado: 'pendiente', autor: CARLOS, nota: 'Solicitud enviada.' },
   { id: 'evt-res-2-b', tipo: 'reserva', solicitudId: 'res-2', fecha: hace(4, '08:30'), estado: 'aprobada', autor: PERSONAL },
-  { id: 'evt-res-3-a', tipo: 'reserva', solicitudId: 'res-3', fecha: hace(4, '11:00'), estado: 'pendiente', autor: LAURA, nota: 'Solicitud enviada.' },
+  { id: 'evt-res-3-a', tipo: 'reserva', solicitudId: 'res-3', fecha: hace(4, '11:00'), estado: 'pendiente', autor: CARLOS, nota: 'Solicitud enviada.' },
   { id: 'evt-res-3-b', tipo: 'reserva', solicitudId: 'res-3', fecha: hace(3, '09:10'), estado: 'rechazada', autor: PERSONAL, nota: 'El espacio está en mantenimiento ese día.' },
-  { id: 'evt-res-4-a', tipo: 'reserva', solicitudId: 'res-4', fecha: hace(4, '15:40'), estado: 'pendiente', autor: ANDRES, nota: 'Solicitud enviada.' },
-  { id: 'evt-res-4-b', tipo: 'reserva', solicitudId: 'res-4', fecha: hace(1, '08:15'), estado: 'cancelada', autor: ANDRES, nota: 'El solicitante canceló la reserva.' },
-  { id: 'evt-res-5-a', tipo: 'reserva', solicitudId: 'res-5', fecha: el(FECHAS_RESERVAS['res-5'], -6, '16:00'), estado: 'pendiente', autor: LAURA, nota: 'Solicitud enviada.' },
+  { id: 'evt-res-4-a', tipo: 'reserva', solicitudId: 'res-4', fecha: hace(4, '15:40'), estado: 'pendiente', autor: DIANA, nota: 'Solicitud enviada.' },
+  { id: 'evt-res-4-b', tipo: 'reserva', solicitudId: 'res-4', fecha: hace(1, '08:15'), estado: 'cancelada', autor: DIANA, nota: 'El solicitante canceló la reserva.' },
+  { id: 'evt-res-5-a', tipo: 'reserva', solicitudId: 'res-5', fecha: el(FECHAS_RESERVAS['res-5'], -6, '16:00'), estado: 'pendiente', autor: CARLOS, nota: 'Solicitud enviada.' },
   { id: 'evt-res-5-b', tipo: 'reserva', solicitudId: 'res-5', fecha: el(FECHAS_RESERVAS['res-5'], -5, '10:00'), estado: 'aprobada', autor: PERSONAL },
   { id: 'evt-res-5-c', tipo: 'reserva', solicitudId: 'res-5', fecha: el(FECHAS_RESERVAS['res-5'], 0, '17:05'), estado: 'realizada', autor: PERSONAL },
   { id: 'evt-res-6-a', tipo: 'reserva', solicitudId: 'res-6', fecha: hace(3, '14:30'), estado: 'pendiente', autor: CARLOS, nota: 'Solicitud enviada.' },
