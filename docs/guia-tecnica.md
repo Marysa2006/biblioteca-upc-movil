@@ -743,3 +743,10 @@ Son las que más rompen la app, y casi ninguna da un error claro:
 | **Nunca `npm audit fix`** | Aunque npm lo sugiera al final de `npm ci`. Rompe versiones fijadas por Expo |
 | **Con React Compiler activo, `useWatch` y no `watch()`** | `watch()` no se re-ejecuta como el compilador espera |
 | **Los tipos de RN 0.88 son estrictos** | `onPress={() => handleSubmit(fn)()}`, y en `tabBarIcon` el `color` es `ColorValue` |
+
+## Anexo: la integración con el Backend
+
+La app se entrega con datos de prueba. **[Integración con el Backend](integracion-backend.md)**
+tiene el inventario de los 88 endpoints que usa `src/api`, cuáles existen ya en el servidor
+(`develop` del 18 de noviembre: 72 tienen contraparte y 16 no), cuáles cambian y cuáles faltan, y el
+orden para apagar `USAR_MOCKS` módulo por módulo.
