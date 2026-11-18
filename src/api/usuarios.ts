@@ -39,6 +39,21 @@ export function obtenerEquipo(): Promise<Usuario[]> {
 }
 
 /**
+ * Busca a una persona por su correo en el directorio que mutan los roles y los permisos
+ * (versión 1.1). El login de prueba la usa para no leer una foto fija: si la administración
+ * le cambia el rol o le da `novedades`, lo ve al volver a entrar (#256, CA1).
+ *
+ * Devuelve una copia, para que nadie cambie el directorio desde fuera.
+ */
+export function buscarEnDirectorio(correo: string): Usuario | undefined {
+  const buscado = correo.trim().toLowerCase();
+  const encontrado = directorio.find(
+    (usuario) => usuario.correo.trim().toLowerCase() === buscado,
+  );
+  return encontrado ? copiar(encontrado) : undefined;
+}
+
+/**
  * Da o quita los permisos que van aparte de los roles (versión 1.1, #256).
  * No es un rol nuevo: es el `novedades` que la administración le concede a una persona.
  *
