@@ -2,6 +2,9 @@
  * USUARIOS DE PRUEBA para el inicio de sesión provisional.
  * Sirven para ver la app con cada tipo de usuario y rol del personal mientras no exista el
  * login institucional (HU-05). Todos entran con la contraseña biblioteca123.
+ *
+ * Es la semilla: `USUARIOS_DIRECTORIO` la copia y le suma gente. El login NO lee esta lista,
+ * sino el directorio, que es el que cambian los roles y los permisos (#256).
  */
 import type { Usuario } from '@/types';
 
@@ -59,6 +62,8 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     identificacion: '1032547896',
     sede: 'Valledupar',
     cargo: 'Gestora de espacios',
+    // Datos de prueba del #256: la administración le dio el permiso de novedades.
+    permisosExtra: ['novedades'],
   },
   {
     // Los egresados tienen cuenta institucional (#200).

@@ -12,7 +12,8 @@ import type { Usuario } from '@/types';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONTRASENA_PRUEBA, USUARIOS_INACTIVOS_PRUEBA } from './mocks/autenticacion';
-import { TOKEN_PRUEBA, USUARIOS_PRUEBA } from './mocks/usuarios';
+import { TOKEN_PRUEBA } from './mocks/usuarios';
+import { buscarEnDirectorio } from './usuarios';
 
 export type CredencialesLogin = {
   correo: string;
@@ -50,8 +51,10 @@ export function iniciarSesionApi(credenciales: CredencialesLogin): Promise<Respu
       return Promise.reject(new ErrorApi(403, 'La cuenta está inactiva.'));
     }
 
-    // CA1: el correo pertenece a un usuario de prueba vigente.
-    const usuario = USUARIOS_PRUEBA.find((u) => normalizar(u.correo) === correo);
+    // CA1: el correo pertenece a un usuario de prueba vigente. Se busca en el directorio
+    // mutable y no en la lista fija: así el rol o el permiso que la administración acaba de
+    // dar se ven al volver a entrar (#256, CA1).
+    const usuario = buscarEnDirectorio(correo);
     if (!usuario) {
       return invalidas();
     }

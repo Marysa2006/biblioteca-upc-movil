@@ -1,9 +1,15 @@
 /**
- * Contenidos del portal (HU-04).
- * Lista, crea, edita, publica/oculta y reordena los contenidos informativos y avisos.
+ * Contenidos del portal (HU-04) y el permiso de novedades (versión 1.1, #256).
+ *
+ * Quién puede publicar qué:
+ * - los **avisos** y los **informativos** los publica quien tenga `novedades` o `contenidos`;
+ * - los **servicios** siguen siendo solo de `contenidos`: dar novedades no da permiso sobre
+ *   los servicios de la biblioteca.
+ *
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
-import type { Contenido } from '@/types';
+import type { Contenido, Usuario } from '@/types';
+import { tienePermiso } from '@/utils/roles';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONTENIDOS } from './mocks/contenidos';
@@ -16,6 +22,24 @@ export type DatosContenido = Omit<Contenido, 'id' | 'orden'> & { orden?: number 
 
 function ordenar(lista: Contenido[]): Contenido[] {
   return [...lista].sort((a, b) => a.orden - b.orden);
+}
+
+/**
+ * ¿Esta persona puede publicar este tipo de contenido? (versión 1.1, #256)
+ * Los servicios piden `contenidos`; los avisos y los informativos, `novedades` o `contenidos`.
+ */
+export function puedePublicar(usuario: Usuario | null, tipo: Contenido['tipo']): boolean {
+  if (!usuario) return false;
+  if (tipo === 'servicio') return tienePermiso(usuario, 'contenidos');
+  return tienePermiso(usuario, 'contenidos') || tienePermiso(usuario, 'novedades');
+}
+
+/** 403 con el motivo, según lo que le falte a la persona. */
+function errorDePermiso(usuario: Usuario | null, tipo: Contenido['tipo']): ErrorApi | null {
+  if (puedePublicar(usuario, tipo)) return null;
+  return tipo === 'servicio'
+    ? new ErrorApi(403, 'Los servicios del portal los publica la administración de la biblioteca.')
+    : new ErrorApi(403, 'No tienes el permiso de novedades y avisos.');
 }
 
 /** Validación de la HU-04 (CA3): título y descripción son obligatorios. */
@@ -36,7 +60,11 @@ export function obtenerContenidos(): Promise<Contenido[]> {
   return peticion<Contenido[]>('/contenidos/');
 }
 
-export function crearContenido(datos: DatosContenido): Promise<Contenido> {
+export function crearContenido(usuario: Usuario, datos: DatosContenido): Promise<Contenido> {
+  const sinPermiso = errorDePermiso(usuario, datos.tipo);
+  if (sinPermiso) {
+    return Promise.reject(sinPermiso);
+  }
   if (USAR_MOCKS) {
     const error = errorDeValidacion(datos);
     if (error) {
@@ -53,7 +81,18 @@ export function crearContenido(datos: DatosContenido): Promise<Contenido> {
   return peticion<Contenido>('/contenidos/', { method: 'POST', body: JSON.stringify(datos) });
 }
 
-export function editarContenido(id: string, datos: DatosContenido): Promise<Contenido> {
+export function editarContenido(
+  usuario: Usuario,
+  id: string,
+  datos: DatosContenido,
+): Promise<Contenido> {
+  // Se comprueba el tipo nuevo y, si existe, el que ya tenía: cambiar un aviso a servicio no
+  // puede servir para colarse en los servicios.
+  const actual = contenidos.find((contenido) => contenido.id === id);
+  const sinPermiso = errorDePermiso(usuario, datos.tipo) ?? errorDePermiso(usuario, actual?.tipo ?? datos.tipo);
+  if (sinPermiso) {
+    return Promise.reject(sinPermiso);
+  }
   if (USAR_MOCKS) {
     const indice = contenidos.findIndex((contenido) => contenido.id === id);
     if (indice === -1) {
@@ -71,7 +110,16 @@ export function editarContenido(id: string, datos: DatosContenido): Promise<Cont
   return peticion<Contenido>(`/contenidos/${id}/`, { method: 'PUT', body: JSON.stringify(datos) });
 }
 
-export function cambiarPublicacionContenido(id: string, publicado: boolean): Promise<Contenido> {
+export function cambiarPublicacionContenido(
+  usuario: Usuario,
+  id: string,
+  publicado: boolean,
+): Promise<Contenido> {
+  const actual = contenidos.find((contenido) => contenido.id === id);
+  const sinPermiso = errorDePermiso(usuario, actual?.tipo ?? 'servicio');
+  if (sinPermiso) {
+    return Promise.reject(sinPermiso);
+  }
   if (USAR_MOCKS) {
     const indice = contenidos.findIndex((contenido) => contenido.id === id);
     if (indice === -1) {
@@ -88,7 +136,10 @@ export function cambiarPublicacionContenido(id: string, publicado: boolean): Pro
   });
 }
 
-export function reordenarContenidos(idsEnOrden: string[]): Promise<Contenido[]> {
+export function reordenarContenidos(usuario: Usuario, idsEnOrden: string[]): Promise<Contenido[]> {
+  if (!tienePermiso(usuario, 'contenidos')) {
+    return Promise.reject(new ErrorApi(403, 'Solo la administración puede ordenar los contenidos.'));
+  }
   if (USAR_MOCKS) {
     const posiciones = new Map(idsEnOrden.map((id, indice) => [id, indice + 1]));
     contenidos = contenidos.map((contenido) => {
