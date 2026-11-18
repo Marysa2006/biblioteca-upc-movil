@@ -90,6 +90,8 @@ export const claves = {
   misPrestamos: (usuarioId?: string) => ['prestamos', 'mios', usuarioId] as const,
   /** Préstamos pasados de la hora límite (HU-24). */
   prestamosVencidos: ['prestamos', 'vencidos'] as const,
+  /** La constancia del préstamo de tablet (#252). */
+  constanciaPrestamo: (id: string) => ['prestamos', id, 'constancia'] as const,
 
   // ── Función plus: guías sin conexión (HU-29) ─────────────────
   guias: ['guias'] as const,
