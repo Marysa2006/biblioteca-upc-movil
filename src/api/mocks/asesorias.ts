@@ -9,7 +9,7 @@
  * franjas se generan como al guardar una jornada (generarFranjas) y las citas caen en días de su
  * jornada, las pendientes y aprobadas adelante y las realizadas, canceladas o sin atender atrás.
  */
-import type { Cita, FranjaAsesoria, Jornada, TemaAsesoria } from '@/types';
+import type { Cita, DatosSolicitante, FranjaAsesoria, Jornada, TemaAsesoria } from '@/types';
 import { sumarDias } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
 import { generarFranjas, idFranja } from '@/utils/franjas';
@@ -31,6 +31,39 @@ export const FECHAS_CITAS = {
   // Citas pendientes de la 1.1: dos para que la agenda tenga qué aprobar y rechazar.
   'cit-7': proximo(DIAS_APA, 1),
   'cit-8': proximo(DIAS_APA, 3),
+};
+
+/** Datos del solicitante, como los copia la solicitud (#248). */
+const deLaura: DatosSolicitante = {
+  tipo: 'estudiante',
+  nombreCompleto: 'LAURA PÉREZ',
+  identificacion: '1065123456',
+  correo: 'laura.perez@unicesar.edu.co',
+  celular: '3001234567',
+  nivel: 'pregrado',
+  facultad: 'Ciencias de la Salud',
+  programa: 'Enfermería',
+  semestre: 8,
+};
+const deCarlos: DatosSolicitante = {
+  tipo: 'docente',
+  nombreCompleto: 'CARLOS RAMÍREZ',
+  identificacion: '12564321',
+  correo: 'carlos.ramirez@unicesar.edu.co',
+  celular: '3109876543',
+  facultad: 'Ingenierías y Tecnologías',
+  programa: 'Ingeniería de Sistemas',
+};
+const deAndres: DatosSolicitante = {
+  tipo: 'estudiante',
+  nombreCompleto: 'ANDRÉS MEJÍA',
+  identificacion: '1098765433',
+  correo: 'andres.mejia@unicesar.edu.co',
+  celular: '3015557788',
+  nivel: 'pregrado',
+  facultad: 'Ingenierías y Tecnologías',
+  programa: 'Ingeniería Civil',
+  semestre: 4,
 };
 
 /** Los cinco temas que confirmó la biblioteca (15 de noviembre de 2026). */
@@ -126,6 +159,9 @@ export const CITAS_ASESORIA: Cita[] = [
     necesidad: 'Citar un libro y un artículo en APA 7.',
     modalidad: 'presencial',
     estado: 'aprobada',
+    datosSolicitante: deLaura,
+    personas: 1,
+    participantes: ['Laura Pérez'],
   },
   {
     id: 'cit-2',
@@ -142,6 +178,10 @@ export const CITAS_ASESORIA: Cita[] = [
     necesidad: 'Buscar artículos para el proyecto de grado.',
     modalidad: 'presencial',
     estado: 'pendiente',
+    datosSolicitante: deCarlos,
+    personas: 2,
+    participantes: ['Carlos Ramírez', 'Laura Pérez'],
+    asignatura: 'Metodología de la investigación',
   },
   {
     id: 'cit-3',
@@ -160,6 +200,9 @@ export const CITAS_ASESORIA: Cita[] = [
     estado: 'realizada',
     resultado: 'Revisamos las referencias y quedaron ajustadas.',
     asistio: true,
+    datosSolicitante: deLaura,
+    personas: 1,
+    participantes: ['Laura Pérez'],
   },
   {
     id: 'cit-4',
@@ -214,38 +257,65 @@ export const CITAS_ASESORIA: Cita[] = [
     estado: 'aprobada',
   },
   {
-    // Pendiente de la 1.1: la agenda tiene qué aprobar (HU-14).
+    // Pendiente SIN facilitador (#248): la agenda tiene qué aprobar y asignar.
     id: 'cit-7',
-    franjaId: idFranja('jor-apa', FECHAS_CITAS['cit-7'], '10:30'),
     temaId: 'tema-apa',
     tema: 'Normas APA y Turnitin',
-    facilitadorId: 'u-facilitador',
-    facilitador: 'Julián Mendoza',
     solicitanteId: 'u-administrativo',
     solicitante: 'Diana Ospina',
     fecha: FECHAS_CITAS['cit-7'],
     horaInicio: '10:30',
-    horaFin: '11:00',
+    horaFin: '11:30',
     necesidad: 'Aprender a citar fuentes en un informe de gestión.',
     modalidad: 'presencial',
     estado: 'pendiente',
+    datosSolicitante: {
+      tipo: 'administrativo',
+      nombreCompleto: 'DIANA OSPINA',
+      identificacion: '12547897',
+      correo: 'diana.ospina@unicesar.edu.co',
+      celular: '3009998877',
+      facultad: 'Ciencias Administrativas, Contables y Económicas',
+    },
+    personas: 1,
+    participantes: ['Diana Ospina'],
   },
   {
-    // Segunda pendiente de la 1.1: la agenda tiene qué rechazar (HU-14).
+    // Pendiente VIRTUAL y sin enlace: aprueba el CA3 (una virtual no se aprueba sin enlace).
     id: 'cit-8',
-    franjaId: idFranja('jor-apa', FECHAS_CITAS['cit-8'], '11:00'),
     temaId: 'tema-apa',
     tema: 'Normas APA y Turnitin',
-    facilitadorId: 'u-facilitador',
-    facilitador: 'Julián Mendoza',
     solicitanteId: 'u-estudiante-2',
     solicitante: 'Andrés Mejía',
     fecha: FECHAS_CITAS['cit-8'],
     horaInicio: '11:00',
-    horaFin: '11:30',
+    horaFin: '12:00',
     necesidad: 'Revisar si las referencias del trabajo están completas.',
-    modalidad: 'presencial',
+    modalidad: 'virtual',
     estado: 'pendiente',
+    datosSolicitante: deAndres,
+    personas: 1,
+    participantes: ['Andrés Mejía'],
+  },
+  {
+    // Virtual ya aprobada con enlace: lo que verá la persona en Mis citas.
+    id: 'cit-9',
+    temaId: 'tema-busqueda',
+    tema: 'Búsqueda en bases de datos',
+    facilitadorId: 'u-facilitador',
+    facilitador: 'Julián Mendoza',
+    solicitanteId: 'u-estudiante',
+    solicitante: 'Laura Pérez',
+    fecha: FECHAS_CITAS['cit-7'],
+    horaInicio: '14:00',
+    horaFin: '15:00',
+    necesidad: 'Buscar artículos sobre lactancia materna.',
+    modalidad: 'virtual',
+    estado: 'aprobada',
+    enlaceVirtual: 'https://meet.google.com/abc-defg-hij',
+    datosSolicitante: deLaura,
+    personas: 1,
+    participantes: ['Laura Pérez'],
   },
 ];
 
