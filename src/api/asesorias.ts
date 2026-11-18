@@ -565,24 +565,29 @@ export async function aprobarCitaConDatos(
   if (!esFechaValida(fecha) || !esHoraValida(hora)) {
     throw new ErrorApi(400, 'Revisa la fecha y la hora de la cita.');
   }
-  const parametros = await obtenerParametros();
-  const noHabil = motivoNoDisponible(fecha, parametros);
-  if (noHabil) {
-    throw new ErrorApi(400, `Ese día la biblioteca no atiende: ${noHabil}.`);
-  }
-  if (!cumpleAnticipacion(fecha, hora, parametros.horasMinimasSolicitud)) {
-    throw new ErrorApi(
-      400,
-      `La cita necesita ${parametros.horasMinimasSolicitud} horas de anticipación.`,
-    );
+
+  // El día hábil y la anticipación solo se exigen cuando el personal **cambia** la fecha o la
+  // hora. La fecha pedida ya pasó esas dos reglas en `solicitarCita()`; volver a exigirlas al
+  // aprobar rechazaría citas pedidas con tiempo y aprobadas a menos de 72 h (#248, revisión).
+  const cambio = fecha !== cita.fecha || hora !== cita.horaInicio;
+  if (cambio) {
+    const parametros = await obtenerParametros();
+    const noHabil = motivoNoDisponible(fecha, parametros);
+    if (noHabil) {
+      throw new ErrorApi(400, `Ese día la biblioteca no atiende: ${noHabil}.`);
+    }
+    if (!cumpleAnticipacion(fecha, hora, parametros.horasMinimasSolicitud)) {
+      throw new ErrorApi(
+        400,
+        `La cita necesita ${parametros.horasMinimasSolicitud} horas de anticipación.`,
+      );
+    }
   }
 
   const enlace = aprobacion.enlaceVirtual?.trim();
   if (cita.modalidad === 'virtual' && !enlace) {
     throw new ErrorApi(400, 'Una asesoría virtual necesita el enlace para que la persona entre.');
   }
-
-  const cambio = fecha !== cita.fecha || hora !== cita.horaInicio;
   const aprobada: Cita = {
     ...cita,
     estado: 'aprobada',
@@ -657,6 +662,13 @@ export async function reprogramarSolicitud(
     cita.id === anterior.id ? cancelada : cita.id === creada.id ? { ...creada, reprogramaDe: anterior.id } : cita,
   );
 
+  // Rastro completo: la anterior se cancela con su notificación, como cualquier cancelación.
+  crearNotificacion({
+    usuarioId: anterior.solicitanteId,
+    solicitudId: anterior.id,
+    titulo: 'Asesoría reprogramada',
+    mensaje: `Tu asesoría de ${anterior.tema} del ${fechaLegible(anterior.fecha)} a las ${anterior.horaInicio} quedó cancelada porque pediste otra fecha. La nueva solicitud está pendiente de aprobación.`,
+  });
   registrarEvento('cita', anterior.id, 'cancelada', usuario.nombre, 'Reprogramada por la persona.');
   registrarUso({
     id: `uso-cita-${anterior.id}`,
@@ -713,9 +725,6 @@ export async function cancelarCita(usuario: Usuario, id: string): Promise<Cita> 
 /**
  * Pasa una cita a otra franja del mismo tema, dentro del plazo de cancelación (CA3).
  * Libera el cupo de la franja anterior y ocupa uno de la nueva.
- */
-/**
- * Pasa una cita a otra franja del mismo tema.
  *
  * @deprecated Desde la versión 1.1 reprogramar es enviar una **solicitud nueva** pendiente de
  * aprobación: usa `reprogramarSolicitud()` (#248).
