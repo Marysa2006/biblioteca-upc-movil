@@ -102,14 +102,31 @@ function contarPorMes(registros: RegistroUso[]): ConteoIndicador[] {
  */
 export function calcularIndicadores(registros: RegistroUso[]): IndicadoresUso {
   if (registros.length === 0) {
-    return { total: 0, porServicio: [], porTipoUsuario: [], porPrograma: [], porMes: [] };
+    return {
+      total: 0,
+      porServicio: [],
+      porTipoUsuario: [],
+      porPrograma: [],
+      porMes: [],
+      porFacultad: [],
+      porSede: [],
+      porSemestre: [],
+    };
   }
+  const calificadas = registros.filter((r) => r.calificacion != null);
   return {
     total: registros.length,
     porServicio: contarPor(registros, (r) => r.servicio, NOMBRE_SERVICIO),
     porTipoUsuario: contarPor(registros, (r) => r.tipoUsuario, NOMBRE_TIPO_USUARIO),
     porPrograma: contarPor(registros, (r) => r.programa, NOMBRE_PROGRAMA),
     porMes: contarPorMes(registros),
+    porFacultad: contarPor(registros, (r) => r.facultad, NOMBRE_PROGRAMA),
+    porSede: contarPor(registros, (r) => r.sede, NOMBRE_PROGRAMA),
+    porSemestre: contarPor(registros, (r) => r.semestre, NOMBRE_PROGRAMA),
+    calificacionPromedio:
+      calificadas.length === 0
+        ? undefined
+        : calificadas.reduce((suma, r) => suma + (r.calificacion ?? 0), 0) / calificadas.length,
   };
 }
 
@@ -120,6 +137,11 @@ const COLUMNAS: { titulo: string; valor: (r: RegistroUso) => string }[] = [
   { titulo: 'Servicio', valor: (r) => NOMBRE_SERVICIO[r.servicio] ?? r.servicio },
   { titulo: 'Tipo de usuario', valor: (r) => nombre(r.tipoUsuario, NOMBRE_TIPO_USUARIO) },
   { titulo: 'Programa', valor: (r) => nombre(r.programa, NOMBRE_PROGRAMA) },
+  // Versión 1.1 (#259): los cruces que pidió la bibliotecóloga.
+  { titulo: 'Facultad', valor: (r) => nombre(r.facultad, NOMBRE_PROGRAMA) },
+  { titulo: 'Sede', valor: (r) => nombre(r.sede, NOMBRE_PROGRAMA) },
+  { titulo: 'Semestre', valor: (r) => nombre(r.semestre, NOMBRE_PROGRAMA) },
+  { titulo: 'Calificación', valor: (r) => (r.calificacion == null ? '' : String(r.calificacion)) },
   { titulo: 'Nombre', valor: (r) => (r.nombre === NO_INFORMADO ? 'No informado' : r.nombre) },
   { titulo: 'Finalidad', valor: (r) => (r.finalidad === NO_INFORMADO ? 'No informado' : r.finalidad) },
   { titulo: 'Modalidad', valor: (r) => nombre(r.modalidad, NOMBRE_MODALIDAD_USO) },

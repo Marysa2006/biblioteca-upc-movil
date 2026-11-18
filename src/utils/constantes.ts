@@ -1,3 +1,5 @@
+import type { NivelFormacion } from '@/types';
+
 /** Nombre visible de la app. Cuando se elija el nombre definitivo, se cambia solo aquí y en app.json. */
 export const NOMBRE_APP = 'BiblioUPC';
 
@@ -13,6 +15,38 @@ export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
  * Universidad active https, se cambia aquí y se quita esa opción.
  */
 export const URL_REPOSITORIO: string = 'http://repositorio.unicesar.edu.co';
+
+/**
+ * Facultades de la UPC (provisional, por confirmar con la biblioteca).
+ * Son las que publica la Universidad en su Estructura Organizacional: los decanos son seis.
+ * El portal de Pregrado lista «Ciencias Básicas» y «Educación» por separado, pero la
+ * Universidad las nombra juntas como «Ciencias Básicas y de la Educación».
+ */
+export const FACULTADES: readonly string[] = [
+  'Ciencias Administrativas, Contables y Económicas',
+  'Bellas Artes',
+  'Derecho, Ciencias Políticas y Sociales',
+  'Ciencias Básicas y de la Educación',
+  'Ingenierías y Tecnologías',
+  'Ciencias de la Salud',
+];
+
+/** Sedes de la Universidad (provisional). */
+export const SEDES: readonly string[] = ['Valledupar', 'Aguachica'];
+
+/** Niveles de formación (provisional), con el tipo que usa `Usuario.nivel`. */
+export const NIVELES_FORMACION: readonly NivelFormacion[] = ['pregrado', 'posgrado'];
+
+/**
+ * Semestres del I al X, como los escribe la biblioteca (provisional). Es la lista para mostrar;
+ * lo que se guarda en `semestre` es el número, así que el formulario usa la posición + 1.
+ */
+export const SEMESTRES: readonly string[] = [
+  'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+];
+
+/** Duración de una asesoría, en minutos, igual para todas (#248). */
+export const DURACION_ASESORIA_MINUTOS = 60;
 
 /**
  * Política de Tratamiento y Protección de Datos Personales de la UPC: el Acuerdo 019 del

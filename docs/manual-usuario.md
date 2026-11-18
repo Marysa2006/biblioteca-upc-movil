@@ -73,6 +73,8 @@ Tu solicitud queda **Pendiente** hasta que el facilitador que la atiende o la ad
 
 Las citas se pueden cancelar o reprogramar desde **Mis citas**, dentro del plazo. Si las reprogramas, la cita vuelve a quedar **Pendiente** y hay que aprobarla otra vez.
 
+El día de la asesoría aprobada, desde 30 minutos antes, **Mis citas** y el detalle en **Mis solicitudes** muestran **Registrar asistencia**. Tócalo y escanea el código QR que te muestra el facilitador: la aplicación confirma que quedó registrada. Si el código venció o es de otra sesión, te dice el motivo y puedes escanear otra vez. La primera vez, la aplicación pide permiso para usar la cámara; solo la usa para leer el código.
+
 ![Agendar una asesoría](manual-usuario/comunidad-agendar-asesoria.png)
 
 ### Pedir una tablet
@@ -120,7 +122,7 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
    - Toca **Otra fecha** para proponer otro día u hora.
    - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como realizada**.
    - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
-2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Registrar la asistencia escaneando el QR desde la aplicación llega en la próxima versión.
+2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Quien asiste también puede registrarse escaneando ese QR desde su aplicación.
 3. **Préstamos:** la entrega y la devolución de tablets, también leyendo el código de barras con la cámara.
 4. **Vencidos:** las tablets que no se devolvieron a tiempo.
 5. **Espacios:** crear y editar espacios, y bloquearlos por mantenimiento o eventos.
@@ -172,5 +174,4 @@ Todos entran con la contraseña **`biblioteca123`**. Basta con escribir el usuar
 
 - **Datos de prueba:** todavía no está conectada a los sistemas de la Universidad. Las personas, solicitudes y estadísticas son de ejemplo, y lo que se cambia se borra al cerrar la aplicación.
 - **Solo Android:** por ahora no hay versión para iPhone.
-- **Asistencia con QR:** por ahora la marca el facilitador; el registro escaneando el QR llega en la próxima versión.
 - **Notificaciones y cámara:** los recordatorios y la lectura de códigos QR y de barras funcionan solo en el celular.

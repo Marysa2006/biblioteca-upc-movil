@@ -3,7 +3,8 @@
  * - CA1: valida la necesidad con esquemaCita (el error bajo el campo) y la envía con onConfirmar.
  * - CA2: si la franja se ocupó al confirmar, lo explica y el botón principal pasa a ser
  *   "Elegir otra franja", que vuelve a las franjas.
- * - Agendada, la confirmación queda en el mismo lugar, como en la reserva de espacios (HU-18).
+ * - Enviada, la confirmación queda en el mismo lugar, como en la reserva de espacios (HU-18):
+ *   la cita queda pendiente hasta que el personal la apruebe.
  * No guarda: la pantalla llama al hook con onConfirmar y le pasa guardando y los errores.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,7 +28,7 @@ type Props = {
   /** Solo lo que se muestra: si la franja se ocupa, ya no llega en la consulta. */
   franja: Pick<FranjaAsesoria, 'fecha' | 'horaInicio' | 'horaFin'>;
   guardando: boolean;
-  /** CA1: la cita quedó agendada; se muestra la confirmación. */
+  /** CA1: la solicitud se envió y quedó pendiente de aprobación; se muestra la confirmación. */
   agendada: boolean;
   /** CA2: la API respondió que la franja ya no tiene cupo. */
   franjaOcupada: boolean;
@@ -53,7 +54,7 @@ export function FormularioCita({
   });
 
   const cuando = `${fechaCompleta(franja.fecha)} · ${franja.horaInicio} – ${franja.horaFin}`;
-  const confirmacion = `Tu asesoría de ${nombreTema} quedó agendada para el ${cuando}. Te dejamos una notificación con los datos.`;
+  const confirmacion = `Tu solicitud de asesoría de ${nombreTema} quedó pendiente de aprobación para el ${cuando}. Te dejamos una notificación con los datos.`;
   const error = franjaOcupada ? FRANJA_OCUPADA : mensajeError;
   const aviso = agendada ? confirmacion : error;
 

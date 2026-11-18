@@ -5,7 +5,7 @@
  * Las fechas van como texto 'AAAA-MM-DD' y las horas como 'HH:MM', como en los parámetros
  * de HU-28. El estado es el común de las solicitudes (EstadoSolicitud).
  */
-import type { EstadoSolicitud } from './solicitudes';
+import type { Calificacion, DatosSolicitante, EstadoSolicitud } from './solicitudes';
 import type { TipoUsuario } from './usuarios';
 
 /** Modalidad de una capacitación (HU-10). */
@@ -75,4 +75,16 @@ export type SolicitudCapacitacion = {
   motivo?: string;
   /** Cuándo se creó, 'AAAA-MM-DD HH:MM'. */
   creada: string;
+
+  // ── Versión 1.1: mismos datos que en la asesoría (#251) ─────
+  /** Datos de quien pide la capacitación, copiados en la solicitud. */
+  datosSolicitante?: DatosSolicitante;
+  asignatura?: string;
+  /** Un nombre por persona, cuando el grupo se inscribe con nombres. */
+  nombresParticipantes?: string[];
+  /** Lo que la persona quiera dejar dicho; en la interfaz se llama «Novedades». */
+  novedades?: string;
+  /** Cuando es virtual, el enlace lo pone el personal al aprobar. */
+  enlaceVirtual?: string;
+  calificacion?: Calificacion;
 };

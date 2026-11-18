@@ -3,7 +3,7 @@
  * consulta su propio hook (useMisReservas, useMisCitas, useMisPrestamos o useMisCapacitaciones),
  * que ya trae los datos completos; así no se repite su lógica.
  * - Cita: dentro del plazo (puedeCancelarCita, HU-28) se cancela aquí con confirmación; para
- *   reprogramar, Mis citas de Asesorías.
+ *   reprogramar, Mis citas de Asesorías. El día de la cita, registrar la asistencia con QR (HU-32).
  * - Capacitación con nueva fecha (HU-12, CA4): se muestra la fecha propuesta y se responde aquí.
  *   Aceptarla la deja Aprobada con esa fecha; "No me sirve" pide confirmación y la deja
  *   Cancelada (responderNuevaFecha). El diálogo recibe todo por props.
@@ -14,6 +14,7 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
 
 import { DialogoCancelarCita } from '@/components/asesorias/DialogoCancelarCita';
+import { BotonRegistrarAsistencia } from '@/components/asistencia/BotonRegistrarAsistencia';
 import { DialogoNoMeSirve } from '@/components/capacitaciones/DialogoNoMeSirve';
 import { AvisoError, EstadoCarga, EstadoError } from '@/components/ui';
 import { useCancelarCita, useMisCitas } from '@/hooks/useAsesorias';
@@ -76,7 +77,7 @@ function InfoReserva({ solicitud }: { solicitud: ResumenSolicitud }) {
         { etiqueta: 'Horario', valor: `${reserva.horaInicio} a ${reserva.horaFin}` },
         { etiqueta: 'Propósito', valor: reserva.proposito },
         { etiqueta: 'Asistentes', valor: reserva.asistentes },
-        { etiqueta: 'Requerimientos', valor: reserva.requerimientos },
+        { etiqueta: 'Novedades', valor: reserva.requerimientos },
         { etiqueta: 'Motivo', valor: reserva.motivo },
       ]}
     />
@@ -125,7 +126,7 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
       <ListaDatos
         datos={[
           { etiqueta: 'Tema', valor: cita.tema },
-          { etiqueta: 'Facilitador', valor: cita.facilitador },
+          { etiqueta: 'Facilitador', valor: cita.facilitador ?? 'Sin asignar' },
           { etiqueta: 'Fecha', valor: fechaCompleta(cita.fecha) },
           { etiqueta: 'Horario', valor: `${cita.horaInicio} a ${cita.horaFin}` },
           { etiqueta: 'Modalidad', valor: NOMBRE_MODALIDAD[cita.modalidad] },
@@ -134,6 +135,7 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
           { etiqueta: 'Motivo', valor: cita.motivo },
         ]}
       />
+      <BotonRegistrarAsistencia cita={cita} />
       {puedeCancelar ? (
         <View style={estilos.acciones}>
           <Button

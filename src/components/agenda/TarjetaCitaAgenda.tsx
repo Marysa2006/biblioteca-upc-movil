@@ -21,7 +21,7 @@ type Props = {
 export function TarjetaCitaAgenda({ cita, mostrarFacilitador, onAbrir }: Props) {
   const horas = `${cita.horaInicio} – ${cita.horaFin}`;
   const modalidad = NOMBRE_MODALIDAD[cita.modalidad];
-  const facilitador = mostrarFacilitador ? `, con ${cita.facilitador}` : '';
+  const facilitador = mostrarFacilitador && cita.facilitador ? `, con ${cita.facilitador}` : '';
 
   return (
     <View style={estilos.tarjeta}>
@@ -51,7 +51,7 @@ export function TarjetaCitaAgenda({ cita, mostrarFacilitador, onAbrir }: Props) 
                 color={colores.textoSecundario}
               />
               <Text variant="bodySmall" style={estilos.secundario}>
-                {mostrarFacilitador ? `${modalidad} · ${cita.facilitador}` : modalidad}
+                {mostrarFacilitador ? `${modalidad} · ${cita.facilitador ?? 'Sin asignar'}` : modalidad}
               </Text>
             </View>
           </View>
