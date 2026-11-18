@@ -115,7 +115,7 @@ export default function MisCitas() {
       <EncabezadoApilado titulo="Asesorías" />
       <Pantalla
         titulo="Mis citas"
-        subtitulo="Tus asesorías agendadas. Puedes cancelarlas o reprogramarlas dentro del plazo."
+        subtitulo="Tus solicitudes de asesoría. Puedes cancelarlas o reprogramarlas dentro del plazo."
         conEncabezado
         recarga={usuario ? { recargando: citas.isRefetching, onRecargar: () => citas.refetch() } : undefined}
       >

@@ -163,6 +163,23 @@ function Detalle({ servicio }: { servicio: Servicio }) {
         </Button>
       ) : null}
 
+      {/*
+        Préstamo de libros: la disponibilidad se consulta en Koha, sin cuenta. Por id y no por
+        categoría, porque Préstamo de computadores también es de la categoría prestamo.
+      */}
+      {servicio.id === 'prestamo' ? (
+        <Button
+          mode="contained"
+          icon="book-search-outline"
+          onPress={() => router.push('/catalogo/koha')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar libros en el catálogo Koha"
+        >
+          Buscar en el catálogo
+        </Button>
+      ) : null}
+
       {/* HU-10: pide cuenta; sin sesión, la pantalla solo invita a iniciarla. */}
       {categoria === 'capacitaciones' ? (
         <Button
