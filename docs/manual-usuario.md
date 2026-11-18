@@ -14,6 +14,12 @@ Para instalarla en un celular Android:
 
 ![Inicio de BiblioUPC](manual-usuario/inicio.png)
 
+### El tutorial de Upecito
+
+La primera vez que abres la aplicación en el celular, Upecito, la mascota de la Universidad, la presenta en seis pasos: **Servicios**, **Catálogo**, **Mis solicitudes** y el **menú**. Cada paso muestra cómo se ve esa parte y dónde la encuentras: en qué pestaña de abajo o, el menú, arriba a la derecha. Usa **Siguiente** y **Atrás** para recorrerlo, o **Saltar** para cerrarlo. Al terminar, toca **Empezar**. Si tienes una sesión abierta que todavía no aceptó la autorización de datos personales, el tutorial aparece después de aceptarla.
+
+El tutorial no vuelve a salir solo. Para verlo otra vez, toca el botón de arriba a la derecha y elige **Ver tutorial**, con sesión o sin ella.
+
 ## 2. Sin cuenta
 
 Cualquier persona puede usar estas partes sin iniciar sesión. Abajo están las pestañas **Inicio**, **Servicios**, **Catálogo** y **Mis solicitudes**.

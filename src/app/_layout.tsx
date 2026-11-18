@@ -7,6 +7,7 @@
  *   (comunidad)/...   vista de la comunidad: /, /servicios, /catalogo, /solicitudes
  *   (personal)/...    vista del personal:    /panel, /gestion, /equipo, /inventario, /estadisticas
  *   apiladas          /perfil, /servicio/[id] y /administracion/... (con su barra y flecha atrás)
+ *   /tutorial         tutorial del primer ingreso con Upecito, a pantalla completa (#261)
  */
 import {
   OpenSans_400Regular,
@@ -25,6 +26,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { queryClient } from '@/api/queryClient';
 import { SincronizarRecordatorios } from '@/components/notificaciones/SincronizarRecordatorios';
 import { AceptacionTratamientoDatos } from '@/components/privacidad/AceptacionTratamientoDatos';
+import { AbrirTutorial } from '@/components/tutorial/AbrirTutorial';
 import { tema } from '@/theme';
 
 // La pantalla de carga sigue visible hasta que Open Sans esté lista.
@@ -58,10 +60,17 @@ export default function LayoutRaiz() {
           <SincronizarRecordatorios />
           {/* #225: antes de usar la app con cuenta, la autorización de tratamiento de datos. */}
           <AceptacionTratamientoDatos />
+          {/* #261: el tutorial con Upecito, la primera vez en el celular (después de la autorización). */}
+          <AbrirTutorial />
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(comunidad)" />
             <Stack.Screen name="(personal)" />
             <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+            {/* Pantalla completa y sin deslizar para cerrar: se sale con Saltar, Empezar o atrás. */}
+            <Stack.Screen
+              name="tutorial"
+              options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+            />
           </Stack>
         </QueryClientProvider>
       </PaperProvider>
