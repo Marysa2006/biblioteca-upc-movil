@@ -747,5 +747,6 @@ Son las que más rompen la app, y casi ninguna da un error claro:
 ## Anexo: la integración con el Backend
 
 La app se entrega con datos de prueba. **[Integración con el Backend](integracion-backend.md)**
-tiene el inventario de los 84 endpoints que usa `src/api`, cuáles existen ya en el servidor (69),
-cuáles cambian y cuáles faltan, y el orden para apagar `USAR_MOCKS` módulo por módulo.
+tiene el inventario de los 88 endpoints que usa `src/api`, cuáles existen ya en el servidor
+(`develop` del 18 de noviembre: 72 tienen contraparte y 16 no), cuáles cambian y cuáles faltan, y el
+orden para apagar `USAR_MOCKS` módulo por módulo.

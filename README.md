@@ -460,7 +460,7 @@ Con `EXPO_PUBLIC_USAR_MOCKS=true` en el `.env`, la app usa los datos de prueba. 
 |---|---|
 | [Manual de usuario](docs/manual-usuario.md) | Cómo se usa la app: qué hace cada pantalla, con capturas. Es lo que se entrega a la biblioteca. |
 | [Guía técnica](docs/guia-tecnica.md) | Cómo está hecha la app: arquitectura, datos, programación, especificaciones de diseño, cómo generar el APK y cómo publicar una versión. Para quien desarrolle, mantenga o integre. |
-| [Integración con el Backend](docs/integracion-backend.md) | Los 84 endpoints que usa la app frente al Backend actual: qué existe, qué cambia y qué falta; y el plan para apagar los datos de prueba. Para quien conecte la app con el servidor. |
+| [Integración con el Backend](docs/integracion-backend.md) | Los 88 endpoints que usa la app frente al Backend actual (`develop` del 18 de noviembre): qué existe, qué cambia y qué falta; y el plan para apagar los datos de prueba. Para quien conecte la app con el servidor. |
 | [Paleta de colores](docs/paleta-colores.md) | Los colores y la tipografía exactos, tomados del manual de identidad de la UPC. |
 | [Spike de cámara](docs/spike-camara.md) | La prueba del escáner de códigos (HU-31 y HU-32). |
 
