@@ -66,10 +66,11 @@ export const SERVICIOS: Servicio[] = [
   {
     id: 'prestamo',
     nombre: 'Préstamo de material bibliográfico',
-    descripcion: 'Consulta y préstamo de libros físicos a través del catálogo de la biblioteca.',
+    descripcion:
+      'Préstamo de libros físicos en el mostrador de la biblioteca. Consulta la disponibilidad en el catálogo (Koha).',
     categoria: 'prestamo',
     publico: 'Comunidad universitaria',
-    formaSolicitud: 'Busca en el catálogo y acércate al mostrador',
+    formaSolicitud: 'Consulta el catálogo y solicita el préstamo en el mostrador.',
     horario: 'Por confirmar con la biblioteca',
     requiereCuenta: false,
     activo: true,
