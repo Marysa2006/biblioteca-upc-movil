@@ -41,12 +41,19 @@ export function MenuUsuario() {
     accion();
   };
 
-  // #261: el tutorial se puede repetir con o sin sesión.
+  // El tutorial se puede repetir con o sin sesión (#261). En la vista del personal se abre el
+  // del personal (#267).
   const verTutorial = (
     <Menu.Item
       title="Ver tutorial"
       leadingIcon="help-circle-outline"
-      onPress={() => ir(() => router.push('/tutorial'))}
+      onPress={() =>
+        ir(() =>
+          enVistaPersonal
+            ? router.push({ pathname: '/tutorial', params: { vista: 'personal' } })
+            : router.push('/tutorial'),
+        )
+      }
       accessibilityLabel="Ver el tutorial de la app"
     />
   );

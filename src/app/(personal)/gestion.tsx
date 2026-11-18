@@ -12,6 +12,7 @@
  * - Portal (`contenidos` o `parametros`): contenidos (HU-04) y parámetros generales (HU-28).
  * Una sección puede traer un botón flotante (Solicitudes: "Reservar para un tercero";
  * Espacios: "Nuevo espacio").
+ * El nombre y los permisos de cada sección están en src/utils/gestion.ts.
  * El selector aparece solo con dos secciones o más. Esta pantalla solo compone: el contenido
  * de cada sección se cambia en su componente, no aquí.
  */
@@ -28,60 +29,37 @@ import { BotonReservaTercero } from '@/components/reservas/BotonReservaTercero';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 import { usePrestamosVencidos } from '@/hooks/useTablets';
-import type { Permiso } from '@/types';
+import {
+  SECCIONES_GESTION,
+  type InfoSeccionGestion,
+  type ValorSeccionGestion,
+} from '@/utils/gestion';
 
-type ValorSeccion = 'solicitudes' | 'agenda' | 'prestamos' | 'vencidos' | 'espacios' | 'portal';
+type ValorSeccion = ValorSeccionGestion;
 
-type Seccion = {
-  valor: ValorSeccion;
-  etiqueta: string;
+type Seccion = InfoSeccionGestion & {
   Componente: ComponentType;
   /** Botón flotante de la sección, fijo abajo a la derecha (opcional); se encoge al deslizar. */
   Flotante?: ComponentType<{ extendido: boolean }>;
-  /** Se ve con cualquiera de estos permisos. */
-  permisos: readonly Permiso[];
 };
 
-const SECCIONES: Seccion[] = [
-  {
-    valor: 'solicitudes',
-    etiqueta: 'Solicitudes',
-    Componente: SeccionSolicitudes,
-    Flotante: BotonReservaTercero,
-    permisos: ['reservas', 'asesorias', 'formacion'],
-  },
-  {
-    valor: 'agenda',
-    etiqueta: 'Agenda',
-    Componente: SeccionAgenda,
-    permisos: ['asesorias'],
-  },
-  {
-    valor: 'prestamos',
-    etiqueta: 'Préstamos',
-    Componente: SeccionPrestamos,
-    permisos: ['tablets'],
-  },
-  {
-    valor: 'vencidos',
-    etiqueta: 'Vencidos',
-    Componente: SeccionVencidos,
-    permisos: ['tablets'],
-  },
-  {
-    valor: 'espacios',
-    etiqueta: 'Espacios',
-    Componente: SeccionEspacios,
-    Flotante: BotonNuevoEspacio,
-    permisos: ['espacios'],
-  },
-  {
-    valor: 'portal',
-    etiqueta: 'Portal',
-    Componente: SeccionPortal,
-    permisos: ['contenidos', 'parametros'],
-  },
-];
+/**
+ * El componente de cada sección. El nombre y los permisos están en SECCIONES_GESTION
+ * (src/utils/gestion.ts), que también usa el tutorial del personal (#267).
+ */
+const COMPONENTES: Record<ValorSeccion, Pick<Seccion, 'Componente' | 'Flotante'>> = {
+  solicitudes: { Componente: SeccionSolicitudes, Flotante: BotonReservaTercero },
+  agenda: { Componente: SeccionAgenda },
+  prestamos: { Componente: SeccionPrestamos },
+  vencidos: { Componente: SeccionVencidos },
+  espacios: { Componente: SeccionEspacios, Flotante: BotonNuevoEspacio },
+  portal: { Componente: SeccionPortal },
+};
+
+const SECCIONES: Seccion[] = SECCIONES_GESTION.map((info) => ({
+  ...info,
+  ...COMPONENTES[info.valor],
+}));
 
 export default function Gestion() {
   const { tienePermiso } = useRol();
@@ -108,9 +86,7 @@ export default function Gestion() {
     <Pantalla
       titulo="Gestión"
       subtitulo="Solicitudes, préstamos, espacios y administración del portal"
-      flotante={
-        Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null
-      }
+      flotante={Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null}
     >
       {activa && visibles.length > 1 ? (
         <SelectorSeccion opciones={visibles} valor={activa.valor} onCambiar={setElegida} />
