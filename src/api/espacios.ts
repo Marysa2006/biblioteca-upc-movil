@@ -18,7 +18,13 @@ import type {
 } from '@/types';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import {
+  LARGO_MAXIMO_NOVEDADES_RESERVA,
+  problemaRecursos,
+  problemaSede,
+} from '@/utils/reservas';
 import { MENSAJE_NO_RESERVA_ESPACIOS, puedeReservarEspacios } from '@/utils/roles';
+import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/utils/solicitante';
 
 import { obtenerBloqueos } from './bloqueos';
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -414,6 +420,14 @@ export async function solicitarReserva(
   if (!Number.isInteger(datos.asistentes) || datos.asistentes < 1) {
     throw new ErrorApi(400, 'Debe asistir al menos 1 persona.');
   }
+  // El tipo de usuario sale de la sesión: decide qué datos académicos se exigen.
+  const datosSolicitante = datos.datosSolicitante
+    ? { ...datos.datosSolicitante, tipo: usuario.tipo }
+    : undefined;
+  const problemaCompleta = problemaSolicitudCompleta({ ...datos, datosSolicitante }, espacio);
+  if (problemaCompleta) {
+    throw new ErrorApi(400, problemaCompleta);
+  }
 
   const parametros = await obtenerParametros();
   if (!esDiaHabil(datos.fecha, parametros)) {
@@ -452,6 +466,42 @@ export async function solicitarReserva(
       proposito: datos.proposito.trim(),
       asistentes: datos.asistentes,
       requerimientos: datos.requerimientos?.trim() || undefined,
+      ...(datos.sede ? { sede: datos.sede } : {}),
+      ...(datos.recursos ? { recursos: [...datos.recursos] } : {}),
+      ...(datosSolicitante
+        ? {
+            datosSolicitante: aDatosSolicitante(valoresSolicitante(datosSolicitante)),
+            terminosAceptados: true,
+          }
+        : {}),
     }),
   );
+}
+
+/**
+ * Los campos de la versión 1.1 (#224), con las mismas reglas del formulario completo. Con
+ * `datosSolicitante` llega la solicitud completa: pide la identificación (NIP), la sede y los
+ * términos. Los asistentes no se comparan con la capacidad (es orientativa).
+ */
+function problemaSolicitudCompleta(datos: FormularioReserva, espacio: Espacio): string | null {
+  if (datos.datosSolicitante) {
+    const solicitante = problemaSolicitante(datos.datosSolicitante, { pedirIdentificacion: true });
+    if (solicitante) return solicitante;
+    if (datos.sede === undefined) return 'Elige la sede.';
+    if (datos.terminosAceptados !== true) {
+      return 'Acepta los términos y condiciones para enviar la solicitud.';
+    }
+  }
+  if (datos.sede !== undefined) {
+    const sede = problemaSede(datos.sede, espacio);
+    if (sede) return sede;
+  }
+  if (datos.recursos) {
+    const recursos = problemaRecursos(datos.recursos);
+    if (recursos) return recursos;
+  }
+  if ((datos.requerimientos?.trim().length ?? 0) > LARGO_MAXIMO_NOVEDADES_RESERVA) {
+    return `Las novedades no pueden pasar de ${LARGO_MAXIMO_NOVEDADES_RESERVA} caracteres.`;
+  }
+  return null;
 }

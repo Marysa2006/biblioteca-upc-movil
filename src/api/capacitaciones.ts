@@ -6,6 +6,7 @@
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type {
+  DatosSolicitante,
   EstadoSolicitud,
   LineaFormacion,
   ModalidadCapacitacion,
@@ -13,10 +14,16 @@ import type {
   Usuario,
 } from '@/types';
 import { sumarDias } from '@/utils/calendario';
+import {
+  LARGO_MAXIMO_ASIGNATURA,
+  LARGO_MAXIMO_NOVEDADES,
+  problemaNombresParticipantes,
+} from '@/utils/capacitaciones';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { esDiaHabil, motivoNoDisponible, sugerirFechaHabil } from '@/utils/parametros';
+import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/utils/solicitante';
 import { ahoraFechaHora } from '@/utils/tablets';
-import { normalizarTexto } from '@/utils/texto';
+import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
@@ -28,7 +35,14 @@ import { obtenerParametros } from './parametros';
 
 /** Copia de una solicitud para no exponer el almacén mutable. */
 function copiarSolicitud(solicitud: SolicitudCapacitacion): SolicitudCapacitacion {
-  return { ...solicitud, solicitante: { ...solicitud.solicitante } };
+  return {
+    ...solicitud,
+    solicitante: { ...solicitud.solicitante },
+    ...(solicitud.datosSolicitante ? { datosSolicitante: { ...solicitud.datosSolicitante } } : {}),
+    ...(solicitud.nombresParticipantes
+      ? { nombresParticipantes: [...solicitud.nombresParticipantes] }
+      : {}),
+  };
 }
 
 /** Copias mutables: con mocks, lo que se crea o edita se ve durante la sesión. */
@@ -199,6 +213,17 @@ export type FormularioCapacitacion = {
   objetivo: string;
   grupo: string;
   participantes: number;
+
+  // ── Versión 1.1: formulario completo (#224) ────────────────
+  // Opcionales mientras la UI (#251) no los envíe. Con `datosSolicitante` llega el formulario
+  // completo: se validan todos y los términos son obligatorios.
+  datosSolicitante?: DatosSolicitante;
+  asignatura?: string;
+  /** Un nombre por persona; si van, uno por participante. */
+  nombresParticipantes?: string[];
+  novedades?: string;
+  /** TERMINOS_FORMACION. */
+  terminosAceptados?: boolean;
 };
 
 /** Error 400 de la fecha, con otra fecha que sí se puede pedir (CA3). */
@@ -244,7 +269,57 @@ function errorDeFormulario(datos: FormularioCapacitacion): ErrorApi | null {
   if (!Number.isInteger(datos.participantes) || datos.participantes < 1) {
     return new ErrorApi(400, 'Indica cuántas personas asistirán (un número entero desde 1).');
   }
-  return null;
+  return errorDeDatosCompletos(datos);
+}
+
+/** Los campos de la versión 1.1 (#224), con las mismas reglas del formulario completo. */
+function errorDeDatosCompletos(datos: FormularioCapacitacion): ErrorApi | null {
+  if (datos.datosSolicitante) {
+    const problema = problemaSolicitante(datos.datosSolicitante, { pedirIdentificacion: false });
+    if (problema) return new ErrorApi(400, problema);
+    if (datos.terminosAceptados !== true) {
+      return new ErrorApi(400, 'Acepta los términos y condiciones para enviar la solicitud.');
+    }
+  }
+  if ((datos.asignatura?.trim().length ?? 0) > LARGO_MAXIMO_ASIGNATURA) {
+    return new ErrorApi(
+      400,
+      `La asignatura no puede pasar de ${LARGO_MAXIMO_ASIGNATURA} caracteres.`,
+    );
+  }
+  if ((datos.novedades?.trim().length ?? 0) > LARGO_MAXIMO_NOVEDADES) {
+    return new ErrorApi(
+      400,
+      `Las novedades no pueden pasar de ${LARGO_MAXIMO_NOVEDADES} caracteres.`,
+    );
+  }
+  const nombres = nombresNormalizados(datos.nombresParticipantes);
+  const problemaNombres = problemaNombresParticipantes(nombres, datos.participantes);
+  return problemaNombres ? new ErrorApi(400, problemaNombres) : null;
+}
+
+/** "ana ruiz" → "Ana Ruiz", sin vacíos. */
+function nombresNormalizados(nombres: string[] | undefined): string[] {
+  return (nombres ?? []).map(aNombrePropio).filter(Boolean);
+}
+
+/** Los campos de la versión 1.1 que se guardan en la solicitud; los vacíos no se guardan. */
+function camposCompletos(datos: FormularioCapacitacion): Partial<SolicitudCapacitacion> {
+  const asignatura = datos.asignatura?.trim();
+  const novedades = datos.novedades?.trim();
+  const nombres = nombresNormalizados(datos.nombresParticipantes);
+  return {
+    // Con datosSolicitante, los términos ya se validaron (errorDeDatosCompletos).
+    ...(datos.datosSolicitante
+      ? {
+          datosSolicitante: aDatosSolicitante(valoresSolicitante(datos.datosSolicitante)),
+          terminosAceptados: true,
+        }
+      : {}),
+    ...(asignatura ? { asignatura } : {}),
+    ...(nombres.length > 0 ? { nombresParticipantes: nombres } : {}),
+    ...(novedades ? { novedades } : {}),
+  };
 }
 
 /** Fecha y hora de la solicitud, en la hora del celular. */
@@ -270,7 +345,11 @@ export async function solicitarCapacitacion(
     });
   }
 
-  const error = errorDeFormulario(datos);
+  // El tipo de usuario sale de la sesión: decide qué datos académicos se exigen.
+  const formulario: FormularioCapacitacion = datos.datosSolicitante
+    ? { ...datos, datosSolicitante: { ...datos.datosSolicitante, tipo: usuario.tipo } }
+    : datos;
+  const error = errorDeFormulario(formulario);
   if (error) {
     throw error;
   }
@@ -314,6 +393,7 @@ export async function solicitarCapacitacion(
     participantes: datos.participantes,
     estado: 'pendiente',
     creada: ahoraFechaHora(),
+    ...camposCompletos(formulario),
   };
   solicitudes = [...solicitudes, nueva];
 

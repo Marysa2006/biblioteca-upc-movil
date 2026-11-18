@@ -7,7 +7,7 @@
  * `lin-apa` tiene solicitudes activas, para la advertencia al desactivar de HU-09 (CA3). Para
  * probar una línea inactiva, se desactiva una desde Gestión → Portal.
  */
-import type { LineaFormacion, SolicitudCapacitacion } from '@/types';
+import type { DatosSolicitante, LineaFormacion, SolicitudCapacitacion } from '@/types';
 import { sumarDias } from '@/utils/calendario';
 import { fechaLegible } from '@/utils/fechas';
 
@@ -67,6 +67,32 @@ export const LINEAS_FORMACION: LineaFormacion[] = [
  * Solicitudes de Laura (u-estudiante) y Carlos (u-docente), una por cada estado, para probar
  * la bandeja de HU-12, «Mis solicitudes» (HU-08) y la respuesta a la nueva fecha (CA4).
  */
+/**
+ * Datos del solicitante copiados en la solicitud (versión 1.1, #224). Las solicitudes viejas
+ * no los tienen y siguen funcionando.
+ */
+const DATOS_LAURA: DatosSolicitante = {
+  tipo: 'estudiante',
+  nombreCompleto: 'Laura Pérez',
+  identificacion: '1065123456',
+  correo: 'laura.perez@unicesar.edu.co',
+  celular: '3001234567',
+  nivel: 'pregrado',
+  facultad: 'Ciencias de la Salud',
+  programa: 'Enfermería',
+  semestre: 8,
+};
+
+const DATOS_CARLOS: DatosSolicitante = {
+  tipo: 'docente',
+  nombreCompleto: 'Carlos Ramírez',
+  identificacion: '12564321',
+  correo: 'carlos.ramirez@unicesar.edu.co',
+  celular: '3109876543',
+  facultad: 'Ingenierías y Tecnologías',
+  programa: 'Ingeniería de Sistemas',
+};
+
 export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
   {
     id: 'cap-1',
@@ -86,6 +112,10 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     participantes: 25,
     estado: 'pendiente',
     creada: enviada(7, '09:12'),
+    datosSolicitante: DATOS_LAURA,
+    terminosAceptados: true,
+    asignatura: 'Seminario de investigación',
+    novedades: 'Algunos estudiantes no tienen portátil.',
   },
   {
     id: 'cap-2',
@@ -107,6 +137,9 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     responsableId: 'u-facilitador',
     responsable: 'Julián Mendoza',
     creada: enviada(7, '10:05'),
+    datosSolicitante: DATOS_CARLOS,
+    terminosAceptados: true,
+    asignatura: 'Proyecto integrador',
   },
   {
     id: 'cap-3',
@@ -131,6 +164,23 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     responsable: 'Julián Mendoza',
     motivo: MOTIVO_CAP_3,
     creada: enviada(6, '08:20'),
+    datosSolicitante: DATOS_LAURA,
+    terminosAceptados: true,
+    // Un nombre por participante (12).
+    nombresParticipantes: [
+      'Laura Pérez',
+      'Andrés Mejía',
+      'Valentina Ríos',
+      'Camilo Ortega',
+      'Daniela Suárez',
+      'Jhonatan Peña',
+      'María José Cuello',
+      'Sebastián Daza',
+      'Natalia Fuentes',
+      'Kevin Ochoa',
+      'Luisa Fernanda Arias',
+      'Óscar Maestre',
+    ],
   },
   {
     id: 'cap-4',

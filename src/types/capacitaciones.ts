@@ -84,6 +84,8 @@ export type SolicitudCapacitacion = {
   nombresParticipantes?: string[];
   /** Lo que la persona quiera dejar dicho; en la interfaz se llama «Novedades». */
   novedades?: string;
+  /** Si la persona aceptó los términos de la formación (TERMINOS_FORMACION) al pedirla. */
+  terminosAceptados?: boolean;
   /** Cuando es virtual, el enlace lo pone el personal al aprobar. */
   enlaceVirtual?: string;
   calificacion?: Calificacion;
