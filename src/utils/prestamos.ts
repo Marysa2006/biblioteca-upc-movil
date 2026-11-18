@@ -129,7 +129,6 @@ export function crearEsquemaDevolucion(accesoriosEntregados: string[]) {
 
 export type DatosFormularioDevolucion = z.infer<ReturnType<typeof crearEsquemaDevolucion>>;
 
-
 /** Un dato de la constancia: la etiqueta del formato y su valor ya listo para mostrar. */
 export type DatoConstancia = { etiqueta: string; valor: string };
 

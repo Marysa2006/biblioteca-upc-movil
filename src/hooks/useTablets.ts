@@ -211,7 +211,6 @@ export function usePrestamosVencidos({ activa = true }: { activa?: boolean } = {
   return consulta;
 }
 
-/** Registra la devolución y refresca los préstamos y las tablets (HU-23, CA2-CA4). */
 /** La constancia del préstamo, en el orden del formato (#252). */
 export function useConstancia(prestamoId: string) {
   return useQuery({
@@ -220,6 +219,7 @@ export function useConstancia(prestamoId: string) {
   });
 }
 
+/** Registra la devolución y refresca los préstamos y las tablets (HU-23, CA2-CA4). */
 export function useRegistrarDevolucion() {
   const queryClient = useQueryClient();
   const usuario = useSesion((estado) => estado.usuario);

@@ -85,7 +85,6 @@ export const NIT_UNIVERSIDAD = '892.300.285-6';
 export const DIAS_HABILES_CONSULTA = 10;
 export const DIAS_HABILES_RECLAMO = 15;
 
-
 /**
  * Las tres notas del formato de responsabilidad sobre el préstamo (versión 1.1, #252).
  * La tercera lleva el valor del bien; se arma con `notasDelPrestamo()` de `utils/prestamos`,

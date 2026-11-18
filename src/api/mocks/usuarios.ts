@@ -96,6 +96,7 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     correo: 'andres.mejia@unicesar.edu.co',
     tipo: 'estudiante',
     rolesPersonal: [],
+    identificacion: '1098765433',
     facultad: 'Ingenierías y Tecnologías',
     sede: 'Valledupar',
     programa: 'Ingeniería Ambiental',

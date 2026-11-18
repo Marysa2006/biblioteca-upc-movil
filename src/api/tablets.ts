@@ -852,5 +852,3 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
   vencidos.forEach(avisarVencido);
   return simularRed(ordenarVencidos(vencidos).map(copiarPrestamo));
 }
-
-
