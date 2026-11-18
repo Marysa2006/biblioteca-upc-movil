@@ -111,6 +111,16 @@ export function filtrarRegistros(
     if (filtros.programa && filtros.programa !== 'todos' && registro.programa !== filtros.programa) {
       return false;
     }
+    // Versión 1.1 (#259): los tres cruces nuevos.
+    if (filtros.facultad && filtros.facultad !== 'todos' && registro.facultad !== filtros.facultad) {
+      return false;
+    }
+    if (filtros.sede && filtros.sede !== 'todos' && registro.sede !== filtros.sede) {
+      return false;
+    }
+    if (filtros.semestre && filtros.semestre !== 'todos' && registro.semestre !== filtros.semestre) {
+      return false;
+    }
     return true;
   });
 }
