@@ -31,6 +31,8 @@ export const FECHAS_CITAS = {
   // Citas pendientes de la 1.1: dos para que la agenda tenga qué aprobar y rechazar.
   'cit-7': proximo(DIAS_APA, 1),
   'cit-8': proximo(DIAS_APA, 3),
+  // Realizada y ya calificada (#254): para probar que no se califica dos veces.
+  'cit-10': proximo(DIAS_APA, -3),
 };
 
 /** Datos del solicitante, como los copia la solicitud (#248). */
@@ -316,6 +318,32 @@ export const CITAS_ASESORIA: Cita[] = [
     datosSolicitante: deLaura,
     personas: 1,
     participantes: ['Laura Pérez'],
+  },
+  {
+    // Realizada y ya calificada (#254). cit-3 es la realizada que Laura todavía puede calificar.
+    id: 'cit-10',
+    temaId: 'tema-apa',
+    tema: 'Normas APA y Turnitin',
+    facilitadorId: 'u-facilitador',
+    facilitador: 'Julián Mendoza',
+    solicitanteId: 'u-estudiante',
+    solicitante: 'Laura Pérez',
+    fecha: FECHAS_CITAS['cit-10'],
+    horaInicio: '10:00',
+    horaFin: '11:00',
+    necesidad: 'Revisar el informe de similitud de Turnitin.',
+    modalidad: 'presencial',
+    estado: 'realizada',
+    resultado: 'Revisamos el informe y se ajustaron las citas textuales.',
+    asistio: true,
+    datosSolicitante: deLaura,
+    personas: 1,
+    participantes: ['Laura Pérez'],
+    calificacion: {
+      puntaje: 5,
+      comentario: 'Muy clara la explicación del informe.',
+      fecha: FECHAS_CITAS['cit-10'],
+    },
   },
 ];
 

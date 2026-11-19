@@ -17,6 +17,13 @@ import type {
   TipoUsuario,
   Usuario,
 } from '@/types';
+import {
+  crearCalificacion,
+  MENSAJE_INVITACION_CALIFICAR,
+  notaCalificacion,
+  problemaCalificacion,
+  type DatosCalificacion,
+} from '@/utils/calificacion';
 import { DURACION_ASESORIA_MINUTOS } from '@/utils/constantes';
 import { esFechaValida, esHoraValida, fechaLegible, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos, conservarFranjas, generarFranjas } from '@/utils/franjas';
@@ -984,6 +991,14 @@ export async function registrarResultado(
       estado: 'completada',
       ...datosDeSolicitante(actualizada.solicitanteId),
     });
+    // #254: invita a calificar. Solo aquí: una inasistencia no se califica. citaAtendible()
+    // exige una cita aprobada, así que una ya realizada no vuelve a invitar.
+    crearNotificacion({
+      usuarioId: actualizada.solicitanteId,
+      solicitudId: actualizada.id,
+      titulo: '¿Cómo te pareció tu asesoría?',
+      mensaje: MENSAJE_INVITACION_CALIFICAR,
+    });
     return simularRed(aCitaAgenda(actualizada));
   }
   return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/resultado/`, {
@@ -1015,6 +1030,65 @@ export async function registrarInasistencia(usuario: Usuario, citaId: string): P
     return simularRed(aCitaAgenda(actualizada));
   }
   return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/inasistencia/`, { method: 'POST' });
+}
+
+// ── Versión 1.1: calificación del servicio (#254) ─────────────────────────
+
+/**
+ * La persona califica su asesoría realizada, una sola vez (CA1): puntaje de 1 a 5 y comentario
+ * opcional. 404 si no existe, 403 si no es suya y 400 si no está realizada (CA2), si no asistió
+ * o si ya la calificó. Deja el evento en el historial (HU-08) y el puntaje en el mismo registro
+ * de uso (HU-25) para el promedio de HU-26 (CA3).
+ */
+export async function calificarCita(
+  usuario: Usuario,
+  id: string,
+  datos: DatosCalificacion,
+): Promise<Cita> {
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend. Quien califica sale del token.
+    return peticion<Cita>(`/solicitudes/cita/${id}/calificacion/`, {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    });
+  }
+
+  const cita = citas.find((actual) => actual.id === id);
+  if (!cita) {
+    throw new ErrorApi(404, 'La asesoría no existe.');
+  }
+  if (cita.solicitanteId !== usuario.id) {
+    throw new ErrorApi(403, 'Solo quien pidió la asesoría puede calificarla.');
+  }
+  if (cita.estado !== 'realizada') {
+    throw new ErrorApi(400, 'Solo puedes calificar una asesoría realizada.');
+  }
+  if (cita.asistio === false) {
+    throw new ErrorApi(400, 'No puedes calificar una asesoría a la que no asististe.');
+  }
+  if (cita.calificacion) {
+    throw new ErrorApi(400, 'Ya calificaste esta asesoría.');
+  }
+  const problema = problemaCalificacion(datos);
+  if (problema) {
+    throw new ErrorApi(400, problema);
+  }
+
+  const calificacion = crearCalificacion(datos);
+  const actualizada: Cita = { ...cita, calificacion };
+  citas = citas.map((actual) => (actual.id === id ? actualizada : actual));
+  registrarEvento('cita', id, 'realizada', usuario.nombre, notaCalificacion(calificacion.puntaje));
+  registrarUso({
+    id: `uso-cita-${id}`,
+    servicio: 'asesorias',
+    finalidad: actualizada.tema,
+    fecha: actualizada.fecha,
+    modalidad: actualizada.modalidad,
+    estado: 'completada',
+    calificacion: calificacion.puntaje,
+    ...datosDeSolicitante(actualizada.solicitanteId),
+  });
+  return simularRed({ ...actualizada, calificacion: { ...calificacion } });
 }
 
 
