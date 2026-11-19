@@ -5,18 +5,24 @@
  *
  *   const { data: solicitudes, isPending, isError, refetch } = useMisSolicitudes();
  *   const { data: historial } = useHistorialSolicitud(tipo, id);
+ *   const calificar = useCalificarSolicitud(); // #254
  */
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
 import { obtenerHistorialSolicitud } from '@/api/historial';
-import { obtenerMisSolicitudes } from '@/api/solicitudes';
+import {
+  calificarSolicitud,
+  obtenerMisSolicitudes,
+  type DatosCalificacion,
+  type TipoCalificable,
+} from '@/api/solicitudes';
 import { useSesion } from '@/store/sesion';
 import type { TipoSolicitud } from '@/types';
 
 /** Para que las pantallas de HU-08 (María) tipen los datos sin importar de src/api. */
 export type { EventoSolicitud, ResumenSolicitud, TipoSolicitud } from '@/types';
-export type { FiltroSolicitudes } from '@/api/solicitudes';
+export type { DatosCalificacion, FiltroSolicitudes, TipoCalificable } from '@/api/solicitudes';
 
 /**
  * Todas las solicitudes del usuario de la sesión, la más reciente primero (CA1). El filtro
@@ -41,5 +47,35 @@ export function useHistorialSolicitud(tipo: TipoSolicitud | '', id: string) {
     queryKey: claves.detalleSolicitud(tipo as TipoSolicitud, id),
     queryFn: () => obtenerHistorialSolicitud(tipo as TipoSolicitud, id),
     enabled: tipo !== '' && id !== '',
+  });
+}
+
+/** Lo que manda la pantalla al calificar (#254). */
+export type DatosCalificarSolicitud = DatosCalificacion & { tipo: TipoCalificable; id: string };
+
+/**
+ * Califica una asesoría o capacitación realizada del usuario de la sesión, una sola vez (#254).
+ * Si ya la calificó, no es suya o no está realizada, el error trae el mensaje para la persona.
+ * Refresca Mis solicitudes y el historial, las citas y capacitaciones (que traen la
+ * calificación) y las estadísticas (el promedio de HU-26). No crea notificaciones.
+ *
+ *   const calificar = useCalificarSolicitud();
+ *   calificar.mutate({ tipo: 'cita', id, puntaje: 5, comentario });
+ */
+export function useCalificarSolicitud() {
+  const usuario = useSesion((estado) => estado.usuario);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ tipo, id, puntaje, comentario }: DatosCalificarSolicitud) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return calificarSolicitud(tipo, id, { puntaje, comentario }, usuario);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
+      queryClient.invalidateQueries({ queryKey: claves.citasAsesoria });
+      queryClient.invalidateQueries({ queryKey: claves.solicitudesCapacitacionTodas });
+      queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
+    },
   });
 }

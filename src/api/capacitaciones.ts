@@ -15,6 +15,13 @@ import type {
 } from '@/types';
 import { sumarDias } from '@/utils/calendario';
 import {
+  crearCalificacion,
+  MENSAJE_INVITACION_CALIFICAR,
+  notaCalificacion,
+  problemaCalificacion,
+  type DatosCalificacion,
+} from '@/utils/calificacion';
+import {
   LARGO_MAXIMO_ASIGNATURA,
   LARGO_MAXIMO_NOVEDADES,
   problemaNombresParticipantes,
@@ -691,6 +698,13 @@ export async function cerrarCapacitacion(
       `Tu capacitación de ${solicitud.linea} quedó cerrada. Resultado: ${texto}`,
     );
     registrarEvento('capacitacion', id, 'realizada', AUTOR_PERSONAL, texto);
+    // #254: invita a calificar. Solo se cierra una aprobada, así que no se repite.
+    crearNotificacion({
+      usuarioId: solicitud.solicitante.id,
+      solicitudId: id,
+      titulo: '¿Cómo te pareció tu capacitación?',
+      mensaje: MENSAJE_INVITACION_CALIFICAR,
+    });
     return simularRed(guardada);
   }
   return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/cerrar/`, {
@@ -743,4 +757,63 @@ export async function responderNuevaFecha(
     `/capacitaciones/solicitudes/${id}/responder-fecha/`,
     { method: 'POST', body: JSON.stringify({ acepta }) },
   );
+}
+
+// ── Versión 1.1: calificación del servicio (#254) ─────────────────────────
+
+/**
+ * La persona califica su capacitación realizada, una sola vez (CA1): puntaje de 1 a 5 y
+ * comentario opcional. 404 si no existe, 403 si no es suya y 400 si no está realizada (CA2) o si
+ * ya la calificó. Deja el evento en el historial (HU-08) y el puntaje en el mismo registro de uso
+ * (HU-25) para el promedio de HU-26 (CA3).
+ */
+export async function calificarCapacitacion(
+  usuario: Usuario,
+  id: string,
+  datos: DatosCalificacion,
+): Promise<SolicitudCapacitacion> {
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend. Quien califica sale del token.
+    return peticion<SolicitudCapacitacion>(`/solicitudes/capacitacion/${id}/calificacion/`, {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    });
+  }
+
+  const solicitud = buscarSolicitud(id);
+  if (solicitud.solicitante.id !== usuario.id) {
+    throw new ErrorApi(403, 'Solo quien pidió la capacitación puede calificarla.');
+  }
+  if (solicitud.estado !== 'realizada') {
+    throw new ErrorApi(400, 'Solo puedes calificar una capacitación realizada.');
+  }
+  if (solicitud.calificacion) {
+    throw new ErrorApi(400, 'Ya calificaste esta capacitación.');
+  }
+  const problema = problemaCalificacion(datos);
+  if (problema) {
+    throw new ErrorApi(400, problema);
+  }
+
+  const calificacion = crearCalificacion(datos);
+  const actualizada: SolicitudCapacitacion = { ...solicitud, calificacion };
+  solicitudes = solicitudes.map((actual) => (actual.id === id ? actualizada : actual));
+  registrarEvento(
+    'capacitacion',
+    id,
+    'realizada',
+    usuario.nombre,
+    notaCalificacion(calificacion.puntaje),
+  );
+  registrarUso({
+    id: `uso-capacitacion-${id}`,
+    servicio: 'capacitaciones',
+    finalidad: `${actualizada.linea}: ${actualizada.objetivo}`,
+    fecha: actualizada.fecha,
+    modalidad: actualizada.modalidad,
+    estado: 'completada',
+    calificacion: calificacion.puntaje,
+    ...datosDeSolicitante(actualizada.solicitante.id),
+  });
+  return simularRed({ ...copiarSolicitud(actualizada), calificacion: { ...calificacion } });
 }

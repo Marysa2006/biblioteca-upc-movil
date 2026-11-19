@@ -66,7 +66,7 @@ export const camposSolicitante = {
   nivel: z
     .string()
     .refine((valor) => valor === '' || NIVELES_FORMACION.some((nivel) => nivel === valor), {
-      error: 'Elige el nivel: pregrado o posgrado.',
+      error: 'Elige el nivel: pregrado, posgrado u otro.',
     }),
   facultad: z
     .string()
@@ -124,7 +124,7 @@ export function reglasSolicitante(
   };
   if (pedirIdentificacion) falta('identificacion', 'Escribe tu número de identificación.');
   if (datos.tipo === 'estudiante') {
-    falta('nivel', 'Elige el nivel: pregrado o posgrado.');
+    falta('nivel', 'Elige el nivel: pregrado, posgrado u otro.');
     falta('facultad', 'Elige la facultad.');
     falta('programa', 'Escribe el programa.');
     falta('semestre', 'Elige el semestre.');

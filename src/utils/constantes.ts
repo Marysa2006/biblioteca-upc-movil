@@ -90,7 +90,7 @@ export const DIAS_HABILES_RECLAMO = 15;
  * referencia de la biblioteca (#224). Texto de referencia: confirmarlo con la biblioteca.
  */
 export const TERMINOS_FORMACION =
-  'La revisión de normas APA se hace por documento. ' +
+  'La revisión de normas APA se hace en una sesión por documento. ' +
   'Las capacitaciones se dictan dentro del espacio académico y con el acompañamiento ' +
   'del docente. ' +
   'Para las capacitaciones se necesita el usuario y la contraseña del sistema académico. ' +

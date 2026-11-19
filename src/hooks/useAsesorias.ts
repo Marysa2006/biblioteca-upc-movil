@@ -106,11 +106,15 @@ function useRefrescarCitas() {
   };
 }
 
-/** Lo que cambia al registrar lo que pasó en una cita: la agenda, las citas y su historial. */
+/**
+ * Lo que cambia al registrar lo que pasó en una cita: la agenda, las citas y su historial, y
+ * las notificaciones (el resultado crea la invitación a calificar, #254).
+ */
 function useRefrescarAtencion() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: claves.citasAsesoria });
+    queryClient.invalidateQueries({ queryKey: claves.notificaciones });
     queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
   };
 }
