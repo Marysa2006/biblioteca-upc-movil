@@ -2,7 +2,7 @@
  * «Mis solicitudes» (HU-08, CA1 y CA3): reservas, citas, préstamos y capacitaciones del
  * usuario en una sola lista, la más reciente primero. Reutiliza las consultas de cada servicio
  * y no consulta el inventario de tablets, que es del personal. El historial de cada una está
- * en ./historial.
+ * en ./historial. Al final, la calificación de asesorías y capacitaciones (#254).
  * La ruta es provisional: confírmenla con el equipo de Backend.
  */
 import type {
@@ -13,11 +13,14 @@ import type {
   Reserva,
   ResumenSolicitud,
   SolicitudCapacitacion,
+  TipoSolicitud,
+  Usuario,
 } from '@/types';
+import type { DatosCalificacion } from '@/utils/calificacion';
 
-import { obtenerMisCitas } from './asesorias';
-import { obtenerMisCapacitaciones } from './capacitaciones';
-import { peticion, USAR_MOCKS } from './cliente';
+import { calificarCita, obtenerMisCitas } from './asesorias';
+import { calificarCapacitacion, obtenerMisCapacitaciones } from './capacitaciones';
+import { ErrorApi, peticion, USAR_MOCKS } from './cliente';
 import { obtenerEspacios } from './espacios';
 import { estadoDePrestamo } from './historial';
 import { obtenerMisReservas } from './reservas';
@@ -107,4 +110,27 @@ export async function obtenerMisSolicitudes(
   ];
   const filtradas = estado === 'todas' ? todas : todas.filter((s) => s.estado === estado);
   return ordenar(filtradas);
+}
+
+// ── Versión 1.1: calificación del servicio (#254) ─────────────────────────
+
+/** Las solicitudes que se califican: asesorías y capacitaciones. */
+export type TipoCalificable = Extract<TipoSolicitud, 'cita' | 'capacitacion'>;
+
+export type { DatosCalificacion } from '@/utils/calificacion';
+
+/**
+ * Califica una asesoría o una capacitación realizada del usuario de la sesión (#254). Las
+ * reglas (una sola vez, 403, 400) y los registros (historial y uso) están en calificarCita() y
+ * calificarCapacitacion(). Otro tipo de solicitud no se califica: 400.
+ */
+export async function calificarSolicitud(
+  tipo: TipoCalificable,
+  id: string,
+  datos: DatosCalificacion,
+  usuario: Usuario,
+): Promise<Cita | SolicitudCapacitacion> {
+  if (tipo === 'cita') return calificarCita(usuario, id, datos);
+  if (tipo === 'capacitacion') return calificarCapacitacion(usuario, id, datos);
+  throw new ErrorApi(400, 'Este tipo de solicitud no se califica.');
 }
