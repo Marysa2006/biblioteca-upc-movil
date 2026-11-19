@@ -1,6 +1,6 @@
 /**
  * Filtros de los indicadores (HU-26, CA1): periodo (desde y hasta) y chips de servicio, tipo de
- * usuario y programa. Va plegado para que los gráficos queden a la vista; cerrado, muestra el
+ * usuario y programa; desde la versión 1.1 (#260), también facultad, sede y periodo académico. Va plegado para que los gráficos queden a la vista; cerrado, muestra el
  * resumen de lo elegido. No consulta datos: recibe las opciones y avisa los cambios.
  */
 import { useState } from 'react';
@@ -28,6 +28,13 @@ const FILAS: { campo: CampoFiltro; titulo: string; descripcion: string }[] = [
   { campo: 'servicio', titulo: 'Servicio', descripcion: 'Filtrar por servicio' },
   { campo: 'tipoUsuario', titulo: 'Tipo de usuario', descripcion: 'Filtrar por tipo de usuario' },
   { campo: 'programa', titulo: 'Programa', descripcion: 'Filtrar por programa' },
+  { campo: 'facultad', titulo: 'Facultad', descripcion: 'Filtrar por facultad' },
+  { campo: 'sede', titulo: 'Sede', descripcion: 'Filtrar por sede' },
+  {
+    campo: 'periodo',
+    titulo: 'Periodo académico',
+    descripcion: 'Filtrar por periodo académico: 1 de enero a junio, 2 de julio a diciembre',
+  },
 ];
 
 type Props = {

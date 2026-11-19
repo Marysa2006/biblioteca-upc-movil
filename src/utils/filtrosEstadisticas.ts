@@ -12,13 +12,41 @@ import {
   type ServicioEstadistica,
 } from '@/types';
 import { fechaLegible } from '@/utils/fechas';
-import { NOMBRE_PROGRAMA, NOMBRE_SERVICIO, NOMBRE_TIPO_USUARIO } from '@/utils/estadisticas';
+import {
+  NOMBRE_PROGRAMA,
+  NOMBRE_SERVICIO,
+  NOMBRE_TIPO_USUARIO,
+  periodoDe,
+} from '@/utils/estadisticas';
 
 /** Valor del chip "Todos" en cada filtro. */
 export const TODOS = 'todos';
 
-/** Filtros que se eligen con chips: servicio, tipo de usuario y programa. */
-export type CampoFiltro = 'servicio' | 'tipoUsuario' | 'programa';
+/**
+ * Filtros que se eligen con chips: servicio, tipo de usuario y programa, y desde la versión 1.1
+ * (#260) facultad, sede y periodo (`AAAA-1` / `AAAA-2`, el "semestre" del Backend).
+ */
+export type CampoFiltro = 'servicio' | 'tipoUsuario' | 'programa' | 'facultad' | 'sede' | 'periodo';
+
+/** Los campos con chips, en el orden en que se muestran. */
+export const CAMPOS_FILTRO: readonly CampoFiltro[] = [
+  'servicio',
+  'tipoUsuario',
+  'programa',
+  'facultad',
+  'sede',
+  'periodo',
+];
+
+/** El valor de un registro para cada filtro; el periodo sale de la fecha (#278). */
+const VALOR_DE: Record<CampoFiltro, (registro: RegistroUso) => string> = {
+  servicio: (r) => r.servicio,
+  tipoUsuario: (r) => r.tipoUsuario,
+  programa: (r) => r.programa,
+  facultad: (r) => r.facultad,
+  sede: (r) => r.sede,
+  periodo: (r) => periodoDe(r.fecha),
+};
 
 /** Una opción de un filtro; tiene la misma forma que OpcionFiltro de ChipsFiltro. */
 export type OpcionFiltro<T extends string> = { valor: T; etiqueta: string; cantidad: number };
@@ -29,6 +57,10 @@ const NOMBRES: Record<CampoFiltro, Record<string, string>> = {
   servicio: NOMBRE_SERVICIO,
   tipoUsuario: NOMBRE_TIPO_USUARIO,
   programa: NOMBRE_PROGRAMA,
+  // NOMBRE_PROGRAMA solo nombra "No informado": sirve igual para facultad y sede.
+  facultad: NOMBRE_PROGRAMA,
+  sede: NOMBRE_PROGRAMA,
+  periodo: {},
 };
 
 /** Nombre legible de un valor de un filtro; si no se conoce, se muestra tal cual. */
@@ -48,7 +80,8 @@ function opcionesDe(
 ): OpcionFiltro<string>[] {
   const conteo = new Map<string, number>();
   for (const registro of registros) {
-    conteo.set(registro[campo], (conteo.get(registro[campo]) ?? 0) + 1);
+    const valor = VALOR_DE[campo](registro);
+    conteo.set(valor, (conteo.get(valor) ?? 0) + 1);
   }
   if (elegido && elegido !== TODOS && !conteo.has(elegido)) {
     conteo.set(elegido, 0);
@@ -68,6 +101,9 @@ export function opcionesFiltros(
     servicio: opcionesDe(registros, 'servicio', filtros.servicio),
     tipoUsuario: opcionesDe(registros, 'tipoUsuario', filtros.tipoUsuario),
     programa: opcionesDe(registros, 'programa', filtros.programa),
+    facultad: opcionesDe(registros, 'facultad', filtros.facultad),
+    sede: opcionesDe(registros, 'sede', filtros.sede),
+    periodo: opcionesDe(registros, 'periodo', filtros.periodo),
   };
 }
 
@@ -75,10 +111,8 @@ export function opcionesFiltros(
 export function hayFiltros(filtros: FiltrosEstadisticas): boolean {
   return Boolean(
     filtros.desde ||
-    filtros.hasta ||
-    (filtros.servicio && filtros.servicio !== TODOS) ||
-    (filtros.tipoUsuario && filtros.tipoUsuario !== TODOS) ||
-    (filtros.programa && filtros.programa !== TODOS),
+      filtros.hasta ||
+      CAMPOS_FILTRO.some((campo) => filtros[campo] && filtros[campo] !== TODOS),
   );
 }
 
@@ -98,7 +132,7 @@ export function resumenFiltros(filtros: FiltrosEstadisticas): string {
   const partes: string[] = [];
   const periodo = textoPeriodo(filtros.desde, filtros.hasta);
   if (periodo) partes.push(periodo);
-  for (const campo of ['servicio', 'tipoUsuario', 'programa'] as const) {
+  for (const campo of CAMPOS_FILTRO) {
     const valor = filtros[campo];
     if (valor && valor !== TODOS) partes.push(nombreValorFiltro(campo, valor));
   }
@@ -151,6 +185,11 @@ export function abreviaturaMes(etiqueta: string, conAnio = false): string {
 /** Si los meses de los indicadores son de más de un año. */
 export function hayVariosAnios(meses: ConteoIndicador[]): boolean {
   return new Set(meses.map((mes) => mes.etiqueta.split(' ').at(-1))).size > 1;
+}
+
+/** 4.25 → "4,3 de 5": la calificación promedio con una cifra decimal y coma (#260). */
+export function textoCalificacion(promedio: number): string {
+  return `${promedio.toFixed(1).replace('.', ',')} de 5`;
 }
 
 /** "noviembre de 2026" → "Noviembre de 2026". */
