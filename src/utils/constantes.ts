@@ -34,8 +34,15 @@ export const FACULTADES: readonly string[] = [
 /** Sedes de la Universidad (provisional). */
 export const SEDES: readonly string[] = ['Valledupar', 'Aguachica'];
 
-/** Niveles de formación (provisional), con el tipo que usa `Usuario.nivel`. */
-export const NIVELES_FORMACION: readonly NivelFormacion[] = ['pregrado', 'posgrado'];
+/** Niveles de formación, con el tipo que usa `Usuario.nivel` (#278: el Backend añadió «otro»). */
+export const NIVELES_FORMACION: readonly NivelFormacion[] = ['pregrado', 'posgrado', 'otro'];
+
+/** Nombre que se muestra de cada nivel de formación. */
+export const NOMBRE_NIVEL_FORMACION: Record<NivelFormacion, string> = {
+  pregrado: 'Pregrado',
+  posgrado: 'Posgrado',
+  otro: 'Otro',
+};
 
 /**
  * Semestres del I al X, como los escribe la biblioteca (provisional). Es la lista para mostrar;
@@ -45,7 +52,12 @@ export const SEMESTRES: readonly string[] = [
   'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
 ];
 
-/** Duración de una asesoría, en minutos, igual para todas (#248). */
+/**
+ * Duración de una asesoría, en minutos, igual para todas (#248).
+ *
+ * @deprecated Desde la versión 1.1 la duración la fija `Parametros.duracionAsesoriaMinutos`
+ * (`advisory-duration-minutes` del Backend, #278), que la biblioteca puede cambiar.
+ */
 export const DURACION_ASESORIA_MINUTOS = 60;
 
 /**

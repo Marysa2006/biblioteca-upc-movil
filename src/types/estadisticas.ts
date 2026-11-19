@@ -72,7 +72,14 @@ export type FiltrosEstadisticas = {
   programa?: DatoUso | 'todos';
   facultad?: DatoUso | 'todos';
   sede?: DatoUso | 'todos';
+  /**
+   * @deprecated Desde la versión 1.1 el cruce de tiempo es el **periodo** (`AAAA-1` / `AAAA-2`),
+   * como `by_semester` del Backend (#278). El semestre del estudiante sigue en el CSV, pero ya no
+   * es un filtro.
+   */
   semestre?: DatoUso | 'todos';
+  /** Periodo académico: `AAAA-1` (enero a junio) o `AAAA-2` (julio a diciembre), #278. */
+  periodo?: string | 'todos';
 };
 
 /** Un grupo de un indicador: su nombre y cuántos registros tiene. */
@@ -96,7 +103,14 @@ export type IndicadoresUso = {
   // ── Versión 1.1 (#259) ─────────────────────────────────────
   porFacultad: ConteoIndicador[];
   porSede: ConteoIndicador[];
+  /**
+   * @deprecated Desde la versión 1.1 este cruce es el **periodo** (`AAAA-1` / `AAAA-2`), como
+   * `by_semester` del Backend (#278): usa `porPeriodo`. Se conserva con el mismo contenido para
+   * no romper a quien ya lo lee.
+   */
   porSemestre: ConteoIndicador[];
+  /** Un elemento por periodo con datos, `AAAA-1` o `AAAA-2`, en orden (#278). */
+  porPeriodo: ConteoIndicador[];
   /** Promedio de las calificaciones recibidas; no viene si nadie calificó. */
   calificacionPromedio?: number;
 };

@@ -56,7 +56,7 @@ export const HISTORIAL_SOLICITUDES: EventoGuardado[] = [
   // ── Préstamos de tablet (estado común; el real va en la nota) ──
   { id: 'evt-pre-1-a', tipo: 'prestamo', solicitudId: 'pre-1', fecha: hace(1, '17:00'), estado: 'aprobada', autor: LAURA, nota: 'Tablet reservada. Recógela en la biblioteca.' },
   { id: 'evt-pre-2-a', tipo: 'prestamo', solicitudId: 'pre-2', fecha: hace(2, '09:30'), estado: 'aprobada', autor: CARLOS, nota: 'Tablet reservada. Recógela en la biblioteca.' },
-  { id: 'evt-pre-2-b', tipo: 'prestamo', solicitudId: 'pre-2', fecha: el(FECHAS_PRESTAMOS['pre-2'], 0, '08:05'), estado: 'aprobada', autor: PERSONAL, nota: 'Tablet entregada. Devuélvela antes de las 17:00.' },
+  { id: 'evt-pre-2-b', tipo: 'prestamo', solicitudId: 'pre-2', fecha: el(FECHAS_PRESTAMOS['pre-2'], 0, '08:05'), estado: 'aprobada', autor: PERSONAL, nota: 'Tablet entregada. Devuélvela antes de las 12:00.' },
   { id: 'evt-pre-3-a', tipo: 'prestamo', solicitudId: 'pre-3', fecha: el(FECHAS_PRESTAMOS['pre-3'], -3, '08:45'), estado: 'aprobada', autor: ANDRES, nota: 'Tablet reservada. Recógela en la biblioteca.' },
   { id: 'evt-pre-3-b', tipo: 'prestamo', solicitudId: 'pre-3', fecha: el(FECHAS_PRESTAMOS['pre-3'], 0, '10:03'), estado: 'aprobada', autor: PERSONAL, nota: 'Tablet entregada. Devuélvela antes de las 12:00.' },
   { id: 'evt-pre-3-c', tipo: 'prestamo', solicitudId: 'pre-3', fecha: el(FECHAS_PRESTAMOS['pre-3'], 0, '12:00'), estado: 'aprobada', autor: 'Sistema', nota: 'Préstamo vencido: pasó la hora límite (12:00) sin devolver la tablet.' },

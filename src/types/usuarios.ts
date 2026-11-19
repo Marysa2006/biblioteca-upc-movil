@@ -17,8 +17,11 @@ export type RolPersonal = 'administrador' | 'facilitador' | 'gestor_espacios';
 /** @deprecated Usa TipoUsuario o RolPersonal: el tipo de usuario y los roles del personal van separados. */
 export type Rol = TipoUsuario | RolPersonal;
 
-/** Nivel de formación de la persona (formularios de la bibliotecóloga, versión 1.1). */
-export type NivelFormacion = 'pregrado' | 'posgrado';
+/**
+ * Nivel de formación de la persona (formularios de la bibliotecóloga, versión 1.1).
+ * 'otro' lo añadió el Backend (`OTHER` en `EducationLevelEnum`, #278).
+ */
+export type NivelFormacion = 'pregrado' | 'posgrado' | 'otro';
 
 export type Usuario = {
   id: string;

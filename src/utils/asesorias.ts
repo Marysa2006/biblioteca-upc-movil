@@ -49,19 +49,26 @@ export function citaEnCurso(cita: Pick<Cita, 'estado'>): boolean {
   return ESTADOS_CANCELABLES.includes(cita.estado);
 }
 
-/** Si la cita todavía se puede cancelar o reprogramar (HU-14, CA3). La API vuelve a validar. */
+/**
+ * Si la cita todavía se puede cancelar o reprogramar (HU-14, CA3). La API vuelve a validar.
+ *
+ * Desde la versión 1.1 (#278) la regla depende del estado, como en el Backend:
+ * - **pendiente**: se cancela en cualquier momento, sin plazo;
+ * - **aprobada**: hasta `horasCancelacion` horas antes de la cita.
+ */
 export function puedeCancelarCita(
   cita: Pick<Cita, 'estado' | 'fecha' | 'horaInicio'>,
   horasCancelacion: number,
   ahora: Date = new Date(),
 ): boolean {
   if (!citaEnCurso(cita)) return false;
+  if (cita.estado === 'pendiente') return true;
   return inicioReserva(cita).getTime() - ahora.getTime() >= horasCancelacion * HORA_MS;
 }
 
 export function textoPlazoCancelacion(horas: number): string {
   const plazo = horas === 1 ? '1 hora' : `${horas} horas`;
-  return `Las citas se pueden cancelar o reprogramar hasta ${plazo} antes.`;
+  return `Las citas aprobadas se pueden cancelar o reprogramar hasta ${plazo} antes; las pendientes, en cualquier momento.`;
 }
 
 const LARGO_MINIMO_NECESIDAD = 10;

@@ -130,7 +130,8 @@ export const PRESTAMOS_TABLET: Prestamo[] = [
     solicitante: 'Carlos Ramírez',
     fecha: FECHAS_PRESTAMOS['pre-2'],
     horaInicio: '08:00',
-    horaLimite: '17:00',
+    // Cuatro horas, que es el máximo del Backend desde la 1.1 (#278).
+    horaLimite: '12:00',
     condicionesAceptadas: true,
     estado: 'entregado',
     // Datos de la constancia (#252): quién entregó, en qué estado y los del solicitante.
