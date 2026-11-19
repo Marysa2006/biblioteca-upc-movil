@@ -22,9 +22,15 @@ import { ahoraFechaHora } from '@/utils/tablets';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { registrarUso } from './estadisticas';
+import { obtenerParametros } from './parametros';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
-/** Cuántos minutos sirve el código de una sesión (CA1: tiempo limitado). */
+/**
+ * Cuántos minutos sirve el código de una sesión (CA1: tiempo limitado).
+ *
+ * @deprecated Desde la versión 1.1 la vigencia la fija `Parametros.horasVigenciaQr`
+ * (`attendance-qr-hours` del Backend, #278).
+ */
 export const MINUTOS_VIGENCIA_CODIGO = 4 * 60; // 4 horas, como pidió la biblioteca
 
 /** Estado en memoria de la asistencia de cada sesión, solo para los datos de prueba. */
@@ -120,20 +126,22 @@ function aAsistencia(sesionId: string): AsistenciaSesion {
  * Si ya estaba abierta y no ha vencido, reutiliza el mismo código para no invalidar el QR
  * que el facilitador ya está mostrando.
  */
-export function abrirAsistencia(sesionId: string): Promise<AsistenciaSesion> {
+export async function abrirAsistencia(sesionId: string): Promise<AsistenciaSesion> {
   if (!sesionId?.trim()) {
-    return Promise.reject(new ErrorApi(400, 'Falta la sesión.'));
+    throw new ErrorApi(400, 'Falta la sesión.');
   }
   if (USAR_MOCKS) {
     const estado = estadoDe(sesionId);
     if (estado.cerrada) {
-      return Promise.reject(new ErrorApi(400, 'Esta asistencia ya se cerró.'));
+      throw new ErrorApi(400, 'Esta asistencia ya se cerró.');
     }
     const ahora = ahoraFechaHora();
     const vigente = estado.codigo !== null && estado.vence !== null && estado.vence > ahora;
     if (!vigente) {
+      // #278: la vigencia la fija `Parametros.horasVigenciaQr` (`attendance-qr-hours`).
+      const parametros = await obtenerParametros();
       estado.codigo = codigoTemporal(sesionId);
-      estado.vence = sumarMinutos(ahora, MINUTOS_VIGENCIA_CODIGO);
+      estado.vence = sumarMinutos(ahora, parametros.horasVigenciaQr * 60);
     }
     return simularRed(aAsistencia(sesionId));
   }

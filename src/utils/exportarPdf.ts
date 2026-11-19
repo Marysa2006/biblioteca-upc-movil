@@ -2,7 +2,7 @@
  * Exportación de las estadísticas a PDF (versión 1.1, #259, CA3).
  *
  * Arma un HTML sencillo con los mismos números que la pantalla —los filtros, el total y las
- * tablas por servicio, tipo de usuario, programa, facultad, sede, semestre y el promedio de las
+ * tablas por servicio, tipo de usuario, programa, facultad, sede, periodo y el promedio de las
  * calificaciones— y lo convierte a PDF con `expo-print`. Después lo comparte con `expo-sharing`.
  *
  * `expo-print` y `expo-sharing` se importan solo aquí, para que no pesen en el resto.
@@ -22,7 +22,7 @@ const ETIQUETAS_FILTRO: { clave: keyof FiltrosEstadisticas; titulo: string }[] =
   { clave: 'programa', titulo: 'Programa' },
   { clave: 'facultad', titulo: 'Facultad' },
   { clave: 'sede', titulo: 'Sede' },
-  { clave: 'semestre', titulo: 'Semestre' },
+  { clave: 'periodo', titulo: 'Periodo' },
 ];
 
 /** Escapa el texto que va al HTML: los datos vienen de formularios. */
@@ -94,7 +94,7 @@ export function htmlDelReporte(indicadores: IndicadoresUso, filtros: FiltrosEsta
   ${tabla('Por programa', indicadores.porPrograma)}
   ${tabla('Por facultad', indicadores.porFacultad)}
   ${tabla('Por sede', indicadores.porSede)}
-  ${tabla('Por semestre', indicadores.porSemestre)}
+  ${tabla('Por periodo', indicadores.porPeriodo)}
   ${tabla('Por mes', indicadores.porMes)}
 </body></html>`;
 }

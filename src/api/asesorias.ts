@@ -24,7 +24,6 @@ import {
   problemaCalificacion,
   type DatosCalificacion,
 } from '@/utils/calificacion';
-import { DURACION_ASESORIA_MINUTOS } from '@/utils/constantes';
 import { esFechaValida, esHoraValida, fechaLegible, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos, conservarFranjas, generarFranjas } from '@/utils/franjas';
 import { motivoNoDisponible } from '@/utils/parametros';
@@ -313,7 +312,12 @@ function citaModificable(
   if (!ESTADOS_ACTIVOS.includes(cita.estado)) {
     throw new ErrorApi(400, `Esta cita ya no se puede ${accion}.`);
   }
-  if (!cumpleAnticipacion(cita.fecha, cita.horaInicio, parametros.horasMinimasCancelacion)) {
+  // #278: una cita pendiente se cancela o reprograma en cualquier momento; una aprobada, hasta
+  // el plazo de `horasMinimasCancelacion`. Es la regla del Backend (`cancel-min-hours`).
+  if (
+    cita.estado === 'aprobada' &&
+    !cumpleAnticipacion(cita.fecha, cita.horaInicio, parametros.horasMinimasCancelacion)
+  ) {
     throw new ErrorApi(
       400,
       `Solo puedes ${accion} hasta ${parametros.horasMinimasCancelacion} horas antes.`,
@@ -440,7 +444,7 @@ export async function solicitarCita(
   }
 
   const inicio = aMinutos(nueva.hora);
-  const fin = inicio + DURACION_ASESORIA_MINUTOS;
+  const fin = inicio + parametros.duracionAsesoriaMinutos;
   const abre = parametros.horarios.find((h) => h.dia === new Date(`${nueva.fecha}T00:00:00`).getDay());
   if (!abre) {
     throw new ErrorApi(400, 'Ese día la biblioteca no atiende.');
@@ -448,7 +452,7 @@ export async function solicitarCita(
   if (inicio < aMinutos(abre.abre) || fin > aMinutos(abre.cierra)) {
     throw new ErrorApi(
       400,
-      `Elige una hora del horario de atención (${abre.abre} a ${abre.cierra}); la asesoría dura ${DURACION_ASESORIA_MINUTOS} minutos.`,
+      `Elige una hora del horario de atención (${abre.abre} a ${abre.cierra}); la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
     );
   }
 
@@ -463,9 +467,24 @@ export async function solicitarCita(
   if (!Number.isInteger(personas) || personas < 1) {
     throw new ErrorApi(400, 'Indica cuántas personas asisten: al menos una.');
   }
+  // #278: el grupo de una asesoría tiene un tope (el Backend, `advisory-max-group`). Más gente
+  // es una capacitación, que es otro servicio.
+  if (personas > parametros.maximoPersonasAsesoria) {
+    throw new ErrorApi(
+      400,
+      `Una asesoría es para ${parametros.maximoPersonasAsesoria} personas como máximo. Para un grupo mayor, solicita una capacitación.`,
+    );
+  }
+  // #278: `participantes` son los **otros** integrantes (personas − 1); quien pide ya va en
+  // `datosSolicitante`.
   const participantes = (nueva.participantes ?? []).map((nombre) => nombre.trim()).filter(Boolean);
-  if (participantes.length !== personas) {
-    throw new ErrorApi(400, 'Escribe el nombre de cada una de las personas que asisten.');
+  if (participantes.length !== personas - 1) {
+    throw new ErrorApi(
+      400,
+      personas === 1
+        ? 'Si vienes solo, no escribas nombres de otras personas.'
+        : 'Escribe el nombre de cada una de las otras personas que asisten.',
+    );
   }
 
   const necesidad = nueva.necesidad?.trim();
@@ -505,6 +524,7 @@ export async function solicitarCita(
     participantes,
     asignatura: nueva.asignatura?.trim() || undefined,
     novedades: nueva.novedades?.trim() || undefined,
+    terminosAceptados: nueva.terminosAceptados,
   };
   citas = [...citas, cita];
 
@@ -577,8 +597,8 @@ export async function aprobarCitaConDatos(
   // hora. La fecha pedida ya pasó esas dos reglas en `solicitarCita()`; volver a exigirlas al
   // aprobar rechazaría citas pedidas con tiempo y aprobadas a menos de 72 h (#248, revisión).
   const cambio = fecha !== cita.fecha || hora !== cita.horaInicio;
+  const parametros = await obtenerParametros();
   if (cambio) {
-    const parametros = await obtenerParametros();
     const noHabil = motivoNoDisponible(fecha, parametros);
     if (noHabil) {
       throw new ErrorApi(400, `Ese día la biblioteca no atiende: ${noHabil}.`);
@@ -589,6 +609,24 @@ export async function aprobarCitaConDatos(
         `La cita necesita ${parametros.horasMinimasSolicitud} horas de anticipación.`,
       );
     }
+  }
+
+  // #278: un facilitador no puede tener dos asesorías aprobadas a la misma hora.
+  const finNueva = aHora(aMinutos(hora) + parametros.duracionAsesoriaMinutos);
+  const choque = citas.find(
+    (otra) =>
+      otra.id !== cita.id &&
+      otra.estado === 'aprobada' &&
+      otra.facilitadorId === facilitador.id &&
+      otra.fecha === fecha &&
+      aMinutos(otra.horaInicio) < aMinutos(finNueva) &&
+      aMinutos(otra.horaFin) > aMinutos(hora),
+  );
+  if (choque) {
+    throw new ErrorApi(
+      400,
+      `${facilitador.nombre} ya tiene la asesoría «${choque.tema}» de ${choque.horaInicio} a ${choque.horaFin} ese día.`,
+    );
   }
 
   const enlace = aprobacion.enlaceVirtual?.trim();
@@ -603,7 +641,7 @@ export async function aprobarCitaConDatos(
     facilitador: facilitador.nombre,
     fecha,
     horaInicio: hora,
-    horaFin: aHora(aMinutos(hora) + DURACION_ASESORIA_MINUTOS),
+    horaFin: finNueva,
     fechaSolicitada: cambio ? (cita.fechaSolicitada ?? cita.fecha) : cita.fechaSolicitada,
     horaSolicitada: cambio ? (cita.horaSolicitada ?? cita.horaInicio) : cita.horaSolicitada,
     enlaceVirtual: cita.modalidad === 'virtual' ? enlace : cita.enlaceVirtual,

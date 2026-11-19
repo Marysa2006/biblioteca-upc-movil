@@ -77,6 +77,15 @@ function contarPor(
 /** El mes 'AAAA-MM' de una fecha 'AAAA-MM-DD'. */
 const mes = (fecha: string) => fecha.slice(0, 7);
 
+/**
+ * El periodo de una fecha, como el `by_semester` del Backend (#278): `AAAA-1` de enero a junio y
+ * `AAAA-2` de julio a diciembre. No es el semestre del estudiante: eso es un dato de su perfil.
+ */
+export function periodoDe(fecha: string): string {
+  const [anio, numeroMes] = fecha.split('-');
+  return Number(numeroMes) <= 6 ? `${anio}-1` : `${anio}-2`;
+}
+
 /** '2026-10' → 'octubre de 2026'. */
 export function mesLegible(anioMes: string): string {
   const [anio, numero] = anioMes.split('-').map(Number);
@@ -111,9 +120,11 @@ export function calcularIndicadores(registros: RegistroUso[]): IndicadoresUso {
       porFacultad: [],
       porSede: [],
       porSemestre: [],
+      porPeriodo: [],
     };
   }
   const calificadas = registros.filter((r) => r.calificacion != null);
+  const porPeriodo = contarPor(registros, (r) => periodoDe(r.fecha), NOMBRE_PROGRAMA);
   return {
     total: registros.length,
     porServicio: contarPor(registros, (r) => r.servicio, NOMBRE_SERVICIO),
@@ -122,7 +133,10 @@ export function calcularIndicadores(registros: RegistroUso[]): IndicadoresUso {
     porMes: contarPorMes(registros),
     porFacultad: contarPor(registros, (r) => r.facultad, NOMBRE_PROGRAMA),
     porSede: contarPor(registros, (r) => r.sede, NOMBRE_PROGRAMA),
-    porSemestre: contarPor(registros, (r) => r.semestre, NOMBRE_PROGRAMA),
+    // #278: el cruce de tiempo es el periodo; `porSemestre` se queda con el mismo contenido para
+    // no romper a quien ya lo lee (ronda @deprecated en el tipo).
+    porSemestre: porPeriodo,
+    porPeriodo,
     calificacionPromedio:
       calificadas.length === 0
         ? undefined
@@ -140,7 +154,9 @@ const COLUMNAS: { titulo: string; valor: (r: RegistroUso) => string }[] = [
   // Versión 1.1 (#259): los cruces que pidió la bibliotecóloga.
   { titulo: 'Facultad', valor: (r) => nombre(r.facultad, NOMBRE_PROGRAMA) },
   { titulo: 'Sede', valor: (r) => nombre(r.sede, NOMBRE_PROGRAMA) },
-  { titulo: 'Semestre', valor: (r) => nombre(r.semestre, NOMBRE_PROGRAMA) },
+  // #278: el «Periodo» es el del Backend (AAAA-1 / AAAA-2); el semestre del estudiante es suyo.
+  { titulo: 'Periodo', valor: (r) => periodoDe(r.fecha) },
+  { titulo: 'Semestre del estudiante', valor: (r) => nombre(r.semestre, NOMBRE_PROGRAMA) },
   { titulo: 'Calificación', valor: (r) => (r.calificacion == null ? '' : String(r.calificacion)) },
   { titulo: 'Nombre', valor: (r) => (r.nombre === NO_INFORMADO ? 'No informado' : r.nombre) },
   { titulo: 'Finalidad', valor: (r) => (r.finalidad === NO_INFORMADO ? 'No informado' : r.finalidad) },

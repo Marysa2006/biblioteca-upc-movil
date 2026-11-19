@@ -126,6 +126,14 @@ export const esquemaParametros = z
     textoCancelacion: textoAutomatico,
     /** Horas máximas de un préstamo de tablet (versión 1.1). */
     horasMaximasPrestamo: horas,
+    // Los parámetros del Backend (#278) van en el formulario aunque la pantalla todavía no los
+    // muestre: así, al guardar desde Parámetros, no se pierden ni vuelven al valor por defecto.
+    horasPrestamoTablet: horas,
+    diasMaximosTablet: horas,
+    minutosRecogerTablet: horas,
+    duracionAsesoriaMinutos: horas,
+    maximoPersonasAsesoria: horas,
+    horasVigenciaQr: horas,
   })
   .superRefine((datos, ctx) => {
     // Periodos: fechas cruzadas y periodos que se superponen.
@@ -209,6 +217,12 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
     textoRecordatorio: parametros.textoRecordatorio,
     textoCancelacion: parametros.textoCancelacion,
     horasMaximasPrestamo: String(parametros.horasMaximasPrestamo),
+    horasPrestamoTablet: String(parametros.horasPrestamoTablet),
+    diasMaximosTablet: String(parametros.diasMaximosTablet),
+    minutosRecogerTablet: String(parametros.minutosRecogerTablet),
+    duracionAsesoriaMinutos: String(parametros.duracionAsesoriaMinutos),
+    maximoPersonasAsesoria: String(parametros.maximoPersonasAsesoria),
+    horasVigenciaQr: String(parametros.horasVigenciaQr),
   };
 }
 
@@ -234,5 +248,11 @@ export function aParametros(datos: FormularioParametros): Parametros {
     textoRecordatorio: datos.textoRecordatorio.trim(),
     textoCancelacion: datos.textoCancelacion.trim(),
     horasMaximasPrestamo: Number(datos.horasMaximasPrestamo),
+    horasPrestamoTablet: Number(datos.horasPrestamoTablet),
+    diasMaximosTablet: Number(datos.diasMaximosTablet),
+    minutosRecogerTablet: Number(datos.minutosRecogerTablet),
+    duracionAsesoriaMinutos: Number(datos.duracionAsesoriaMinutos),
+    maximoPersonasAsesoria: Number(datos.maximoPersonasAsesoria),
+    horasVigenciaQr: Number(datos.horasVigenciaQr),
   };
 }

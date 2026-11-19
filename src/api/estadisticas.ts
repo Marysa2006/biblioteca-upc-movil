@@ -17,6 +17,7 @@ import {
 } from '@/types';
 
 import { hoyISO } from '@/utils/fechas';
+import { periodoDe } from '@/utils/estadisticas';
 
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
@@ -118,6 +119,11 @@ export function filtrarRegistros(
     if (filtros.sede && filtros.sede !== 'todos' && registro.sede !== filtros.sede) {
       return false;
     }
+    if (filtros.periodo && filtros.periodo !== 'todos' && periodoDe(registro.fecha) !== filtros.periodo) {
+      return false;
+    }
+    // @deprecated: el semestre del estudiante ya no es un filtro (#278); se sigue aceptando para
+    // no romper a quien lo use, pero el cruce de tiempo es `periodo`.
     if (filtros.semestre && filtros.semestre !== 'todos' && registro.semestre !== filtros.semestre) {
       return false;
     }

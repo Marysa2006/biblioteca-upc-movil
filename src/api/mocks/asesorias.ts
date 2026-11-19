@@ -163,7 +163,7 @@ export const CITAS_ASESORIA: Cita[] = [
     estado: 'aprobada',
     datosSolicitante: deLaura,
     personas: 1,
-    participantes: ['Laura Pérez'],
+    participantes: [],
   },
   {
     id: 'cit-2',
@@ -182,7 +182,7 @@ export const CITAS_ASESORIA: Cita[] = [
     estado: 'pendiente',
     datosSolicitante: deCarlos,
     personas: 2,
-    participantes: ['Carlos Ramírez', 'Laura Pérez'],
+    participantes: ['Laura Pérez'],
     asignatura: 'Metodología de la investigación',
   },
   {
@@ -204,7 +204,7 @@ export const CITAS_ASESORIA: Cita[] = [
     asistio: true,
     datosSolicitante: deLaura,
     personas: 1,
-    participantes: ['Laura Pérez'],
+    participantes: [],
   },
   {
     id: 'cit-4',
@@ -280,7 +280,7 @@ export const CITAS_ASESORIA: Cita[] = [
       facultad: 'Ciencias Administrativas, Contables y Económicas',
     },
     personas: 1,
-    participantes: ['Diana Ospina'],
+    participantes: [],
   },
   {
     // Pendiente VIRTUAL y sin enlace: aprueba el CA3 (una virtual no se aprueba sin enlace).
@@ -297,7 +297,7 @@ export const CITAS_ASESORIA: Cita[] = [
     estado: 'pendiente',
     datosSolicitante: deAndres,
     personas: 1,
-    participantes: ['Andrés Mejía'],
+    participantes: [],
   },
   {
     // Virtual ya aprobada con enlace: lo que verá la persona en Mis citas.
@@ -317,7 +317,7 @@ export const CITAS_ASESORIA: Cita[] = [
     enlaceVirtual: 'https://meet.google.com/abc-defg-hij',
     datosSolicitante: deLaura,
     personas: 1,
-    participantes: ['Laura Pérez'],
+    participantes: [],
   },
   {
     // Realizada y ya calificada (#254). cit-3 es la realizada que Laura todavía puede calificar.
@@ -338,7 +338,7 @@ export const CITAS_ASESORIA: Cita[] = [
     asistio: true,
     datosSolicitante: deLaura,
     personas: 1,
-    participantes: ['Laura Pérez'],
+    participantes: [],
     calificacion: {
       puntaje: 5,
       comentario: 'Muy clara la explicación del informe.',

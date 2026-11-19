@@ -712,6 +712,23 @@ export async function solicitarPrestamo(
   if (horaInicio < horario.abre || horaLimite > horario.cierra) {
     throw new ErrorApi(400, 'La franja está fuera del horario de atención.');
   }
+  // #278: el préstamo dura horas completas, como en el Backend (`tablet-loan-hours` por defecto,
+  // `tablet-max-loan-hours` como máximo).
+  const horas = duracionHoras(horaInicio, horaLimite);
+  if (horas > parametros.horasMaximasPrestamo) {
+    throw new ErrorApi(
+      400,
+      `Un préstamo de tablet dura ${parametros.horasMaximasPrestamo} horas como máximo.`,
+    );
+  }
+  // #278: y se aparta con hasta `diasMaximosTablet` días de anticipación (7 en el Backend).
+  const limite = sumarDias(hoyISO(), parametros.diasMaximosTablet);
+  if (fecha > limite) {
+    throw new ErrorApi(
+      400,
+      `Las tablets se apartan con hasta ${parametros.diasMaximosTablet} días de anticipación.`,
+    );
+  }
   const minimo = Date.now() + parametros.horasMinimasSolicitud * 60 * 60 * 1000;
   if (new Date(`${fecha}T${horaInicio}:00`).getTime() < minimo) {
     throw new ErrorApi(

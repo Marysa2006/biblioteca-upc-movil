@@ -31,6 +31,12 @@ export const PARAMETROS: Parametros = {
   horasMinimasCancelacion: 24,
   textoRecordatorio: 'Recuerda tu compromiso con la biblioteca.',
   textoCancelacion: 'Tu solicitud fue cancelada.',
-  // El formato de constancia de la biblioteca dice 3 horas (versión 1.1).
-  horasMaximasPrestamo: 3,
+  // El máximo lo fija el Backend en 4 horas; el formato de la biblioteca decía 3 (versión 1.1).
+  horasMaximasPrestamo: 4,
+  horasPrestamoTablet: 3,
+  diasMaximosTablet: 7,
+  minutosRecogerTablet: 60,
+  duracionAsesoriaMinutos: 60,
+  maximoPersonasAsesoria: 5,
+  horasVigenciaQr: 4,
 };

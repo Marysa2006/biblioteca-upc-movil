@@ -113,11 +113,13 @@ export type Cita = {
   datosSolicitante?: DatosSolicitante;
   /** Cuántas personas asisten. */
   personas?: number;
-  /** Un nombre por persona. */
+  /** Los nombres de los **otros** integrantes: personas − 1 (#278). */
   participantes?: string[];
   asignatura?: string;
   /** Lo que la persona quiera dejar dicho; en la interfaz se llama «Novedades». */
   novedades?: string;
+  /** Si la persona aceptó los términos de la formación al pedirla (#278). */
+  terminosAceptados?: boolean;
   /** Cuando es virtual, el enlace lo pone el personal al aprobar (obligatorio en ese caso). */
   enlaceVirtual?: string;
   /** La fecha y la hora que pidió la persona, si el personal las cambió al aprobar. */
@@ -140,8 +142,11 @@ export type NuevaSolicitudCita = {
   hora: string;
   necesidad: string;
   personas: number;
+  /** Los nombres de los **otros** integrantes: personas − 1 (#278). */
   participantes: string[];
   datosSolicitante: DatosSolicitante;
   asignatura?: string;
   novedades?: string;
+  /** Si la persona aceptó los términos de la formación al pedirla (#278). */
+  terminosAceptados?: boolean;
 };
