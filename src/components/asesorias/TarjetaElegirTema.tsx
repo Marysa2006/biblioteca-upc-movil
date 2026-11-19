@@ -1,6 +1,6 @@
 /**
  * Tarjeta para elegir un tema de asesoría (HU-14): nombre y descripción. Con onElegir, toda la
- * tarjeta se presiona y lleva a las franjas del tema; sin él, solo se muestra.
+ * tarjeta se presiona y lleva a la solicitud del tema (#249); sin él, solo se muestra.
  * La tarjeta del tema en la administración, con editar y activar, es TarjetaTema (HU-13).
  *
  * Usa TouchableRipple y no Card con onPress, como TarjetaServicio, para que el lector de
@@ -42,7 +42,7 @@ export function TarjetaElegirTema({ tema, onElegir }: Props) {
       <TouchableRipple
         onPress={() => onElegir(tema)}
         accessibilityRole="button"
-        accessibilityLabel={`${tema.nombre}. Ver franjas disponibles`}
+        accessibilityLabel={`${tema.nombre}. Solicitar asesoría`}
       >
         <View style={estilos.contenido}>
           {textos}

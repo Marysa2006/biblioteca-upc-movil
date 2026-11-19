@@ -107,7 +107,7 @@ function Detalle({ servicio }: { servicio: Servicio }) {
         </Button>
       ) : null}
 
-      {/* HU-14: los temas se consultan sin cuenta; la sesión se pide al confirmar la cita. */}
+      {/* HU-14: los temas se consultan sin cuenta; la sesión se pide al elegir el tema (#249). */}
       {categoria === 'asesorias' ? (
         <View style={estilos.filaBotones}>
           <Button
@@ -117,9 +117,9 @@ function Detalle({ servicio }: { servicio: Servicio }) {
             style={estilos.botonEnFila}
             contentStyle={estilos.contenidoBoton}
             accessibilityRole="button"
-            accessibilityLabel="Agendar una asesoría"
+            accessibilityLabel="Solicitar una asesoría"
           >
-            Agendar asesoría
+            Solicitar asesoría
           </Button>
           <Button
             mode="outlined"

@@ -1,7 +1,9 @@
 /**
  * Tarjeta de una cita de asesoría en Mis citas (HU-14): tema y estado, cuándo, con quién y
  * qué se pidió.
- * - Dentro del plazo, "Reprogramar" y "Cancelar" (CA3).
+ * - Versión 1.1 (#249): si el personal cambió la fecha al aprobar, también la que se pidió; en
+ *   la virtual aprobada, "Abrir enlace".
+ * - Dentro del plazo, "Reprogramar" (solo la fecha y la hora) y "Cancelar" (CA3).
  * - Fuera del plazo, explica cuántas horas antes se podía (horasMinimasCancelacion, HU-28).
  * - Ya resuelta, muestra el motivo o el resultado si lo hay.
  * - El día de la cita aprobada, "Registrar asistencia" con el QR del facilitador (HU-32).
@@ -10,12 +12,19 @@
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
+import { BotonEnlaceCita } from '@/components/asesorias/BotonEnlaceCita';
 import { BotonRegistrarAsistencia } from '@/components/asistencia/BotonRegistrarAsistencia';
 import { EtiquetaEstado } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Cita } from '@/types';
-import { citaEnCurso, puedeCancelarCita, textoPlazoCancelacion } from '@/utils/asesorias';
+import {
+  citaEnCurso,
+  fechaPedidaCita,
+  puedeCancelarCita,
+  textoPlazoCancelacion,
+} from '@/utils/asesorias';
 import { fechaCompleta } from '@/utils/calendario';
+import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
 
 type Props = {
   cita: Cita;
@@ -29,6 +38,7 @@ export function TarjetaCita({ cita, horasCancelacion, onCancelar, onReprogramar 
   const cuando = `${fechaCompleta(cita.fecha)} · ${cita.horaInicio} – ${cita.horaFin}`;
   const puedeCambiar = puedeCancelarCita(cita, horasCancelacion);
   const fueraDePlazo = citaEnCurso(cita) && !puedeCambiar;
+  const pedida = fechaPedidaCita(cita);
 
   return (
     <View style={estilos.tarjeta}>
@@ -50,11 +60,19 @@ export function TarjetaCita({ cita, horasCancelacion, onCancelar, onReprogramar 
       </View>
 
       <View style={estilos.detalle}>
+        <Text variant="labelMedium" style={estilos.secundario}>
+          {cita.estado === 'pendiente' ? 'Fecha que pediste' : 'Fecha'}
+        </Text>
         <Text variant="bodyMedium" style={estilos.dato}>
           {cuando}
         </Text>
+        {pedida ? (
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {`Pediste el ${fechaCompleta(pedida.fecha)} a las ${pedida.hora}; la biblioteca la cambió al aprobar.`}
+          </Text>
+        ) : null}
         <Text variant="bodySmall" style={estilos.secundario}>
-          {cita.necesidad}
+          {`${NOMBRE_MODALIDAD[cita.modalidad]} · ${cita.necesidad}`}
         </Text>
       </View>
 
@@ -69,6 +87,7 @@ export function TarjetaCita({ cita, horasCancelacion, onCancelar, onReprogramar 
         </Text>
       ) : null}
 
+      <BotonEnlaceCita cita={cita} />
       <BotonRegistrarAsistencia cita={cita} />
 
       {fueraDePlazo ? (

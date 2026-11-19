@@ -1,9 +1,10 @@
 /**
  * Mis citas de asesoría (HU-14). Pantalla apilada; se abre desde el detalle del servicio de
- * asesorías o después de agendar.
- * - CA3: dentro del plazo (horasMinimasCancelacion, HU-28), cada cita se cancela con
- *   confirmación y su franja se libera; o se reprograma eligiendo otra franja del mismo tema.
- *   Fuera del plazo, la tarjeta explica hasta cuándo se podía. La API vuelve a validar (400).
+ * asesorías.
+ * - CA3: dentro del plazo (puedeCancelarCita: la pendiente siempre; la aprobada hasta
+ *   horasMinimasCancelacion, HU-28), cada cita se cancela con confirmación o se reprograma en
+ *   asesorias/reprogramar/[id], con solo la fecha y la hora (#249). Fuera del plazo, la tarjeta
+ *   explica hasta cuándo se podía. La API vuelve a validar (400).
  * Pide cuenta: sin sesión, invita a iniciarla y vuelve aquí después.
  *
  * Patrón de datos: useMisCitas() / useParametros() / useCancelarCita() (src/hooks)
@@ -51,7 +52,7 @@ export default function MisCitas() {
       onSuccess: () => {
         setPorCancelar(null);
         setAviso(
-          `Cancelaste tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)}. La franja quedó libre.`,
+          `Cancelaste tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)}.`,
         );
       },
     });
@@ -59,10 +60,7 @@ export default function MisCitas() {
 
   const reprogramar = (cita: Cita) => {
     setAviso(null);
-    router.push({
-      pathname: '/asesorias/[temaId]',
-      params: { temaId: cita.temaId, reprogramar: cita.id },
-    });
+    router.push({ pathname: '/asesorias/reprogramar/[id]', params: { id: cita.id } });
   };
 
   const reintentar = () => {
@@ -91,9 +89,9 @@ export default function MisCitas() {
           onPress={() => router.push('/asesorias')}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"
-          accessibilityLabel="Agendar una asesoría"
+          accessibilityLabel="Solicitar una asesoría"
         >
-          Agendar asesoría
+          Solicitar asesoría
         </Button>
       </View>
     );
