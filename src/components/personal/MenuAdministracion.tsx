@@ -34,8 +34,9 @@ const ACCESOS: Acceso[] = [
     permiso: 'parametros',
   },
   {
-    titulo: 'Asesorías y jornadas',
-    descripcion: 'Temas de asesoría, jornadas de cada facilitador y sus franjas.',
+    // Versión 1.1 (#250): sin jornadas; la persona pide fecha y hora y el personal confirma.
+    titulo: 'Temas de asesoría',
+    descripcion: 'Los temas en los que la comunidad puede pedir una asesoría.',
     icono: 'calendar-clock-outline',
     destino: '/administracion/asesorias',
     permiso: 'asesorias',

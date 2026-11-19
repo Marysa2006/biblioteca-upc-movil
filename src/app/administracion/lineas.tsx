@@ -1,6 +1,6 @@
 /**
  * Líneas de formación (HU-09): la administración define las capacitaciones que ofrece la
- * biblioteca. Pantalla apilada que se abre desde Gestión → Portal, junto a Asesorías y jornadas.
+ * biblioteca. Pantalla apilada que se abre desde Gestión → Portal, junto a Temas de asesoría.
  *
  * - Crear y editar en /administracion/linea; "Nueva línea" es el botón flotante (CA1, CA2).
  * - Activar o desactivar desde el menú de la tarjeta. Antes de desactivar, el diálogo dice

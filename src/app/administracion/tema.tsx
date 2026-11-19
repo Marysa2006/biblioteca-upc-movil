@@ -1,6 +1,6 @@
 /**
  * Crear o editar un tema de asesoría (HU-13). Sin ?id= crea; con ?id= edita.
- * Al guardar vuelve a Asesorías y jornadas, que ya muestra el cambio.
+ * Al guardar vuelve a Temas de asesoría, que ya muestra el cambio.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 

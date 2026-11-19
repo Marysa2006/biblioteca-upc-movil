@@ -6,6 +6,10 @@
  * - Jornadas: crear y editar en /administracion/jornada; al guardar se generan las franjas.
  * - Temas: crear y editar en /administracion/tema, y activar o desactivar desde la tarjeta.
  * "Nueva jornada" o "Nuevo tema" es el botón flotante, según la pestaña; se encoge al deslizar.
+ *
+ * Versión 1.1 (#250): las asesorías ya no se ofrecen por jornadas (la persona pide fecha y hora y
+ * el personal confirma), así que Jornadas se oculta y la pantalla queda como "Temas de asesoría".
+ * El código de las jornadas se queda: basta con poner MOSTRAR_JORNADAS en true si vuelven.
  * Patrón de datos: hooks de src/hooks/useAsesorias.ts y useUsuarios.ts → src/api → mock o API.
  */
 import { router } from 'expo-router';
@@ -32,6 +36,11 @@ import type { Jornada, TemaAsesoria } from '@/types';
 
 type Seccion = 'jornadas' | 'temas';
 
+/** Las jornadas se ocultan desde la versión 1.1 (#250); el código sigue por si vuelven. */
+const MOSTRAR_JORNADAS: boolean = false;
+
+const TITULO = MOSTRAR_JORNADAS ? 'Asesorías y jornadas' : 'Temas de asesoría';
+
 /** Tiempo que se ve el aviso de cada acción. */
 const DURACION_AVISO_MS = 4000;
 
@@ -40,11 +49,11 @@ export default function Asesorias() {
 
   return (
     <>
-      <EncabezadoApilado titulo="Asesorías y jornadas" />
+      <EncabezadoApilado titulo={TITULO} />
       {tienePermiso('asesorias') ? (
         <GestionAsesorias />
       ) : (
-        <Pantalla titulo="Asesorías y jornadas" conEncabezado>
+        <Pantalla titulo={TITULO} conEncabezado>
           <SinPermiso />
         </Pantalla>
       )}
@@ -54,7 +63,7 @@ export default function Asesorias() {
 
 function GestionAsesorias() {
   // Al volver de un formulario, la pantalla sigue montada y conserva la sección elegida.
-  const [seccion, setSeccion] = useState<Seccion>('jornadas');
+  const [seccion, setSeccion] = useState<Seccion>(MOSTRAR_JORNADAS ? 'jornadas' : 'temas');
   const [aviso, setAviso] = useState<string | null>(null);
 
   const temas = useTemas();
@@ -95,8 +104,12 @@ function GestionAsesorias() {
 
   return (
     <Pantalla
-      titulo="Asesorías y jornadas"
-      subtitulo="Temas de asesoría y horarios de atención de cada facilitador."
+      titulo={TITULO}
+      subtitulo={
+        MOSTRAR_JORNADAS
+          ? 'Temas de asesoría y horarios de atención de cada facilitador.'
+          : 'Los temas en los que la comunidad puede pedir una asesoría.'
+      }
       conEncabezado
       flotante={(desplazada: boolean) =>
         seccion === 'jornadas' ? (
@@ -117,14 +130,16 @@ function GestionAsesorias() {
       }
       recarga={{ recargando, onRecargar: recargar }}
     >
-      <SegmentedButtons
-        value={seccion}
-        onValueChange={(valor) => setSeccion(valor as Seccion)}
-        buttons={[
-          { value: 'jornadas', label: 'Jornadas', icon: 'calendar-clock-outline' },
-          { value: 'temas', label: 'Temas', icon: 'school-outline' },
-        ]}
-      />
+      {MOSTRAR_JORNADAS ? (
+        <SegmentedButtons
+          value={seccion}
+          onValueChange={(valor) => setSeccion(valor as Seccion)}
+          buttons={[
+            { value: 'jornadas', label: 'Jornadas', icon: 'calendar-clock-outline' },
+            { value: 'temas', label: 'Temas', icon: 'school-outline' },
+          ]}
+        />
+      ) : null}
       {contenido}
 
       <Portal>

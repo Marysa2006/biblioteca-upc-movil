@@ -2,12 +2,14 @@
  * Reglas de la agenda del facilitador (HU-15). Funciones puras, sin hooks.
  * - La agenda muestra las citas que se atienden: pendientes, aprobadas y realizadas (CA1).
  * - El resultado o la inasistencia se registran cuando la cita aprobada ya terminó (CA3).
+ * - Versión 1.1 (#250): la cita nace sin facilitador; al aprobarla se le asigna, con la fecha,
+ *   la hora y, si es virtual, el enlace.
  */
 import { z } from 'zod';
 
 import type { Cita, EstadoSolicitud, HorarioAtencion } from '@/types';
 import { diasSemana, mismoMes, numeroDia, sumarDias } from '@/utils/calendario';
-import { fechaLegible } from '@/utils/fechas';
+import { esFechaValida, esHoraValida, fechaLegible } from '@/utils/fechas';
 import { inicioReserva } from '@/utils/recordatorios';
 
 /** Máximo del motivo de rechazo de una cita; la API acepta hasta 200 caracteres (#216). */
@@ -23,6 +25,51 @@ export const esquemaRechazoCita = z.object({
 });
 
 export type FormularioRechazoCita = z.input<typeof esquemaRechazoCita>;
+
+/** ¿La cita todavía no tiene facilitador? Nace así y se le asigna al aprobarla (#250). */
+export function sinAsignar(cita: Pick<Cita, 'facilitadorId'>): boolean {
+  return cita.facilitadorId == null || cita.facilitadorId === '';
+}
+
+/** Filtro de la agenda: un estado, las citas sin facilitador (#250) o null para ver todas. */
+export type FiltroAgenda = EstadoSolicitud | 'sin_asignar';
+
+/**
+ * Aprobar una cita (#250): quién la atiende, la fecha y la hora (prellenadas con las pedidas) y,
+ * si es virtual, el enlace https para entrar (CA3).
+ */
+export function esquemaAprobacionCita(virtual: boolean) {
+  return z
+    .object({
+      facilitadorId: z.string().min(1, { error: 'Elige quién atiende la asesoría.' }),
+      fecha: z.string().refine(esFechaValida, { error: 'Elige la fecha de la asesoría.' }),
+      hora: z.string().refine(esHoraValida, { error: 'Elige la hora de la asesoría.' }),
+      enlaceVirtual: z.string().trim(),
+    })
+    .superRefine((datos, ctx) => {
+      if (!virtual) return;
+      if (datos.enlaceVirtual === '') {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['enlaceVirtual'],
+          message: 'Escribe el enlace: es como la persona entra a la asesoría virtual.',
+        });
+      } else if (!enlaceValido(datos.enlaceVirtual)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['enlaceVirtual'],
+          message: 'Escribe un enlace completo que empiece por https://, por ejemplo https://meet.google.com/abc-defg-hij.',
+        });
+      }
+    });
+}
+
+export type FormularioAprobacionCita = z.input<ReturnType<typeof esquemaAprobacionCita>>;
+
+/** ¿Es un enlace https con dominio? (Meet, Teams, Zoom…). */
+export function enlaceValido(texto: string): boolean {
+  return /^https:\/\/[^\s/$.?#][^\s]*\.[^\s]+$/i.test(texto.trim());
+}
 
 /** Cuántas citas esperan que el personal las apruebe (#217, CA2). */
 export function contarPendientes(citas: Cita[]): number {
@@ -90,6 +137,9 @@ export const ICONO_ESTADO_AGENDA: Partial<Record<EstadoSolicitud, string>> = {
   realizada: 'check-all',
 };
 
+/** Ícono de la cita sin facilitador (#250): una persona con signo de pregunta. */
+export const ICONO_SIN_ASIGNAR = 'account-question-outline';
+
 /** Nombre de cada estado en singular y plural, para el lector de pantalla ("2 aprobadas"). */
 const NOMBRE_ESTADO_AGENDA: Partial<Record<EstadoSolicitud, [string, string]>> = {
   pendiente: ['pendiente', 'pendientes'],
@@ -103,9 +153,16 @@ export function nombreEstadoAgenda(estado: EstadoSolicitud, cantidad: number): s
   return cantidad === 1 ? singular : plural;
 }
 
-/** Con el filtro de las convenciones, solo las citas de ese estado; sin filtro, todas. */
-export function filtrarPorEstado(citas: Cita[], estado: EstadoSolicitud | null): Cita[] {
-  return estado ? citas.filter((cita) => cita.estado === estado) : citas;
+/** Con el filtro de las convenciones, solo las citas de ese estado o sin facilitador; sin filtro, todas. */
+export function filtrarPorEstado(citas: Cita[], filtro: FiltroAgenda | null): Cita[] {
+  if (!filtro) return citas;
+  if (filtro === 'sin_asignar') return citas.filter(sinAsignar);
+  return citas.filter((cita) => cita.estado === filtro);
+}
+
+/** "aprobada", "aprobadas", "sin asignar"…, según el filtro y la cantidad. */
+export function nombreFiltroAgenda(filtro: FiltroAgenda, cantidad: number): string {
+  return filtro === 'sin_asignar' ? 'sin asignar' : nombreEstadoAgenda(filtro, cantidad);
 }
 
 /** Las citas de un día: el total y cuántas hay de cada estado, en el orden de ESTADOS_AGENDA. */
