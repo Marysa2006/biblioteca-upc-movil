@@ -45,3 +45,30 @@ export function notaCalificacion(puntaje: number): string {
 /** Mensaje de la invitación a calificar que llega al marcar el servicio como realizado. */
 export const MENSAJE_INVITACION_CALIFICAR =
   'Califícala desde Mis solicitudes. Tu opinión nos ayuda a mejorar.';
+
+/** Nombre de cada puntaje, para leerlo en texto y no solo en estrellas (#255). */
+export const NOMBRE_PUNTAJE: Record<number, string> = {
+  1: 'Malo',
+  2: 'Regular',
+  3: 'Bueno',
+  4: 'Muy bueno',
+  5: 'Excelente',
+};
+
+/** "4 de 5, Muy bueno". */
+export function textoPuntaje(puntaje: number): string {
+  const nombre = NOMBRE_PUNTAJE[puntaje];
+  return `${puntaje} de ${PUNTAJE_MAXIMO}${nombre ? `, ${nombre}` : ''}`;
+}
+
+/**
+ * Si la persona puede calificarla (#255): realizada, sin calificar y sin inasistencia. Es la
+ * misma regla de calificarCita() y calificarCapacitacion(); la API sigue siendo la que decide.
+ */
+export function porCalificar(solicitud: {
+  estado: string;
+  calificacion?: unknown;
+  asistio?: boolean;
+}): boolean {
+  return solicitud.estado === 'realizada' && !solicitud.calificacion && solicitud.asistio !== false;
+}
