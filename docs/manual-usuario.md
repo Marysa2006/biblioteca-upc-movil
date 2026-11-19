@@ -80,8 +80,9 @@ El día de la asesoría aprobada, desde 30 minutos antes, **Mis citas** y el det
 ### Pedir una tablet
 
 1. En **Servicios**, abre **Préstamo de tablets** y toca **Solicitar tablet**.
-2. Elige el día y la hora. Si no hay tablets, la aplicación sugiere otras horas.
-3. Acepta las condiciones de uso y toca **Confirmar solicitud**.
+2. Elige el día (con hasta 7 días de anticipación) y la hora de inicio, en punto o y media. Si no hay tablets, la aplicación sugiere otras horas.
+3. Elige por cuántas horas la necesitas, de 1 a 4 (empieza en 3). La aplicación muestra la hora de devolución.
+4. Revisa tus datos, acepta las condiciones de uso y la responsabilidad sobre el préstamo, y toca **Confirmar solicitud**.
 
 La tablet se recoge en el mostrador de la biblioteca.
 

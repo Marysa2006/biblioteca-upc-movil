@@ -14,7 +14,10 @@ import type {
   Prestamo,
   Tablet,
 } from '@/types';
+import { sumarDias } from '@/utils/calendario';
+import { aHora, aMinutos } from '@/utils/franjas';
 import { motivoNoDisponible } from '@/utils/parametros';
+import { camposSolicitante, reglasSolicitante } from '@/utils/solicitante';
 
 /** Una tablet está operativa si no está en mantenimiento ni de baja. */
 export function estaOperativa(tablet: Tablet): boolean {
@@ -139,19 +142,105 @@ export function franjasSugeridas(
     .map((franja) => ({ fecha, horaInicio: franja.horaInicio, horaLimite: franja.horaFin }));
 }
 
-/** Por qué no se puede pedir una tablet ese día, o null si se puede (HU-28). */
+/**
+ * El último día en que se puede apartar una tablet: hoy más `diasMaximosTablet` (#278, 7 en el
+ * Backend). La API y el calendario usan el mismo límite.
+ */
+export function ultimoDiaTablet(parametros: Parametros, hoy: string): string {
+  return sumarDias(hoy, parametros.diasMaximosTablet);
+}
+
+/** Lo que se dice cuando el día pasa de `diasMaximosTablet`. */
+export function mensajeDiasMaximosTablet(parametros: Parametros): string {
+  return `Las tablets se apartan con hasta ${parametros.diasMaximosTablet} días de anticipación.`;
+}
+
+/** Por qué no se puede pedir una tablet ese día, o null si se puede (HU-28 y #278). */
 export function motivoDiaNoElegible(fecha: string, parametros: Parametros, hoy: string): string | null {
   if (fecha < hoy) return 'Ya pasó';
+  if (fecha > ultimoDiaTablet(parametros, hoy)) {
+    return `Solo hasta ${parametros.diasMaximosTablet} días antes`;
+  }
   const motivo = motivoNoDisponible(fecha, parametros);
   return motivo ? `No disponible: ${motivo}` : null;
 }
 
-/** La franja y las condiciones. La fecha la lleva la pantalla, porque con ella pide las franjas. */
-export const esquemaPrestamo = z.object({
-  horaInicio: z.string().min(1, { error: 'Elige una franja con tablets libres.' }),
-  aceptaCondiciones: z.boolean().refine((acepta) => acepta, {
-    error: 'Acepta las condiciones de uso para enviar la solicitud.',
-  }),
-});
+// ── Préstamo por horas, datos y responsabilidad (versión 1.1, #163) ─────────────────────
+// Las reglas son las mismas en el formulario y en la API (solicitarPrestamo): viven aquí.
 
-export type DatosPrestamo = z.input<typeof esquemaPrestamo>;
+/**
+ * El préstamo empieza en punto o y media (#163): las franjas del día salen cada 30 minutos y
+ * cada una dura 1 hora. No es un parámetro de la biblioteca.
+ */
+export const MINUTOS_ENTRE_INICIOS_TABLET = 30;
+
+/** ¿La hora de inicio cae en punto o y media? */
+export function esInicioTablet(horaInicio: string): boolean {
+  return aMinutos(horaInicio) % MINUTOS_ENTRE_INICIOS_TABLET === 0;
+}
+
+/** "10:30" y 3 horas → "13:30": la hora límite de devolución. */
+export function horaLimiteDe(horaInicio: string, horas: number): string {
+  return aHora(aMinutos(horaInicio) + horas * 60);
+}
+
+/**
+ * Las horas que quedan elegidas al empezar: `horasPrestamoTablet` (#278, 3 en el Backend), sin
+ * pasar del máximo.
+ */
+export function horasPorDefecto(parametros: Parametros): number {
+  return Math.max(1, Math.min(parametros.horasPrestamoTablet, parametros.horasMaximasPrestamo));
+}
+
+/** Las horas del préstamo son un entero de 1 al máximo de los parámetros (CA4). */
+export function problemaHoras(horas: number, maximo: number): string | null {
+  if (!Number.isInteger(horas) || horas < 1 || horas > maximo) {
+    return `Elige de 1 a ${maximo} ${maximo === 1 ? 'hora' : 'horas'}.`;
+  }
+  return null;
+}
+
+/**
+ * Cuántas horas completas se pueden pedir desde una franja: hasta el máximo de los parámetros y
+ * sin pasar del cierre, que es el fin de la última franja del día. Sin la franja, 0.
+ */
+export function horasPosibles(
+  franjas: FranjaTablets[],
+  horaInicio: string,
+  maximo: number,
+): number {
+  const ultima = franjas[franjas.length - 1];
+  if (!ultima || !franjas.some((franja) => franja.horaInicio === horaInicio)) return 0;
+  const hastaElCierre = Math.floor((aMinutos(ultima.horaFin) - aMinutos(horaInicio)) / 60);
+  return Math.max(0, Math.min(maximo, hastaElCierre));
+}
+
+/**
+ * La solicitud: la franja de inicio, las horas, los datos de quien la pide con las reglas de
+ * #224 (utils/solicitante, con la identificación obligatoria), las condiciones (CA3) y la
+ * responsabilidad (#163). La fecha la lleva la pantalla, porque con ella pide las franjas.
+ * Cada campo se valida por su lado para que los errores se vean todos a la vez; las reglas
+ * entre campos del solicitante van en superRefine.
+ */
+export function esquemaPrestamo({ maximoHoras }: { maximoHoras: number }) {
+  return z
+    .object({
+      ...camposSolicitante,
+      horaInicio: z.string().min(1, { error: 'Elige una franja con tablets libres.' }),
+      /** Del CampoNumerico, como texto. */
+      horas: z
+        .string()
+        .refine((valor) => valor !== '' && !problemaHoras(Number(valor), maximoHoras), {
+          error: problemaHoras(0, maximoHoras) ?? '',
+        }),
+      aceptaCondiciones: z.boolean().refine((acepta) => acepta, {
+        error: 'Acepta las condiciones de uso para enviar la solicitud.',
+      }),
+      responsabilidadAceptada: z.boolean().refine((acepta) => acepta, {
+        error: 'Acepta la responsabilidad sobre el préstamo para enviar la solicitud.',
+      }),
+    })
+    .superRefine((datos, ctx) => reglasSolicitante(datos, ctx, { pedirIdentificacion: true }));
+}
+
+export type DatosPrestamo = z.input<ReturnType<typeof esquemaPrestamo>>;
