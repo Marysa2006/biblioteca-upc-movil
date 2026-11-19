@@ -2,6 +2,8 @@
  * Sección Indicadores de Estadísticas (HU-26): el total de operaciones y los gráficos por
  * servicio, tipo de usuario, programa y mes, con filtros (CA1); la exportación a CSV de lo
  * que se está viendo (CA2) y el aviso cuando los filtros no dejan resultados (CA3).
+ * Versión 1.1 (#260): filtros y barras por facultad, sede y periodo, la calificación promedio
+ * y dos exportaciones, para Excel (el CSV) y PDF (con los filtros aplicados).
  *
  * Las opciones de los chips salen de los registros del periodo (solo desde y hasta), así cada
  * chip dice cuántas operaciones tiene. Los indicadores y el CSV usan todos los filtros.
@@ -16,7 +18,12 @@ import { ColumnasMes } from '@/components/estadisticas/ColumnasMes';
 import { GraficoBarras } from '@/components/estadisticas/GraficoBarras';
 import { TarjetaIndicador } from '@/components/estadisticas/TarjetaIndicador';
 import { AvisoError, EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
-import { useExportarEstadisticas, useIndicadores, useRegistrosUso } from '@/hooks/useEstadisticas';
+import {
+  useExportarEstadisticas,
+  useExportarPdf,
+  useIndicadores,
+  useRegistrosUso,
+} from '@/hooks/useEstadisticas';
 import { acentoServicio, colores, espacio, fuentes, radio } from '@/theme';
 import {
   NO_INFORMADO,
@@ -35,6 +42,7 @@ import {
   servicioDeEtiqueta,
   textoOperaciones,
   textoPeriodo,
+  textoCalificacion,
   textoPorcentaje,
   variacionUltimoMes,
 } from '@/utils/filtrosEstadisticas';
@@ -47,6 +55,9 @@ export function SeccionIndicadores() {
   const indicadores = useIndicadores(filtros);
   const registros = useRegistrosUso(filtros);
   const exportar = useExportarEstadisticas();
+  const exportarPdf = useExportarPdf();
+  // Mientras se genera cualquiera de los dos archivos, los dos botones quedan ocupados.
+  const exportando = exportar.isPending || exportarPdf.isPending;
 
   // En Android lo lee accessibilityLiveRegion; en iOS se anuncia aquí.
   useEffect(() => {
@@ -59,12 +70,14 @@ export function SeccionIndicadores() {
     setFiltros(nuevos);
     setAviso(null);
     exportar.reset();
+    exportarPdf.reset();
   };
 
   const alExportar = () => {
     const lista = registros.data;
     if (!lista) return;
     setAviso(null);
+    exportarPdf.reset();
     exportar.mutate(lista, {
       onSuccess: ({ archivo, compartido }) =>
         setAviso(
@@ -73,6 +86,23 @@ export function SeccionIndicadores() {
             : `El celular no permite compartir: el archivo ${archivo} quedó guardado en la app.`,
         ),
     });
+  };
+
+  const alExportarPdf = () => {
+    if (!indicadores.data) return;
+    setAviso(null);
+    exportar.reset();
+    exportarPdf.mutate(
+      { indicadores: indicadores.data, filtros },
+      {
+        onSuccess: ({ compartido }) =>
+          setAviso(
+            compartido
+              ? `Se exportó el PDF con ${textoOperaciones(indicadores.data.total)} y los filtros aplicados.`
+              : 'El celular no permite compartir: el PDF quedó generado en la app.',
+          ),
+      },
+    );
   };
 
   const opciones = opcionesFiltros(periodo.data ?? [], filtros);
@@ -116,10 +146,13 @@ export function SeccionIndicadores() {
           indicadores={indicadores.data}
           periodo={textoPeriodo(filtros.desde, filtros.hasta)}
           onExportar={alExportar}
-          exportando={exportar.isPending}
+          onExportarPdf={alExportarPdf}
+          exportando={exportando}
+          exportandoPdf={exportarPdf.isPending}
+          exportandoExcel={exportar.isPending}
           puedeExportar={Boolean(registros.data)}
         />
-        {exportar.error ? (
+        {exportar.error || exportarPdf.error ? (
           <AvisoError mensaje="No pudimos exportar el archivo. Inténtalo de nuevo." />
         ) : null}
         {aviso ? (
@@ -146,13 +179,20 @@ function Resumen({
   indicadores,
   periodo,
   onExportar,
+  onExportarPdf,
   exportando,
+  exportandoExcel,
+  exportandoPdf,
   puedeExportar,
 }: {
   indicadores: IndicadoresUso;
   periodo: string | null;
   onExportar: () => void;
+  onExportarPdf: () => void;
+  /** Cualquiera de los dos: ocupa los dos botones. */
   exportando: boolean;
+  exportandoExcel: boolean;
+  exportandoPdf: boolean;
   puedeExportar: boolean;
 }) {
   const subtitulo = periodo ? `operaciones · ${periodo.toLowerCase()}` : 'operaciones registradas';
@@ -169,19 +209,34 @@ function Resumen({
           {subtitulo}
         </Text>
       </View>
-      <Button
-        mode="contained"
-        icon="download"
-        onPress={onExportar}
-        loading={exportando}
-        disabled={exportando || !puedeExportar}
-        buttonColor={colores.superficie}
-        textColor={colores.primarioOscuro}
-        style={estilos.exportar}
-        accessibilityLabel={`Exportar ${textoOperaciones(indicadores.total)} a CSV`}
-      >
-        Exportar CSV
-      </Button>
+      {/* Con letra grande, el segundo botón pasa debajo del primero en vez de cortarse. */}
+      <View style={estilos.botonesExportar}>
+        <Button
+          mode="contained"
+          icon="microsoft-excel"
+          onPress={onExportar}
+          loading={exportandoExcel}
+          disabled={exportando || !puedeExportar}
+          buttonColor={colores.superficie}
+          textColor={colores.primarioOscuro}
+          style={estilos.exportar}
+          accessibilityLabel={`Exportar ${textoOperaciones(indicadores.total)} para Excel`}
+        >
+          Exportar para Excel
+        </Button>
+        <Button
+          mode="outlined"
+          icon="file-pdf-box"
+          onPress={onExportarPdf}
+          loading={exportandoPdf}
+          disabled={exportando}
+          textColor={colores.superficie}
+          style={[estilos.exportar, estilos.exportarPdf]}
+          accessibilityLabel={`Exportar los indicadores de ${textoOperaciones(indicadores.total)} en PDF, con los filtros aplicados`}
+        >
+          Exportar PDF
+        </Button>
+      </View>
     </View>
   );
 }
@@ -221,6 +276,14 @@ function Tarjetas({ indicadores }: { indicadores: IndicadoresUso }) {
           titulo="Usuarios más frecuentes"
           valor={usuarios.etiqueta}
           detalle={`${textoPorcentaje(usuarios.cantidad, total)} de las operaciones`}
+        />
+      ) : null}
+      {indicadores.calificacionPromedio != null ? (
+        <TarjetaIndicador
+          icono="star-half-full"
+          titulo="Calificación promedio"
+          valor={textoCalificacion(indicadores.calificacionPromedio)}
+          detalle="De las asesorías y capacitaciones calificadas"
         />
       ) : null}
       {ultimoMes ? (
@@ -296,6 +359,24 @@ function Graficos({ indicadores }: { indicadores: IndicadoresUso }) {
         datos={tipos}
         total={total}
       />
+      <GraficoBarras
+        titulo="Por facultad"
+        descripcion="Facultad de quien hizo la operación"
+        datos={indicadores.porFacultad}
+        total={total}
+      />
+      <GraficoBarras
+        titulo="Por sede"
+        descripcion="Sede de quien hizo la operación"
+        datos={indicadores.porSede}
+        total={total}
+      />
+      <GraficoBarras
+        titulo="Por periodo académico"
+        descripcion="1: de enero a junio · 2: de julio a diciembre"
+        datos={indicadores.porPeriodo}
+        total={total}
+      />
     </>
   );
 }
@@ -325,7 +406,9 @@ const estilos = StyleSheet.create({
   },
   total: { color: colores.superficie, fontFamily: fuentes.negrita },
   textoResumen: { color: colores.superficie },
+  botonesExportar: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
   exportar: { alignSelf: 'flex-start', borderRadius: radio.boton },
+  exportarPdf: { borderColor: colores.superficie },
   aviso: { color: colores.texto },
   cuadricula: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
 });
