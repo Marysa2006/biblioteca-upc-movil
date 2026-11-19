@@ -29,6 +29,14 @@ export function obtenerPerfil(usuario: Usuario): Promise<Perfil> {
   return peticion<Perfil>('/perfil/');
 }
 
+/**
+ * Guarda el celular que la persona dio al registrarse (#203), para que llegue prellenado a las
+ * solicitudes (CA4: `datosSolicitanteDe()` lo lee del perfil). Solo lo usa el mock del registro.
+ */
+export function guardarCelularRegistrado(usuarioId: string, celular: string): void {
+  editablesPorUsuario[usuarioId] = { ...editablesPorUsuario[usuarioId], telefono: celular };
+}
+
 export function actualizarPerfil(
   usuario: Usuario,
   datos: DatosEditablesPerfil,

@@ -53,6 +53,20 @@ export function buscarEnDirectorio(correo: string): Usuario | undefined {
   return encontrado ? copiar(encontrado) : undefined;
 }
 
+/** ¿Ya hay alguien con esa cédula en el directorio? Lo usa el registro de prueba (#203). */
+export function existeIdentificacion(identificacion: string): boolean {
+  const buscada = identificacion.trim();
+  return directorio.some((usuario) => usuario.identificacion?.trim() === buscada);
+}
+
+/**
+ * Agrega una cuenta nueva de la comunidad al directorio de prueba (#203). Solo lo usa el mock del
+ * registro; con la API real, la cuenta la crea el Backend. Se pierde al recargar la app.
+ */
+export function agregarAlDirectorio(usuario: Usuario): void {
+  directorio = [...directorio, copiar(usuario)];
+}
+
 /**
  * Da o quita los permisos que van aparte de los roles (versión 1.1, #256).
  * No es un rol nuevo: es el `novedades` que la administración le concede a una persona.

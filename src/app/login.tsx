@@ -69,6 +69,23 @@ export default function Login() {
         <FormularioLogin enviando={isPending} onEnviar={iniciarSesion} />
       </View>
 
+      {/* #203: la comunidad sin cuenta se registra. Reemplaza al login: atrás vuelve al origen. */}
+      <View style={estilos.registro}>
+        <Text variant="bodyMedium" style={estilos.textoSeparador}>
+          ¿No tienes cuenta?
+        </Text>
+        <Button
+          mode="text"
+          onPress={() => router.replace('/registro')}
+          disabled={isPending}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="No tengo cuenta: registrarme"
+        >
+          Regístrate
+        </Button>
+      </View>
+
       <View style={estilos.separador}>
         <View style={estilos.linea} />
         <Text variant="bodyMedium" style={estilos.textoSeparador}>
@@ -140,6 +157,14 @@ const estilos = StyleSheet.create({
     padding: espacio.m,
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
+  },
+  // Con letra grande, el botón pasa a otra línea en vez de cortarse.
+  registro: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacio.xs,
   },
   separador: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   linea: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colores.bordeFuerte },

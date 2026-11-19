@@ -65,6 +65,7 @@ es casualidad —90 son hoy las *llamadas*, porque dos rutas se piden dos veces�
 | Módulo | Móvil | Backend | |
 |---|---|---|---|
 | **Auth** | `POST /auth/login` | `/api/v1/token/` | ⚠️ pide `{email,password}` y devuelve `{access,refresh}` |
+| | `POST /register/` *(#203)* | `/api/v1/register/` | ✅ ya manda los nombres del Backend (`first_name`, `user_type: 'STUDENT'`…); ⚠️ el semestre va como texto (`"7"`) y los 400 llegan por campo: falta leerlos en `ErrorRegistro` |
 | **Perfil** | `GET /perfil` | `/api/v1/me/` | ✅ |
 | | `PATCH /perfil` | `/api/v1/me/` | ✅ |
 | **Usuarios** | `GET /usuarios` | `/api/v1/users/` | ✅ |
@@ -173,7 +174,7 @@ Campos y comportamientos nuevos que el Backend tiene que aceptar cuando se conec
 | Guías con enlace | **#258** | `GET /guias/` con `enlace` y `sede` |
 | Estadísticas | **#259** | `facultad`, `sede`, `semestre` y `calificacion` en los registros; los tres filtros; y el PDF (que se genera en el celular) |
 | **Aceptación de la Ley 1581** | **#225**, **#246** | Ya está: `POST /me/privacy-acceptance/` guarda la aceptación con la versión de la política, y el perfil trae `privacy_acceptance_required`. Falta que el móvil lo llame |
-| Registro de cuentas | **#203** | Ya está: `POST /register/` con el correo `@unicesar.edu.co`, `accept_privacy` y los datos del #224; la cuenta queda activa y sin rol. Falta la pantalla en el móvil |
+| Registro de cuentas | **#203** | Ya está: `POST /register/` con el correo `@unicesar.edu.co`, `accept_privacy` y los datos del #224; la cuenta queda activa y sin rol. El móvil ya tiene la pantalla (`registro`) con los mismos campos; al conectar, falta leer los errores por campo del 400 |
 | QR de asistencia | **#231** | Están **3 de las 5**: el QR lo genera el servidor (`/attendance/{id}/qr/`), la persona lo envía (`POST /attendance/`) y la lista se consulta (`/attendance/{id}/`). **Faltan** el registro manual y el cierre |
 
 ---
