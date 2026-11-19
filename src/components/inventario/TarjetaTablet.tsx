@@ -1,5 +1,6 @@
 /**
  * Tablet del inventario (HU-21): modelo, código, serial, accesorios y estado en texto e ícono.
+ * Versión 1.1 (#253): también la marca y el valor del bien, que van en la constancia.
  * Acciones: editar y el cambio de estado rápido (CA3). Una tablet en préstamo no cambia de
  * estado aquí: la devuelve la sección Préstamos (HU-23).
  */
@@ -9,6 +10,7 @@ import { Button, Icon, Text } from 'react-native-paper';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { EstadoTablet, Tablet } from '@/types';
 import { COLOR_ESTADO_TABLET, ICONO_ESTADO_TABLET, NOMBRE_ESTADO_TABLET } from '@/utils/inventario';
+import { valorEnPesos } from '@/utils/prestamos';
 
 /** Cambio rápido de cada estado: a dónde pasa y con qué texto. */
 const CAMBIO_RAPIDO: Partial<Record<EstadoTablet, { a: EstadoTablet; texto: string; icono: string }>> = {
@@ -45,6 +47,9 @@ export function TarjetaTablet({ tablet, cambiando, onEditar, onCambiarEstado }: 
           </Text>
           <Text variant="bodySmall" style={estilos.secundario}>
             {`S/N: ${tablet.serial}`}
+          </Text>
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {`Marca: ${tablet.marca ?? 'sin registrar'} · Valor: ${tablet.valor != null ? valorEnPesos(tablet.valor) : 'sin registrar'}`}
           </Text>
         </View>
         <View style={[estilos.estado, { backgroundColor: fondo }]}>

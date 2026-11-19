@@ -185,6 +185,9 @@ export function SeccionPrestamos() {
               tablet={tabletPorId.get(prestamo.tabletId)}
               onEntregar={() => abrir(prestamo.id, 'entrega')}
               onRecibir={() => abrir(prestamo.id, 'devolucion')}
+              onVerConstancia={() =>
+                router.push({ pathname: '/administracion/constancia', params: { id: prestamo.id } })
+              }
             />
           )}
         </ListaPaginada>

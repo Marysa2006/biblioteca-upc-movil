@@ -8,22 +8,25 @@
  * HU-33: el día de la cita aprobada, "Tomar asistencia" abre el control con QR.
  * #217: la cita pendiente se aprueba o se rechaza con motivo (DialogoRechazarCita). La API solo
  * deja decidir al facilitador de la cita o a la administración.
+ * #250: Aprobar abre DialogoAprobarCita, con el facilitador (la administración elige; el
+ * facilitador se asigna a sí mismo), la fecha y la hora pedidas y, si es virtual, el enlace. El
+ * equipo y los parámetros se piden aquí y van al diálogo por props (regla 13).
  *
  * Patrón de datos: useAgenda() / useAprobarCita() / useRechazarCita() / useRegistrarResultado()
- * / useRegistrarInasistencia() (src/hooks) → src/api/asesorias.ts → mock o API.
+ * / useRegistrarInasistencia() / useEquipo() / useParametros() (src/hooks) → src/api → mock o API.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
+import { DialogoAprobarCita } from '@/components/agenda/DialogoAprobarCita';
 import { DetalleCitaAgenda } from '@/components/agenda/DetalleCitaAgenda';
 import { DialogoInasistencia } from '@/components/agenda/DialogoInasistencia';
 import { DialogoRechazarCita } from '@/components/agenda/DialogoRechazarCita';
 import { FormularioResultado } from '@/components/agenda/FormularioResultado';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import {
-  AvisoError,
   EncabezadoApilado,
   EstadoCarga,
   EstadoError,
@@ -37,11 +40,15 @@ import {
   useRegistrarInasistencia,
   useRegistrarResultado,
 } from '@/hooks/useAsesorias';
+import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
+import { useEquipo } from '@/hooks/useUsuarios';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
-import { puedeRegistrarResultado } from '@/utils/agenda';
+import { puedeRegistrarResultado, type FormularioAprobacionCita } from '@/utils/agenda';
+import { fechaCompleta } from '@/utils/calendario';
 import { puedeTomarAsistencia } from '@/utils/asistencia';
 import { mensajeErrorGuardar } from '@/utils/errores';
+import { tieneRol } from '@/utils/roles';
 
 type Parametros = { id: string; desde: string; hasta: string };
 
@@ -62,7 +69,7 @@ export default function DetalleCita() {
 
 function Detalle() {
   const { id, desde, hasta } = useLocalSearchParams<Parametros>();
-  const { esAdministrador } = useRol();
+  const { esAdministrador, usuario } = useRol();
   const agenda = useAgenda(desde ?? '', hasta ?? '', esAdministrador ? 'todas' : undefined);
   const registrarResultado = useRegistrarResultado();
   const registrarInasistencia = useRegistrarInasistencia();
@@ -70,6 +77,10 @@ function Detalle() {
   const rechazar = useRechazarCita();
   const [preguntarInasistencia, setPreguntarInasistencia] = useState(false);
   const [preguntarRechazo, setPreguntarRechazo] = useState(false);
+  const [preguntarAprobacion, setPreguntarAprobacion] = useState(false);
+  // Para el diálogo de aprobar (#250): quién puede atenderla y qué días hay atención.
+  const equipo = useEquipo();
+  const { data: parametros } = useParametros();
   const [aviso, setAviso] = useState<string | null>(null);
 
   // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.
@@ -101,11 +112,30 @@ function Detalle() {
   // #217: mientras se aprueba o se rechaza, los dos botones quedan ocupados (CA3).
   const decidiendo = aprobar.isPending || rechazar.isPending;
 
-  const aprobarCita = () => {
+  const abrirAprobacion = () => {
+    aprobar.reset();
     rechazar.reset();
-    aprobar.mutate(cita.id, {
-      onSuccess: () => setAviso(`Aprobaste la cita de ${cita.solicitante}. Le avisamos.`),
-    });
+    setPreguntarAprobacion(true);
+  };
+
+  const facilitadores = equipo.data
+    ?.filter((persona) => tieneRol(persona, 'facilitador'))
+    .map((persona) => ({ id: persona.id, nombre: persona.nombre }));
+
+  const confirmarAprobacion = ({ facilitadorId, fecha, hora, enlaceVirtual }: FormularioAprobacionCita) => {
+    const enlace = enlaceVirtual.trim();
+    aprobar.mutate(
+      { id: cita.id, facilitadorId, fecha, hora, ...(enlace ? { enlaceVirtual: enlace } : {}) },
+      {
+        onSuccess: (aprobada) => {
+          setPreguntarAprobacion(false);
+          const quien = facilitadorId === usuario?.id ? 'contigo' : `con ${aprobada.facilitador ?? 'el facilitador'}`;
+          setAviso(
+            `Aprobaste la cita de ${cita.solicitante} para el ${fechaCompleta(aprobada.fecha).toLowerCase()}, ${aprobada.horaInicio}, ${quien}. Le avisamos.`,
+          );
+        },
+      },
+    );
   };
 
   const abrirRechazo = () => {
@@ -155,12 +185,11 @@ function Detalle() {
           <Text variant="bodySmall" style={estilos.textoDecision}>
             La persona recibe un aviso con tu respuesta. Si la rechazas, el cupo queda libre.
           </Text>
-          {aprobar.error ? <AvisoError mensaje={mensajeErrorGuardar(aprobar.error)} /> : null}
           <View style={estilos.botonesDecision}>
             <Button
               mode="contained"
               icon="check"
-              onPress={aprobarCita}
+              onPress={abrirAprobacion}
               loading={aprobar.isPending}
               disabled={decidiendo}
               contentStyle={estilos.contenidoBoton}
@@ -210,6 +239,20 @@ function Detalle() {
           onNoAsistio={abrirInasistencia}
         />
       ) : null}
+
+      <DialogoAprobarCita
+        cita={preguntarAprobacion ? cita : null}
+        eligeFacilitador={esAdministrador}
+        yo={{ id: usuario?.id ?? '', nombre: usuario?.nombre ?? '' }}
+        facilitadores={equipo.isError ? null : (facilitadores ?? null)}
+        cargandoFacilitadores={equipo.isPending}
+        onReintentarFacilitadores={() => equipo.refetch()}
+        parametros={parametros}
+        guardando={aprobar.isPending}
+        mensajeError={aprobar.error ? mensajeErrorGuardar(aprobar.error) : null}
+        onConfirmar={confirmarAprobacion}
+        onCerrar={() => setPreguntarAprobacion(false)}
+      />
 
       <DialogoRechazarCita
         cita={preguntarRechazo ? cita : null}
