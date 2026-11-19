@@ -118,7 +118,7 @@ export type Cita = {
   asignatura?: string;
   /** Lo que la persona quiera dejar dicho; en la interfaz se llama «Novedades». */
   novedades?: string;
-  /** Si la persona aceptó los términos de la formación al pedirla (#278). */
+  /** Si la persona aceptó los términos de la formación (TERMINOS_FORMACION) al pedirla. */
   terminosAceptados?: boolean;
   /** Cuando es virtual, el enlace lo pone el personal al aprobar (obligatorio en ese caso). */
   enlaceVirtual?: string;
@@ -147,6 +147,6 @@ export type NuevaSolicitudCita = {
   datosSolicitante: DatosSolicitante;
   asignatura?: string;
   novedades?: string;
-  /** Si la persona aceptó los términos de la formación al pedirla (#278). */
+  /** Si la persona aceptó los términos de la formación (TERMINOS_FORMACION) al pedirla. */
   terminosAceptados?: boolean;
 };
