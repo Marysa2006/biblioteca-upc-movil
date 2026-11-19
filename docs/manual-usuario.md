@@ -112,6 +112,8 @@ Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 
 Al iniciar sesión con una cuenta del personal, abajo aparecen las pestañas **Dashboard**, **Gestión**, **Personal**, **Inventario** y **Estadísticas**. Cada persona ve solo lo que le corresponde a su rol. Para ver la aplicación como la comunidad, usa **Ver la vista de la comunidad** en el menú de arriba a la derecha.
 
+La primera vez que alguien del personal entra en el celular, Upecito le muestra su vista: **Gestión**, con las secciones que tiene, y, según su rol, **Personal**, **Inventario** y **Estadísticas**, además del menú. Cada paso dice en qué pestaña está. Para verlo otra vez, desde la vista del personal, toca el botón de arriba a la derecha y elige **Ver tutorial**.
+
 ### Gestión
 
 1. **Solicitudes:** las solicitudes que llegan de la comunidad. Arriba, el selector **Reservas · Capacitaciones** elige cuáles ver.

@@ -1,5 +1,8 @@
 /**
- * Tutorial del primer ingreso, con Upecito (#261). Pantalla completa, fuera de las pestañas.
+ * Tutorial con Upecito. Pantalla completa, fuera de las pestañas. Tiene dos recorridos:
+ * - el de la comunidad (#261), por defecto;
+ * - el del personal (#267), con ?vista=personal y una sesión del personal: sus pasos dependen
+ *   de los permisos de la persona (pasosPersonal) y se marca como visto aparte.
  * - Lo abre AbrirTutorial la primera vez que se usa la app en el celular (CA1), después de la
  *   autorización de datos si hay una sesión que todavía no la aceptó.
  * - Se repite desde el menú de usuario → Ver tutorial (CA2).
@@ -8,28 +11,41 @@
  *
  * Cada paso tiene una banda oscura con la ilustración de la función y Upecito asomado (siempre
  * del mismo tamaño y sin voltear), y debajo el texto y dónde se encuentra en la app.
- * No usa datos de la API: los pasos están en src/components/tutorial/pasos.ts.
+ * No usa datos de la API: los pasos están en src/components/tutorial/ (pasos.ts y
+ * pasosPersonal.ts).
  */
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AccessibilityInfo, BackHandler, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { IlustracionTutorial, UbicacionTutorial } from '@/components/tutorial/IlustracionTutorial';
-import { PASOS_TUTORIAL } from '@/components/tutorial/pasos';
+import { PASOS_COMUNIDAD, type PasoTutorial } from '@/components/tutorial/pasos';
+import { pasosPersonal } from '@/components/tutorial/pasosPersonal';
 import { Pantalla, Upecito, useSubirAlInicio } from '@/components/ui';
 import { usePreferencias } from '@/store/preferencias';
+import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
+import { esPersonal } from '@/utils/roles';
 
-const TOTAL = PASOS_TUTORIAL.length;
 /** Lo que el borde de la banda le tapa a Upecito: las piernas. Así se ve asomado. */
 const UPECITO_TAPADO = tamanoLogo.app * 1.5 * 0.3;
 
 export default function Tutorial() {
-  const [paso, setPaso] = useState(0);
-  const marcarTutorialVisto = usePreferencias((estado) => estado.marcarTutorialVisto);
-  const ultimo = paso === TOTAL - 1;
+  const { vista } = useLocalSearchParams<{ vista?: string }>();
+  const usuario = useSesion((estado) => estado.usuario);
+  // El del personal solo con una sesión del personal; si no, el de la comunidad.
+  const delPersonal = vista === 'personal' && usuario != null && esPersonal(usuario);
+  const pasos = delPersonal ? pasosPersonal(usuario) : PASOS_COMUNIDAD;
+
+  const [elegido, setPaso] = useState(0);
+  // Si los pasos cambian mientras está abierto (por ejemplo, al cerrar sesión), no se sale del rango.
+  const paso = Math.min(elegido, pasos.length - 1);
+  const marcarComunidad = usePreferencias((estado) => estado.marcarTutorialVisto);
+  const marcarPersonal = usePreferencias((estado) => estado.marcarTutorialPersonalVisto);
+  const marcarTutorialVisto = delPersonal ? marcarPersonal : marcarComunidad;
+  const ultimo = paso === pasos.length - 1;
 
   const cerrar = () => {
     marcarTutorialVisto();
@@ -100,18 +116,23 @@ export default function Tutorial() {
   );
 
   return (
-    <Pantalla titulo="Conoce la app" sinMenuUsuario marcaPropia={saltar} pie={acciones}>
-      <Paso indice={paso} />
+    <Pantalla
+      titulo={delPersonal ? 'Conoce tu vista' : 'Conoce la app'}
+      sinMenuUsuario
+      marcaPropia={saltar}
+      pie={acciones}
+    >
+      <Paso pasos={pasos} indice={paso} />
     </Pantalla>
   );
 }
 
 /** Un paso: la banda con la ilustración y Upecito, el indicador, el texto y dónde está. */
-function Paso({ indice }: { indice: number }) {
-  const { pose, ilustracion, ubicacion, titulo, texto } = PASOS_TUTORIAL[indice];
+function Paso({ pasos, indice }: { pasos: readonly PasoTutorial[]; indice: number }) {
+  const { pose, ilustracion, ubicacion, secciones, titulo, texto } = pasos[indice];
   const subirAlInicio = useSubirAlInicio();
-  const indicador = `Paso ${indice + 1} de ${TOTAL}`;
-  const portada = ilustracion === 'portada';
+  const indicador = `Paso ${indice + 1} de ${pasos.length}`;
+  const portada = ilustracion === 'portada' || ilustracion === 'portadaPersonal';
 
   // Cada paso empieza arriba; en iOS se anuncia aquí (en Android lo hace accessibilityLiveRegion).
   useEffect(() => {
@@ -125,7 +146,7 @@ function Paso({ indice }: { indice: number }) {
     <View style={estilos.paso}>
       {/* La banda es decorativa: el texto de abajo dice lo mismo. */}
       <View style={estilos.banda}>
-        <IlustracionTutorial ilustracion={ilustracion} />
+        <IlustracionTutorial ilustracion={ilustracion} secciones={secciones} />
         <View style={[estilos.upecito, portada ? estilos.upecitoCentro : null]}>
           <Upecito pose={pose} tamano="tutorial" />
         </View>
@@ -141,7 +162,7 @@ function Paso({ indice }: { indice: number }) {
           importantForAccessibility="no-hide-descendants"
           accessibilityElementsHidden
         >
-          {PASOS_TUTORIAL.map((_, i) => (
+          {pasos.map((_, i) => (
             <View key={i} style={[estilos.punto, i === indice ? estilos.puntoActual : null]} />
           ))}
         </View>
