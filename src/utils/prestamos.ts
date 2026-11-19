@@ -97,6 +97,51 @@ export const esquemaEntrega = z
 
 export type DatosFormularioEntrega = z.infer<typeof esquemaEntrega>;
 
+/** Máximo de las notas del estado del equipo en la entrega (#253). */
+export const LARGO_MAXIMO_NOTAS_EQUIPO = 300;
+
+/**
+ * Entrega con la constancia (versión 1.1, #253): lo de siempre más el estado del equipo como lo
+ * nombra el formato (Nuevo, Óptimo u Otro), las notas (obligatorias con «Otro», CA2) y que la
+ * persona leyó la constancia y acepta la responsabilidad sobre el préstamo.
+ */
+export const esquemaEntregaConstancia = z
+  .object({
+    condicion,
+    accesorios: z.array(z.string()),
+    estadoEquipo: z.enum(['nuevo', 'optimo', 'otro'], { error: 'Elige el estado del equipo.' }),
+    notas: z
+      .string()
+      .trim()
+      .max(LARGO_MAXIMO_NOTAS_EQUIPO, { error: `Máximo ${LARGO_MAXIMO_NOTAS_EQUIPO} caracteres.` }),
+    acepta: z.boolean(),
+  })
+  .superRefine((datos, ctx) => {
+    if (datos.condicion === 'danado') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['condicion'],
+        message: 'No entregues una tablet dañada: envíala a mantenimiento en la sección Tablets.',
+      });
+    }
+    if (datos.estadoEquipo === 'otro' && datos.notas === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['notas'],
+        message: 'Con el estado «Otro», escribe en las notas cómo está el equipo.',
+      });
+    }
+    if (!datos.acepta) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['acepta'],
+        message: 'Para entregarla, la persona debe leer la constancia y aceptar la responsabilidad.',
+      });
+    }
+  });
+
+export type FormularioEntregaConstancia = z.input<typeof esquemaEntregaConstancia>;
+
 /**
  * Devolución (CA2-CA3): estado, accesorios recibidos y novedades. Si volvió dañada o faltan
  * accesorios, la novedad es obligatoria y debe decir qué pasó (la API pide lo mismo).

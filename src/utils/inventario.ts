@@ -71,6 +71,23 @@ const FORMATO_SERIAL = /^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$/;
  * Validación del formulario de tablet (HU-21). El código y el serial repetidos se marcan bajo
  * su propio campo (CA2), sin distinguir mayúsculas. La API vuelve a validar al guardar.
  */
+/** Valor máximo de una tablet, en pesos: evita un cero de más al escribirlo (#253). */
+export const VALOR_MAXIMO_TABLET = 50_000_000;
+
+/** Solo los dígitos de un texto: "1.470.000" → "1470000". */
+export function soloDigitos(texto: string): string {
+  return texto.replace(/\D/g, '');
+}
+
+/**
+ * Pone los puntos de miles mientras se escribe el valor, para no escribirlos a mano (#253):
+ * "1470000" → "1.470.000". Sin dígitos, vacío.
+ */
+export function conPuntosDeMiles(texto: string): string {
+  const digitos = soloDigitos(texto).replace(/^0+(?=\d)/, '');
+  return digitos.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 export function crearEsquemaTablet(tablets: Tablet[], idActual?: string) {
   const otras = tablets.filter((tablet) => tablet.id !== idActual);
   return z
@@ -99,6 +116,24 @@ export function crearEsquemaTablet(tablets: Tablet[], idActual?: string) {
         .max(60, { error: 'Máximo 60 caracteres.' }),
       accesorios: z.array(z.string().trim().min(1)).max(10, { error: 'Máximo 10 accesorios.' }),
       estado: z.enum(['disponible', 'en_prestamo', 'mantenimiento', 'de_baja']),
+      // Versión 1.1 (#253): los datos del formato de constancia. Opcionales en la tablet.
+      tipo: z
+        .string()
+        .trim()
+        .max(30, { error: 'Máximo 30 caracteres.' })
+        .transform((texto) => texto || undefined),
+      marca: z
+        .string()
+        .trim()
+        .max(40, { error: 'Máximo 40 caracteres.' })
+        .transform((texto) => texto || undefined),
+      valor: z
+        .string()
+        .transform(soloDigitos)
+        .refine((digitos) => digitos === '' || Number(digitos) <= VALOR_MAXIMO_TABLET, {
+          error: `El valor no puede pasar de $ ${conPuntosDeMiles(String(VALOR_MAXIMO_TABLET))}.`,
+        })
+        .transform((digitos) => (digitos === '' ? undefined : Number(digitos))),
     })
     .superRefine((datos, ctx) => {
       const codigo = otras.find((tablet) => tablet.codigo.toUpperCase() === datos.codigo);

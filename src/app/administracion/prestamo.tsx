@@ -6,6 +6,8 @@
  * Antes del formulario revisa que el préstamo esté en el estado que toca, que la tablet esté
  * disponible para entregar y que no se entregue antes del día del préstamo. Al guardar muestra
  * lo que quedó registrado: entrega (CA1), cierre (CA2), novedad (CA3) y retraso (CA4).
+ * Versión 1.1 (#253): la entrega lleva el estado del formato y la constancia; quien entrega y
+ * quien recibe salen de la sesión. El resultado muestra la constancia y la comparte en PDF.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -26,8 +28,16 @@ import {
   EstadoVacio,
   Pantalla,
 } from '@/components/ui';
+import { BotonCompartirConstancia } from '@/components/inventario/BotonCompartirConstancia';
+import { VistaConstancia } from '@/components/inventario/VistaConstancia';
 import { useRol } from '@/hooks/useRol';
-import { usePrestamos, useRegistrarDevolucion, useRegistrarEntrega, useTablets } from '@/hooks/useTablets';
+import {
+  useConstancia,
+  usePrestamos,
+  useRegistrarDevolucion,
+  useRegistrarEntrega,
+  useTablets,
+} from '@/hooks/useTablets';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Prestamo } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
@@ -61,6 +71,7 @@ export default function RegistroPrestamo() {
 }
 
 function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada: boolean }) {
+  const { usuario } = useRol();
   const prestamos = usePrestamos('todas');
   const tablets = useTablets();
   const entregar = useRegistrarEntrega();
@@ -116,7 +127,18 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
     const opciones = { onSuccess: (actualizado: Prestamo) => setRegistrado(actualizado) };
     if (modo === 'entrega') {
       entregar.reset();
-      entregar.mutate({ prestamoId: id, datos: { condicion: datos.condicion, accesorios: datos.accesorios } }, opciones);
+      entregar.mutate(
+        {
+          prestamoId: id,
+          datos: {
+            condicion: datos.condicion,
+            accesorios: datos.accesorios,
+            estadoEquipo: datos.estadoEquipo,
+            ...(datos.notas ? { notas: datos.notas } : {}),
+          },
+        },
+        opciones,
+      );
     } else {
       recibir.reset();
       recibir.mutate({ prestamoId: id, datos }, opciones);
@@ -133,6 +155,7 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
         prestamo={prestamo}
         tablet={tablet}
         verificada={verificada}
+        quienEntrega={usuario ? { id: usuario.id, nombre: usuario.nombre, cargo: usuario.cargo } : undefined}
         guardando={mutacion.isPending}
         mensajeError={mutacion.error ? mensajeErrorGuardar(mutacion.error) : null}
         onGuardar={guardar}
@@ -141,8 +164,9 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
   );
 }
 
-/** Lo que quedó registrado, con la acción para volver a Préstamos. */
+/** Lo que quedó registrado, la constancia (#253) y la acción para volver a Préstamos. */
 function Resultado({ prestamo, modo }: { prestamo: Prestamo; modo: Modo }) {
+  const constancia = useConstancia(prestamo.id);
   const registro = modo === 'entrega' ? prestamo.entrega : prestamo.devolucion;
   const lineas: string[] = [];
   if (registro) {
@@ -158,30 +182,49 @@ function Resultado({ prestamo, modo }: { prestamo: Prestamo; modo: Modo }) {
     if (prestamo.devolucion?.condicion === 'danado') lineas.push('La tablet pasó a mantenimiento.');
   }
 
+  let vistaConstancia;
+  if (constancia.isPending) {
+    vistaConstancia = <EstadoCarga mensaje="Cargando la constancia…" />;
+  } else if (constancia.isError) {
+    vistaConstancia = (
+      <EstadoError mensaje="No pudimos cargar la constancia." onReintentar={() => constancia.refetch()} />
+    );
+  } else {
+    vistaConstancia = (
+      <>
+        <VistaConstancia constancia={constancia.data} />
+        <BotonCompartirConstancia constancia={constancia.data} />
+      </>
+    );
+  }
+
   return (
-    <View style={estilos.exito} accessibilityLiveRegion="polite">
-      <View style={estilos.fila}>
-        <Icon source="check-circle-outline" size={24} color={colores.primarioOscuro} />
-        <Text variant="titleMedium" style={estilos.tituloExito}>
-          {modo === 'entrega' ? `Entregada a ${prestamo.solicitante}` : `Devolución de ${prestamo.solicitante}`}
-        </Text>
+    <View style={estilos.contenedor}>
+      <View style={estilos.exito} accessibilityLiveRegion="polite">
+        <View style={estilos.fila}>
+          <Icon source="check-circle-outline" size={24} color={colores.primarioOscuro} />
+          <Text variant="titleMedium" style={estilos.tituloExito}>
+            {modo === 'entrega' ? `Entregada a ${prestamo.solicitante}` : `Devolución de ${prestamo.solicitante}`}
+          </Text>
+        </View>
+        {lineas.map((linea) => (
+          <Text key={linea} variant="bodyMedium" style={estilos.texto}>
+            {linea}
+          </Text>
+        ))}
+        <Button
+          mode="contained"
+          icon="arrow-left"
+          onPress={() => router.back()}
+          style={estilos.boton}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Volver a Préstamos"
+        >
+          Volver a Préstamos
+        </Button>
       </View>
-      {lineas.map((linea) => (
-        <Text key={linea} variant="bodyMedium" style={estilos.texto}>
-          {linea}
-        </Text>
-      ))}
-      <Button
-        mode="contained"
-        icon="arrow-left"
-        onPress={() => router.back()}
-        style={estilos.boton}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Volver a Préstamos"
-      >
-        Volver a Préstamos
-      </Button>
+      {vistaConstancia}
     </View>
   );
 }

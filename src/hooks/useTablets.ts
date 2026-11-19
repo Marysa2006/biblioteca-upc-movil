@@ -31,6 +31,7 @@ import {
   type FormularioPrestamo,
 } from '@/api/tablets';
 import { useSesion } from '@/store/sesion';
+import { compartirConstanciaPdf } from '@/utils/exportarConstancia';
 import type { EstadoPrestamo, EstadoTablet } from '@/types';
 
 /** Para que la pantalla de HU-22 (María) tipe el formulario sin importar de src/api. */
@@ -217,6 +218,11 @@ export function useConstancia(prestamoId: string) {
     queryKey: claves.constanciaPrestamo(prestamoId),
     queryFn: () => obtenerConstancia(prestamoId),
   });
+}
+
+/** Genera la constancia en PDF y abre el menú del celular para compartirla (#253). */
+export function useCompartirConstancia() {
+  return useMutation({ mutationFn: compartirConstanciaPdf });
 }
 
 /** Registra la devolución y refresca los préstamos y las tablets (HU-23, CA2-CA4). */
