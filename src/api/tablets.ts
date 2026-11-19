@@ -8,6 +8,7 @@
 import type {
   CondicionesTablet,
   CondicionTablet,
+  EstadoEquipo,
   EstadoFranja,
   EstadoPrestamo,
   EstadoTablet,
@@ -15,6 +16,7 @@ import type {
   Parametros,
   Prestamo,
   RegistroTablet,
+  ResponsableTablet,
   Tablet,
   Usuario,
 } from '@/types';
@@ -22,6 +24,7 @@ import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { constanciaDe, type ConstanciaPrestamo } from '@/utils/prestamos';
 import { MENSAJE_NO_PIDE_TABLET, puedePedirTablet, tienePermiso } from '@/utils/roles';
 import { normalizarTexto } from '@/utils/texto';
 import {
@@ -155,11 +158,38 @@ export function cambiarEstadoTablet(id: string, estado: EstadoTablet): Promise<T
 
 const CONDICIONES: readonly CondicionTablet[] = ['bueno', 'regular', 'danado'];
 
-/** Datos de la entrega: condición física y accesorios entregados (CA1). */
-export type DatosEntrega = Pick<RegistroTablet, 'condicion' | 'accesorios'>;
+/** Estados del equipo como los nombra el formato de constancia (versión 1.1). */
+const ESTADOS_EQUIPO: readonly EstadoEquipo[] = ['nuevo', 'optimo', 'otro'];
+
+/**
+ * Datos de la entrega (CA1 y versión 1.1, #252): condición física, accesorios entregados,
+ * estado del equipo como lo nombra el formato y las notas.
+ */
+export type DatosEntrega = Pick<RegistroTablet, 'condicion' | 'accesorios'> & {
+  /** Nuevo, óptimo u otro. Con «otro», las notas son obligatorias (CA2). */
+  estadoEquipo?: EstadoEquipo;
+  notas?: string;
+};
 
 /** Datos de la devolución: condición, accesorios y novedades si hay daños o faltantes (CA3). */
-export type DatosDevolucion = DatosEntrega & Pick<RegistroTablet, 'novedades'>;
+export type DatosDevolucion = Pick<RegistroTablet, 'condicion' | 'accesorios' | 'novedades'>;
+
+/** Quién hace el registro: la persona de la sesión, con su cargo (versión 1.1, #252). */
+function responsableDe(usuario: Usuario): ResponsableTablet {
+  return { id: usuario.id, nombre: usuario.nombre, cargo: usuario.cargo };
+}
+
+/** El estado del equipo en el formato exige notas cuando es «otro» (CA2). */
+function errorDeEstadoEquipo(datos: DatosEntrega): ErrorApi | null {
+  if (datos.estadoEquipo == null) return null;
+  if (!ESTADOS_EQUIPO.includes(datos.estadoEquipo)) {
+    return new ErrorApi(400, 'El estado del equipo no es válido: nuevo, óptimo u otro.');
+  }
+  if (datos.estadoEquipo === 'otro' && !datos.notas?.trim()) {
+    return new ErrorApi(400, 'Si el estado es «Otro», explica en las notas cuál es.');
+  }
+  return null;
+}
 
 /** Copia profunda de un préstamo para no exponer el almacén mutable. */
 function copiarPrestamo(prestamo: Prestamo): Prestamo {
@@ -183,6 +213,25 @@ function errorDeRegistro(datos: DatosEntrega): ErrorApi | null {
     return new ErrorApi(400, 'Los accesorios no pueden estar vacíos.');
   }
   return null;
+}
+
+/**
+ * La constancia del préstamo, en el orden del formato de la biblioteca (#252, CA1).
+ * La pantalla la muestra y la comparte; aquí solo se arma con los datos que ya existen.
+ */
+export function obtenerConstancia(prestamoId: string): Promise<ConstanciaPrestamo> {
+  if (USAR_MOCKS) {
+    const prestamo = prestamos.find((actual) => actual.id === prestamoId);
+    if (!prestamo) {
+      return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
+    }
+    const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
+    if (!tablet) {
+      return Promise.reject(new ErrorApi(404, 'La tablet del préstamo no existe.'));
+    }
+    return simularRed(constanciaDe(prestamo, tablet));
+  }
+  return peticion<ConstanciaPrestamo>(`/prestamos/${prestamoId}/constancia/`);
 }
 
 /** Préstamos, opcionalmente filtrados por estado (HU-23). */
@@ -226,7 +275,15 @@ export function buscarTabletPorCodigo(codigo: string): Promise<Tablet> {
  * Registra la entrega de un préstamo reservado (CA1): guarda fecha, hora, condición y
  * accesorios, y deja la tablet en préstamo.
  */
-export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promise<Prestamo> {
+export function registrarEntrega(
+  usuario: Usuario,
+  prestamoId: string,
+  datos: DatosEntrega,
+): Promise<Prestamo> {
+  const sinEstado = errorDeEstadoEquipo(datos);
+  if (sinEstado) {
+    return Promise.reject(sinEstado);
+  }
   if (USAR_MOCKS) {
     const prestamo = prestamos.find((actual) => actual.id === prestamoId);
     if (!prestamo) {
@@ -251,13 +308,25 @@ export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promi
     if (tablet.estado !== 'disponible') {
       return Promise.reject(new ErrorApi(400, 'La tablet no está disponible para entregar.'));
     }
+    const notas = datos.notas?.trim();
     const entrega: RegistroTablet = {
       fechaHora: ahoraFechaHora(),
       condicion: datos.condicion,
       accesorios: datos.accesorios.map((accesorio) => accesorio.trim()),
+      // Versión 1.1 (#252): la constancia necesita quién entregó y en qué estado.
+      ...(notas ? { novedades: notas } : {}),
+      responsable: responsableDe(usuario),
     };
     prestamos = prestamos.map((actual) =>
-      actual.id === prestamoId ? { ...actual, estado: 'entregado', entrega } : actual,
+      actual.id === prestamoId
+        ? {
+            ...actual,
+            estado: 'entregado',
+            entrega,
+            estadoEquipo: datos.estadoEquipo ?? actual.estadoEquipo,
+            notas: notas ?? actual.notas,
+          }
+        : actual,
     );
     tablets = tablets.map((actual) =>
       actual.id === tablet.id ? { ...actual, estado: estadoTabletAlEntregar() } : actual,
@@ -288,7 +357,7 @@ export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promi
   }
   return peticion<Prestamo>(`/prestamos/${prestamoId}/entrega/`, {
     method: 'POST',
-    body: JSON.stringify(datos),
+    body: JSON.stringify({ ...datos, responsableId: usuario.id }),
   });
 }
 
@@ -298,6 +367,7 @@ export function registrarEntrega(prestamoId: string, datos: DatosEntrega): Promi
  * tablet disponible o en mantenimiento si se dañó.
  */
 export function registrarDevolucion(
+  usuario: Usuario,
   prestamoId: string,
   datos: DatosDevolucion,
 ): Promise<Prestamo> {
@@ -337,6 +407,8 @@ export function registrarDevolucion(
       ...(novedades ? { novedades } : {}),
       tardia: retrasoMinutos > 0,
       retrasoMinutos,
+      // Versión 1.1 (#252): quién recibe la tablet, con su cargo.
+      responsable: responsableDe(usuario),
     };
     prestamos = prestamos.map((actual) =>
       actual.id === prestamoId ? { ...actual, estado: 'devuelto', devolucion } : actual,
@@ -375,7 +447,7 @@ export function registrarDevolucion(
   }
   return peticion<Prestamo>(`/prestamos/${prestamoId}/devolucion/`, {
     method: 'POST',
-    body: JSON.stringify(datos),
+    body: JSON.stringify({ ...datos, responsableId: usuario.id }),
   });
 }
 
@@ -780,5 +852,3 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
   vencidos.forEach(avisarVencido);
   return simularRed(ordenarVencidos(vencidos).map(copiarPrestamo));
 }
-
-
