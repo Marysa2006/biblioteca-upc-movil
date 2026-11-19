@@ -97,6 +97,8 @@ export const claves = {
   guias: ['guias'] as const,
   guia: (id: string) => ['guias', id] as const,
   guiasGuardadas: ['guias', 'guardadas'] as const,
+  /** Todas las guías, también las no publicadas, para Gestión → Portal → Guías (#258). */
+  guiasAdministracion: ['guias', 'administracion'] as const,
 
   // ── Iteración 4: autoarchivo (HU-11) ─────────────────────────
   /** Contenido de orientación de autoarchivo (HU-11). */
