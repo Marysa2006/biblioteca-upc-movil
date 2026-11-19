@@ -38,7 +38,7 @@ import {
   FACULTADES,
   NIVELES_FORMACION,
   NOMBRE_NIVEL_FORMACION,
-  SEMESTRES,
+  SEMESTRE_MAXIMO,
 } from '@/utils/constantes';
 import { hoyISO } from '@/utils/fechas';
 import { aMinutos } from '@/utils/franjas';
@@ -460,7 +460,7 @@ export function FormularioPrestamoTablet({
                   onCambiar={onChange}
                   onBlur={onBlur}
                   minimo={1}
-                  maximo={SEMESTRES.length}
+                  maximo={SEMESTRE_MAXIMO}
                   mensajeError={errores.semestre?.message}
                   deshabilitado={guardando}
                 />

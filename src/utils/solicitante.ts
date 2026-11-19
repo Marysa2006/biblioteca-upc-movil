@@ -10,7 +10,7 @@
 import { z } from 'zod';
 
 import type { DatosSolicitante, NivelFormacion, Perfil, TipoUsuario, Usuario } from '@/types';
-import { NIVELES_FORMACION, SEMESTRES } from '@/utils/constantes';
+import { NIVELES_FORMACION, SEMESTRE_MAXIMO } from '@/utils/constantes';
 import { aNombrePropio } from '@/utils/texto';
 
 export const LARGO_MAXIMO_NOMBRE = 120;
@@ -25,13 +25,23 @@ const TIPOS_USUARIO: readonly string[] = [
   'visitante',
 ] satisfies TipoUsuario[];
 
-/** Celular colombiano: 10 dígitos que empiezan por 3. */
-const CELULAR = /^3\d{9}$/;
+/** Celular colombiano: 10 dígitos que empiezan por 3. También lo usa el registro (#203). */
+export const CELULAR = /^3\d{9}$/;
 
-const esCorreo = (valor: string) => z.email().safeParse(valor).success;
-/** El semestre se guarda como número: del 1 (I) al 10 (X). */
-const esSemestre = (valor: string) =>
-  /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= SEMESTRES.length;
+/** Mensaje del celular que no cumple CELULAR. */
+export const MENSAJE_CELULAR = 'El celular debe tener 10 dígitos y empezar por 3.';
+
+export const esCorreo = (valor: string) => z.email().safeParse(valor).success;
+
+/**
+ * El semestre se guarda como número, del 1 a SEMESTRE_MAXIMO (#203: hay estudiantes en 11.º o
+ * 12.º). También lo usa el registro.
+ */
+export const esSemestre = (valor: string) =>
+  /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= SEMESTRE_MAXIMO;
+
+/** Mensaje del semestre fuera de rango. */
+export const MENSAJE_SEMESTRE = `Elige un semestre del 1 al ${SEMESTRE_MAXIMO}.`;
 
 /**
  * Campos del solicitante. `tipo` no lo escribe la persona: viene de la sesión y decide qué
@@ -61,7 +71,7 @@ export const camposSolicitante = {
     .string()
     .trim()
     .min(1, { error: 'Escribe tu celular.' })
-    .regex(CELULAR, { error: 'El celular debe tener 10 dígitos y empezar por 3.' }),
+    .regex(CELULAR, { error: MENSAJE_CELULAR }),
   // Texto y no z.enum: empieza vacío hasta que la persona elige.
   nivel: z
     .string()
@@ -77,7 +87,7 @@ export const camposSolicitante = {
     .trim()
     .max(LARGO_MAXIMO_DATO_ACADEMICO, { error: MENSAJE_MAXIMO_DATO_ACADEMICO }),
   semestre: z.string().refine((valor) => valor === '' || esSemestre(valor), {
-    error: 'Elige un semestre del I al X.',
+    error: MENSAJE_SEMESTRE,
   }),
 };
 

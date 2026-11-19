@@ -37,6 +37,11 @@ export type Usuario = {
   nivel?: NivelFormacion;
   facultad?: string;
   sede?: string;
+  /**
+   * Dependencia de un docente o administrativo, opcional (#203; `department` en el registro del
+   * Backend). Los estudiantes no la tienen.
+   */
+  dependencia?: string;
   /** Cargo del personal de la biblioteca; sale en la constancia del préstamo (versión 1.1). */
   cargo?: string;
   /**
