@@ -6,9 +6,16 @@
  */
 import { z } from 'zod';
 
-import type { Espacio, EstadoSolicitud, Parametros, Reserva } from '@/types';
+import type { Espacio, EstadoSolicitud, Parametros, RecursoApoyo, Reserva } from '@/types';
+import { SEDES } from '@/utils/constantes';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
 import { motivoNoDisponible } from '@/utils/parametros';
+import {
+  camposSolicitante,
+  campoTerminos,
+  reglasSolicitante,
+  VALORES_SOLICITANTE_VACIOS,
+} from '@/utils/solicitante';
 
 /** Lo que el personal decide sobre una solicitud; lo mismo que recibe useDecidirReserva(). */
 export type AccionReserva = 'aprobar' | 'nueva_fecha' | 'rechazar' | 'cancelar';
@@ -234,3 +241,89 @@ export function esquemaSolicitudReserva({ parametros, hoy }: ContextoSolicitud) 
 }
 
 export type FormularioSolicitud = z.input<ReturnType<typeof esquemaSolicitudReserva>>;
+
+// ── Versión 1.1: solicitud completa (#224) ───────────────────────────────────────────
+
+export const LARGO_MAXIMO_NOVEDADES_RESERVA = 500;
+
+/** Recursos de apoyo que se pueden pedir con el espacio; no elegir ninguno es la lista vacía. */
+export const RECURSOS_APOYO: { valor: RecursoApoyo; etiqueta: string }[] = [
+  { valor: 'portatil', etiqueta: 'Portátil' },
+  { valor: 'hdmi', etiqueta: 'Cable HDMI' },
+  { valor: 'cable_red', etiqueta: 'Cable de red' },
+  { valor: 'mouse', etiqueta: 'Mouse' },
+  { valor: 'marcadores', etiqueta: 'Marcadores' },
+];
+
+/** La sede es una de SEDES y, si el espacio dice su sede, la misma. */
+export function problemaSede(
+  sede: string,
+  espacio?: Pick<Espacio, 'nombre' | 'sede'>,
+): string | null {
+  if (!SEDES.includes(sede)) return 'Elige la sede.';
+  if (espacio?.sede && espacio.sede !== sede) {
+    return `${espacio.nombre} queda en la sede ${espacio.sede}.`;
+  }
+  return null;
+}
+
+/** Solo recursos de la lista. */
+export function problemaRecursos(recursos: readonly string[]): string | null {
+  const validos = recursos.every((recurso) =>
+    RECURSOS_APOYO.some((opcion) => opcion.valor === recurso),
+  );
+  return validos ? null : 'Elige los recursos de la lista.';
+}
+
+/**
+ * Solicitud completa de la versión 1.1 (#224, la UI es #251): los campos de HU-18 más la sede,
+ * los recursos de apoyo, los datos del solicitante con su identificación (NIP) y los términos
+ * (TERMINOS_ESPACIOS). `requerimientos` es el campo «Novedades». Los asistentes siguen sin
+ * máximo: la capacidad del espacio es orientativa (problemaCapacidad).
+ */
+export function esquemaSolicitudReservaCompleta({ parametros, espacio, hoy }: ContextoSolicitud) {
+  return z
+    .object({
+      ...camposReserva,
+      ...camposSolicitante,
+      sede: z.string(),
+      recursos: z.array(z.string()),
+      requerimientos: z
+        .string()
+        .trim()
+        .max(LARGO_MAXIMO_NOVEDADES_RESERVA, {
+          error: `Máximo ${LARGO_MAXIMO_NOVEDADES_RESERVA} caracteres.`,
+        }),
+      terminosAceptados: campoTerminos,
+    })
+    .superRefine((datos, ctx) => {
+      aplicarReglas(datos, ctx, { parametros, hoy });
+      reglasSolicitante(datos, ctx, { pedirIdentificacion: true });
+      const sede = problemaSede(datos.sede, espacio);
+      if (sede) ctx.addIssue({ code: 'custom', path: ['sede'], message: sede });
+      const recursos = problemaRecursos(datos.recursos);
+      if (recursos) ctx.addIssue({ code: 'custom', path: ['recursos'], message: recursos });
+    });
+}
+
+export type FormularioSolicitudCompleta = z.input<
+  ReturnType<typeof esquemaSolicitudReservaCompleta>
+>;
+
+/**
+ * Valores iniciales sin el día ni las horas, que vienen del calendario. La sede, la del espacio
+ * si la tiene; los datos del solicitante se prellenan con datosSolicitanteDe() (utils/solicitante).
+ */
+export function valoresInicialesReservaCompleta(
+  espacio: Pick<Espacio, 'sede'>,
+): Omit<FormularioSolicitudCompleta, 'fecha' | 'horaInicio' | 'horaFin'> {
+  return {
+    proposito: '',
+    asistentes: '',
+    requerimientos: '',
+    ...VALORES_SOLICITANTE_VACIOS,
+    sede: espacio.sede ?? '',
+    recursos: [],
+    terminosAceptados: false,
+  };
+}

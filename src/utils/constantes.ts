@@ -98,6 +98,29 @@ export const DIAS_HABILES_CONSULTA = 10;
 export const DIAS_HABILES_RECLAMO = 15;
 
 /**
+ * Términos de las solicitudes de formación (capacitaciones), adaptados de los formularios de
+ * referencia de la biblioteca (#224). Texto de referencia: confirmarlo con la biblioteca.
+ */
+export const TERMINOS_FORMACION =
+  'La revisión de normas APA se hace en una sesión por documento. ' +
+  'Las capacitaciones se dictan dentro del espacio académico y con el acompañamiento ' +
+  'del docente. ' +
+  'Para las capacitaciones se necesita el usuario y la contraseña del sistema académico. ' +
+  'La solicitud se hace con 3 días de anticipación y no garantiza la fecha pedida. ' +
+  'La biblioteca confirma la solicitud por teléfono.';
+
+/**
+ * Términos de la reserva de espacios, adaptados de los formularios de referencia de la
+ * biblioteca (#224). Texto de referencia: confirmarlo con la biblioteca.
+ */
+export const TERMINOS_ESPACIOS =
+  'La reserva está sujeta a la disponibilidad del espacio. ' +
+  'Dentro del espacio solo se permite consumir agua. ' +
+  'El espacio se entrega en las mismas condiciones en que se recibió. ' +
+  'El volumen de los equipos de sonido no puede pasar de 60. ' +
+  'La biblioteca confirma la reserva por teléfono y por correo.';
+
+/**
  * Las tres notas del formato de responsabilidad sobre el préstamo (versión 1.1, #252).
  * La tercera lleva el valor del bien; se arma con `notasDelPrestamo()` de `utils/prestamos`,
  * que lo toma de la tablet del préstamo.

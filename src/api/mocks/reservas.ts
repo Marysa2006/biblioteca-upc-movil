@@ -37,6 +37,19 @@ export const RESERVAS: Reserva[] = [
     proposito: 'Consulta de bases de datos académicas',
     asistentes: 6,
     estado: 'pendiente',
+    // Versión 1.1 (#224): la solicitud completa. Las demás reservas no la tienen.
+    sede: 'Valledupar',
+    recursos: ['portatil', 'hdmi'],
+    datosSolicitante: {
+      tipo: 'docente',
+      nombreCompleto: 'Carlos Ramírez',
+      identificacion: '12564321',
+      correo: 'carlos.ramirez@unicesar.edu.co',
+      celular: '3109876543',
+      facultad: 'Ingenierías y Tecnologías',
+      programa: 'Ingeniería de Sistemas',
+    },
+    terminosAceptados: true,
   },
   {
     id: 'res-2',
