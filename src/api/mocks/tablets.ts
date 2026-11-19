@@ -111,6 +111,9 @@ export const PRESTAMOS_TABLET: Prestamo[] = [
     horaLimite: '11:00',
     condicionesAceptadas: true,
     estado: 'reservado',
+    // #163: pedido por 2 horas, con la responsabilidad aceptada al solicitarlo.
+    horas: 2,
+    responsabilidadAceptada: { fechaHora: conHora(HOY, '07:40') },
     datosSolicitante: {
       tipo: 'estudiante',
       nombreCompleto: 'LAURA PÉREZ',
