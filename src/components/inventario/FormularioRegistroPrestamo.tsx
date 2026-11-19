@@ -2,6 +2,9 @@
  * Formulario de entrega o de devolución de una tablet (HU-23).
  * - Entrega (CA1): estado del equipo y accesorios entregados; la fecha y la hora las pone el
  *   sistema al guardar. Una tablet dañada no se entrega.
+ * - Entrega con constancia (versión 1.1, #253): el estado como lo nombra el formato (Nuevo,
+ *   Óptimo u Otro; con Otro, las notas son obligatorias), la constancia completa antes de
+ *   confirmar (constanciaDe) y la casilla de que la persona la leyó y acepta la responsabilidad.
  * - Devolución (CA2-CA4): estado, accesorios recibidos y novedades. Si volvió dañada o falta un
  *   accesorio, la novedad es obligatoria (CA3). Si llega tarde, avisa el retraso que quedará
  *   registrado (CA4).
@@ -12,24 +15,28 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
-import { Button, HelperText, Icon, Text, TextInput } from 'react-native-paper';
+import { Button, Checkbox, HelperText, Icon, Text, TextInput } from 'react-native-paper';
 
 import { ChipsOpcion } from '@/components/asesorias/ChipsOpcion';
 import { AvisoError } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
-import type { CondicionTablet, Prestamo, Tablet } from '@/types';
+import type { CondicionTablet, EstadoEquipo, Prestamo, ResponsableTablet, Tablet } from '@/types';
 import {
   accesoriosFaltantes,
   AYUDA_CONDICION,
+  constanciaDe,
   crearEsquemaDevolucion,
   duracionLegible,
-  esquemaEntrega,
+  esquemaEntregaConstancia,
   fechaHoraLegible,
+  LARGO_MAXIMO_NOTAS_EQUIPO,
   NOMBRE_CONDICION,
+  NOMBRE_ESTADO_EQUIPO,
 } from '@/utils/prestamos';
 import { ahoraFechaHora, minutosDeRetraso } from '@/utils/tablets';
 
 import { CasillasAccesorios } from './CasillasAccesorios';
+import { VistaConstancia } from './VistaConstancia';
 
 export type Modo = 'entrega' | 'devolucion';
 
@@ -37,9 +44,23 @@ export type DatosRegistro = {
   condicion: CondicionTablet;
   accesorios: string[];
   novedades?: string;
+  /** Solo en la entrega (#253): el estado como lo nombra el formato y sus notas. */
+  estadoEquipo?: EstadoEquipo;
+  notas?: string;
 };
 
 const CONDICIONES: CondicionTablet[] = ['bueno', 'regular', 'danado'];
+
+const ESTADOS_EQUIPO: EstadoEquipo[] = ['nuevo', 'optimo', 'otro'];
+
+type Valores = {
+  condicion: CondicionTablet | '';
+  accesorios: string[];
+  novedades: string;
+  estadoEquipo: EstadoEquipo | '';
+  notas: string;
+  acepta: boolean;
+};
 
 type Props = {
   modo: Modo;
@@ -47,6 +68,8 @@ type Props = {
   tablet: Tablet;
   /** La tablet se leyó con el escáner (HU-31): el resumen lo confirma. */
   verificada?: boolean;
+  /** Quien entrega (la sesión): sale en la constancia antes de confirmar (#253). */
+  quienEntrega?: ResponsableTablet;
   guardando: boolean;
   mensajeError: string | null;
   onGuardar: (datos: DatosRegistro) => void;
@@ -57,6 +80,7 @@ export function FormularioRegistroPrestamo({
   prestamo,
   tablet,
   verificada = false,
+  quienEntrega,
   guardando,
   mensajeError,
   onGuardar,
@@ -64,7 +88,9 @@ export function FormularioRegistroPrestamo({
   const esDevolucion = modo === 'devolucion';
   // En la entrega se marcan los accesorios de la tablet; en la devolución, los que se entregaron.
   const opcionesAccesorios = esDevolucion ? (prestamo.entrega?.accesorios ?? []) : tablet.accesorios;
-  const [esquema] = useState(() => (esDevolucion ? crearEsquemaDevolucion(opcionesAccesorios) : esquemaEntrega));
+  const [esquema] = useState(() =>
+    esDevolucion ? crearEsquemaDevolucion(opcionesAccesorios) : esquemaEntregaConstancia,
+  );
   // El retraso se calcula una vez al abrir; la API lo recalcula al guardar.
   const [retraso] = useState(() => (esDevolucion ? minutosDeRetraso(prestamo) : 0));
 
@@ -73,16 +99,22 @@ export function FormularioRegistroPrestamo({
     handleSubmit,
     setValue,
     formState: { errors, isSubmitted },
-  } = useForm<{ condicion: CondicionTablet | ''; accesorios: string[]; novedades: string }>({
-    // El esquema de entrega no tiene novedades: se ignoran al guardar.
-    resolver: zodResolver(esquema as typeof esquemaEntrega) as never,
+  } = useForm<Valores>({
+    // Cada esquema ignora los campos del otro modo: se descartan al guardar.
+    resolver: zodResolver(esquema as typeof esquemaEntregaConstancia) as never,
     defaultValues: {
       condicion: esDevolucion ? '' : 'bueno',
       accesorios: [...opcionesAccesorios],
       novedades: '',
+      estadoEquipo: '',
+      notas: '',
+      acepta: false,
     },
   });
-  const [condicion, accesorios] = useWatch({ control, name: ['condicion', 'accesorios'] });
+  const [condicion, accesorios, estadoEquipo, notas, acepta] = useWatch({
+    control,
+    name: ['condicion', 'accesorios', 'estadoEquipo', 'notas', 'acepta'],
+  });
   const faltan = esDevolucion ? accesoriosFaltantes(opcionesAccesorios, accesorios) : [];
 
   const guardar = handleSubmit((valores) =>
@@ -90,8 +122,32 @@ export function FormularioRegistroPrestamo({
       condicion: valores.condicion as CondicionTablet,
       accesorios: valores.accesorios,
       ...(esDevolucion && valores.novedades.trim() ? { novedades: valores.novedades.trim() } : {}),
+      ...(!esDevolucion
+        ? {
+            estadoEquipo: valores.estadoEquipo as EstadoEquipo,
+            ...(valores.notas.trim() ? { notas: valores.notas.trim() } : {}),
+          }
+        : {}),
     }),
   );
+
+  // La constancia como quedará al entregar (#253): con lo elegido y quien entrega.
+  const borrador = esDevolucion
+    ? null
+    : constanciaDe(
+        {
+          ...prestamo,
+          estadoEquipo: estadoEquipo || undefined,
+          notas: notas.trim() || undefined,
+          entrega: {
+            fechaHora: ahoraFechaHora(),
+            condicion: condicion || 'bueno',
+            accesorios,
+            responsable: quienEntrega,
+          },
+        },
+        tablet,
+      );
 
   return (
     <View style={estilos.formulario}>
@@ -132,7 +188,7 @@ export function FormularioRegistroPrestamo({
       ) : null}
 
       <ChipsOpcion
-        titulo="Estado del equipo"
+        titulo="Condición física"
         opciones={CONDICIONES.map((valor) => ({
           valor,
           etiqueta: NOMBRE_CONDICION[valor],
@@ -159,6 +215,66 @@ export function FormularioRegistroPrestamo({
         }
         deshabilitado={guardando}
       />
+
+      {!esDevolucion ? (
+        <>
+          <ChipsOpcion
+            titulo="Estado en la constancia"
+            opciones={ESTADOS_EQUIPO.map((valor) => ({ valor, etiqueta: NOMBRE_ESTADO_EQUIPO[valor] }))}
+            elegidos={estadoEquipo ? [estadoEquipo] : []}
+            onCambiar={([valor]) =>
+              valor && setValue('estadoEquipo', valor, { shouldValidate: isSubmitted })
+            }
+            ayuda="Como lo nombra el formato de responsabilidad. Con Otro, explica en las notas."
+            mensajeError={errors.estadoEquipo?.message}
+            deshabilitado={guardando}
+          />
+          <Controller
+            control={control}
+            name="notas"
+            render={({ field: { ref, value, onChange, onBlur } }) => (
+              <View>
+                <TextInput
+                  ref={ref}
+                  mode="outlined"
+                  label={estadoEquipo === 'otro' ? 'Notas (obligatorio)' : 'Notas (opcional)'}
+                  placeholder="Por ejemplo: rayón leve en la parte de atrás"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  error={errors.notas != null}
+                  disabled={guardando}
+                  multiline
+                  maxLength={LARGO_MAXIMO_NOTAS_EQUIPO}
+                  accessibilityLabel="Notas sobre el estado del equipo"
+                />
+                <HelperText type="error" visible={errors.notas != null}>
+                  {errors.notas?.message ?? ''}
+                </HelperText>
+              </View>
+            )}
+          />
+          {borrador ? <VistaConstancia constancia={borrador} borrador /> : null}
+          <Checkbox.Item
+            label="La persona leyó la constancia y acepta la responsabilidad sobre el préstamo"
+            status={acepta ? 'checked' : 'unchecked'}
+            onPress={() => setValue('acepta', !acepta, { shouldValidate: isSubmitted })}
+            disabled={guardando}
+            position="leading"
+            mode="android"
+            color={colores.primario}
+            uncheckedColor={colores.bordeFuerte}
+            style={estilos.casilla}
+            labelStyle={estilos.etiquetaCasilla}
+            accessibilityLabel="La persona leyó la constancia y acepta la responsabilidad sobre el préstamo"
+          />
+          <View accessibilityLiveRegion="polite">
+            <HelperText type="error" visible={errors.acepta != null}>
+              {errors.acepta?.message ?? ''}
+            </HelperText>
+          </View>
+        </>
+      ) : null}
 
       {esDevolucion ? (
         <Controller
@@ -233,4 +349,7 @@ const estilos = StyleSheet.create({
   // Ámbar y no rojo: es un aviso, no un error del sistema.
   textoRetraso: { flex: 1, color: coloresEstado.pendiente.texto },
   contenidoBoton: { paddingVertical: espacio.xs },
+  // Sin el relleno lateral del ítem, la casilla se alinea con el texto de arriba.
+  casilla: { paddingHorizontal: 0 },
+  etiquetaCasilla: { color: colores.texto, fontFamily: fuentes.seminegrita, textAlign: 'left' },
 });

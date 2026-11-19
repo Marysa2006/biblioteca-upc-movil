@@ -3,6 +3,7 @@
  * franja y la acción que toca. Reservado: Registrar entrega. Entregado o vencido: salida, hora
  * límite, tiempo restante o retraso (CA4) y Registrar devolución. Devuelto: lo que quedó
  * registrado, con novedades (CA3) y retraso.
+ * Desde la entrega, Ver constancia abre la constancia del préstamo (versión 1.1, #253).
  */
 import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
@@ -25,9 +26,11 @@ type Props = {
   tablet?: Tablet;
   onEntregar: () => void;
   onRecibir: () => void;
+  /** Abre la constancia (#253); solo cuando la tablet ya se entregó. */
+  onVerConstancia?: () => void;
 };
 
-export function TarjetaPrestamo({ prestamo, tablet, onEntregar, onRecibir }: Props) {
+export function TarjetaPrestamo({ prestamo, tablet, onEntregar, onRecibir, onVerConstancia }: Props) {
   const estado = ESTADO[prestamo.estado];
   const { fondo, texto } = coloresEstado[estado.color];
   const nombreTablet = tablet ? `${tablet.modelo} · ${tablet.codigo}` : 'Tablet sin datos';
@@ -138,6 +141,19 @@ export function TarjetaPrestamo({ prestamo, tablet, onEntregar, onRecibir }: Pro
           Registrar devolución
         </Button>
       ) : null}
+      {onVerConstancia && (prestamo.entrega != null || prestamo.estado === 'devuelto') ? (
+        <Button
+          mode="text"
+          icon="file-document-outline"
+          onPress={onVerConstancia}
+          style={estilos.constancia}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel={`Ver la constancia del préstamo de ${nombreTablet} a ${prestamo.solicitante}`}
+        >
+          Ver constancia
+        </Button>
+      ) : null}
     </View>
   );
 }
@@ -176,4 +192,5 @@ const estilos = StyleSheet.create({
   fila: { flexDirection: 'row', alignItems: 'center', gap: espacio.xs },
   devolucion: { gap: espacio.xs, padding: espacio.s, borderRadius: radio.boton, backgroundColor: colores.superficieVariante },
   contenidoBoton: { paddingVertical: espacio.xs },
+  constancia: { alignSelf: 'flex-start' },
 });
