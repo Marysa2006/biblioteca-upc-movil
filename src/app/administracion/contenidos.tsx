@@ -5,6 +5,10 @@
  * - Servicios: crear, editar y activar o desactivar (CA1, CA2). Sin orden manual: van por categoría.
  * - Avisos y novedades: crear, editar, publicar u ocultar (CA1, CA2) y cambiar el orden (CA4).
  * "Nuevo servicio" o "Nuevo aviso" es el botón flotante, según la pestaña; se encoge al deslizar.
+ *
+ * Versión 1.1 (#257): con solo el permiso `novedades` la pantalla se llama "Avisos y novedades" y
+ * muestra solo los avisos y los informativos: sin la pestaña ni el botón de los servicios (CA3).
+ * La API también rechaza los servicios sin `contenidos`.
  * Patrón de datos: hooks de src/hooks/useServicios.ts y useContenidos.ts → src/api → mock o API.
  */
 import { router } from 'expo-router';
@@ -42,14 +46,16 @@ const DURACION_AVISO_MS = 4000;
 
 export default function Contenidos() {
   const { tienePermiso } = useRol();
+  const conServicios = tienePermiso('contenidos');
+  const titulo = conServicios ? 'Contenidos del portal' : 'Avisos y novedades';
 
   return (
     <>
-      <EncabezadoApilado titulo="Contenidos del portal" />
-      {tienePermiso('contenidos') ? (
-        <GestionContenidos />
+      <EncabezadoApilado titulo={titulo} />
+      {conServicios || tienePermiso('novedades') ? (
+        <GestionContenidos titulo={titulo} conServicios={conServicios} />
       ) : (
-        <Pantalla titulo="Contenidos del portal" conEncabezado>
+        <Pantalla titulo={titulo} conEncabezado>
           <SinPermiso />
         </Pantalla>
       )}
@@ -57,9 +63,11 @@ export default function Contenidos() {
   );
 }
 
-function GestionContenidos() {
-  // Al volver de un formulario, la pantalla sigue montada y conserva la sección elegida.
-  const [seccion, setSeccion] = useState<Seccion>('servicios');
+function GestionContenidos({ titulo, conServicios }: { titulo: string; conServicios: boolean }) {
+  // Al volver de un formulario, la pantalla sigue montada y conserva la sección elegida. Sin
+  // `contenidos` (solo `novedades`, #257) siempre son los avisos.
+  const [elegida, setSeccion] = useState<Seccion>(conServicios ? 'servicios' : 'avisos');
+  const seccion: Seccion = conServicios ? elegida : 'avisos';
   const [aviso, setAviso] = useState<string | null>(null);
 
   const servicios = useServiciosAdministracion();
@@ -75,8 +83,12 @@ function GestionContenidos() {
 
   return (
     <Pantalla
-      titulo="Contenidos del portal"
-      subtitulo="Lo que la comunidad ve en Inicio y en Servicios."
+      titulo={titulo}
+      subtitulo={
+        conServicios
+          ? 'Lo que la comunidad ve en Inicio y en Servicios.'
+          : 'Los avisos y los informativos que la comunidad ve en Inicio.'
+      }
       conEncabezado
       flotante={(desplazada: boolean) =>
         seccion === 'servicios' ? (
@@ -101,14 +113,16 @@ function GestionContenidos() {
         onRecargar: recargar,
       }}
     >
-      <SegmentedButtons
-        value={seccion}
-        onValueChange={(valor) => setSeccion(valor as Seccion)}
-        buttons={[
-          { value: 'servicios', label: 'Servicios', icon: 'room-service-outline' },
-          { value: 'avisos', label: 'Avisos y novedades', icon: 'bullhorn-outline' },
-        ]}
-      />
+      {conServicios ? (
+        <SegmentedButtons
+          value={seccion}
+          onValueChange={(valor) => setSeccion(valor as Seccion)}
+          buttons={[
+            { value: 'servicios', label: 'Servicios', icon: 'room-service-outline' },
+            { value: 'avisos', label: 'Avisos y novedades', icon: 'bullhorn-outline' },
+          ]}
+        />
+      ) : null}
 
       {seccion === 'servicios' ? (
         <SeccionServicios consulta={servicios} onAviso={setAviso} />
