@@ -26,7 +26,12 @@ import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
 export const LARGO_MAXIMO_OBJETIVO = 300;
 export const LARGO_MAXIMO_GRUPO = 200;
-export const MAXIMO_PARTICIPANTES = 100;
+/**
+ * Las capacitaciones son grupales, de 20 a 25 personas (las líneas de formación de la biblioteca,
+ * #241). Para un grupo mayor, se piden dos. El Backend todavía no tiene este máximo.
+ */
+export const MAXIMO_PARTICIPANTES = 25;
+export const MENSAJE_MAXIMO_PARTICIPANTES = `Indica cuántas personas asistirán, de 1 a ${MAXIMO_PARTICIPANTES}. Si son más, divide el grupo en dos solicitudes.`;
 /** Hasta cuántos meses adelante se ofrece el calendario. */
 export const MESES_CAPACITACION = 3;
 
@@ -71,7 +76,7 @@ const camposCapacitacion = {
     .refine(
       (valor) =>
         /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= MAXIMO_PARTICIPANTES,
-      { error: `Indica cuántas personas asistirán (de 1 a ${MAXIMO_PARTICIPANTES}).` },
+      { error: MENSAJE_MAXIMO_PARTICIPANTES },
     ),
 };
 
