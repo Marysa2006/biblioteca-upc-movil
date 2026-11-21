@@ -70,6 +70,15 @@ const ACCESOS: Acceso[] = [
     permiso: 'contenidos',
     tambienCon: 'novedades',
   },
+  {
+    // Versión 1.1 (#290): las fotos del carrusel de Inicio, con `contenidos` o `novedades`.
+    titulo: 'Fotos de Inicio',
+    descripcion: 'Las fotos del carrusel que ve la comunidad al abrir la app.',
+    icono: 'image-multiple-outline',
+    destino: '/administracion/fotos-inicio',
+    permiso: 'contenidos',
+    tambienCon: 'novedades',
+  },
 ];
 
 /** ¿Quien tiene la sesión puede entrar a alguna función del portal? */
