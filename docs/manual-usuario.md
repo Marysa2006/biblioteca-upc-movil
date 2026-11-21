@@ -114,7 +114,8 @@ Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 
 1. La pestaña **Mis solicitudes** muestra las reservas, asesorías, préstamos y capacitaciones con su estado: Pendiente, Aprobada, Rechazada, Nueva fecha propuesta, Cancelada o Realizada. Toca una para ver su detalle y su historial.
 2. Si la biblioteca propone otro día, la solicitud dice **Nueva fecha propuesta**. Ábrela y toca **Aceptar la nueva fecha**, o **No me sirve** para cancelar la solicitud.
-3. En el menú de arriba a la derecha:
+3. Las asesorías y capacitaciones realizadas que todavía no calificaste dicen **Por calificar**. Ábrela y, en **¿Cómo te pareció?**, elige de 1 a 5 estrellas (de Malo a Excelente), escribe un comentario si quieres y toca **Enviar**. Solo se califica una vez; después, el detalle muestra tu calificación.
+4. En el menú de arriba a la derecha:
    - **Mi calendario** muestra por día las citas, las reservas y los préstamos, y envía recordatorios antes de cada uno.
    - **Notificaciones** muestra los avisos de cada cambio.
 
