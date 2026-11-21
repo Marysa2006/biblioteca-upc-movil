@@ -16,6 +16,8 @@ type Acceso = {
   icono: string;
   destino: Href;
   permiso: Permiso;
+  /** No se muestra si además tiene este permiso: otra fila ya cubre lo mismo (#257). */
+  ocultarCon?: Permiso;
 };
 
 const ACCESOS: Acceso[] = [
@@ -25,6 +27,15 @@ const ACCESOS: Acceso[] = [
     icono: 'file-document-edit-outline',
     destino: '/administracion/contenidos',
     permiso: 'contenidos',
+  },
+  {
+    // Versión 1.1 (#257): quien solo tiene `novedades` publica avisos e informativos, no servicios.
+    titulo: 'Avisos y novedades',
+    descripcion: 'Los avisos y los informativos que ve la comunidad en Inicio.',
+    icono: 'bullhorn-outline',
+    destino: '/administracion/contenidos',
+    permiso: 'novedades',
+    ocultarCon: 'contenidos',
   },
   {
     titulo: 'Parámetros generales',
@@ -58,7 +69,10 @@ export function usePuedeAdministrarPortal(): boolean {
 
 export function MenuAdministracion() {
   const { tienePermiso } = useRol();
-  const accesos = ACCESOS.filter((acceso) => tienePermiso(acceso.permiso));
+  const accesos = ACCESOS.filter(
+    (acceso) =>
+      tienePermiso(acceso.permiso) && !(acceso.ocultarCon && tienePermiso(acceso.ocultarCon)),
+  );
 
   return (
     <View style={estilos.menu}>
