@@ -1,118 +1,108 @@
 /**
- * Franjas de un tema de asesoría (HU-14): una semana a la vez, agrupadas por día.
- * - CA1: al tocar una franja, va a confirmar la cita.
- * - CA4: sin franjas, lo dice y sugiere la semana siguiente u otro tema.
- * - Con ?reprogramar=<citaId> (desde Mis citas), la franja elegida reemplaza la de esa cita;
- *   solo se ofrecen franjas del mismo tema y no se ofrece la que ya tiene.
- * Se consulta sin cuenta; la sesión se pide al confirmar.
+ * Solicitar una asesoría de un tema (#249, HU-14 en la versión 1.1). Pantalla apilada; se llega
+ * desde la lista de temas. Desde la 1.1 no hay franjas: la persona pide la fecha y la hora, y la
+ * biblioteca confirma la fecha y asigna el facilitador al aprobar.
+ * Pide cuenta desde el principio, porque usa los datos de la persona: sin sesión, solo invita a
+ * iniciarla y no consulta nada; con ?volver=1, el login regresa aquí y ya se muestra el
+ * formulario.
+ * - CA1: la solicitud queda pendiente y aparece en Mis solicitudes.
+ * - CA2: fechas sin atención o a menos de 72 h no se eligen; la hora fuera del horario muestra
+ *   el error bajo el campo (lo valida el formulario y la API también).
  *
- * Patrón de datos: useTemas() / useFranjas() / useMisCitas() (src/hooks) → src/api → mock o API.
+ * Patrón de datos: useTemas() / useParametros() / usePerfil() / useSolicitarCita() (src/hooks)
+ * → src/api → mock o API.
  */
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 
-import { ListaFranjas } from '@/components/asesorias/ListaFranjas';
-import { NavegacionPeriodo } from '@/components/espacios/NavegacionPeriodo';
-import { EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
-import { useFranjas, useMisCitas, useTemas } from '@/hooks/useAsesorias';
-import type { FranjaAsesoria } from '@/types';
-import { inicioSemana, rangoSemana, sumarDias, tituloSemana } from '@/utils/calendario';
-import { fechaLegible, hoyISO } from '@/utils/fechas';
+import { FormularioSolicitudCita } from '@/components/asesorias/FormularioSolicitudCita';
+import { InvitarSesion } from '@/components/reservas/InvitarSesion';
+import {
+  EncabezadoApilado,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  Pantalla,
+} from '@/components/ui';
+import { useSolicitarCita, useTemas } from '@/hooks/useAsesorias';
+import { useParametros } from '@/hooks/useParametros';
+import { usePerfil } from '@/hooks/usePerfil';
+import { useRol } from '@/hooks/useRol';
+import type { Usuario } from '@/types';
+import { mensajeErrorGuardar } from '@/utils/errores';
 
-export default function FranjasTema() {
-  const { temaId, reprogramar } = useLocalSearchParams<{ temaId: string; reprogramar?: string }>();
-  const [hoy] = useState(hoyISO);
-  const [dia, setDia] = useState(hoy);
+const TITULO = 'Solicitar asesoría';
 
-  const { desde, hasta } = rangoSemana(dia);
+export default function SolicitarAsesoria() {
+  const { temaId } = useLocalSearchParams<{ temaId: string }>();
+  const { usuario } = useRol();
   const temas = useTemas();
-  const franjas = useFranjas(temaId, desde, hasta);
-  // Sin reprogramar no hace falta: useMisCitas no consulta sin sesión, y la lista ya está en caché.
-  const misCitas = useMisCitas();
-
-  // Al volver de confirmar (por ejemplo, si la franja se ocupó, CA2), los cupos se consultan
-  // de nuevo: la caché dura 5 minutos. cancelRefetch: false no repite una consulta en curso.
-  const { refetch: refrescarFranjas } = franjas;
-  useFocusEffect(
-    useCallback(() => {
-      refrescarFranjas({ cancelRefetch: false });
-    }, [refrescarFranjas]),
-  );
-
   const tema = temas.data?.find((t) => t.id === temaId);
-  const cita = reprogramar ? misCitas.data?.find((c) => c.id === reprogramar) : undefined;
-  const esperandoCita = reprogramar != null && misCitas.isPending;
+
+  return (
+    <>
+      <EncabezadoApilado titulo={TITULO} />
+      <Pantalla
+        titulo={tema?.nombre ?? 'Asesoría'}
+        subtitulo="Pide el día y la hora que te sirven. La biblioteca confirma la fecha y quién te atiende."
+        conEncabezado
+        conTeclado
+      >
+        {usuario ? (
+          <SolicitudConSesion temaId={temaId} usuario={usuario} />
+        ) : (
+          <InvitarSesion
+            mensaje="Inicia sesión con tu cuenta institucional para solicitar una asesoría."
+            etiqueta="Iniciar sesión para solicitar una asesoría"
+          />
+        )}
+      </Pantalla>
+    </>
+  );
+}
+
+/** Se monta solo con sesión: así, sin sesión, no se consultan parámetros ni perfil. */
+function SolicitudConSesion({ temaId, usuario }: { temaId: string; usuario: Usuario }) {
+  const temas = useTemas();
+  const parametros = useParametros();
+  // Prellena el celular (#224). Si no carga, no bloquea: la persona lo escribe.
+  const perfil = usePerfil();
+  const solicitud = useSolicitarCita();
 
   const reintentar = () => {
     if (temas.isError) temas.refetch();
-    if (franjas.isError) franjas.refetch();
-    if (misCitas.isError) misCitas.refetch();
+    if (parametros.isError) parametros.refetch();
   };
 
-  const elegir = (franja: FranjaAsesoria) => {
-    router.push({
-      pathname: '/asesorias/confirmar',
-      params: {
-        temaId,
-        franjaId: franja.id,
-        fecha: franja.fecha,
-        horaInicio: franja.horaInicio,
-        horaFin: franja.horaFin,
-        ...(reprogramar ? { reprogramar } : {}),
-      },
-    });
-  };
+  if (temas.isPending || parametros.isPending || perfil.isPending) {
+    return <EstadoCarga mensaje="Cargando la solicitud de asesoría…" />;
+  }
+  if (temas.isError || parametros.isError) {
+    return <EstadoError mensaje="No pudimos cargar la asesoría." onReintentar={reintentar} />;
+  }
 
-  let contenido;
-  if (temas.isPending || franjas.isPending || esperandoCita) {
-    contenido = <EstadoCarga mensaje="Buscando franjas…" />;
-  } else if (temas.isError || franjas.isError || (reprogramar && misCitas.isError)) {
-    contenido = <EstadoError mensaje="No pudimos cargar las franjas." onReintentar={reintentar} />;
-  } else if (!tema?.activo) {
-    contenido = (
+  const tema = temas.data.find((t) => t.id === temaId);
+  if (!tema?.activo) {
+    return (
       <EstadoVacio
         pose="buscando"
-        mensaje="Este tema ya no se ofrece. Elige otro tema de asesoría."
-      />
-    );
-  } else if (reprogramar && !cita) {
-    contenido = (
-      <EstadoVacio pose="buscando" mensaje="No encontramos la cita que querías reprogramar." />
-    );
-  } else {
-    const disponibles = cita ? franjas.data.filter((f) => f.id !== cita.franjaId) : franjas.data;
-    contenido = (
-      <ListaFranjas
-        franjas={disponibles}
-        onElegir={elegir}
-        onSemanaSiguiente={() => setDia(sumarDias(inicioSemana(dia), 7))}
-        onOtroTema={reprogramar ? undefined : () => router.back()}
+        mensaje="Este tema ya no se ofrece. Vuelve atrás y elige otro tema de asesoría."
       />
     );
   }
 
-  const subtitulo = cita
-    ? `Elige la nueva franja para tu cita del ${fechaLegible(cita.fecha)} a las ${cita.horaInicio}.`
-    : 'Elige un día y una hora. Cada franja dice cuántos cupos quedan.';
-
   return (
-    <>
-      <EncabezadoApilado titulo={reprogramar ? 'Reprogramar asesoría' : 'Agendar asesoría'} />
-      <Pantalla
-        titulo={tema?.nombre ?? 'Asesoría'}
-        subtitulo={subtitulo}
-        conEncabezado
-        recarga={{ recargando: franjas.isRefetching, onRecargar: () => franjas.refetch() }}
-      >
-        <NavegacionPeriodo
-          vista="semana"
-          titulo={tituloSemana(dia)}
-          puedeAnterior={inicioSemana(dia) > inicioSemana(hoy)}
-          onAnterior={() => setDia(sumarDias(inicioSemana(dia), -7))}
-          onSiguiente={() => setDia(sumarDias(inicioSemana(dia), 7))}
-        />
-        {contenido}
-      </Pantalla>
-    </>
+    <FormularioSolicitudCita
+      tema={tema}
+      parametros={parametros.data}
+      usuario={usuario}
+      perfil={perfil.data}
+      guardando={solicitud.isPending}
+      mensajeError={solicitud.error ? mensajeErrorGuardar(solicitud.error) : null}
+      enviada={solicitud.isSuccess}
+      onEnviar={(nueva) => {
+        solicitud.reset();
+        solicitud.mutate(nueva);
+      }}
+    />
   );
 }

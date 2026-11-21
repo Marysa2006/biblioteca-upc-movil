@@ -75,19 +75,20 @@ La reserva queda **Pendiente** hasta que la biblioteca la apruebe.
 
 ![Solicitar un espacio](manual-usuario/comunidad-solicitar-espacio.png)
 
-### Agendar una asesoría
+### Solicitar una asesoría
 
-1. En **Servicios**, abre **Asesorías especializadas** y elige un tema.
-2. Elige el día y una franja libre.
-3. Escribe qué necesitas y toca **Confirmar**.
+1. En **Servicios**, abre **Asesorías especializadas** y elige un tema. Hace falta iniciar sesión.
+2. En la pestaña **Solicitud**, elige la fecha y la hora que te sirven (con al menos 72 horas de anticipación y dentro del horario de atención; el calendario tacha los días que no se pueden), la modalidad, cuántas personas asisten (hasta 5, con el nombre de cada una) y qué necesitas.
+3. En **Tus datos**, revisa lo que trae tu cuenta y corrige lo que haga falta.
+4. En **Términos**, léelos, marca **He leído y acepto los términos y condiciones** y toca **Enviar solicitud**. Si falta algo, la aplicación te lleva a la pestaña con el error.
 
-Tu solicitud queda **Pendiente** hasta que el facilitador que la atiende o la administración la apruebe: el cupo se aparta desde el primer momento, así que nadie más puede tomarlo. Cuando la aprueben te llega una notificación; si la rechazan, el aviso trae el motivo.
+Tu solicitud queda **Pendiente** hasta que la biblioteca la apruebe: al aprobarla confirma la fecha y la hora (puede cambiarlas) y asigna quién te atiende. Te llega una notificación; si la rechazan, el aviso trae el motivo. Si la biblioteca cambió la fecha, **Mis citas** y el detalle en **Mis solicitudes** muestran también la que pediste. En una asesoría virtual aprobada, **Abrir enlace** te lleva a la reunión.
 
-Las citas se pueden cancelar o reprogramar desde **Mis citas**, dentro del plazo. Si las reprogramas, la cita vuelve a quedar **Pendiente** y hay que aprobarla otra vez.
+Las citas se pueden cancelar o reprogramar desde **Mis citas** o desde su detalle en **Mis solicitudes**: las pendientes en cualquier momento y las aprobadas hasta el plazo que fija la biblioteca. Para reprogramar solo eliges otra fecha y otra hora: se envía una solicitud nueva, que queda **Pendiente**, y la anterior queda cancelada.
 
 El día de la asesoría aprobada, desde 30 minutos antes, **Mis citas** y el detalle en **Mis solicitudes** muestran **Registrar asistencia**. Tócalo y escanea el código QR que te muestra el facilitador: la aplicación confirma que quedó registrada. Si el código venció o es de otra sesión, te dice el motivo y puedes escanear otra vez. La primera vez, la aplicación pide permiso para usar la cámara; solo la usa para leer el código.
 
-![Agendar una asesoría](manual-usuario/comunidad-agendar-asesoria.png)
+![Solicitar una asesoría](manual-usuario/comunidad-agendar-asesoria.png)
 
 ### Pedir una tablet
 
