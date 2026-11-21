@@ -17,6 +17,8 @@ export function DatosInstitucionales({ perfil }: { perfil: Perfil }) {
   if (esPersonal(perfil)) datos.push({ etiqueta: 'Roles del personal', valor: describirRoles(perfil) });
   if (perfil.programa) datos.push({ etiqueta: 'Programa o dependencia', valor: perfil.programa });
   if (perfil.semestre) datos.push({ etiqueta: 'Semestre', valor: `${perfil.semestre}.º` });
+  // #203: la dependencia que dio el docente o administrativo al registrarse.
+  if (perfil.dependencia) datos.push({ etiqueta: 'Dependencia', valor: perfil.dependencia });
 
   return (
     <View style={estilos.tarjeta}>

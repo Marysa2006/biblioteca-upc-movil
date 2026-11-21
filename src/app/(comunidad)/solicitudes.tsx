@@ -8,6 +8,8 @@
  * - CA3: sin solicitudes, un mensaje y el acceso a Servicios. Sin sesión, invita a iniciarla.
  * Los préstamos de tablet llegan como "Aprobada" mientras siguen en curso: la tarjeta aclara su
  * estado real con useMisPrestamos().
+ * Las asesorías y capacitaciones realizadas sin calificar llevan «Por calificar» (#255), con
+ * useMisCitas() y useMisCapacitaciones().
  *
  * Patrón de datos: useMisSolicitudes() / useMisPrestamos() (src/hooks) → src/api → mock o API.
  */
@@ -29,11 +31,14 @@ import {
   type OpcionFiltro,
   type OpcionPestana,
 } from '@/components/ui';
+import { useMisCitas } from '@/hooks/useAsesorias';
+import { useMisCapacitaciones } from '@/hooks/useCapacitaciones';
 import { useRol } from '@/hooks/useRol';
 import { useMisSolicitudes, type ResumenSolicitud } from '@/hooks/useSolicitudes';
 import { useMisPrestamos } from '@/hooks/useTablets';
 import { espacio } from '@/theme';
 import type { Prestamo } from '@/types';
+import { porCalificar } from '@/utils/calificacion';
 import {
   enGrupo,
   filtrarSolicitudes,
@@ -57,11 +62,24 @@ export default function MisSolicitudes() {
   const solicitudes = useMisSolicitudes();
   // Opcional: si falla, las tarjetas de préstamo solo pierden la línea de su estado real.
   const prestamos = useMisPrestamos();
+  // Opcionales: si fallan, las tarjetas solo pierden la etiqueta «Por calificar» (#255).
+  const citas = useMisCitas();
+  const capacitaciones = useMisCapacitaciones();
 
   const recargar = () => {
     solicitudes.refetch();
     prestamos.refetch();
+    citas.refetch();
+    capacitaciones.refetch();
   };
+
+  // Las que se pueden calificar, como «tipo-id».
+  const porCalificarIds = new Set([
+    ...(citas.data ?? []).filter(porCalificar).map((cita) => `cita-${cita.id}`),
+    ...(capacitaciones.data ?? [])
+      .filter(porCalificar)
+      .map((capacitacion) => `capacitacion-${capacitacion.id}`),
+  ]);
 
   return (
     <Pantalla
@@ -70,7 +88,11 @@ export default function MisSolicitudes() {
       recarga={usuario ? { recargando: solicitudes.isRefetching, onRecargar: recargar } : undefined}
     >
       {usuario ? (
-        <ListaSolicitudes solicitudes={solicitudes} prestamos={prestamos.data} />
+        <ListaSolicitudes
+          solicitudes={solicitudes}
+          prestamos={prestamos.data}
+          porCalificarIds={porCalificarIds}
+        />
       ) : (
         <InvitarSesion
           mensaje="Inicia sesión con tu cuenta institucional para ver el estado de tus solicitudes."
@@ -85,9 +107,12 @@ export default function MisSolicitudes() {
 function ListaSolicitudes({
   solicitudes,
   prestamos,
+  porCalificarIds,
 }: {
   solicitudes: ReturnType<typeof useMisSolicitudes>;
   prestamos?: Prestamo[];
+  /** «tipo-id» de las asesorías y capacitaciones por calificar. */
+  porCalificarIds: Set<string>;
 }) {
   const [grupo, setGrupo] = useState<GrupoSolicitudes>('en_curso');
   const [tipo, setTipo] = useState<FiltroTipo>('todos');
@@ -182,6 +207,7 @@ function ListaSolicitudes({
                 key={`${solicitud.tipo}-${solicitud.id}`}
                 solicitud={solicitud}
                 nota={prestamo ? notaDePrestamo(prestamo) : null}
+                porCalificar={porCalificarIds.has(`${solicitud.tipo}-${solicitud.id}`)}
                 onAbrir={abrir}
               />
             );

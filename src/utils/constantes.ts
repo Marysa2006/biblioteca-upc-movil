@@ -47,10 +47,17 @@ export const NOMBRE_NIVEL_FORMACION: Record<NivelFormacion, string> = {
 /**
  * Semestres del I al X, como los escribe la biblioteca (provisional). Es la lista para mostrar;
  * lo que se guarda en `semestre` es el número, así que el formulario usa la posición + 1.
+ * Hay estudiantes que pasan del X: hasta SEMESTRE_MAXIMO se eligen con «Otro» (#203).
  */
 export const SEMESTRES: readonly string[] = [
   'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
 ];
+
+/**
+ * El semestre más alto que se acepta (#203): hay estudiantes en 11.º o 12.º. Del 1 al X salen en
+ * la lista; del 11 a este, con «Otro». Provisional: ajustarlo con la bibliotecóloga.
+ */
+export const SEMESTRE_MAXIMO = 14;
 
 /**
  * Duración de una asesoría, en minutos, igual para todas (#248).

@@ -38,6 +38,18 @@ Cualquier persona puede usar estas partes sin iniciar sesión. Abajo están las 
 
 ## 3. Comunidad con cuenta
 
+### Crear una cuenta
+
+Si eres estudiante, docente o administrativo de la Universidad y todavía no tienes usuario:
+
+1. Toca el botón de arriba a la derecha, elige **Iniciar sesión** y, debajo del formulario, toca **Regístrate**.
+2. Escribe tus nombres, tus apellidos, tu número de cédula y tu correo institucional (`@unicesar.edu.co`). El celular es opcional.
+3. Elige si eres **Estudiante**, **Docente** o **Administrativo**. Si eres estudiante, escribe tu programa y elige tu semestre; si estás en el 11.º o más, elige **Otro** y ajusta el número. Si eres docente o administrativo, puedes escribir tu dependencia. Los coordinadores, directores y decanos se registran como docente o administrativo.
+4. Escribe una contraseña de al menos 8 caracteres, que no sea solo números, y repítela.
+5. Toca **Leer la autorización** para ver el formato del Acuerdo 019, marca **He leído y acepto…** y toca **Crear cuenta**.
+
+La aplicación inicia tu sesión y te lleva a Inicio. Tus datos ya aparecen al pedir un servicio. Si el correo o la cédula ya tienen una cuenta, el mensaje aparece bajo ese campo. El registro es solo para la comunidad: los permisos del personal los da la administración de la biblioteca.
+
 ### Iniciar sesión
 
 1. Toca el botón de arriba a la derecha y elige **Iniciar sesión**.
@@ -102,7 +114,8 @@ Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 
 1. La pestaña **Mis solicitudes** muestra las reservas, asesorías, préstamos y capacitaciones con su estado: Pendiente, Aprobada, Rechazada, Nueva fecha propuesta, Cancelada o Realizada. Toca una para ver su detalle y su historial.
 2. Si la biblioteca propone otro día, la solicitud dice **Nueva fecha propuesta**. Ábrela y toca **Aceptar la nueva fecha**, o **No me sirve** para cancelar la solicitud.
-3. En el menú de arriba a la derecha:
+3. Las asesorías y capacitaciones realizadas que todavía no calificaste dicen **Por calificar**. Ábrela y, en **¿Cómo te pareció?**, elige de 1 a 5 estrellas (de Malo a Excelente), escribe un comentario si quieres y toca **Enviar**. Solo se califica una vez; después, el detalle muestra tu calificación.
+4. En el menú de arriba a la derecha:
    - **Mi calendario** muestra por día las citas, las reservas y los préstamos, y envía recordatorios antes de cada uno.
    - **Notificaciones** muestra los avisos de cada cambio.
 
