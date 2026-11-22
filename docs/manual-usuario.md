@@ -145,6 +145,7 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
    - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
    - **Asesorías y jornadas:** los temas y los horarios de cada facilitador.
    - **Líneas de formación:** las capacitaciones que se ofrecen.
+   - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra las fotos que trae la aplicación.
 
 ![Gestión: Solicitudes](manual-usuario/personal-gestion-solicitudes.png)
 ![Gestión: Portal](manual-usuario/personal-gestion-portal.png)
@@ -170,6 +171,7 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
 - **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos**, **Vencidos** e **Inventario** de tablets.
 - **Facilitador:** las solicitudes de capacitación y la **Agenda** de sus asesorías.
 - **Gestora de espacios:** las solicitudes de reserva y la sección **Espacios**, con sus bloqueos.
+- **Quien tiene el permiso de novedades y avisos:** en **Portal**, los avisos y las novedades, las **Guías de la biblioteca** y las **Fotos de Inicio**, sin tocar los servicios.
 
 ## 5. Usuarios de prueba
 

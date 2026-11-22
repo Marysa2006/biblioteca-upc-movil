@@ -4,7 +4,8 @@
  * con sesión, el saludo. Muestra las categorías destacadas (el resto, en "Ver todos"): cada
  * una abre el detalle de su servicio o, si tiene varios, sus opciones en la pestaña Servicios.
  * Arriba, el carrusel de fotos de la biblioteca y, justo debajo, "Avisos y novedades" que publica
- * la administración (HU-04).
+ * la administración (HU-04). Las fotos las publica la biblioteca (#290); sin conexión o sin fotos
+ * publicadas, van las que trae el APK.
  *
  * Patrón de datos: useServicios() (src/hooks) → obtenerServicios() (src/api) → mock o API.
  * Contempla los tres estados: cargando, error y vacío.
@@ -18,11 +19,12 @@ import { CarruselInicio } from '@/components/inicio/CarruselInicio';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useContenidos } from '@/hooks/useContenidos';
+import { useFotosInicio } from '@/hooks/useFotosInicio';
 import { useServicios } from '@/hooks/useServicios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { contenidosVisibles, hoyISO } from '@/utils/contenidos';
-import { IMAGENES_INICIO } from '@/utils/inicio';
+import { imagenesDelCarrusel } from '@/utils/inicio';
 import {
   agruparServiciosActivos,
   CATEGORIAS_INICIO,
@@ -39,6 +41,8 @@ export default function Inicio() {
   const { data: servicios, isPending, isError, isRefetching, refetch } = useServicios();
   // Avisos y novedades (HU-04): sección secundaria; mientras carga o si falla, no se muestra.
   const { data: contenidos, refetch: refetchContenidos } = useContenidos();
+  // Sin conexión o sin fotos publicadas, el carrusel usa las del APK (#290): no lleva estados.
+  const { data: fotos, refetch: refetchFotos } = useFotosInicio();
   const avisos = contenidos ? contenidosVisibles(contenidos, hoyISO()) : [];
 
   let contenido;
@@ -69,10 +73,11 @@ export default function Inicio() {
         onRecargar: () => {
           refetch();
           refetchContenidos();
+          refetchFotos();
         },
       }}
     >
-      <CarruselInicio imagenes={IMAGENES_INICIO} />
+      <CarruselInicio imagenes={imagenesDelCarrusel(fotos)} />
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       {usuario ? null : <InvitacionSesion />}
       <View style={estilos.encabezadoSeccion}>
