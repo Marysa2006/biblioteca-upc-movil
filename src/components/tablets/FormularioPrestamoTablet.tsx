@@ -2,8 +2,9 @@
  * Solicitud de préstamo de tablet (HU-22 y #163): la fecha (hasta diasMaximosTablet días antes),
  * la hora de inicio (en punto o y media) con las tablets que quedan, cuántas horas (de 1 al
  * máximo; empieza en horasPrestamoTablet) con la hora de devolución, los datos de quien la pide
- * (#224), las condiciones de uso, la responsabilidad y Confirmar. Se usa con la sesión iniciada:
- * sin sesión, la pantalla solo muestra la invitación a iniciarla.
+ * (#224; desde el #294, con SeccionDatosSolicitante, como las demás solicitudes), las condiciones
+ * de uso, la responsabilidad y Confirmar. Se usa con la sesión iniciada: sin sesión, la pantalla
+ * solo muestra la invitación a iniciarla.
  * - CA2: al tocar una franja sin tablets, o si al confirmar la API dice que no hay una tablet
  *   libre todas las horas, se sugieren otras franjas; si el día no tiene ninguna, las
  *   sugerencias del día de la API. Una sugerencia de otro día cambia la fecha y deja elegida la
@@ -18,36 +19,27 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Controller, useForm, useWatch, type Control } from 'react-hook-form';
-import {
-  AccessibilityInfo,
-  Platform,
-  StyleSheet,
-  View,
-  type KeyboardTypeOptions,
-} from 'react-native';
-import { Button, Chip, HelperText, Text, TextInput } from 'react-native-paper';
+import { useForm, useWatch } from 'react-hook-form';
+import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
+import { Button, Text } from 'react-native-paper';
 
 import { SelectorFecha } from '@/components/espacios/SelectorFecha';
+import {
+  SeccionDatosSolicitante,
+  type CampoSolicitante,
+} from '@/components/solicitudes/SeccionDatosSolicitante';
 import { AvisoError, CampoNumerico, EstadoCarga, EstadoError, Upecito } from '@/components/ui';
 import type { AlternativaPrestamo, FormularioPrestamo, FranjaTablets } from '@/hooks/useTablets';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { CondicionesTablet, Parametros, Perfil, Usuario } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
-import {
-  FACULTADES,
-  NIVELES_FORMACION,
-  NOMBRE_NIVEL_FORMACION,
-  SEMESTRE_MAXIMO,
-} from '@/utils/constantes';
 import { hoyISO } from '@/utils/fechas';
 import { aMinutos } from '@/utils/franjas';
 import {
   aDatosSolicitante,
   datosSolicitanteDe,
-  LARGO_MAXIMO_DATO_ACADEMICO,
-  LARGO_MAXIMO_NOMBRE,
   valoresSolicitante,
+  type ValoresSolicitante,
 } from '@/utils/solicitante';
 import {
   esquemaPrestamo,
@@ -78,6 +70,7 @@ const CAMPOS: (keyof DatosPrestamo)[] = [
   'identificacion',
   'correo',
   'celular',
+  'sede',
   'nivel',
   'facultad',
   'programa',
@@ -86,8 +79,19 @@ const CAMPOS: (keyof DatosPrestamo)[] = [
   'responsabilidadAceptada',
 ];
 
-/** Lleva el chip a 48 px de área táctil sin cambiar su tamaño visible. */
-const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
+/** Los datos de quien la pide, los mismos de las demás solicitudes (#294). */
+const CAMPOS_SOLICITANTE: CampoSolicitante[] = [
+  'tipo',
+  'nombreCompleto',
+  'identificacion',
+  'correo',
+  'celular',
+  'sede',
+  'nivel',
+  'facultad',
+  'programa',
+  'semestre',
+];
 
 type Props = {
   parametros: Parametros;
@@ -143,7 +147,6 @@ export function FormularioPrestamoTablet({
 }: Props) {
   const hoy = hoyISO();
   const maximoHoras = parametros.horasMaximasPrestamo;
-  const esEstudiante = usuario.tipo === 'estudiante';
   const { control, handleSubmit, setValue, formState } = useForm<DatosPrestamo>({
     resolver: zodResolver(esquemaPrestamo({ maximoHoras })),
     defaultValues: {
@@ -158,11 +161,18 @@ export function FormularioPrestamoTablet({
   const horas = useWatch({ control, name: 'horas' });
   const aceptaCondiciones = useWatch({ control, name: 'aceptaCondiciones' });
   const responsabilidadAceptada = useWatch({ control, name: 'responsabilidadAceptada' });
+  const valoresDatos = useWatch({ control, name: CAMPOS_SOLICITANTE });
   /** La franja sin tablets que se tocó (CA2). */
   const [consultada, setConsultada] = useState<FranjaTablets | null>(null);
 
   const validar = { shouldValidate: formState.isSubmitted };
   const errores = formState.errors;
+  const solicitante = Object.fromEntries(
+    CAMPOS_SOLICITANTE.map((campo, i) => [campo, valoresDatos[i] ?? '']),
+  ) as ValoresSolicitante;
+  const erroresDatos = Object.fromEntries(
+    CAMPOS_SOLICITANTE.map((campo) => [campo, errores[campo]?.message]).filter(([, m]) => m),
+  ) as Partial<Record<CampoSolicitante, string>>;
   // CA4: desde la franja elegida, hasta el máximo y sin pasar del cierre.
   const maximoDesdeInicio =
     franjas && horaInicio ? horasPosibles(franjas, horaInicio, maximoHoras) : maximoHoras;
@@ -370,104 +380,16 @@ export function FormularioPrestamoTablet({
         <Text variant="titleSmall" style={estilos.subtitulo} accessibilityRole="header">
           Tus datos
         </Text>
-        {errores.tipo ? <AvisoError mensaje={errores.tipo.message ?? ''} /> : null}
-        <CampoTexto
-          control={control}
-          nombre="nombreCompleto"
-          etiqueta="Nombre completo"
-          mensajeError={errores.nombreCompleto?.message}
+        <Text variant="bodySmall" style={estilos.secundario}>
+          Vienen de tu cuenta; corrige lo que haga falta.
+        </Text>
+        <SeccionDatosSolicitante
+          valores={solicitante}
+          onCambiar={(campo, valor) => setValue(campo, valor, validar)}
+          errores={erroresDatos}
+          pedirIdentificacion={!usuario.identificacion}
           deshabilitado={guardando}
-          largoMaximo={LARGO_MAXIMO_NOMBRE}
-          autoCapitalize="words"
         />
-        <CampoTexto
-          control={control}
-          nombre="identificacion"
-          etiqueta="Número de identificación"
-          mensajeError={errores.identificacion?.message}
-          deshabilitado={guardando}
-          largoMaximo={15}
-          teclado="number-pad"
-          soloDigitos
-        />
-        <CampoTexto
-          control={control}
-          nombre="correo"
-          etiqueta="Correo"
-          mensajeError={errores.correo?.message}
-          deshabilitado={guardando}
-          teclado="email-address"
-          autoCapitalize="none"
-        />
-        <CampoTexto
-          control={control}
-          nombre="celular"
-          etiqueta="Celular"
-          mensajeError={errores.celular?.message}
-          deshabilitado={guardando}
-          largoMaximo={10}
-          teclado="phone-pad"
-          soloDigitos
-        />
-        {esEstudiante ? (
-          <>
-            <Controller
-              control={control}
-              name="nivel"
-              render={({ field: { value, onChange } }) => (
-                <OpcionesChips
-                  titulo="Nivel"
-                  opciones={NIVELES_FORMACION.map((nivel) => ({
-                    valor: nivel,
-                    etiqueta: NOMBRE_NIVEL_FORMACION[nivel],
-                  }))}
-                  valor={value}
-                  onCambiar={onChange}
-                  mensajeError={errores.nivel?.message}
-                  deshabilitado={guardando}
-                />
-              )}
-            />
-            <Controller
-              control={control}
-              name="facultad"
-              render={({ field: { value, onChange } }) => (
-                <OpcionesChips
-                  titulo="Facultad"
-                  opciones={opcionesFacultad(value)}
-                  valor={value}
-                  onCambiar={onChange}
-                  mensajeError={errores.facultad?.message}
-                  deshabilitado={guardando}
-                />
-              )}
-            />
-            <CampoTexto
-              control={control}
-              nombre="programa"
-              etiqueta="Programa"
-              mensajeError={errores.programa?.message}
-              deshabilitado={guardando}
-              largoMaximo={LARGO_MAXIMO_DATO_ACADEMICO}
-            />
-            <Controller
-              control={control}
-              name="semestre"
-              render={({ field: { value, onChange, onBlur } }) => (
-                <CampoNumerico
-                  etiqueta="Semestre"
-                  valor={value}
-                  onCambiar={onChange}
-                  onBlur={onBlur}
-                  minimo={1}
-                  maximo={SEMESTRE_MAXIMO}
-                  mensajeError={errores.semestre?.message}
-                  deshabilitado={guardando}
-                />
-              )}
-            />
-          </>
-        ) : null}
       </View>
 
       <CondicionesUso
@@ -503,127 +425,6 @@ export function FormularioPrestamoTablet({
   );
 }
 
-/** Las facultades de la lista y, si el perfil trae otra, también esa para no perderla. */
-function opcionesFacultad(actual: string) {
-  const lista = actual && !FACULTADES.includes(actual) ? [...FACULTADES, actual] : FACULTADES;
-  return lista.map((facultad) => ({ valor: facultad, etiqueta: facultad }));
-}
-
-type CampoTextoProps = {
-  control: Control<DatosPrestamo>;
-  nombre: 'nombreCompleto' | 'identificacion' | 'correo' | 'celular' | 'programa';
-  etiqueta: string;
-  mensajeError?: string;
-  deshabilitado: boolean;
-  largoMaximo?: number;
-  teclado?: KeyboardTypeOptions;
-  autoCapitalize?: 'none' | 'words' | 'sentences';
-  /** Descarta lo que no sea dígito (identificación y celular). */
-  soloDigitos?: boolean;
-};
-
-/** Un dato de texto con su error debajo, que Android anuncia al aparecer. */
-function CampoTexto({
-  control,
-  nombre,
-  etiqueta,
-  mensajeError,
-  deshabilitado,
-  largoMaximo,
-  teclado,
-  autoCapitalize,
-  soloDigitos,
-}: CampoTextoProps) {
-  return (
-    <Controller
-      control={control}
-      name={nombre}
-      render={({ field: { ref, value, onChange, onBlur } }) => (
-        <View>
-          <TextInput
-            ref={ref}
-            mode="outlined"
-            label={etiqueta}
-            value={value}
-            onChangeText={(texto) => onChange(soloDigitos ? texto.replace(/\D/g, '') : texto)}
-            onBlur={onBlur}
-            error={mensajeError != null}
-            disabled={deshabilitado}
-            keyboardType={teclado}
-            autoCapitalize={autoCapitalize}
-            maxLength={largoMaximo}
-            style={estilos.campo}
-            accessibilityLabel={etiqueta}
-          />
-          <View accessibilityLiveRegion="polite">
-            <HelperText type="error" visible={mensajeError != null}>
-              {mensajeError}
-            </HelperText>
-          </View>
-        </View>
-      )}
-    />
-  );
-}
-
-type OpcionesChipsProps = {
-  titulo: string;
-  opciones: { valor: string; etiqueta: string }[];
-  valor: string;
-  onCambiar: (valor: string) => void;
-  mensajeError?: string;
-  deshabilitado: boolean;
-};
-
-/**
- * Una opción entre pocas (nivel, facultad), en chips que bajan de línea. La elegida va con fondo
- * oscuro y en negrita, así no depende solo del color.
- */
-function OpcionesChips({
-  titulo,
-  opciones,
-  valor,
-  onCambiar,
-  mensajeError,
-  deshabilitado,
-}: OpcionesChipsProps) {
-  return (
-    <View style={estilos.grupo}>
-      <Text variant="bodyMedium" style={estilos.etiquetaGrupo}>
-        {titulo}
-      </Text>
-      <View style={estilos.chips} accessibilityRole="radiogroup" accessibilityLabel={titulo}>
-        {opciones.map((opcion) => {
-          const elegida = opcion.valor === valor;
-          return (
-            <Chip
-              key={opcion.valor}
-              selected={elegida}
-              showSelectedCheck={false}
-              onPress={() => onCambiar(opcion.valor)}
-              disabled={deshabilitado}
-              style={elegida ? estilos.chipElegido : estilos.chip}
-              selectedColor={elegida ? colores.superficie : colores.primarioOscuro}
-              textStyle={elegida ? estilos.textoChipElegido : estilos.textoChip}
-              hitSlop={AREA_CHIP}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: elegida, disabled: deshabilitado }}
-              accessibilityLabel={`${titulo}: ${opcion.etiqueta}`}
-            >
-              {opcion.etiqueta}
-            </Chip>
-          );
-        })}
-      </View>
-      <View accessibilityLiveRegion="polite">
-        <HelperText type="error" visible={mensajeError != null}>
-          {mensajeError}
-        </HelperText>
-      </View>
-    </View>
-  );
-}
-
 const estilos = StyleSheet.create({
   formulario: { gap: espacio.m },
   subtitulo: { color: colores.texto, fontFamily: fuentes.seminegrita },
@@ -636,15 +437,6 @@ const estilos = StyleSheet.create({
   secundario: { color: colores.textoSecundario },
   horario: { gap: espacio.xs },
   dato: { color: colores.primario, fontFamily: fuentes.seminegrita },
-  campo: { backgroundColor: colores.superficie },
-  grupo: { gap: espacio.xs },
-  etiquetaGrupo: { color: colores.texto },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
-  // Los mismos colores y pesos que ChipsFiltro.
-  chip: { backgroundColor: colores.primarioSuave },
-  chipElegido: { backgroundColor: colores.primarioOscuro },
-  textoChip: { fontFamily: fuentes.seminegrita },
-  textoChipElegido: { fontFamily: fuentes.negrita },
   confirmacion: { alignItems: 'center', gap: espacio.m, paddingVertical: espacio.xl },
   textoConfirmacion: { color: colores.texto, textAlign: 'center' },
   contenidoBoton: { paddingVertical: espacio.xs },

@@ -1,7 +1,8 @@
 /**
  * Formulario del registro provisional (#203), con los campos de `POST register/` del Backend:
- * tus datos, tu vínculo con la Universidad (estudiante, docente o administrativo), la contraseña
- * y la autorización de datos con el formato del Acuerdo 019 (#225).
+ * tus datos, tu vínculo con la Universidad (estudiante, docente o administrativo, con la sede y,
+ * para estudiantes, la facultad y el programa de las mismas listas de las solicitudes, #294), la
+ * contraseña y la autorización de datos con el formato del Acuerdo 019 (#225).
  * - CA2: los errores van bajo su campo, también los que manda la API (correo o cédula que ya
  *   existen, contraseña débil): la pantalla los pasa en `errorApi` y aquí se ponen en su campo.
  * - CA3: no hay forma de elegir un rol del personal; solo el tipo de usuario.
@@ -21,9 +22,10 @@ import {
 import { Button, Checkbox, Chip, HelperText, Text, TextInput } from 'react-native-paper';
 
 import { TextoAutorizacionDatos } from '@/components/privacidad/TextoAutorizacionDatos';
+import { SelectorFacultadPrograma } from '@/components/solicitudes/SelectorFacultadPrograma';
 import { AvisoError } from '@/components/ui';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import { DOMINIO_CORREO } from '@/utils/constantes';
+import { DOMINIO_CORREO, SEDES } from '@/utils/constantes';
 import {
   aNuevaCuenta,
   esquemaRegistro,
@@ -47,6 +49,8 @@ const CAMPOS: CampoRegistro[] = [
   'correo',
   'celular',
   'tipo',
+  'sede',
+  'facultad',
   'programa',
   'semestre',
   'dependencia',
@@ -57,6 +61,16 @@ const CAMPOS: CampoRegistro[] = [
 
 /** Lleva el chip a 48 px de área táctil sin cambiar su tamaño visible. */
 const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
+
+/** Los campos sin un TextInput al que llevar el foco cuando la API los rechaza. */
+const SIN_FOCO: CampoRegistro[] = [
+  'tipo',
+  'sede',
+  'facultad',
+  'programa',
+  'semestre',
+  'aceptaPrivacidad',
+];
 
 type Props = {
   enviando: boolean;
@@ -73,7 +87,11 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
       resolver: zodResolver(esquemaRegistro),
       defaultValues: VALORES_INICIALES_REGISTRO,
     });
-  const tipo = useWatch({ control, name: 'tipo' });
+  const [tipo, sede, facultad, programa] = useWatch({
+    control,
+    name: ['tipo', 'sede', 'facultad', 'programa'],
+  });
+  const esEstudiante = tipo === 'estudiante';
   const aceptaPrivacidad = useWatch({ control, name: 'aceptaPrivacidad' });
   const errores = formState.errors;
   const validar = { shouldValidate: formState.isSubmitted };
@@ -84,9 +102,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
   useEffect(() => {
     if (!campoApi || !mensajeApi) return;
     setError(campoApi, { type: 'api', message: mensajeApi });
-    if (campoApi !== 'tipo' && campoApi !== 'aceptaPrivacidad' && campoApi !== 'semestre') {
-      setFocus(campoApi);
-    }
+    if (!SIN_FOCO.includes(campoApi)) setFocus(campoApi);
     if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(mensajeApi);
   }, [campoApi, mensajeApi, setError, setFocus]);
 
@@ -178,44 +194,49 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
           Coordinadores, directores y decanos se registran como docente o administrativo. El
           personal de la biblioteca recibe sus permisos de la administración.
         </Text>
-        <View style={estilos.chips} accessibilityRole="radiogroup" accessibilityLabel="Soy">
-          {TIPOS_REGISTRO.map((opcion) => {
-            const elegido = opcion === tipo;
-            return (
-              <Chip
-                key={opcion}
-                selected={elegido}
-                showSelectedCheck={false}
-                onPress={() => setValue('tipo', opcion, validar)}
-                disabled={enviando}
-                style={elegido ? estilos.chipElegido : estilos.chip}
-                selectedColor={elegido ? colores.superficie : colores.primarioOscuro}
-                textStyle={elegido ? estilos.textoChipElegido : estilos.textoChip}
-                hitSlop={AREA_CHIP}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: elegido, disabled: enviando }}
-                accessibilityLabel={`Soy ${NOMBRE_TIPO[opcion].toLowerCase()}`}
-              >
-                {NOMBRE_TIPO[opcion]}
-              </Chip>
-            );
-          })}
-        </View>
-        <View accessibilityLiveRegion="polite">
-          <HelperText type="error" visible={errores.tipo != null}>
-            {errores.tipo?.message}
-          </HelperText>
-        </View>
+        <OpcionesChips
+          grupo="Soy"
+          opciones={TIPOS_REGISTRO.map((opcion) => ({
+            valor: opcion,
+            etiqueta: NOMBRE_TIPO[opcion],
+            etiquetaAccesible: `Soy ${NOMBRE_TIPO[opcion].toLowerCase()}`,
+          }))}
+          valor={tipo}
+          onElegir={(opcion) => setValue('tipo', opcion, validar)}
+          mensajeError={errores.tipo?.message}
+          deshabilitado={enviando}
+        />
 
-        {tipo === 'estudiante' ? (
+        {tipo ? (
           <>
-            <CampoTexto
-              control={control}
-              nombre="programa"
-              etiqueta="Programa"
-              mensajeError={errores.programa?.message}
+            <Text variant="bodyMedium" style={estilos.etiquetaGrupo}>
+              {esEstudiante ? 'Sede' : 'Sede (opcional)'}
+            </Text>
+            <OpcionesChips
+              grupo="Sede"
+              opciones={SEDES.map((opcion) => ({
+                valor: opcion,
+                etiqueta: opcion,
+                etiquetaAccesible: `Sede ${opcion}`,
+              }))}
+              valor={sede}
+              onElegir={(opcion) => setValue('sede', opcion, validar)}
+              mensajeError={errores.sede?.message}
               deshabilitado={enviando}
-              largoMaximo={LARGO_MAXIMO_DATO_ACADEMICO}
+            />
+          </>
+        ) : null}
+
+        {esEstudiante ? (
+          <>
+            <SelectorFacultadPrograma
+              facultad={facultad}
+              programa={programa}
+              onCambiarFacultad={(valor) => setValue('facultad', valor, validar)}
+              onCambiarPrograma={(valor) => setValue('programa', valor, validar)}
+              errorFacultad={errores.facultad?.message}
+              errorPrograma={errores.programa?.message}
+              deshabilitado={enviando}
             />
             <Controller
               control={control}
@@ -334,6 +355,62 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
   );
 }
 
+type OpcionesChipsProps = {
+  /** Nombre del grupo para el lector de pantalla. */
+  grupo: string;
+  opciones: { valor: string; etiqueta: string; etiquetaAccesible: string }[];
+  valor: string;
+  onElegir: (valor: string) => void;
+  mensajeError?: string;
+  deshabilitado: boolean;
+};
+
+/**
+ * Una opción entre pocas (el tipo y la sede), en chips como ChipsFiltro. La elegida va con fondo
+ * oscuro y en negrita, así no depende solo del color. El error va debajo y Android lo anuncia.
+ */
+function OpcionesChips({
+  grupo,
+  opciones,
+  valor,
+  onElegir,
+  mensajeError,
+  deshabilitado,
+}: OpcionesChipsProps) {
+  return (
+    <>
+      <View style={estilos.chips} accessibilityRole="radiogroup" accessibilityLabel={grupo}>
+        {opciones.map((opcion) => {
+          const elegido = opcion.valor === valor;
+          return (
+            <Chip
+              key={opcion.valor}
+              selected={elegido}
+              showSelectedCheck={false}
+              onPress={() => onElegir(opcion.valor)}
+              disabled={deshabilitado}
+              style={elegido ? estilos.chipElegido : estilos.chip}
+              selectedColor={elegido ? colores.superficie : colores.primarioOscuro}
+              textStyle={elegido ? estilos.textoChipElegido : estilos.textoChip}
+              hitSlop={AREA_CHIP}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: elegido, disabled: deshabilitado }}
+              accessibilityLabel={opcion.etiquetaAccesible}
+            >
+              {opcion.etiqueta}
+            </Chip>
+          );
+        })}
+      </View>
+      <View accessibilityLiveRegion="polite">
+        <HelperText type="error" visible={mensajeError != null}>
+          {mensajeError}
+        </HelperText>
+      </View>
+    </>
+  );
+}
+
 type CampoTextoProps = {
   control: Control<ValoresRegistro>;
   nombre:
@@ -342,7 +419,6 @@ type CampoTextoProps = {
     | 'identificacion'
     | 'correo'
     | 'celular'
-    | 'programa'
     | 'dependencia'
     | 'contrasena'
     | 'confirmacion';
@@ -430,6 +506,7 @@ const estilos = StyleSheet.create({
   },
   subtitulo: { color: colores.texto, fontFamily: fuentes.seminegrita },
   secundario: { color: colores.textoSecundario },
+  etiquetaGrupo: { color: colores.texto },
   campo: { backgroundColor: colores.superficie },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
   // Los mismos colores y pesos que ChipsFiltro.

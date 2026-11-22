@@ -7,6 +7,9 @@
  * - obligatorios: correo, contraseña, cédula, nombres, apellidos, tipo y la autorización;
  * - estudiantes: además, programa y semestre;
  * - opcionales: celular y dependencia.
+ * La app además pide la sede (obligatoria para estudiantes) y, a los estudiantes, la facultad, con
+ * las mismas listas de las solicitudes (#294). El Backend todavía no las recibe (#295): el mock las
+ * guarda en la cuenta para prellenar las solicitudes, y no se envían a `POST register/`.
  * Solo estudiantes, docentes y administrativos se registran; los egresados y el personal no
  * (CA3: los roles los asigna la administración en Personal → Equipo).
  *
@@ -17,7 +20,7 @@
 import { z } from 'zod';
 
 import type { TipoUsuario } from '@/types';
-import { DOMINIO_CORREO } from '@/utils/constantes';
+import { DOMINIO_CORREO, SEDES } from '@/utils/constantes';
 import {
   CELULAR,
   esCorreo,
@@ -90,6 +93,16 @@ const camposRegistro = {
   tipo: z.string().refine((valor) => TIPOS_REGISTRO.some((tipo) => tipo === valor), {
     error: 'Elige si eres estudiante, docente o administrativo.',
   }),
+  // La sede de la persona (#294), vacía hasta que se elige.
+  sede: z.string().refine((valor) => valor === '' || SEDES.includes(valor), {
+    error: 'Elige tu sede.',
+  }),
+  facultad: z
+    .string()
+    .trim()
+    .max(LARGO_MAXIMO_DATO_ACADEMICO, {
+      error: `Máximo ${LARGO_MAXIMO_DATO_ACADEMICO} caracteres.`,
+    }),
   programa: z
     .string()
     .trim()
@@ -117,15 +130,20 @@ const camposRegistro = {
 };
 
 /**
- * El formulario del registro. Las reglas entre campos van en superRefine: el programa y el
- * semestre solo para estudiantes, la contraseña y su confirmación.
+ * El formulario del registro. Las reglas entre campos van en superRefine: la sede, la facultad,
+ * el programa y el semestre solo son obligatorios para estudiantes; la contraseña y su
+ * confirmación, para todos.
  */
 export const esquemaRegistro = z.object(camposRegistro).superRefine((datos, ctx) => {
   const error = (campo: keyof typeof camposRegistro, mensaje: string) =>
     ctx.addIssue({ code: 'custom', path: [campo], message: mensaje });
 
   if (datos.tipo === 'estudiante') {
-    if (!datos.programa.trim()) error('programa', 'Escribe tu programa.');
+    if (!datos.sede) error('sede', 'Elige tu sede.');
+    if (!datos.facultad.trim()) error('facultad', 'Elige tu facultad.');
+    if (!datos.programa.trim()) {
+      error('programa', 'Elige tu programa o escríbelo en «Otro programa».');
+    }
     if (!datos.semestre) error('semestre', 'Elige tu semestre.');
   }
   const problema = problemaContrasena(datos.contrasena);
@@ -144,6 +162,8 @@ export const VALORES_INICIALES_REGISTRO: FormularioRegistro = {
   identificacion: '',
   correo: '',
   tipo: '',
+  sede: '',
+  facultad: '',
   programa: '',
   semestre: '',
   dependencia: '',
@@ -163,6 +183,10 @@ export type NuevaCuenta = {
   identificacion: string;
   correo: string;
   tipo: TipoRegistro;
+  /** Para todos, opcional salvo para estudiantes (#294). */
+  sede?: string;
+  /** Solo estudiantes (#294). */
+  facultad?: string;
   /** Solo estudiantes. */
   programa?: string;
   semestre?: number;
@@ -175,11 +199,12 @@ export type NuevaCuenta = {
 
 /**
  * Del formulario a lo que se envía: nombres como nombre propio, el correo en minúsculas, sin
- * campos vacíos y sin los datos que no van con el tipo (el programa y el semestre son del
- * estudiante; la dependencia, del docente o administrativo).
+ * campos vacíos y sin los datos que no van con el tipo (la facultad, el programa y el semestre
+ * son del estudiante; la dependencia, del docente o administrativo). La sede va con todos.
  */
 export function aNuevaCuenta(valores: FormularioRegistro): NuevaCuenta {
   const tipo = valores.tipo as TipoRegistro;
+  const facultad = valores.facultad.trim();
   const programa = valores.programa.trim();
   const dependencia = valores.dependencia.trim();
   const celular = valores.celular.trim();
@@ -190,6 +215,8 @@ export function aNuevaCuenta(valores: FormularioRegistro): NuevaCuenta {
     identificacion: valores.identificacion.trim(),
     correo: valores.correo.trim().toLowerCase(),
     tipo,
+    ...(valores.sede ? { sede: valores.sede } : {}),
+    ...(esEstudiante && facultad ? { facultad } : {}),
     ...(esEstudiante && programa ? { programa } : {}),
     ...(esEstudiante && valores.semestre ? { semestre: Number(valores.semestre) } : {}),
     ...(!esEstudiante && dependencia ? { dependencia } : {}),
