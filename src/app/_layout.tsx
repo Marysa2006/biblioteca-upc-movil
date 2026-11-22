@@ -27,6 +27,7 @@ import { queryClient } from '@/api/queryClient';
 import { SincronizarRecordatorios } from '@/components/notificaciones/SincronizarRecordatorios';
 import { AceptacionTratamientoDatos } from '@/components/privacidad/AceptacionTratamientoDatos';
 import { AbrirTutorial } from '@/components/tutorial/AbrirTutorial';
+import { ProveedorTeclado } from '@/components/ui/Teclado';
 import { tema } from '@/theme';
 
 // La pantalla de carga sigue visible hasta que Open Sans esté lista.
@@ -52,28 +53,32 @@ export default function LayoutRaiz() {
   }
 
   return (
-    <SafeAreaProvider>
-      <PaperProvider theme={tema}>
-        <QueryClientProvider client={queryClient}>
-          <StatusBar style="dark" />
-          {/* HU-27: los recordatorios de las reservas aprobadas, aunque no se abra Notificaciones. */}
-          <SincronizarRecordatorios />
-          {/* #225: antes de usar la app con cuenta, la autorización de tratamiento de datos. */}
-          <AceptacionTratamientoDatos />
-          {/* #261: el tutorial con Upecito, la primera vez en el celular (después de la autorización). */}
-          <AbrirTutorial />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="(comunidad)" />
-            <Stack.Screen name="(personal)" />
-            <Stack.Screen name="login" options={{ presentation: 'modal' }} />
-            {/* Pantalla completa y sin deslizar para cerrar: se sale con Saltar, Empezar o atrás. */}
-            <Stack.Screen
-              name="tutorial"
-              options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
-            />
-          </Stack>
-        </QueryClientProvider>
-      </PaperProvider>
-    </SafeAreaProvider>
+    // #293: el teclado sube el campo que se escribe y trae la barra Anterior/Siguiente/Listo.
+    // En Expo Go no trae su módulo nativo: ProveedorTeclado no hace nada y Pantalla usa lo de antes.
+    <ProveedorTeclado>
+      <SafeAreaProvider>
+        <PaperProvider theme={tema}>
+          <QueryClientProvider client={queryClient}>
+            <StatusBar style="dark" />
+            {/* HU-27: los recordatorios de las reservas aprobadas, aunque no se abra Notificaciones. */}
+            <SincronizarRecordatorios />
+            {/* #225: antes de usar la app con cuenta, la autorización de tratamiento de datos. */}
+            <AceptacionTratamientoDatos />
+            {/* #261: el tutorial con Upecito, la primera vez en el celular (después de la autorización). */}
+            <AbrirTutorial />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="(comunidad)" />
+              <Stack.Screen name="(personal)" />
+              <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+              {/* Pantalla completa y sin deslizar para cerrar: se sale con Saltar, Empezar o atrás. */}
+              <Stack.Screen
+                name="tutorial"
+                options={{ presentation: 'fullScreenModal', gestureEnabled: false }}
+              />
+            </Stack>
+          </QueryClientProvider>
+        </PaperProvider>
+      </SafeAreaProvider>
+    </ProveedorTeclado>
   );
 }

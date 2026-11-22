@@ -50,6 +50,8 @@ export default function SolicitarTablet() {
         titulo={TITULO}
         subtitulo="Para usarla dentro de la biblioteca. Se recoge en el mostrador."
         conEncabezado
+        // Tiene campos de texto al final (tus datos): el teclado no debe taparlos.
+        conTeclado
       >
         {usuario && !puedePedirTablet(usuario.tipo) ? (
           <ServicioNoPermitido mensaje={MENSAJE_NO_PIDE_TABLET} tipo={usuario.tipo} />
