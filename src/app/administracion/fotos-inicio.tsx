@@ -2,7 +2,7 @@
  * Fotos de Inicio (#290): la biblioteca elige las fotos del carrusel de Inicio. Pantalla apilada
  * que se abre desde Gestión → Portal → Fotos de Inicio.
  *
- * - Con el permiso `contenidos` o `novedades`.
+ * - Con el permiso `fotos` (#296): la administración por su rol, o quien ella lo encargue.
  * - "Nueva foto" es el botón flotante; agregar y editar en /administracion/foto-inicio.
  * - Subir, Bajar y Publicar u Ocultar desde el menú de cada foto (CA2). Se publican máximo
  *   MAXIMO_FOTOS_INICIO: la API rechaza la siguiente y el aviso lo explica (CA4).
@@ -45,7 +45,7 @@ export default function FotosInicio() {
   return (
     <>
       <EncabezadoApilado titulo={TITULO} />
-      {tienePermiso('contenidos') || tienePermiso('novedades') ? (
+      {tienePermiso('fotos') ? (
         <GestionFotos />
       ) : (
         <Pantalla titulo={TITULO} conEncabezado>

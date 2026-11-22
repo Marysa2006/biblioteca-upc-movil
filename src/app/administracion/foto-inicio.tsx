@@ -1,6 +1,6 @@
 /**
  * Agregar o editar una foto de Inicio (#290). Sin ?id= agrega; con ?id= edita.
- * Con el permiso `contenidos` o `novedades`. Al guardar vuelve a la lista; el error de la API (por
+ * Con el permiso `fotos` (#296). Al guardar vuelve a la lista; el error de la API (por
  * ejemplo, el máximo de fotos publicadas, CA4) se muestra dentro del formulario.
  */
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,7 +36,7 @@ export default function EditarFotoInicio() {
         conEncabezado
         conTeclado
       >
-        {tienePermiso('contenidos') || tienePermiso('novedades') ? (
+        {tienePermiso('fotos') ? (
           <Formulario id={id} />
         ) : (
           <SinPermiso />

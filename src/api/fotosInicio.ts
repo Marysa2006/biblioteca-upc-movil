@@ -1,7 +1,7 @@
 /**
  * Fotos del carrusel de Inicio (#290, versión 1.1).
  * - La comunidad consulta las publicadas, sin sesión, como los avisos.
- * - Las administra quien tenga el permiso `contenidos` o `novedades` (403 en los demás casos):
+ * - Las administra quien tenga el permiso `fotos` (#296; 403 en los demás casos):
  *   crear, editar, publicar u ocultar y cambiar el orden.
  * - Se publican máximo MAXIMO_FOTOS_INICIO (400 si se pasa) y la descripción es obligatoria.
  *
@@ -36,9 +36,9 @@ function copia(lista: FotoInicio[]): FotoInicio[] {
   return lista.map((foto) => ({ ...foto }));
 }
 
+/** Con el permiso `fotos` (#296): la administración por su rol, o quien ella lo encargue. */
 function errorDePermiso(usuario: Usuario | null): ErrorApi | null {
-  const puede =
-    usuario != null && (tienePermiso(usuario, 'contenidos') || tienePermiso(usuario, 'novedades'));
+  const puede = usuario != null && tienePermiso(usuario, 'fotos');
   return puede ? null : new ErrorApi(403, 'No tienes permiso para cambiar las fotos de Inicio.');
 }
 

@@ -5,7 +5,7 @@
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { Permiso, RolPersonal, Usuario } from '@/types';
-import { PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
+import { NOMBRE_PERMISO, PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { crearNotificacion } from './notificaciones';
@@ -68,11 +68,12 @@ export function agregarAlDirectorio(usuario: Usuario): void {
 }
 
 /**
- * Da o quita los permisos que van aparte de los roles (versión 1.1, #256).
- * No es un rol nuevo: es el `novedades` que la administración le concede a una persona.
+ * Da o quita los permisos que van aparte de los roles (versión 1.1, #256 y #296): novedades,
+ * fotos de Inicio y parámetros, que la administración encarga a quien quiera del personal.
  *
  * Solo puede hacerlo quien tenga el permiso `roles` (la administración); el resto recibe 403.
- * Solo se aceptan los de `PERMISOS_ASIGNABLES`; cualquier otro, 400.
+ * Solo se aceptan los de `PERMISOS_ASIGNABLES`; cualquier otro, 400. Tampoco se dan a una cuenta
+ * sin roles del personal (400): no entraría a la vista donde se usan.
  */
 export function actualizarPermisosExtra(
   usuario: Usuario,
@@ -97,20 +98,32 @@ export function actualizarPermisosExtra(
       return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
     }
     const anterior = directorio[indice];
+    if (permisos.length > 0 && anterior.rolesPersonal.length === 0) {
+      return Promise.reject(
+        new ErrorApi(
+          400,
+          'Primero asígnale un rol del personal: sin él, los permisos adicionales no le sirven.',
+        ),
+      );
+    }
     const siguiente: Usuario = {
       ...anterior,
       permisosExtra: permisos.length > 0 ? [...permisos] : undefined,
     };
     directorio = directorio.map((actual, i) => (i === indice ? siguiente : actual));
 
-    if (permisos.length > 0) {
+    // Solo se avisa de los que son nuevos para la persona.
+    const nuevos = permisos.filter((permiso) => !anterior.permisosExtra?.includes(permiso));
+    if (nuevos.length > 0) {
       crearNotificacion({
         usuarioId,
         // No nace de una solicitud: es el aviso de un permiso nuevo. El campo es obligatorio
         // en el tipo, así que va vacío y la pantalla lo ignora.
         solicitudId: '',
         titulo: 'Nuevos permisos',
-        mensaje: 'Ahora puedes publicar novedades y avisos.',
+        mensaje: `Ahora tienes ${nuevos.length === 1 ? 'el permiso' : 'los permisos'}: ${nuevos
+          .map((permiso) => NOMBRE_PERMISO[permiso])
+          .join(', ')}.`,
       });
     }
     return simularRed(copiar(siguiente));
