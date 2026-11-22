@@ -17,6 +17,7 @@ import { colores, espacio, fuentes, radio } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
 
 import { MenuUsuario } from './MenuUsuario';
+import { BarraTeclado, ScrollViewTeclado, SEPARACION_TECLADO } from './Teclado';
 import { Upecito } from './Upecito';
 
 type Props = {
@@ -85,37 +86,43 @@ export function Pantalla({
   // Dónde empieza la pantalla en la ventana, para que el teclado no tape los campos (conTeclado).
   const medidor = useRef<HostInstance>(null);
   const [desplazamientoTeclado, setDesplazamientoTeclado] = useState(0);
-  const subirAlInicio = useCallback(() => desplazable.current?.scrollTo({ y: 0, animated: true }), []);
+  const subirAlInicio = useCallback(
+    () => desplazable.current?.scrollTo({ y: 0, animated: true }),
+    [],
+  );
   const alDesplazar =
     typeof flotante === 'function'
       ? ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) =>
           setDesplazada(nativeEvent.contentOffset.y > DESPLAZAMIENTO_PARA_ENCOGER)
       : undefined;
 
-  const contenido = (
-    <ScrollView
-      ref={desplazable}
-      // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
-      contentContainerStyle={[
-        estilos.contenido,
-        flotante ? estilos.contenidoConFlotante : null,
-        pie ? { paddingBottom: altoPie + bottom + espacio.xl } : null,
-      ]}
-      onScroll={alDesplazar}
-      scrollEventThrottle={alDesplazar ? 16 : undefined}
-      // Con el teclado abierto, el primer toque en un botón lo presiona (y no solo cierra el teclado).
-      keyboardShouldPersistTaps="handled"
-      refreshControl={
-        recarga ? (
-          <RefreshControl
-            refreshing={recarga.recargando}
-            onRefresh={recarga.onRecargar}
-            colors={[colores.primario]}
-            tintColor={colores.primario}
-          />
-        ) : undefined
-      }
-    >
+  // #293: con el módulo nativo (APK o development build), el formulario usa la librería del
+  // teclado; en Expo Go, KeyboardAvoidingView (abajo).
+  const conLibreriaTeclado = conTeclado && ScrollViewTeclado != null;
+
+  const propiedadesDesplazable = {
+    // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
+    contentContainerStyle: [
+      estilos.contenido,
+      flotante ? estilos.contenidoConFlotante : null,
+      pie ? { paddingBottom: altoPie + bottom + espacio.xl } : null,
+    ],
+    onScroll: alDesplazar,
+    scrollEventThrottle: alDesplazar ? 16 : undefined,
+    // Con el teclado abierto, el primer toque en un botón lo presiona (y no solo cierra el teclado).
+    keyboardShouldPersistTaps: 'handled' as const,
+    refreshControl: recarga ? (
+      <RefreshControl
+        refreshing={recarga.recargando}
+        onRefresh={recarga.onRecargar}
+        colors={[colores.primario]}
+        tintColor={colores.primario}
+      />
+    ) : undefined,
+  };
+
+  const interior = (
+    <>
       {marcaPropia ?? (
         <View style={estilos.marca}>
           {/* Decorativo: el nombre ya va escrito al lado. */}
@@ -142,8 +149,27 @@ export function Pantalla({
         ) : null}
       </View>
       <SubirAlInicio.Provider value={subirAlInicio}>{children}</SubirAlInicio.Provider>
-    </ScrollView>
+    </>
   );
+
+  const contenido =
+    conLibreriaTeclado && ScrollViewTeclado ? (
+      // Sube solo el campo que se escribe, por encima del teclado y de la barra.
+      <ScrollViewTeclado
+        // Su referencia es la del ScrollView más assureFocusedInputVisible: sirve para subir al inicio.
+        ref={(instancia) => {
+          desplazable.current = instancia;
+        }}
+        bottomOffset={SEPARACION_TECLADO}
+        {...propiedadesDesplazable}
+      >
+        {interior}
+      </ScrollViewTeclado>
+    ) : (
+      <ScrollView ref={desplazable} {...propiedadesDesplazable}>
+        {interior}
+      </ScrollView>
+    );
 
   const conPie = pie ? (
     <>
@@ -162,8 +188,15 @@ export function Pantalla({
 
   return (
     <SafeAreaView style={estilos.area} edges={conEncabezado ? [] : ['top']}>
-      {conTeclado ? (
-        // Desde la SDK 54, Android es edge-to-edge: la ventana ya no se achica con el teclado y
+      {conLibreriaTeclado ? (
+        <>
+          {conPie}
+          {/* Anterior, Siguiente y Listo sobre el teclado; solo aparece con el teclado abierto. */}
+          <BarraTeclado />
+        </>
+      ) : conTeclado ? (
+        // En Expo Go (sin la librería del teclado):
+        // desde la SDK 54, Android es edge-to-edge: la ventana ya no se achica con el teclado y
         // un KeyboardAvoidingView sin `behavior` se queda debajo de él. La guía de Expo pide
         // `behavior` en las dos plataformas, y 'padding' es la que mejor funciona.
         // KeyboardAvoidingView mide su posición contra su contenedor, pero el teclado viene en
@@ -172,9 +205,7 @@ export function Pantalla({
         <View
           ref={medidor}
           style={estilos.teclado}
-          onLayout={() =>
-            medidor.current?.measureInWindow((_x, y) => setDesplazamientoTeclado(y))
-          }
+          onLayout={() => medidor.current?.measureInWindow((_x, y) => setDesplazamientoTeclado(y))}
         >
           <KeyboardAvoidingView
             style={estilos.teclado}
