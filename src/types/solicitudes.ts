@@ -61,6 +61,8 @@ export type DatosSolicitante = {
   correo: string;
   celular: string;
   nivel?: NivelFormacion;
+  /** La sede de la persona, una de SEDES (#251); obligatoria para estudiantes. */
+  sede?: string;
   facultad?: string;
   programa?: string;
   semestre?: number;

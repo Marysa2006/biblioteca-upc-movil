@@ -8,7 +8,15 @@
  *   elegido. Si la API rechaza la fecha al enviar (por ejemplo, menos de 24 h), su mensaje sale
  *   en rojo y la misma sugerencia va debajo, fuera del aviso.
  * - CA1: al registrarse, el formulario cambia a una confirmación.
- * El solicitante sale de la sesión: el formulario no lo pide.
+ *
+ * Versión 1.1 (#251): por pasos con PasosFormulario, **Solicitud · Tus datos · Términos**, como
+ * la asesoría. "Siguiente" valida solo los campos del paso y "Enviar" está solo en el último; si
+ * al enviar algo falla por la validación, vuelve a ese paso.
+ * - "Asignatura y grupo" es un solo campo (`grupo`, el `group_or_subject` del Backend): la
+ *   asignatura no va aparte, y los nombres de los participantes no se piden (la asistencia queda
+ *   con el QR).
+ * - Tus datos: prellenados con la cuenta y el perfil para confirmarlos; sin identificación.
+ * - Términos: TERMINOS_FORMACION, obligatorios.
  */
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
@@ -26,30 +34,92 @@ import {
 } from 'react-native-paper';
 
 import { CampoFormulario } from '@/components/reservas/CampoFormulario';
-import { AvisoError, Upecito } from '@/components/ui';
+import {
+  SeccionDatosSolicitante,
+  type CampoSolicitante,
+} from '@/components/solicitudes/SeccionDatosSolicitante';
+import { SeccionTerminos } from '@/components/solicitudes/SeccionTerminos';
+import { AvisoError, PasosFormulario, Upecito } from '@/components/ui';
 import {
   fechaSugeridaDeError,
   useSolicitarCapacitacion,
   type FormularioCapacitacion,
 } from '@/hooks/useCapacitaciones';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import type { LineaFormacion, ModalidadCapacitacion, Parametros } from '@/types';
+import type { LineaFormacion, ModalidadCapacitacion, Parametros, Perfil, Usuario } from '@/types';
 import { fechaCompleta, sumarMeses } from '@/utils/calendario';
 import {
-  esquemaSolicitudCapacitacion,
+  esquemaSolicitudCapacitacionCompleta,
   LARGO_MAXIMO_GRUPO,
+  LARGO_MAXIMO_NOVEDADES,
   mensajeDiaNoHabil,
   motivoDiaCapacitacion,
   LARGO_MAXIMO_OBJETIVO,
   MAXIMO_PARTICIPANTES,
   MESES_CAPACITACION,
   MODALIDADES_CAPACITACION,
-  VALORES_INICIALES_CAPACITACION,
-  type ValoresSolicitudCapacitacion,
+  VALORES_INICIALES_CAPACITACION_COMPLETA,
+  type ValoresSolicitudCapacitacionCompleta,
 } from '@/utils/capacitaciones';
+import { TERMINOS_FORMACION } from '@/utils/constantes';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { esDiaHabil, sugerirFechaHabil } from '@/utils/parametros';
+import { camposDelPaso, primerMensajeDeError, primerPasoConError } from '@/utils/pasos';
+import {
+  aDatosSolicitante,
+  datosSolicitanteDe,
+  valoresSolicitante,
+  type ValoresSolicitante,
+} from '@/utils/solicitante';
+
+type Valores = ValoresSolicitudCapacitacionCompleta;
+type PestanaCapacitacion = 'solicitud' | 'datos' | 'terminos';
+
+const PESTANAS: { valor: PestanaCapacitacion; etiqueta: string }[] = [
+  { valor: 'solicitud', etiqueta: 'Solicitud' },
+  { valor: 'datos', etiqueta: 'Tus datos' },
+  { valor: 'terminos', etiqueta: 'Términos' },
+];
+const ORDEN_PESTANAS = PESTANAS.map(({ valor }) => valor);
+
+/** En qué pestaña está cada campo, para saltar a la primera con errores. */
+const PESTANA_DE_CAMPO: Record<keyof Valores, PestanaCapacitacion> = {
+  lineaId: 'solicitud',
+  modalidad: 'solicitud',
+  fecha: 'solicitud',
+  hora: 'solicitud',
+  objetivo: 'solicitud',
+  grupo: 'solicitud',
+  participantes: 'solicitud',
+  asignatura: 'solicitud',
+  nombresParticipantes: 'solicitud',
+  novedades: 'solicitud',
+  tipo: 'datos',
+  nombreCompleto: 'datos',
+  identificacion: 'datos',
+  correo: 'datos',
+  celular: 'datos',
+  sede: 'datos',
+  nivel: 'datos',
+  facultad: 'datos',
+  programa: 'datos',
+  semestre: 'datos',
+  terminosAceptados: 'terminos',
+};
+
+const CAMPOS_SOLICITANTE: CampoSolicitante[] = [
+  'tipo',
+  'nombreCompleto',
+  'identificacion',
+  'correo',
+  'celular',
+  'sede',
+  'nivel',
+  'facultad',
+  'programa',
+  'semestre',
+];
 
 const CONFIRMACION =
   'Solicitud enviada. Quedó pendiente y te avisaremos cuando la biblioteca la revise.';
@@ -57,22 +127,31 @@ const CONFIRMACION =
 /** Hora con la que se busca la fecha sugerida mientras la persona no elige una. */
 const HORA_REFERENCIA = '12:00';
 
-/** Orden de los campos, para anunciar el primero que falta (CA2). */
-const ORDEN_CAMPOS: (keyof ValoresSolicitudCapacitacion)[] = [
+/** Orden de los campos en pantalla, para anunciar el primero que falta (CA2). */
+const ORDEN_CAMPOS: (keyof Valores)[] = [
   'lineaId',
   'modalidad',
   'fecha',
   'hora',
-  'objetivo',
   'grupo',
   'participantes',
+  'objetivo',
+  'novedades',
+  'nombreCompleto',
+  'correo',
+  'celular',
+  'sede',
+  'nivel',
+  'facultad',
+  'programa',
+  'semestre',
+  'terminosAceptados',
 ];
 
 /** El aviso con el primer campo que falta, en el orden del formulario (CA2); sin errores, null. */
-function mensajeFaltantes(errores: FieldErrors<ValoresSolicitudCapacitacion>): string | null {
-  const primero = ORDEN_CAMPOS.find((campo) => errores[campo]);
-  if (!primero) return null;
-  const mensaje = errores[primero]?.message;
+function mensajeFaltantes(errores: FieldErrors<Valores>): string | null {
+  if (Object.keys(errores).length === 0) return null;
+  const mensaje = primerMensajeDeError(errores, ORDEN_CAMPOS);
   return mensaje ? `Revisa el formulario: ${mensaje}` : 'Revisa los campos marcados.';
 }
 
@@ -80,22 +159,44 @@ type Props = {
   /** Solo las líneas activas: la pantalla las filtra. */
   lineas: LineaFormacion[];
   parametros: Parametros;
+  usuario: Usuario;
+  /** El perfil (HU-06), si cargó: su teléfono prellena el celular. */
+  perfil?: Perfil;
 };
 
-export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
+export function FormularioSolicitudCapacitacion({ lineas, parametros, usuario, perfil }: Props) {
   const [hoy] = useState(hoyISO);
   const solicitud = useSolicitarCapacitacion();
   const [enviada, setEnviada] = useState(false);
   const [faltantes, setFaltantes] = useState<string | null>(null);
+  const [pestana, setPestana] = useState<PestanaCapacitacion>('solicitud');
   // CA3: el día tachado que se tocó, con la fecha que tenía el campo en ese momento. Si el campo
   // cambia (Usar esta fecha u otro día), el aviso ya no aplica.
   const [tocado, setTocado] = useState<{ dia: string; fechaCampo: string } | null>(null);
 
-  const { control, handleSubmit, setValue, trigger, subscribe } =
-    useForm<ValoresSolicitudCapacitacion>({
-      resolver: zodResolver(esquemaSolicitudCapacitacion(parametros)),
-      defaultValues: VALORES_INICIALES_CAPACITACION,
+  const { control, handleSubmit, setValue, trigger, getFieldState, subscribe, formState } =
+    useForm<Valores>({
+      // Al salir de un campo ya tocado se valida: los errores de un paso se corrigen al escribir.
+      mode: 'onTouched',
+      resolver: zodResolver(esquemaSolicitudCapacitacionCompleta(parametros)),
+      defaultValues: {
+        ...VALORES_INICIALES_CAPACITACION_COMPLETA,
+        ...valoresSolicitante(datosSolicitanteDe(usuario, perfil)),
+      },
     });
+  const errores = formState.errors;
+  // Una vez que hay errores a la vista, cada cambio vuelve a validar su campo.
+  const validar = {
+    shouldValidate: formState.isSubmitted || Object.keys(errores).length > 0,
+  };
+  const valoresDatos = useWatch({ control, name: CAMPOS_SOLICITANTE });
+  const solicitante = Object.fromEntries(
+    CAMPOS_SOLICITANTE.map((campo, i) => [campo, valoresDatos[i] ?? '']),
+  ) as ValoresSolicitante;
+  const erroresDatos = Object.fromEntries(
+    CAMPOS_SOLICITANTE.map((campo) => [campo, errores[campo]?.message]).filter(([, m]) => m),
+  ) as Partial<Record<CampoSolicitante, string>>;
+  const terminosAceptados = useWatch({ control, name: 'terminosAceptados' });
 
   // Al editar, el aviso de arriba del botón sigue a los errores: pasa al siguiente que falte o
   // se quita cuando ya no hay. El error de la API también se quita, porque era de otros datos.
@@ -157,25 +258,52 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
 
   const usarFecha = (sugerida: string) => {
     setValue('fecha', sugerida, { shouldValidate: true });
+    setPestana('solicitud');
     solicitud.reset();
   };
 
-  const enviar = (datos: ValoresSolicitudCapacitacion) => {
+  const enviar = (datos: Valores) => {
     setFaltantes(null);
+    const novedades = datos.novedades.trim();
     const formulario: FormularioCapacitacion = {
       lineaId: datos.lineaId,
       modalidad: datos.modalidad as ModalidadCapacitacion,
       fecha: datos.fecha.trim(),
       hora: datos.hora.trim(),
       objetivo: datos.objetivo.trim(),
+      // "Asignatura y grupo" (#251): un solo texto, el `group_or_subject` del Backend.
       grupo: datos.grupo.trim(),
       participantes: Number(datos.participantes),
+      datosSolicitante: aDatosSolicitante(datos),
+      ...(novedades ? { novedades } : {}),
+      terminosAceptados: datos.terminosAceptados,
     };
     solicitud.mutate(formulario, { onSuccess: () => setEnviada(true) });
   };
 
-  const alFaltarDatos = (errores: FieldErrors<ValoresSolicitudCapacitacion>) =>
-    setFaltantes(mensajeFaltantes(errores) ?? 'Revisa los campos marcados.');
+  // Si al enviar algo falla por la validación (por ejemplo, la fecha dejó de servir), vuelve a ese
+  // paso con el aviso.
+  const alFaltarDatos = (conError: FieldErrors<Valores>) => {
+    setFaltantes(mensajeFaltantes(conError) ?? 'Revisa los campos marcados.');
+    const primero = primerPasoConError(conError, PESTANA_DE_CAMPO, ORDEN_PESTANAS);
+    if (primero) setPestana(primero);
+  };
+
+  const indice = ORDEN_PESTANAS.indexOf(pestana);
+
+  /** "Siguiente": valida solo los campos de este paso y, si están bien, avanza (CA2). */
+  const avanzar = async () => {
+    const campos = camposDelPaso(PESTANA_DE_CAMPO, pestana);
+    if (await trigger(campos)) {
+      setFaltantes(null);
+      setPestana(ORDEN_PESTANAS[indice + 1]);
+      return;
+    }
+    const mensaje = ORDEN_CAMPOS.filter((campo) => campos.includes(campo))
+      .map((campo) => getFieldState(campo).error?.message)
+      .find(Boolean);
+    setFaltantes(mensaje ? `Revisa el formulario: ${mensaje}` : 'Revisa los campos marcados.');
+  };
 
   if (enviada) {
     return (
@@ -211,150 +339,187 @@ export function FormularioSolicitudCapacitacion({ lineas, parametros }: Props) {
   const guardando = solicitud.isPending;
 
   return (
-    <View style={estilos.formulario}>
-      <Seccion titulo="Capacitación">
-        <Controller
-          control={control}
-          name="lineaId"
-          render={({ field: { value, onChange }, fieldState: { error } }) => (
-            <View style={estilos.grupo}>
-              <Text variant="labelLarge" style={estilos.etiqueta}>
-                Línea de formación
-              </Text>
-              <View accessibilityRole="radiogroup" style={estilos.opciones}>
-                {lineas.map((linea) => (
-                  <OpcionLinea
-                    key={linea.id}
-                    linea={linea}
-                    elegida={value === linea.id}
-                    deshabilitada={guardando}
-                    onElegir={() => onChange(linea.id)}
+    <PasosFormulario
+      pasos={PESTANAS}
+      paso={pestana}
+      onAnterior={() => {
+        setFaltantes(null);
+        setPestana(ORDEN_PESTANAS[indice - 1]);
+      }}
+      onSiguiente={() => void avanzar()}
+      onEnviar={() => handleSubmit(enviar, alFaltarDatos)()}
+      enviando={guardando}
+      etiquetaEnviar="Enviar la solicitud de capacitación"
+      puedeEnviar={terminosAceptados}
+      avisos={
+        <>
+          {solicitud.error ? <AvisoError mensaje={mensajeErrorGuardar(solicitud.error)} /> : null}
+          {sugeridaPorApi ? (
+            <FechaSugerida
+              titulo="Primera fecha disponible"
+              sugerida={sugeridaPorApi}
+              onUsar={usarFecha}
+            />
+          ) : null}
+          {faltantes ? <AvisoError mensaje={faltantes} /> : null}
+        </>
+      }
+    >
+      {pestana === 'solicitud' ? (
+        <View style={estilos.formulario}>
+          <Seccion titulo="Capacitación">
+            <Controller
+              control={control}
+              name="lineaId"
+              render={({ field: { value, onChange }, fieldState: { error } }) => (
+                <View style={estilos.grupo}>
+                  <Text variant="labelLarge" style={estilos.etiqueta}>
+                    Línea de formación
+                  </Text>
+                  <View accessibilityRole="radiogroup" style={estilos.opciones}>
+                    {lineas.map((linea) => (
+                      <OpcionLinea
+                        key={linea.id}
+                        linea={linea}
+                        elegida={value === linea.id}
+                        deshabilitada={guardando}
+                        onElegir={() => onChange(linea.id)}
+                      />
+                    ))}
+                  </View>
+                  <HelperText type="error" visible={error != null}>
+                    {error?.message}
+                  </HelperText>
+                </View>
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="modalidad"
+              render={({ field: { value, onChange }, fieldState: { error } }) => (
+                <View style={estilos.grupo}>
+                  <Text variant="labelLarge" style={estilos.etiqueta}>
+                    Modalidad
+                  </Text>
+                  <SegmentedButtons
+                    value={value}
+                    onValueChange={onChange}
+                    buttons={MODALIDADES_CAPACITACION.map((opcion) => ({
+                      value: opcion.valor,
+                      label: opcion.etiqueta,
+                      icon: opcion.icono,
+                      disabled: guardando,
+                      accessibilityLabel: `Modalidad ${opcion.etiqueta.toLowerCase()}`,
+                    }))}
                   />
-                ))}
-              </View>
-              <HelperText type="error" visible={error != null}>
-                {error?.message}
-              </HelperText>
-            </View>
-          )}
-        />
+                  <HelperText type="error" visible={error != null}>
+                    {error?.message}
+                  </HelperText>
+                </View>
+              )}
+            />
+          </Seccion>
 
-        <Controller
-          control={control}
-          name="modalidad"
-          render={({ field: { value, onChange }, fieldState: { error } }) => (
-            <View style={estilos.grupo}>
-              <Text variant="labelLarge" style={estilos.etiqueta}>
-                Modalidad
-              </Text>
-              <SegmentedButtons
-                value={value}
-                onValueChange={onChange}
-                buttons={MODALIDADES_CAPACITACION.map((opcion) => ({
-                  value: opcion.valor,
-                  label: opcion.etiqueta,
-                  icon: opcion.icono,
-                  disabled: guardando,
-                  accessibilityLabel: `Modalidad ${opcion.etiqueta.toLowerCase()}`,
-                }))}
+          <Seccion titulo="Fecha y hora">
+            <CampoFormulario
+              control={control}
+              nombre="fecha"
+              etiqueta="Fecha"
+              tipo="fecha"
+              // Tachados como en los demás calendarios; al tocar uno, se avisa abajo (CA3).
+              motivoNoElegible={(dia) => motivoDiaCapacitacion(dia, parametros, hoy)}
+              alTocarNoElegible={(dia) => {
+                setTocado({ dia, fechaCampo: fecha });
+                solicitud.reset();
+              }}
+              mesMinimo={hoy}
+              mesMaximo={sumarMeses(hoy, MESES_CAPACITACION)}
+              deshabilitado={guardando}
+            />
+            {motivoTocado ? (
+              <HelperText type="error" visible accessibilityLiveRegion="polite">
+                {motivoTocado}
+              </HelperText>
+            ) : null}
+            {/* El motivo ya sale en rojo bajo el campo; aquí solo va la salida. */}
+            {sugeridaAlElegir ? (
+              <FechaSugerida
+                titulo="¿Te sirve el próximo día con atención?"
+                sugerida={sugeridaAlElegir}
+                onUsar={usarFecha}
               />
-              <HelperText type="error" visible={error != null}>
-                {error?.message}
-              </HelperText>
-            </View>
-          )}
-        />
-      </Seccion>
+            ) : null}
+            <CampoFormulario
+              control={control}
+              nombre="hora"
+              etiqueta="Hora"
+              tipo="hora"
+              deshabilitado={guardando}
+            />
+          </Seccion>
 
-      <Seccion titulo="Fecha y hora">
-        <CampoFormulario
-          control={control}
-          nombre="fecha"
-          etiqueta="Fecha"
-          tipo="fecha"
-          // Tachados como en los demás calendarios; al tocar uno, se avisa abajo (CA3).
-          motivoNoElegible={(dia) => motivoDiaCapacitacion(dia, parametros, hoy)}
-          alTocarNoElegible={(dia) => {
-            setTocado({ dia, fechaCampo: fecha });
-            solicitud.reset();
-          }}
-          mesMinimo={hoy}
-          mesMaximo={sumarMeses(hoy, MESES_CAPACITACION)}
-          deshabilitado={guardando}
-        />
-        {motivoTocado ? (
-          <HelperText type="error" visible accessibilityLiveRegion="polite">
-            {motivoTocado}
-          </HelperText>
-        ) : null}
-        {/* El motivo ya sale en rojo bajo el campo; aquí solo va la salida. */}
-        {sugeridaAlElegir ? (
-          <FechaSugerida
-            titulo="¿Te sirve el próximo día con atención?"
-            sugerida={sugeridaAlElegir}
-            onUsar={usarFecha}
-          />
-        ) : null}
-        <CampoFormulario
-          control={control}
-          nombre="hora"
-          etiqueta="Hora"
-          tipo="hora"
-          deshabilitado={guardando}
-        />
-      </Seccion>
-
-      <Seccion titulo="Grupo">
-        <CampoFormulario
-          control={control}
-          nombre="objetivo"
-          etiqueta={`Objetivo (hasta ${LARGO_MAXIMO_OBJETIVO} caracteres)`}
-          placeholder="Por ejemplo: aprender a citar en APA el trabajo de grado"
-          multilinea
-          deshabilitado={guardando}
-        />
-        <CampoFormulario
-          control={control}
-          nombre="grupo"
-          etiqueta={`Grupo (hasta ${LARGO_MAXIMO_GRUPO} caracteres)`}
-          placeholder="Programa, curso o dependencia"
-          deshabilitado={guardando}
-        />
-        <CampoFormulario
-          control={control}
-          nombre="participantes"
-          etiqueta={`Participantes (de 1 a ${MAXIMO_PARTICIPANTES})`}
-          tipo="numero"
-          minimo={1}
-          maximo={MAXIMO_PARTICIPANTES}
-          deshabilitado={guardando}
-        />
-      </Seccion>
-
-      {solicitud.error ? <AvisoError mensaje={mensajeErrorGuardar(solicitud.error)} /> : null}
-      {sugeridaPorApi ? (
-        <FechaSugerida
-          titulo="Primera fecha disponible"
-          sugerida={sugeridaPorApi}
-          onUsar={usarFecha}
-        />
+          <Seccion titulo="El grupo">
+            <CampoFormulario
+              control={control}
+              nombre="grupo"
+              etiqueta={`Asignatura y grupo (hasta ${LARGO_MAXIMO_GRUPO} caracteres)`}
+              placeholder="Por ejemplo: Bases de datos, 7.º semestre, grupo 02"
+              deshabilitado={guardando}
+            />
+            <CampoFormulario
+              control={control}
+              nombre="participantes"
+              etiqueta={`Participantes (de 1 a ${MAXIMO_PARTICIPANTES})`}
+              tipo="numero"
+              minimo={1}
+              maximo={MAXIMO_PARTICIPANTES}
+              deshabilitado={guardando}
+            />
+            <CampoFormulario
+              control={control}
+              nombre="objetivo"
+              etiqueta={`Objetivo (hasta ${LARGO_MAXIMO_OBJETIVO} caracteres)`}
+              placeholder="Por ejemplo: aprender a citar en APA el trabajo de grado"
+              multilinea
+              deshabilitado={guardando}
+            />
+            <CampoFormulario
+              control={control}
+              nombre="novedades"
+              etiqueta={`Novedades (opcional, hasta ${LARGO_MAXIMO_NOVEDADES} caracteres)`}
+              placeholder="Lo que quieras que la biblioteca sepa antes de la capacitación"
+              multilinea
+              deshabilitado={guardando}
+            />
+          </Seccion>
+        </View>
       ) : null}
 
-      {faltantes ? <AvisoError mensaje={faltantes} /> : null}
+      {pestana === 'datos' ? (
+        <View style={estilos.seccion}>
+          <Text variant="bodySmall" style={estilos.secundario}>
+            Vienen de tu cuenta; corrige lo que haga falta.
+          </Text>
+          <SeccionDatosSolicitante
+            valores={solicitante}
+            onCambiar={(campo, valor) => setValue(campo, valor, validar)}
+            errores={erroresDatos}
+            deshabilitado={guardando}
+          />
+        </View>
+      ) : null}
 
-      <Button
-        mode="contained"
-        icon="send-outline"
-        onPress={() => handleSubmit(enviar, alFaltarDatos)()}
-        loading={guardando}
-        disabled={guardando}
-        contentStyle={estilos.contenidoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Enviar la solicitud de capacitación"
-      >
-        Enviar solicitud
-      </Button>
-    </View>
+      {pestana === 'terminos' ? (
+        <SeccionTerminos
+          texto={TERMINOS_FORMACION}
+          aceptados={terminosAceptados}
+          onCambiar={(acepta) => setValue('terminosAceptados', acepta, validar)}
+          mensajeError={errores.terminosAceptados?.message}
+          deshabilitado={guardando}
+        />
+      ) : null}
+    </PasosFormulario>
   );
 }
 

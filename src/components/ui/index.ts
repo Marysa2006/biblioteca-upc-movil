@@ -1,5 +1,6 @@
 export { AvisoError } from './AvisoError';
 export { BotonFlotante } from './BotonFlotante';
+export { CampoDesplegable } from './CampoDesplegable';
 export { CampoHora } from './CampoHora';
 export { CampoNumerico } from './CampoNumerico';
 export { ChipsFiltro, type OpcionFiltro } from './ChipsFiltro';
@@ -11,5 +12,6 @@ export { FilaInterruptor } from './FilaInterruptor';
 export { MenuAcciones, type AccionMenu } from './MenuAcciones';
 export { ListaPaginada, Paginacion, usePaginacion } from './Paginacion';
 export { Pantalla, useSubirAlInicio } from './Pantalla';
+export { PasosFormulario, type PasoFormulario } from './PasosFormulario';
 export { PestanasFiltro, type OpcionPestana } from './PestanasFiltro';
 export { Upecito, type PoseUpecito } from './Upecito';

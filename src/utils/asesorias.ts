@@ -272,7 +272,7 @@ export function esquemaSolicitudCita(parametros: Parametros) {
         }
       }
 
-      reglasSolicitante(datos, ctx, { pedirIdentificacion: false });
+      reglasSolicitante(datos, ctx, { pedirIdentificacion: false, pedirSede: true });
     });
 }
 
@@ -293,6 +293,7 @@ export const PESTANA_DE_CAMPO_CITA: Record<keyof ValoresSolicitudCita, PestanaCi
   identificacion: 'datos',
   correo: 'datos',
   celular: 'datos',
+  sede: 'datos',
   nivel: 'datos',
   facultad: 'datos',
   programa: 'datos',

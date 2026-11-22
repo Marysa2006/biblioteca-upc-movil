@@ -1,6 +1,7 @@
 /**
  * Semestre del estudiante (#203): una lista desplegable del 1.º al 10.º y «Otro». Con «Otro»
- * aparece un campo − y + del 11 a SEMESTRE_MAXIMO, porque hay estudiantes que pasan del 10.º.
+ * aparece un campo − y + desde el 11, porque hay estudiantes que pasan del 10.º. El tope
+ * (SEMESTRE_MAXIMO) no se muestra: solo evita un error de dedo (#251).
  * El valor es el número como texto ('' sin elegir), igual que en las reglas del #224.
  * Mismo aspecto que SelectorCategoria: un campo que, al tocarlo, abre un menú.
  */
@@ -106,13 +107,11 @@ export function SelectorSemestre({ valor, onCambiar, mensajeError, deshabilitado
           );
         })}
         <Menu.Item
-          title={`Otro (${PRIMERO_OTRO}.º a ${SEMESTRE_MAXIMO}.º)`}
+          title="Otro"
           trailingIcon={esOtro ? 'check' : undefined}
           onPress={() => elegir('otro')}
           titleStyle={esOtro ? estilos.itemElegido : undefined}
-          accessibilityLabel={`Otro semestre, del ${PRIMERO_OTRO} al ${SEMESTRE_MAXIMO}${
-            esOtro ? ', elegido' : ''
-          }`}
+          accessibilityLabel={`Otro semestre${esOtro ? ', elegido' : ''}`}
         />
       </Menu>
       {esOtro ? (

@@ -65,11 +65,24 @@ Para ejercer esos derechos hay dos caminos, los dos del Acuerdo 019: el correo *
 
 ![Iniciar sesión](manual-usuario/comunidad-iniciar-sesion.png)
 
+### Cómo se llenan las solicitudes
+
+Las solicitudes de espacios, asesorías y capacitaciones se llenan en tres pasos. Arriba dice en cuál vas ("Paso 1 de 3").
+
+1. **Solicitud:** lo que pides. **Siguiente** revisa ese paso: si falta algo, el error sale bajo el campo y no avanza.
+2. **Tus datos:** vienen de tu cuenta (nombre, correo, celular y, si eres estudiante, tus datos académicos). Corrige lo que haga falta.
+3. **Términos:** léelos y marca **He leído y acepto los términos y condiciones**. Solo entonces se habilita **Enviar solicitud**.
+
+Con **Anterior** vuelves a un paso sin perder lo que escribiste.
+
 ### Solicitar un espacio
+
+Solo pueden reservar docentes y administrativos.
 
 1. En **Servicios**, abre **Reserva de espacios** y toca **Ver disponibilidad**.
 2. Elige un espacio y un día en el calendario. Los días sin atención salen tachados.
-3. Toca una franja libre, completa el propósito y la cantidad de asistentes, y toca **Solicitar reserva**.
+3. Toca una franja libre. En el primer paso, completa el propósito, la cantidad de asistentes y los **recursos de apoyo** que necesitas (portátil, cable HDMI, cable de red, mouse o marcadores; o **No requiere**), y si quieres, las novedades.
+4. Sigue con **Tus datos** y **Términos**, y toca **Enviar solicitud**. Si el horario ya está ocupado, la aplicación te muestra los horarios libres para elegir otro.
 
 La reserva queda **Pendiente** hasta que la biblioteca la apruebe.
 
@@ -78,9 +91,8 @@ La reserva queda **Pendiente** hasta que la biblioteca la apruebe.
 ### Solicitar una asesoría
 
 1. En **Servicios**, abre **Asesorías especializadas** y elige un tema. Hace falta iniciar sesión.
-2. En la pestaña **Solicitud**, elige la fecha y la hora que te sirven (con al menos 72 horas de anticipación y dentro del horario de atención; el calendario tacha los días que no se pueden), la modalidad, cuántas personas asisten (hasta 5, con el nombre de cada una) y qué necesitas.
-3. En **Tus datos**, revisa lo que trae tu cuenta y corrige lo que haga falta.
-4. En **Términos**, léelos, marca **He leído y acepto los términos y condiciones** y toca **Enviar solicitud**. Si falta algo, la aplicación te lleva a la pestaña con el error.
+2. En el primer paso, elige la fecha y la hora que te sirven (con al menos 72 horas de anticipación y dentro del horario de atención; el calendario tacha los días que no se pueden), la modalidad, cuántas personas asisten (hasta 5, con el nombre de cada una) y qué necesitas.
+3. Sigue con **Tus datos** y **Términos**, y toca **Enviar solicitud**.
 
 Tu solicitud queda **Pendiente** hasta que la biblioteca la apruebe: al aprobarla confirma la fecha y la hora (puede cambiarlas) y asigna quién te atiende. Te llega una notificación; si la rechazan, el aviso trae el motivo. Si la biblioteca cambió la fecha, **Mis citas** y el detalle en **Mis solicitudes** muestran también la que pediste. En una asesoría virtual aprobada, **Abrir enlace** te lleva a la reunión.
 
@@ -104,8 +116,9 @@ La tablet se recoge en el mostrador de la biblioteca.
 ### Solicitar una capacitación
 
 1. En **Servicios**, abre **Capacitaciones** y toca **Solicitar capacitación**.
-2. Elige la línea de formación, la modalidad, la fecha y la hora.
-3. Escribe el objetivo, el grupo y cuántas personas asistirán, y toca **Enviar solicitud**.
+2. En el primer paso, elige la línea de formación, la modalidad, la fecha y la hora.
+3. Escribe la **asignatura y el grupo** (por ejemplo, "Bases de datos, 7.º semestre, grupo 02"), cuántas personas asistirán, el objetivo y, si quieres, las novedades.
+4. Sigue con **Tus datos** y **Términos**, y toca **Enviar solicitud**.
 
 Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 

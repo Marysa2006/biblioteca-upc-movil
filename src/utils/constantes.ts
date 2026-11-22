@@ -17,19 +17,42 @@ export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
 export const URL_REPOSITORIO: string = 'http://repositorio.unicesar.edu.co';
 
 /**
- * Facultades de la UPC (provisional, por confirmar con la biblioteca).
- * Son las que publica la Universidad en su Estructura Organizacional: los decanos son seis.
- * El portal de Pregrado lista «Ciencias Básicas» y «Educación» por separado, pero la
- * Universidad las nombra juntas como «Ciencias Básicas y de la Educación».
+ * Programas de pregrado de cada facultad de la UPC, con la lista que entregó María (#251).
+ * «Ciencias Básicas» y «Educación» van por separado. Los que solo se ofrecen en la seccional
+ * llevan «(Aguachica)» en el nombre. Quien no está en la lista (posgrado, otra dependencia) elige
+ * «Otro programa» y lo escribe.
  */
-export const FACULTADES: readonly string[] = [
-  'Ciencias Administrativas, Contables y Económicas',
-  'Bellas Artes',
-  'Derecho, Ciencias Políticas y Sociales',
-  'Ciencias Básicas y de la Educación',
-  'Ingenierías y Tecnologías',
-  'Ciencias de la Salud',
-];
+export const PROGRAMAS_POR_FACULTAD: Readonly<Record<string, readonly string[]>> = {
+  'Ciencias Administrativas, Contables y Económicas': [
+    'Administración de Empresas',
+    'Administración de Empresas Turísticas y Hoteleras',
+    'Comercio Internacional',
+    'Contaduría Pública',
+    'Economía',
+  ],
+  'Bellas Artes': ['Licenciatura en Artes', 'Música'],
+  'Ciencias Básicas': ['Microbiología'],
+  'Derecho, Ciencias Políticas y Sociales': ['Derecho', 'Psicología', 'Sociología'],
+  Educación: [
+    'Licenciatura en Ciencias Naturales y Educación Ambiental',
+    'Licenciatura en Educación Física, Recreación y Deportes',
+    'Licenciatura en Español e Inglés',
+    'Licenciatura en Literatura y Lengua Castellana',
+    'Licenciatura en Matemáticas',
+  ],
+  'Ingenierías y Tecnologías': [
+    'Ingeniería Agroindustrial',
+    'Ingeniería Agropecuaria (Aguachica)',
+    'Ingeniería Civil (Aguachica)',
+    'Ingeniería Ambiental y Sanitaria',
+    'Ingeniería de Sistemas',
+    'Ingeniería Electrónica',
+  ],
+  'Ciencias de la Salud': ['Enfermería', 'Fisioterapia', 'Instrumentación Quirúrgica'],
+};
+
+/** Facultades de la UPC, en el orden de PROGRAMAS_POR_FACULTAD. */
+export const FACULTADES: readonly string[] = Object.keys(PROGRAMAS_POR_FACULTAD);
 
 /** Sedes de la Universidad (provisional). */
 export const SEDES: readonly string[] = ['Valledupar', 'Aguachica'];
@@ -55,9 +78,10 @@ export const SEMESTRES: readonly string[] = [
 
 /**
  * El semestre más alto que se acepta (#203): hay estudiantes en 11.º o 12.º. Del 1 al X salen en
- * la lista; del 11 a este, con «Otro». Provisional: ajustarlo con la bibliotecóloga.
+ * la lista; del 11 a este, con «Otro». El Backend acepta hasta 2 cifras; el tope solo evita un
+ * error de dedo, y no se muestra (#251: María lo subió de 14 a 20, «uno nunca sabe»).
  */
-export const SEMESTRE_MAXIMO = 14;
+export const SEMESTRE_MAXIMO = 20;
 
 /**
  * Duración de una asesoría, en minutos, igual para todas (#248).

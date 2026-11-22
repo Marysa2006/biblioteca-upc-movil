@@ -10,7 +10,7 @@
 import { z } from 'zod';
 
 import type { DatosSolicitante, NivelFormacion, Perfil, TipoUsuario, Usuario } from '@/types';
-import { NIVELES_FORMACION, SEMESTRE_MAXIMO } from '@/utils/constantes';
+import { NIVELES_FORMACION, SEDES, SEMESTRE_MAXIMO } from '@/utils/constantes';
 import { aNombrePropio } from '@/utils/texto';
 
 export const LARGO_MAXIMO_NOMBRE = 120;
@@ -78,6 +78,10 @@ export const camposSolicitante = {
     .refine((valor) => valor === '' || NIVELES_FORMACION.some((nivel) => nivel === valor), {
       error: 'Elige el nivel: pregrado, posgrado u otro.',
     }),
+  // La sede de la persona (#251), no la del espacio: vacía hasta que se elige.
+  sede: z.string().refine((valor) => valor === '' || SEDES.includes(valor), {
+    error: 'Elige la sede.',
+  }),
   facultad: z
     .string()
     .trim()
@@ -108,6 +112,7 @@ export const VALORES_SOLICITANTE_VACIOS: ValoresSolicitante = {
   correo: '',
   celular: '',
   nivel: '',
+  sede: '',
   facultad: '',
   programa: '',
   semestre: '',
@@ -117,17 +122,22 @@ export const VALORES_SOLICITANTE_VACIOS: ValoresSolicitante = {
 export type OpcionesSolicitante = {
   /** La reserva de espacio pide el NIP; la capacitación no. */
   pedirIdentificacion: boolean;
+  /**
+   * Los formularios que muestran la sede (asesoría, capacitación y reserva, #251) la exigen a los
+   * estudiantes. La tablet y la API todavía no: sin esto, rechazarían lo que no la trae.
+   */
+  pedirSede?: boolean;
 };
 
 /**
  * Reglas entre campos: la identificación, cuando se pide, y los datos académicos de los
- * estudiantes (nivel, facultad, programa y semestre). Para el resto son opcionales, y el
+ * estudiantes (nivel, sede, facultad, programa y semestre). Para el resto son opcionales, y el
  * semestre no se guarda (`aDatosSolicitante`).
  */
 export function reglasSolicitante(
   datos: ValoresSolicitante,
   ctx: z.RefinementCtx,
-  { pedirIdentificacion }: OpcionesSolicitante,
+  { pedirIdentificacion, pedirSede = false }: OpcionesSolicitante,
 ) {
   const falta = (campo: keyof ValoresSolicitante, mensaje: string) => {
     if (!datos[campo].trim()) ctx.addIssue({ code: 'custom', path: [campo], message: mensaje });
@@ -135,8 +145,9 @@ export function reglasSolicitante(
   if (pedirIdentificacion) falta('identificacion', 'Escribe tu número de identificación.');
   if (datos.tipo === 'estudiante') {
     falta('nivel', 'Elige el nivel: pregrado, posgrado u otro.');
+    if (pedirSede) falta('sede', 'Elige la sede.');
     falta('facultad', 'Elige la facultad.');
-    falta('programa', 'Escribe el programa.');
+    falta('programa', 'Elige el programa o escríbelo en «Otro programa».');
     falta('semestre', 'Elige el semestre.');
   }
 }
@@ -159,6 +170,7 @@ export function datosSolicitanteDe(usuario: Usuario, perfil?: Perfil): DatosSoli
     correo: fuente.correo,
     celular: perfil?.telefono ?? '',
     ...(fuente.nivel ? { nivel: fuente.nivel } : {}),
+    ...(fuente.sede ? { sede: fuente.sede } : {}),
     ...(fuente.facultad ? { facultad: fuente.facultad } : {}),
     ...(fuente.programa ? { programa: fuente.programa } : {}),
     ...(fuente.semestre ? { semestre: fuente.semestre } : {}),
@@ -174,6 +186,7 @@ export function valoresSolicitante(datos: Partial<DatosSolicitante>): ValoresSol
     correo: datos.correo ?? '',
     celular: datos.celular ?? '',
     nivel: datos.nivel ?? '',
+    sede: datos.sede ?? '',
     facultad: datos.facultad ?? '',
     programa: datos.programa ?? '',
     semestre: datos.semestre ? String(datos.semestre) : '',
@@ -194,6 +207,7 @@ export function aDatosSolicitante(valores: ValoresSolicitante): DatosSolicitante
     correo: valores.correo.trim().toLowerCase(),
     celular: valores.celular.trim(),
     ...(valores.nivel ? { nivel: valores.nivel as NivelFormacion } : {}),
+    ...(valores.sede ? { sede: valores.sede } : {}),
     ...(facultad ? { facultad } : {}),
     ...(programa ? { programa } : {}),
     ...(valores.tipo === 'estudiante' && valores.semestre

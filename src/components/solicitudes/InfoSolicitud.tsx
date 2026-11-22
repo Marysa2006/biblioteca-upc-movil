@@ -37,6 +37,7 @@ import { fechaCompleta } from '@/utils/calendario';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { fechaLegible } from '@/utils/fechas';
 import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
+import { textoRecursos } from '@/utils/reservas';
 import { notaDePrestamo } from '@/utils/solicitudes';
 
 export type Dato = { etiqueta: string; valor?: string | number | null };
@@ -85,6 +86,7 @@ function InfoReserva({ solicitud }: { solicitud: ResumenSolicitud }) {
         { etiqueta: 'Horario', valor: `${reserva.horaInicio} a ${reserva.horaFin}` },
         { etiqueta: 'Propósito', valor: reserva.proposito },
         { etiqueta: 'Asistentes', valor: reserva.asistentes },
+        { etiqueta: 'Recursos de apoyo', valor: textoRecursos(reserva.recursos) },
         { etiqueta: 'Novedades', valor: reserva.requerimientos },
         { etiqueta: 'Motivo', valor: reserva.motivo },
       ]}
@@ -348,9 +350,10 @@ function InfoCapacitacion({ solicitud }: { solicitud: ResumenSolicitud }) {
           { etiqueta: 'Modalidad', valor: NOMBRE_MODALIDAD[capacitacion.modalidad] },
           { etiqueta: 'Fecha solicitada', valor: fechaCompleta(capacitacion.fecha) },
           { etiqueta: 'Hora', valor: capacitacion.hora },
-          { etiqueta: 'Grupo', valor: capacitacion.grupo },
+          { etiqueta: 'Asignatura y grupo', valor: capacitacion.grupo },
           { etiqueta: 'Participantes', valor: capacitacion.participantes },
           { etiqueta: 'Objetivo', valor: capacitacion.objetivo },
+          { etiqueta: 'Novedades', valor: capacitacion.novedades },
           { etiqueta: 'Responsable', valor: capacitacion.responsable },
           { etiqueta: 'Resultado', valor: capacitacion.resultado },
           { etiqueta: 'Motivo', valor: capacitacion.motivo },
