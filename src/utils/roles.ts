@@ -121,10 +121,18 @@ export function tienePermiso(usuario: ConRoles, permiso: Permiso): boolean {
   return permisosDe(usuario).includes(permiso);
 }
 
-/** "Facilitador · Gestor de espacios" para el personal; el tipo para la comunidad. */
-export function describirRoles(usuario: Pick<Usuario, 'tipo' | 'rolesPersonal'>): string {
-  if (usuario.rolesPersonal.length === 0) return NOMBRE_TIPO[usuario.tipo];
-  return usuario.rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(' · ');
+/**
+ * "Facilitador · Gestor de espacios" para el personal; el tipo para la comunidad. Con el permiso
+ * adicional de novedades (#257), agrega "puede publicar novedades".
+ */
+export function describirRoles(
+  usuario: Pick<Usuario, 'tipo' | 'rolesPersonal'> & Partial<Pick<Usuario, 'permisosExtra'>>,
+): string {
+  const base =
+    usuario.rolesPersonal.length === 0
+      ? NOMBRE_TIPO[usuario.tipo]
+      : usuario.rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(' · ');
+  return usuario.permisosExtra?.includes('novedades') ? `${base} · puede publicar novedades` : base;
 }
 
 /**

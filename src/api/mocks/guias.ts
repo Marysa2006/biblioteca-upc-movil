@@ -1,6 +1,7 @@
 /**
  * DATOS DE PRUEBA de las guías de la biblioteca (HU-29).
  * Son contenidos que la biblioteca publica; una queda sin publicar para probar el filtro.
+ * Versión 1.1 (#258): una guía con enlace (PDF o Drive), que se abre en el navegador.
  * El texto es de ejemplo: la biblioteca entregará el contenido definitivo.
  */
 import type { Guia } from '@/types';
@@ -55,6 +56,16 @@ export const GUIAS: Guia[] = [
       '5. Para préstamo, acércate al mostrador con tu carné.',
     ].join('\n'),
     actualizada: '2026-10-05',
+    publicado: true,
+  },
+  {
+    id: 'guia-repositorio',
+    titulo: 'Cómo depositar tu trabajo de grado',
+    descripcion: 'Formatos, licencia y pasos del autoarchivo, en el repositorio institucional.',
+    contenido: '',
+    // De prueba: la biblioteca pondrá el enlace al PDF o al Drive de la guía.
+    enlace: 'https://repositorio.unicesar.edu.co/',
+    actualizada: '2026-11-04',
     publicado: true,
   },
   {

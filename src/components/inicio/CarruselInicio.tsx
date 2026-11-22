@@ -3,6 +3,8 @@
  * Los puntos de abajo dicen en cuál foto se va; son visuales: el lector de pantalla
  * anuncia "Foto 1 de 3" y cambia de foto deslizando hacia arriba o hacia abajo (adjustable).
  * Sin foto (fuente null), muestra un recuadro provisional, como "Sin fotografía" en Espacios.
+ * Desde la 1.1 (#290) las fotos llegan de la biblioteca: si una no carga (enlace caído o sin
+ * conexión), en su lugar va ese mismo recuadro con su descripción.
  */
 import { Image } from 'expo-image';
 import { useRef, useState } from 'react';
@@ -24,10 +26,15 @@ type Props = { imagenes: ImagenInicio[] };
 
 export function CarruselInicio({ imagenes }: Props) {
   const [ancho, setAncho] = useState(0);
-  const [actual, setActual] = useState(0);
+  const [indice, setActual] = useState(0);
   const lista = useRef<ScrollViewInstance>(null);
 
+  // Las fotos que no cargaron (URL caída o sin conexión), por su dirección.
+  const [fallidas, setFallidas] = useState<string[]>([]);
+
   if (imagenes.length === 0) return null;
+  // Si la lista se acortó (se ocultó una foto), vuelve a la primera.
+  const actual = indice < imagenes.length ? indice : 0;
 
   const medir = (evento: LayoutChangeEvent) => setAncho(evento.nativeEvent.layout.width);
 
@@ -63,10 +70,18 @@ export function CarruselInicio({ imagenes }: Props) {
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={alTerminar}
           >
-            {imagenes.map((imagen, indice) => (
-              <View key={indice} style={{ width: ancho }}>
-                {imagen.fuente ? (
-                  <Image source={imagen.fuente} style={estilos.foto} contentFit="cover" />
+            {imagenes.map((imagen, posicion) => (
+              <View key={posicion} style={{ width: ancho }}>
+                {imagen.fuente && !fallidas.includes(claveDe(imagen.fuente)) ? (
+                  <Image
+                    source={imagen.fuente}
+                    style={estilos.foto}
+                    contentFit="cover"
+                    onError={() => {
+                      const clave = claveDe(imagen.fuente);
+                      setFallidas((antes) => (antes.includes(clave) ? antes : [...antes, clave]));
+                    }}
+                  />
                 ) : (
                   <View style={[estilos.foto, estilos.sinFoto]}>
                     <Icon source="image-outline" size={32} color={colores.textoSecundario} />
@@ -85,13 +100,26 @@ export function CarruselInicio({ imagenes }: Props) {
 
       {imagenes.length > 1 ? (
         <View style={estilos.puntos} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {imagenes.map((_, indice) => (
-            <View key={indice} style={[estilos.punto, indice === actual && estilos.puntoActual]} />
+          {imagenes.map((_, posicion) => (
+            <View
+              key={posicion}
+              style={[estilos.punto, posicion === actual && estilos.puntoActual]}
+            />
           ))}
         </View>
       ) : null}
     </View>
   );
+}
+
+/** Con qué se reconoce una foto: el número del require o su URL. */
+function claveDe(fuente: ImagenInicio['fuente']): string {
+  if (fuente == null) return '';
+  if (typeof fuente === 'number' || typeof fuente === 'string') return String(fuente);
+  if (Array.isArray(fuente)) {
+    return fuente.map((parte) => (typeof parte === 'string' ? parte : (parte?.uri ?? ''))).join(',');
+  }
+  return 'uri' in fuente ? (fuente.uri ?? '') : '';
 }
 
 const estilos = StyleSheet.create({

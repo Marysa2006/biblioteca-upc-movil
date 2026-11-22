@@ -128,7 +128,8 @@ Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 
 1. La pestaña **Mis solicitudes** muestra las reservas, asesorías, préstamos y capacitaciones con su estado: Pendiente, Aprobada, Rechazada, Nueva fecha propuesta, Cancelada o Realizada. Toca una para ver su detalle y su historial.
 2. Si la biblioteca propone otro día, la solicitud dice **Nueva fecha propuesta**. Ábrela y toca **Aceptar la nueva fecha**, o **No me sirve** para cancelar la solicitud.
-3. En el menú de arriba a la derecha:
+3. Las asesorías y capacitaciones realizadas que todavía no calificaste dicen **Por calificar**. Ábrela y, en **¿Cómo te pareció?**, elige de 1 a 5 estrellas (de Malo a Excelente), escribe un comentario si quieres y toca **Enviar**. Solo se califica una vez; después, el detalle muestra tu calificación.
+4. En el menú de arriba a la derecha:
    - **Mi calendario** muestra por día las citas, las reservas y los préstamos, y envía recordatorios antes de cada uno.
    - **Notificaciones** muestra los avisos de cada cambio.
 
@@ -158,6 +159,7 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
    - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
    - **Asesorías y jornadas:** los temas y los horarios de cada facilitador.
    - **Líneas de formación:** las capacitaciones que se ofrecen.
+   - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra las fotos que trae la aplicación.
 
 ![Gestión: Solicitudes](manual-usuario/personal-gestion-solicitudes.png)
 ![Gestión: Portal](manual-usuario/personal-gestion-portal.png)
@@ -183,6 +185,7 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
 - **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos**, **Vencidos** e **Inventario** de tablets.
 - **Facilitador:** las solicitudes de capacitación y la **Agenda** de sus asesorías.
 - **Gestora de espacios:** las solicitudes de reserva y la sección **Espacios**, con sus bloqueos.
+- **Quien tiene el permiso de novedades y avisos:** en **Portal**, los avisos y las novedades, las **Guías de la biblioteca** y las **Fotos de Inicio**, sin tocar los servicios.
 
 ## 5. Usuarios de prueba
 

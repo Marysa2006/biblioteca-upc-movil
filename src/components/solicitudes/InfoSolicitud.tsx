@@ -9,6 +9,7 @@
  * - Capacitación con nueva fecha (HU-12, CA4): se muestra la fecha propuesta y se responde aquí.
  *   Aceptarla la deja Aprobada con esa fecha; "No me sirve" pide confirmación y la deja
  *   Cancelada (responderNuevaFecha). El diálogo recibe todo por props.
+ * - Asesoría o capacitación realizada: «¿Cómo te pareció?» para calificarla una vez (#255).
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ import { BotonEnlaceCita } from '@/components/asesorias/BotonEnlaceCita';
 import { DialogoCancelarCita } from '@/components/asesorias/DialogoCancelarCita';
 import { BotonRegistrarAsistencia } from '@/components/asistencia/BotonRegistrarAsistencia';
 import { DialogoNoMeSirve } from '@/components/capacitaciones/DialogoNoMeSirve';
+import { SeccionCalificacion } from '@/components/solicitudes/SeccionCalificacion';
 import { AvisoError, EstadoCarga, EstadoError } from '@/components/ui';
 import { useCancelarCita, useMisCitas } from '@/hooks/useAsesorias';
 import { useMisCapacitaciones, useResponderNuevaFecha } from '@/hooks/useCapacitaciones';
@@ -160,6 +162,7 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
       />
       <BotonEnlaceCita cita={cita} />
       <BotonRegistrarAsistencia cita={cita} />
+      <SeccionCalificacion tipo="cita" solicitud={cita} />
       {puedeCancelar ? (
         <View style={estilos.acciones}>
           <Button
@@ -359,6 +362,7 @@ function InfoCapacitacion({ solicitud }: { solicitud: ResumenSolicitud }) {
           { etiqueta: 'Motivo', valor: capacitacion.motivo },
         ]}
       />
+      <SeccionCalificacion tipo="capacitacion" solicitud={capacitacion} />
 
       <DialogoNoMeSirve
         solicitud={porRechazar}

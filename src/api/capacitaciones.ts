@@ -24,6 +24,8 @@ import {
 import {
   LARGO_MAXIMO_ASIGNATURA,
   LARGO_MAXIMO_NOVEDADES,
+  MAXIMO_PARTICIPANTES,
+  MENSAJE_MAXIMO_PARTICIPANTES,
   problemaNombresParticipantes,
 } from '@/utils/capacitaciones';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
@@ -273,8 +275,12 @@ function errorDeFormulario(datos: FormularioCapacitacion): ErrorApi | null {
   if (grupo.length > LARGO_MAXIMO_GRUPO) {
     return new ErrorApi(400, `El grupo no puede pasar de ${LARGO_MAXIMO_GRUPO} caracteres.`);
   }
-  if (!Number.isInteger(datos.participantes) || datos.participantes < 1) {
-    return new ErrorApi(400, 'Indica cuántas personas asistirán (un número entero desde 1).');
+  if (
+    !Number.isInteger(datos.participantes) ||
+    datos.participantes < 1 ||
+    datos.participantes > MAXIMO_PARTICIPANTES
+  ) {
+    return new ErrorApi(400, MENSAJE_MAXIMO_PARTICIPANTES);
   }
   return errorDeDatosCompletos(datos);
 }

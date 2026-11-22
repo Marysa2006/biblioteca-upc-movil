@@ -2,7 +2,7 @@
  * Tarjeta de un usuario con su tipo, sus roles del personal y los permisos vigentes (la suma
  * de los de sus roles), para la pantalla de roles (HU-07).
  * Recibe el usuario por props: no sabe de dónde salen los datos.
- * "Cambiar roles" abre el diálogo en la pantalla. La pantalla no muestra la tarjeta de quien
+ * "Roles y permisos" abre el diálogo en la pantalla (roles y, desde la 1.1, permisos adicionales). La pantalla no muestra la tarjeta de quien
  * tiene la sesión: así nadie puede quitarse su propio rol (CA4).
  */
 import { StyleSheet, View } from 'react-native';
@@ -91,9 +91,9 @@ export function TarjetaUsuario({ usuario, onCambiarRol }: Props) {
         onPress={onCambiarRol}
         contentStyle={estilos.contenidoBoton}
         accessibilityRole="button"
-        accessibilityLabel={`Cambiar roles de ${usuario.nombre}`}
+        accessibilityLabel={`Cambiar los roles y permisos de ${usuario.nombre}`}
       >
-        Cambiar roles
+        Roles y permisos
       </Button>
     </View>
   );

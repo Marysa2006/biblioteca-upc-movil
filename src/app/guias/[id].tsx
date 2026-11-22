@@ -3,17 +3,22 @@
  * biblioteca la actualizó, se guarda la versión nueva (CA3). Sin conexión se lee la copia
  * guardada; si no hay copia, explica que hace falta internet para descargarla (CA4).
  * useGuia() hace todo eso: la pantalla solo muestra lo que devuelve.
+ *
+ * Versión 1.1 (#258): si la guía tiene enlace (PDF o Drive), el botón "Abrir guía" la abre en el
+ * navegador integrado, con la nota de que necesita conexión. Las escritas se siguen guardando y
+ * leyendo sin conexión.
  */
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
 
-import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
+import { AvisoError, EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useEliminarGuia, useGuia, useGuiasGuardadas } from '@/hooks/useGuias';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import { fechaLegible } from '@/utils/fechas';
 import { bloquesDeGuia } from '@/utils/guias';
+import { abrirEnNavegador } from '@/utils/navegador';
 
 export default function LeerGuia() {
   const { id = '' } = useLocalSearchParams<{ id?: string }>();
@@ -21,7 +26,13 @@ export default function LeerGuia() {
   const guardadas = useGuiasGuardadas();
   const eliminar = useEliminarGuia();
   const [quitada, setQuitada] = useState(false);
+  const [sinAbrir, setSinAbrir] = useState(false);
   const titulo = guia.data?.titulo ?? 'Guía';
+
+  const abrir = (enlace: string) => {
+    setSinAbrir(false);
+    abrirEnNavegador(enlace).catch(() => setSinAbrir(true));
+  };
 
   let contenido;
   if (guia.isPending) {
@@ -37,6 +48,41 @@ export default function LeerGuia() {
         }
         onReintentar={noExiste ? undefined : () => guia.refetch()}
       />
+    );
+  } else if (guia.data.enlace) {
+    // Con enlace (#258): se lee en el navegador; no hay texto que guardar en el celular.
+    const { enlace } = guia.data;
+    contenido = (
+      <View style={estilos.contenedor}>
+        <Text variant="bodyLarge" style={estilos.parrafo}>
+          {guia.data.descripcion}
+        </Text>
+        <Text variant="bodySmall" style={estilos.secundario}>
+          {`Actualizada el ${fechaLegible(guia.data.actualizada)}`}
+        </Text>
+
+        {sinAbrir ? (
+          <AvisoError mensaje="No pudimos abrir la guía. Revisa tu conexión e inténtalo de nuevo." />
+        ) : null}
+
+        <Button
+          mode="contained"
+          icon="open-in-new"
+          onPress={() => abrir(enlace)}
+          style={estilos.boton}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="link"
+          accessibilityLabel={`Abrir ${guia.data.titulo} en el navegador. Necesitas conexión`}
+        >
+          Abrir guía
+        </Button>
+        <View style={[estilos.marca, estilos.marcaSinGuardar]}>
+          <Icon source="wifi" size={18} color={coloresEstado.cancelada.texto} />
+          <Text variant="labelLarge" style={estilos.textoSinGuardar}>
+            Necesitas conexión: la guía está en un PDF o en Drive y se abre en el navegador.
+          </Text>
+        </View>
+      </View>
     );
   } else {
     const guardada = (guardadas.data ?? []).includes(guia.data.id);

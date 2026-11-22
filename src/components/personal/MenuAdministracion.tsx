@@ -1,5 +1,5 @@
 /**
- * Accesos a la administración del portal (HU-04, HU-28, HU-13 y HU-09), en la sección "Portal" de Gestión.
+ * Accesos a la administración del portal (HU-04, HU-28, HU-13, HU-09 y HU-29), en la sección "Portal" de Gestión.
  * Cada fila se muestra solo con su permiso; toda la fila se puede presionar.
  */
 import { router, type Href } from 'expo-router';
@@ -16,6 +16,10 @@ type Acceso = {
   icono: string;
   destino: Href;
   permiso: Permiso;
+  /** También se muestra con este otro permiso (#258). */
+  tambienCon?: Permiso;
+  /** No se muestra si además tiene este permiso: otra fila ya cubre lo mismo (#257). */
+  ocultarCon?: Permiso;
 };
 
 const ACCESOS: Acceso[] = [
@@ -25,6 +29,15 @@ const ACCESOS: Acceso[] = [
     icono: 'file-document-edit-outline',
     destino: '/administracion/contenidos',
     permiso: 'contenidos',
+  },
+  {
+    // Versión 1.1 (#257): quien solo tiene `novedades` publica avisos e informativos, no servicios.
+    titulo: 'Avisos y novedades',
+    descripcion: 'Los avisos y los informativos que ve la comunidad en Inicio.',
+    icono: 'bullhorn-outline',
+    destino: '/administracion/contenidos',
+    permiso: 'novedades',
+    ocultarCon: 'contenidos',
   },
   {
     titulo: 'Parámetros generales',
@@ -48,17 +61,43 @@ const ACCESOS: Acceso[] = [
     destino: '/administracion/lineas',
     permiso: 'formacion',
   },
+  {
+    // Versión 1.1 (#258): las guías las publica la biblioteca, con `contenidos` o `novedades`.
+    titulo: 'Guías de la biblioteca',
+    descripcion: 'Las guías con enlace o escritas que ve la comunidad en Catálogo.',
+    icono: 'book-open-page-variant-outline',
+    destino: '/administracion/guias',
+    permiso: 'contenidos',
+    tambienCon: 'novedades',
+  },
+  {
+    // Versión 1.1 (#290): las fotos del carrusel de Inicio, con `contenidos` o `novedades`.
+    titulo: 'Fotos de Inicio',
+    descripcion: 'Las fotos del carrusel que ve la comunidad al abrir la app.',
+    icono: 'image-multiple-outline',
+    destino: '/administracion/fotos-inicio',
+    permiso: 'contenidos',
+    tambienCon: 'novedades',
+  },
 ];
 
 /** ¿Quien tiene la sesión puede entrar a alguna función del portal? */
 export function usePuedeAdministrarPortal(): boolean {
   const { tienePermiso } = useRol();
-  return ACCESOS.some((acceso) => tienePermiso(acceso.permiso));
+  return ACCESOS.some(
+    (acceso) =>
+      tienePermiso(acceso.permiso) || (acceso.tambienCon != null && tienePermiso(acceso.tambienCon)),
+  );
 }
 
 export function MenuAdministracion() {
   const { tienePermiso } = useRol();
-  const accesos = ACCESOS.filter((acceso) => tienePermiso(acceso.permiso));
+  const accesos = ACCESOS.filter(
+    (acceso) =>
+      (tienePermiso(acceso.permiso) ||
+        (acceso.tambienCon != null && tienePermiso(acceso.tambienCon))) &&
+      !(acceso.ocultarCon && tienePermiso(acceso.ocultarCon)),
+  );
 
   return (
     <View style={estilos.menu}>

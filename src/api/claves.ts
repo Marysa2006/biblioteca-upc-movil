@@ -97,6 +97,14 @@ export const claves = {
   guias: ['guias'] as const,
   guia: (id: string) => ['guias', id] as const,
   guiasGuardadas: ['guias', 'guardadas'] as const,
+  /** Todas las guías, también las no publicadas, para Gestión → Portal → Guías (#258). */
+  guiasAdministracion: ['guias', 'administracion'] as const,
+
+  // ── Versión 1.1: fotos del carrusel de Inicio (#290) ─────────
+  /** Las publicadas, para Inicio. El prefijo refresca también la lista del personal. */
+  fotosInicio: ['fotosInicio'] as const,
+  /** Todas, también las ocultas, para Gestión → Portal → Fotos de Inicio. */
+  fotosInicioAdministracion: ['fotosInicio', 'administracion'] as const,
 
   // ── Iteración 4: autoarchivo (HU-11) ─────────────────────────
   /** Contenido de orientación de autoarchivo (HU-11). */
