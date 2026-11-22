@@ -171,7 +171,7 @@ export function esquemaSolicitudCapacitacionCompleta(parametros: Parametros) {
     })
     .superRefine((datos, ctx) => {
       revisarDiaHabil(datos.fecha, ctx, parametros);
-      reglasSolicitante(datos, ctx, { pedirIdentificacion: false });
+      reglasSolicitante(datos, ctx, { pedirIdentificacion: false, pedirSede: true });
       const cantidad = datos.participantes.trim();
       if (/^\d+$/.test(cantidad)) {
         const nombres = separarNombres(datos.nombresParticipantes);

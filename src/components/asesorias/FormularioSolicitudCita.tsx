@@ -1,8 +1,9 @@
 /**
  * Solicitud de asesoría con fecha y hora (#249, HU-14 en la versión 1.1). Reemplaza la lista de
  * franjas: la persona pide el día y la hora, y la biblioteca confirma y asigna el facilitador.
- * En pestañas, como Parámetros generales: **Solicitud · Tus datos · Términos**. Al enviar con
- * errores, salta a la primera pestaña con errores y la marca con `alerta`.
+ * Por pasos (#251), con PasosFormulario: **Solicitud · Tus datos · Términos**. "Siguiente" valida
+ * solo los campos del paso y "Enviar" está solo en el último; si al enviar algo falla por la
+ * validación, vuelve al paso con el error.
  * - CA1: con todo completo, la solicitud queda pendiente y la confirmación sale en el mismo lugar.
  * - CA2: el calendario tacha los días sin atención o a menos de 72 h; la hora fuera del horario
  *   o sin la anticipación muestra el error bajo el campo.
@@ -14,7 +15,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Controller, useForm, useWatch, type FieldErrors } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, HelperText, Text, TextInput } from 'react-native-paper';
 
@@ -25,14 +26,7 @@ import {
   type CampoSolicitante,
 } from '@/components/solicitudes/SeccionDatosSolicitante';
 import { SeccionTerminos } from '@/components/solicitudes/SeccionTerminos';
-import {
-  AvisoError,
-  CampoHora,
-  CampoNumerico,
-  PestanasFiltro,
-  Upecito,
-  type OpcionPestana,
-} from '@/components/ui';
+import { AvisoError, CampoHora, CampoNumerico, PasosFormulario, Upecito } from '@/components/ui';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type {
   ModalidadAsesoria,
@@ -57,6 +51,7 @@ import { fechaCompleta, sumarDias } from '@/utils/calendario';
 import { LARGO_MAXIMO_ASIGNATURA, LARGO_MAXIMO_NOVEDADES } from '@/utils/capacitaciones';
 import { TERMINOS_FORMACION } from '@/utils/constantes';
 import { hoyISO } from '@/utils/fechas';
+import { camposDelPaso, primerMensajeDeError, primerPasoConError } from '@/utils/pasos';
 import {
   datosSolicitanteDe,
   LARGO_MAXIMO_NOMBRE,
@@ -77,6 +72,7 @@ const PESTANAS: { valor: PestanaCita; etiqueta: string }[] = [
   { valor: 'datos', etiqueta: 'Tus datos' },
   { valor: 'terminos', etiqueta: 'Términos' },
 ];
+const ORDEN_PESTANAS = PESTANAS.map(({ valor }) => valor);
 
 /** Orden de los campos en pantalla, para anunciar el primero con error en iOS. */
 const CAMPOS: (keyof ValoresSolicitudCita)[] = [
@@ -92,6 +88,7 @@ const CAMPOS: (keyof ValoresSolicitudCita)[] = [
   'nombreCompleto',
   'correo',
   'celular',
+  'sede',
   'nivel',
   'facultad',
   'programa',
@@ -105,6 +102,7 @@ const CAMPOS_SOLICITANTE: CampoSolicitante[] = [
   'identificacion',
   'correo',
   'celular',
+  'sede',
   'nivel',
   'facultad',
   'programa',
@@ -138,13 +136,18 @@ export function FormularioSolicitudCita({
   const hoy = hoyISO();
   const maximoPersonas = parametros.maximoPersonasAsesoria;
   const [pestana, setPestana] = useState<PestanaCita>('solicitud');
-  const [hayErrores, setHayErrores] = useState(false);
-  const { control, handleSubmit, setValue, formState } = useForm<ValoresSolicitudCita>({
-    resolver: zodResolver(esquemaSolicitudCita(parametros)),
-    defaultValues: valoresInicialesCita(valoresSolicitante(datosSolicitanteDe(usuario, perfil))),
-  });
+  const { control, handleSubmit, setValue, trigger, getFieldState, formState } =
+    useForm<ValoresSolicitudCita>({
+      resolver: zodResolver(esquemaSolicitudCita(parametros)),
+      defaultValues: valoresInicialesCita(valoresSolicitante(datosSolicitanteDe(usuario, perfil))),
+      // Al salir de un campo ya tocado se valida: los errores de un paso se corrigen al escribir.
+      mode: 'onTouched',
+    });
   const errores = formState.errors;
-  const validar = { shouldValidate: formState.isSubmitted };
+  // Una vez que hay errores a la vista, cada cambio vuelve a validar su campo.
+  const validar = {
+    shouldValidate: formState.isSubmitted || Object.keys(errores).length > 0,
+  };
 
   const [fecha, hora, modalidad, personas, participantes, terminosAceptados] = useWatch({
     control,
@@ -170,29 +173,42 @@ export function FormularioSolicitudCita({
     }
   }, [otros, participantes, setValue]);
 
-  const pestanaConError = (errs: FieldErrors<ValoresSolicitudCita>) =>
-    PESTANAS.find(({ valor }) =>
-      (Object.keys(errs) as (keyof ValoresSolicitudCita)[]).some(
-        (campo) => PESTANA_DE_CAMPO_CITA[campo] === valor,
-      ),
-    )?.valor;
+  // En Android lo anuncia accessibilityLiveRegion bajo cada campo.
+  const anunciar = (mensaje?: string) => {
+    if (Platform.OS === 'ios' && mensaje) AccessibilityInfo.announceForAccessibility(mensaje);
+  };
+
+  const indice = ORDEN_PESTANAS.indexOf(pestana);
+
+  /** "Siguiente": valida solo los campos de este paso y, si están bien, avanza. */
+  const avanzar = async () => {
+    const campos = camposDelPaso(PESTANA_DE_CAMPO_CITA, pestana);
+    if (await trigger(campos)) {
+      setPestana(ORDEN_PESTANAS[indice + 1]);
+      return;
+    }
+    const primero = CAMPOS.filter((campo) => campos.includes(campo))
+      .map((campo) => {
+        const estado = getFieldState(campo);
+        // Los otros integrantes: el error está en el nombre de cada uno.
+        if (campo === 'participantes' && !estado.error) {
+          return participantes
+            .map((_, i) => getFieldState(`participantes.${i}`).error?.message)
+            .find(Boolean);
+        }
+        return estado.error?.message;
+      })
+      .find(Boolean);
+    anunciar(primero);
+  };
 
   const enviar = handleSubmit(
-    (datos) => {
-      setHayErrores(false);
-      onEnviar(aNuevaSolicitudCita(tema.id, datos));
-    },
+    (datos) => onEnviar(aNuevaSolicitudCita(tema.id, datos)),
     (conError) => {
-      setHayErrores(true);
-      const primera = pestanaConError(conError);
-      if (primera) setPestana(primera);
-      // En Android lo anuncia accessibilityLiveRegion bajo cada campo.
-      const primero = CAMPOS.find((campo) => conError[campo] != null);
-      const error = primero ? conError[primero] : undefined;
-      const mensaje = Array.isArray(error)
-        ? error.find((e) => e?.message)?.message
-        : (error as { message?: string } | undefined)?.message;
-      if (Platform.OS === 'ios' && mensaje) AccessibilityInfo.announceForAccessibility(mensaje);
+      // Por ejemplo, la fecha dejó de servir mientras se llenaba el resto: vuelve a ese paso.
+      const primero = primerPasoConError(conError, PESTANA_DE_CAMPO_CITA, ORDEN_PESTANAS);
+      if (primero) setPestana(primero);
+      anunciar(primerMensajeDeError(conError, CAMPOS));
     },
   );
 
@@ -225,26 +241,24 @@ export function FormularioSolicitudCita({
     );
   }
 
-  const opcionesPestanas: OpcionPestana<PestanaCita>[] = PESTANAS.map(({ valor, etiqueta }) => ({
-    valor,
-    etiqueta,
-    alerta: hayAlgunError(errores, valor),
-  }));
-
-  const indice = PESTANAS.findIndex(({ valor }) => valor === pestana);
-  const siguiente = PESTANAS[indice + 1];
-
   return (
-    <View style={estilos.formulario}>
-      <PestanasFiltro
-        opciones={opcionesPestanas}
-        valor={pestana}
-        onCambiar={setPestana}
-        descripcion="Secciones de la solicitud de asesoría"
-      />
-
+    <PasosFormulario
+      pasos={PESTANAS}
+      paso={pestana}
+      onAnterior={() => setPestana(ORDEN_PESTANAS[indice - 1])}
+      onSiguiente={() => void avanzar()}
+      onEnviar={() => void enviar()}
+      enviando={guardando}
+      etiquetaEnviar="Enviar la solicitud de asesoría"
+      puedeEnviar={terminosAceptados}
+      avisos={mensajeError ? <AvisoError mensaje={mensajeError} /> : null}
+    >
       {pestana === 'solicitud' ? (
         <View style={estilos.tarjeta}>
+          <Bloque
+            titulo="Fecha y hora"
+            ayuda={`Con al menos ${parametros.horasMinimasSolicitud} horas de anticipación.`}
+          />
           <SelectorFecha
             etiqueta="Fecha"
             valor={fecha}
@@ -256,10 +270,6 @@ export function FormularioSolicitudCita({
             descripcion={fecha ? fechaCompleta(fecha) : undefined}
             deshabilitado={guardando}
           />
-          <Text variant="bodySmall" style={estilos.secundario}>
-            {`Con al menos ${parametros.horasMinimasSolicitud} horas de anticipación. La biblioteca confirma la fecha.`}
-          </Text>
-
           <CampoHora
             etiqueta="Hora"
             valor={hora}
@@ -267,12 +277,13 @@ export function FormularioSolicitudCita({
             mensajeError={errores.hora?.message}
             deshabilitado={guardando}
           />
-          <Text variant="bodySmall" style={estilos.secundario}>
-            {horario
-              ? `Ese día, entre las ${horario.desde} y las ${horario.hasta}. La asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`
-              : `La asesoría dura ${parametros.duracionAsesoriaMinutos} minutos, dentro del horario de atención.`}
-          </Text>
+          {horario ? (
+            <Text variant="bodySmall" style={estilos.secundario}>
+              {`Entre las ${horario.desde} y las ${horario.hasta}.`}
+            </Text>
+          ) : null}
 
+          <Bloque titulo="Modalidad y asistentes" />
           <ChipsOpcion<ModalidadAsesoria>
             titulo="Modalidad"
             opciones={MODALIDADES_ASESORIA.map(({ valor, etiqueta }) => ({ valor, etiqueta }))}
@@ -304,7 +315,7 @@ export function FormularioSolicitudCita({
             )}
           />
           <Text variant="bodySmall" style={estilos.secundario}>
-            {`Contándote a ti, hasta ${maximoPersonas}. Para un grupo mayor, solicita una capacitación.`}
+            {`Contándote a ti, hasta ${maximoPersonas}.`}
           </Text>
 
           {otros > 0 ? (
@@ -335,6 +346,7 @@ export function FormularioSolicitudCita({
             </View>
           ) : null}
 
+          <Bloque titulo="Lo que necesitas" />
           <Controller
             control={control}
             name="necesidad"
@@ -346,7 +358,7 @@ export function FormularioSolicitudCita({
                 onCambiar={onChange}
                 onBlur={onBlur}
                 mensajeError={errores.necesidad?.message}
-                ayuda={`${value.length} de ${LARGO_MAXIMO_NECESIDAD}. Por ejemplo, revisar las normas APA de tu trabajo de grado.`}
+                ayuda={`${value.length} de ${LARGO_MAXIMO_NECESIDAD}`}
                 deshabilitado={guardando}
                 largoMaximo={LARGO_MAXIMO_NECESIDAD}
                 multilinea
@@ -380,7 +392,6 @@ export function FormularioSolicitudCita({
                 onCambiar={onChange}
                 onBlur={onBlur}
                 mensajeError={errores.novedades?.message}
-                ayuda="Lo que quieras que la biblioteca sepa antes de la asesoría."
                 deshabilitado={guardando}
                 largoMaximo={LARGO_MAXIMO_NOVEDADES}
                 multilinea
@@ -393,7 +404,7 @@ export function FormularioSolicitudCita({
       {pestana === 'datos' ? (
         <View style={estilos.tarjeta}>
           <Text variant="bodySmall" style={estilos.secundario}>
-            Los traemos de tu cuenta y tu perfil. Revísalos y corrige lo que haga falta.
+            Vienen de tu cuenta; corrige lo que haga falta.
           </Text>
           <SeccionDatosSolicitante
             valores={solicitante}
@@ -415,45 +426,23 @@ export function FormularioSolicitudCita({
           />
         </View>
       ) : null}
-
-      {hayErrores && Object.keys(errores).length > 0 ? (
-        <AvisoError mensaje="Revisa los campos marcados en rojo; las pestañas con el ícono de aviso tienen errores." />
-      ) : null}
-      {mensajeError ? <AvisoError mensaje={mensajeError} /> : null}
-
-      {siguiente ? (
-        <Button
-          mode="outlined"
-          icon="arrow-right"
-          onPress={() => setPestana(siguiente.valor)}
-          disabled={guardando}
-          contentStyle={estilos.contenidoBotonSiguiente}
-          accessibilityRole="button"
-          accessibilityLabel={`Siguiente: ${siguiente.etiqueta}`}
-        >
-          {`Siguiente: ${siguiente.etiqueta}`}
-        </Button>
-      ) : null}
-      <Button
-        mode="contained"
-        onPress={() => enviar()}
-        loading={guardando}
-        disabled={guardando}
-        contentStyle={estilos.contenidoBoton}
-        labelStyle={estilos.textoBoton}
-        accessibilityRole="button"
-        accessibilityLabel="Enviar la solicitud de asesoría"
-      >
-        Enviar solicitud
-      </Button>
-    </View>
+    </PasosFormulario>
   );
 }
 
-/** ¿Hay algún error en los campos de esa pestaña? */
-function hayAlgunError(errores: FieldErrors<ValoresSolicitudCita>, pestana: PestanaCita): boolean {
-  return (Object.keys(errores) as (keyof ValoresSolicitudCita)[]).some(
-    (campo) => PESTANA_DE_CAMPO_CITA[campo] === pestana,
+/** El subtítulo de un bloque del paso, con una línea de ayuda si hace falta. */
+function Bloque({ titulo, ayuda }: { titulo: string; ayuda?: string }) {
+  return (
+    <View style={estilos.bloque}>
+      <Text variant="titleSmall" style={estilos.tituloBloque} accessibilityRole="header">
+        {titulo}
+      </Text>
+      {ayuda ? (
+        <Text variant="bodySmall" style={estilos.secundario}>
+          {ayuda}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -515,7 +504,6 @@ function CampoTexto({
 }
 
 const estilos = StyleSheet.create({
-  formulario: { gap: espacio.m },
   tarjeta: {
     gap: espacio.s,
     padding: espacio.m,
@@ -523,6 +511,9 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
   },
   grupo: { gap: espacio.xs },
+  // Separa cada bloque del anterior; el primero queda pegado al borde de la tarjeta.
+  bloque: { gap: espacio.xs, marginTop: espacio.s },
+  tituloBloque: { color: colores.primario, fontFamily: fuentes.seminegrita },
   subtitulo: { color: colores.texto, fontFamily: fuentes.seminegrita },
   secundario: { color: colores.textoSecundario },
   campo: { backgroundColor: colores.superficie },
@@ -531,7 +522,4 @@ const estilos = StyleSheet.create({
   confirmacion: { alignItems: 'center', gap: espacio.m, paddingVertical: espacio.xl },
   textoConfirmacion: { color: colores.texto, textAlign: 'center' },
   contenidoBoton: { paddingVertical: espacio.xs },
-  // row-reverse deja la flecha a la derecha del texto.
-  contenidoBotonSiguiente: { flexDirection: 'row-reverse', paddingVertical: espacio.xs },
-  textoBoton: { fontFamily: fuentes.seminegrita },
 });

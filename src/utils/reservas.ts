@@ -255,6 +255,28 @@ export const RECURSOS_APOYO: { valor: RecursoApoyo; etiqueta: string }[] = [
   { valor: 'marcadores', etiqueta: 'Marcadores' },
 ];
 
+/**
+ * Los recursos pedidos, para mostrarlos (#251): "Portátil, Mouse", "No requiere" si la lista está
+ * vacía, o null si la reserva es de antes de la versión 1.1 y no los trae.
+ */
+export function textoRecursos(recursos: readonly RecursoApoyo[] | undefined): string | null {
+  if (recursos == null) return null;
+  if (recursos.length === 0) return 'No requiere';
+  return recursos
+    .map(
+      (recurso) => RECURSOS_APOYO.find((opcion) => opcion.valor === recurso)?.etiqueta ?? recurso,
+    )
+    .join(', ');
+}
+
+/**
+ * La sede del espacio que se envía con la reserva: la que dice el espacio o, si no la dice, la
+ * primera de SEDES (Valledupar). El formulario no la pregunta (#251).
+ */
+export function sedeDeEspacio(espacio: Pick<Espacio, 'sede'>): string {
+  return espacio.sede ?? SEDES[0];
+}
+
 /** La sede es una de SEDES y, si el espacio dice su sede, la misma. */
 export function problemaSede(
   sede: string,
@@ -276,17 +298,20 @@ export function problemaRecursos(recursos: readonly string[]): string | null {
 }
 
 /**
- * Solicitud completa de la versión 1.1 (#224, la UI es #251): los campos de HU-18 más la sede,
- * los recursos de apoyo, los datos del solicitante con su identificación (NIP) y los términos
+ * Solicitud completa de la versión 1.1 (#224, la UI es #251): los campos de HU-18 más los
+ * recursos de apoyo, los datos del solicitante con su identificación (NIP) y los términos
  * (TERMINOS_ESPACIOS). `requerimientos` es el campo «Novedades». Los asistentes siguen sin
  * máximo: la capacidad del espacio es orientativa (problemaCapacidad).
+ *
+ * `sede` en el formulario es la de la persona (datos del solicitante, #251). La sede del espacio
+ * no se pregunta: el formulario la envía aparte (la del espacio o la primera de SEDES), y la API
+ * la revisa con problemaSede().
  */
-export function esquemaSolicitudReservaCompleta({ parametros, espacio, hoy }: ContextoSolicitud) {
+export function esquemaSolicitudReservaCompleta({ parametros, hoy }: ContextoSolicitud) {
   return z
     .object({
       ...camposReserva,
       ...camposSolicitante,
-      sede: z.string(),
       recursos: z.array(z.string()),
       requerimientos: z
         .string()
@@ -298,9 +323,7 @@ export function esquemaSolicitudReservaCompleta({ parametros, espacio, hoy }: Co
     })
     .superRefine((datos, ctx) => {
       aplicarReglas(datos, ctx, { parametros, hoy });
-      reglasSolicitante(datos, ctx, { pedirIdentificacion: true });
-      const sede = problemaSede(datos.sede, espacio);
-      if (sede) ctx.addIssue({ code: 'custom', path: ['sede'], message: sede });
+      reglasSolicitante(datos, ctx, { pedirIdentificacion: true, pedirSede: true });
       const recursos = problemaRecursos(datos.recursos);
       if (recursos) ctx.addIssue({ code: 'custom', path: ['recursos'], message: recursos });
     });
@@ -311,18 +334,18 @@ export type FormularioSolicitudCompleta = z.input<
 >;
 
 /**
- * Valores iniciales sin el día ni las horas, que vienen del calendario. La sede, la del espacio
- * si la tiene; los datos del solicitante se prellenan con datosSolicitanteDe() (utils/solicitante).
+ * Valores iniciales sin el día ni las horas, que vienen del calendario. Los datos del solicitante
+ * (con su sede) se prellenan con datosSolicitanteDe() (utils/solicitante).
  */
-export function valoresInicialesReservaCompleta(
-  espacio: Pick<Espacio, 'sede'>,
-): Omit<FormularioSolicitudCompleta, 'fecha' | 'horaInicio' | 'horaFin'> {
+export function valoresInicialesReservaCompleta(): Omit<
+  FormularioSolicitudCompleta,
+  'fecha' | 'horaInicio' | 'horaFin'
+> {
   return {
     proposito: '',
     asistentes: '',
     requerimientos: '',
     ...VALORES_SOLICITANTE_VACIOS,
-    sede: espacio.sede ?? '',
     recursos: [],
     terminosAceptados: false,
   };

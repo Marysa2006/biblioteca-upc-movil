@@ -1,21 +1,31 @@
 /**
  * «Tus datos» de una solicitud (#251; la usa primero la asesoría, #249): lo que la sesión y el
  * perfil ya saben, prellenado con datosSolicitanteDe() y editable. Las reglas son las de #224
- * (camposSolicitante y reglasSolicitante): nivel, facultad, programa y semestre son obligatorios
- * solo para estudiantes, y el semestre solo se pide a ellos.
+ * (camposSolicitante y reglasSolicitante): sede, nivel, facultad, programa y semestre son
+ * obligatorios solo para estudiantes, y el semestre solo se pide a ellos.
+ * La sede es la de la persona (Valledupar o Aguachica), no la del espacio. El programa se elige
+ * de los de la facultad (PROGRAMAS_POR_FACULTAD) o, con «Otro programa», se escribe (#251).
  *
  * Es controlado y no depende de react-hook-form: recibe los valores y los errores, y avisa con
  * onCambiar. Así la pueden usar la asesoría, la capacitación, la reserva y la tablet.
- * El tipo de usuario sale de la sesión: se muestra, no se elige.
+ * El tipo de usuario sale de la sesión: se muestra, no se elige. La identificación también sale
+ * de la cuenta: el campo solo aparece si la reserva la exige y la cuenta no la tiene (#251).
  */
+import { useState } from 'react';
 import { StyleSheet, View, type KeyboardTypeOptions } from 'react-native';
-import { Chip, HelperText, RadioButton, Text, TextInput } from 'react-native-paper';
+import { Chip, HelperText, Text, TextInput } from 'react-native-paper';
 
 import { SelectorSemestre } from '@/components/autenticacion/SelectorSemestre';
-import { AvisoError } from '@/components/ui';
+import { AvisoError, CampoDesplegable } from '@/components/ui';
 import { colores, espacio, fuentes } from '@/theme';
 import type { TipoUsuario } from '@/types';
-import { FACULTADES, NIVELES_FORMACION, NOMBRE_NIVEL_FORMACION } from '@/utils/constantes';
+import {
+  FACULTADES,
+  NIVELES_FORMACION,
+  NOMBRE_NIVEL_FORMACION,
+  PROGRAMAS_POR_FACULTAD,
+  SEDES,
+} from '@/utils/constantes';
 import { NOMBRE_TIPO } from '@/utils/roles';
 import {
   LARGO_MAXIMO_DATO_ACADEMICO,
@@ -29,10 +39,17 @@ type Props = {
   valores: ValoresSolicitante;
   onCambiar: (campo: CampoSolicitante, valor: string) => void;
   errores: Partial<Record<CampoSolicitante, string>>;
-  /** La reserva pide la identificación; la asesoría y la capacitación no. */
+  /**
+   * Muestra el campo de la identificación, obligatorio. Solo la reserva la exige, y sale de la
+   * cuenta: la pantalla lo pide únicamente si la cuenta no la tiene (#251). La asesoría y la
+   * capacitación no la piden.
+   */
   pedirIdentificacion?: boolean;
   deshabilitado?: boolean;
 };
+
+/** La última opción de cada facultad: abre un campo para escribir el programa. */
+const OTRO_PROGRAMA = 'Otro programa';
 
 /** Lleva el chip a 48 px de área táctil sin cambiar su tamaño visible. */
 const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
@@ -52,6 +69,29 @@ export function SeccionDatosSolicitante({
     valores.facultad && !FACULTADES.includes(valores.facultad)
       ? [...FACULTADES, valores.facultad]
       : FACULTADES;
+  const programas = PROGRAMAS_POR_FACULTAD[valores.facultad] ?? [];
+  // «Otro programa»: elegido a mano, o un programa de la cuenta que no está en la lista.
+  const [otroElegido, setOtroElegido] = useState(false);
+  const otroPrograma =
+    otroElegido || (valores.programa !== '' && !programas.includes(valores.programa));
+
+  const elegirFacultad = (facultad: string) => {
+    onCambiar('facultad', facultad);
+    // El programa que no es de la nueva facultad se borra.
+    const nuevos = PROGRAMAS_POR_FACULTAD[facultad] ?? [];
+    if (valores.programa && !nuevos.includes(valores.programa)) onCambiar('programa', '');
+    setOtroElegido(false);
+  };
+
+  const elegirPrograma = (programa: string) => {
+    if (programa === OTRO_PROGRAMA) {
+      setOtroElegido(true);
+      if (programas.includes(valores.programa)) onCambiar('programa', '');
+      return;
+    }
+    setOtroElegido(false);
+    onCambiar('programa', programa);
+  };
 
   const texto = (
     campo: CampoSolicitante,
@@ -81,6 +121,27 @@ export function SeccionDatosSolicitante({
 
   return (
     <View style={estilos.seccion}>
+      <Subtitulo texto="Contacto" />
+      {texto('nombreCompleto', 'Nombre completo', {
+        largoMaximo: LARGO_MAXIMO_NOMBRE,
+        autoCapitalize: 'words',
+      })}
+      {pedirIdentificacion
+        ? texto('identificacion', 'Número de identificación', {
+            largoMaximo: 15,
+            teclado: 'number-pad',
+            soloDigitos: true,
+            ayuda: 'Tu cuenta no la tiene registrada; la pide la reserva.',
+          })
+        : null}
+      {texto('correo', 'Correo institucional', {
+        teclado: 'email-address',
+        autoCapitalize: 'none',
+        ayuda: 'El personal te escribe al correo solo si es estrictamente necesario.',
+      })}
+      {texto('celular', 'Celular', { largoMaximo: 10, teclado: 'phone-pad', soloDigitos: true })}
+
+      <Subtitulo texto="Datos académicos" />
       <View
         style={estilos.tipo}
         accessible
@@ -95,82 +156,56 @@ export function SeccionDatosSolicitante({
       </View>
       {errores.tipo ? <AvisoError mensaje={errores.tipo} /> : null}
 
-      {texto('nombreCompleto', 'Nombre completo', {
-        largoMaximo: LARGO_MAXIMO_NOMBRE,
-        autoCapitalize: 'words',
-      })}
-      {texto(
-        'identificacion',
-        pedirIdentificacion ? 'Número de identificación' : 'Número de identificación (opcional)',
-        { largoMaximo: 15, teclado: 'number-pad', soloDigitos: true },
-      )}
-      {texto('correo', 'Correo institucional', {
-        teclado: 'email-address',
-        autoCapitalize: 'none',
-        ayuda: 'El personal te escribe al correo solo si es estrictamente necesario.',
-      })}
-      {texto('celular', 'Celular', { largoMaximo: 10, teclado: 'phone-pad', soloDigitos: true })}
+      <GrupoChips
+        titulo={`Sede${opcional}`}
+        opciones={SEDES.map((sede) => ({ valor: sede, etiqueta: sede }))}
+        valor={valores.sede}
+        onElegir={(sede) => onCambiar('sede', sede)}
+        mensajeError={errores.sede}
+        deshabilitado={deshabilitado}
+      />
 
-      <View style={estilos.grupo}>
-        <Text variant="bodyMedium" style={estilos.etiquetaGrupo}>
-          {`Nivel${opcional}`}
-        </Text>
-        <View style={estilos.chips} accessibilityRole="radiogroup" accessibilityLabel="Nivel">
-          {NIVELES_FORMACION.map((nivel) => {
-            const elegido = nivel === valores.nivel;
-            return (
-              <Chip
-                key={nivel}
-                selected={elegido}
-                showSelectedCheck={false}
-                onPress={() => onCambiar('nivel', nivel)}
-                disabled={deshabilitado}
-                style={elegido ? estilos.chipElegido : estilos.chip}
-                selectedColor={elegido ? colores.superficie : colores.primarioOscuro}
-                textStyle={elegido ? estilos.textoChipElegido : estilos.textoChip}
-                hitSlop={AREA_CHIP}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: elegido, disabled: deshabilitado }}
-                accessibilityLabel={`Nivel: ${NOMBRE_NIVEL_FORMACION[nivel]}`}
-              >
-                {NOMBRE_NIVEL_FORMACION[nivel]}
-              </Chip>
-            );
-          })}
-        </View>
-        <ErrorGrupo mensaje={errores.nivel} />
-      </View>
+      <GrupoChips
+        titulo={`Nivel${opcional}`}
+        opciones={NIVELES_FORMACION.map((nivel) => ({
+          valor: nivel,
+          etiqueta: NOMBRE_NIVEL_FORMACION[nivel],
+        }))}
+        valor={valores.nivel}
+        onElegir={(nivel) => onCambiar('nivel', nivel)}
+        mensajeError={errores.nivel}
+        deshabilitado={deshabilitado}
+      />
 
-      {/* Lista y no chips: los nombres de las facultades son largos y no deben cortarse. */}
-      <View style={estilos.grupo}>
-        <Text variant="bodyMedium" style={estilos.etiquetaGrupo}>
-          {`Facultad${opcional}`}
-        </Text>
-        <RadioButton.Group
-          value={valores.facultad}
-          onValueChange={(facultad) => onCambiar('facultad', facultad)}
-        >
-          {facultades.map((facultad) => (
-            <RadioButton.Item
-              key={facultad}
-              label={facultad}
-              value={facultad}
-              mode="android"
-              position="leading"
-              disabled={deshabilitado}
-              color={colores.primario}
-              uncheckedColor={colores.bordeFuerte}
-              style={estilos.opcion}
-              labelStyle={estilos.etiquetaOpcion}
-              labelVariant="bodyMedium"
-              accessibilityLabel={`Facultad: ${facultad}`}
-            />
-          ))}
-        </RadioButton.Group>
-        <ErrorGrupo mensaje={errores.facultad} />
-      </View>
+      {/* Desplegables y no chips: los nombres son largos; el menú los muestra sin cortarlos. */}
+      <CampoDesplegable
+        etiqueta={`Facultad${opcional}`}
+        nombre="Facultad"
+        opciones={facultades}
+        valor={valores.facultad}
+        onCambiar={elegirFacultad}
+        textoVacio="Elige tu facultad"
+        mensajeError={errores.facultad}
+        deshabilitado={deshabilitado}
+      />
 
-      {texto('programa', `Programa${opcional}`, { largoMaximo: LARGO_MAXIMO_DATO_ACADEMICO })}
+      <CampoDesplegable
+        etiqueta={`Programa${opcional}`}
+        nombre="Programa"
+        opciones={[...programas, OTRO_PROGRAMA]}
+        valor={otroPrograma ? OTRO_PROGRAMA : valores.programa}
+        onCambiar={elegirPrograma}
+        textoVacio={valores.facultad ? 'Elige tu programa' : 'Elige primero la facultad'}
+        // Con «Otro programa», el error va bajo el campo de texto.
+        mensajeError={otroPrograma ? undefined : errores.programa}
+        deshabilitado={deshabilitado || !valores.facultad}
+      />
+      {otroPrograma
+        ? texto('programa', 'Escribe tu programa', {
+            largoMaximo: LARGO_MAXIMO_DATO_ACADEMICO,
+            ayuda: 'Por ejemplo, un posgrado o tu dependencia.',
+          })
+        : null}
 
       {esEstudiante ? (
         <SelectorSemestre
@@ -181,6 +216,66 @@ export function SeccionDatosSolicitante({
         />
       ) : null}
     </View>
+  );
+}
+
+type GrupoChipsProps = {
+  titulo: string;
+  opciones: { valor: string; etiqueta: string }[];
+  valor: string;
+  onElegir: (valor: string) => void;
+  mensajeError?: string;
+  deshabilitado: boolean;
+};
+
+/** Una opción entre pocas y cortas (sede, nivel), con chips como ChipsFiltro. */
+function GrupoChips({
+  titulo,
+  opciones,
+  valor,
+  onElegir,
+  mensajeError,
+  deshabilitado,
+}: GrupoChipsProps) {
+  return (
+    <View style={estilos.grupo}>
+      <Text variant="bodyMedium" style={estilos.etiquetaGrupo}>
+        {titulo}
+      </Text>
+      <View style={estilos.chips} accessibilityRole="radiogroup" accessibilityLabel={titulo}>
+        {opciones.map((opcion) => {
+          const elegido = opcion.valor === valor;
+          return (
+            <Chip
+              key={opcion.valor}
+              selected={elegido}
+              showSelectedCheck={false}
+              onPress={() => onElegir(opcion.valor)}
+              disabled={deshabilitado}
+              style={elegido ? estilos.chipElegido : estilos.chip}
+              selectedColor={elegido ? colores.superficie : colores.primarioOscuro}
+              textStyle={elegido ? estilos.textoChipElegido : estilos.textoChip}
+              hitSlop={AREA_CHIP}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: elegido, disabled: deshabilitado }}
+              accessibilityLabel={`${titulo}: ${opcion.etiqueta}`}
+            >
+              {opcion.etiqueta}
+            </Chip>
+          );
+        })}
+      </View>
+      <ErrorGrupo mensaje={mensajeError} />
+    </View>
+  );
+}
+
+/** Subtítulo de un bloque de la sección (Contacto, Datos académicos). */
+function Subtitulo({ texto }: { texto: string }) {
+  return (
+    <Text variant="titleSmall" style={estilos.subtitulo} accessibilityRole="header">
+      {texto}
+    </Text>
   );
 }
 
@@ -248,6 +343,7 @@ function CampoTexto({
 
 const estilos = StyleSheet.create({
   seccion: { gap: espacio.s },
+  subtitulo: { color: colores.primario, fontFamily: fuentes.seminegrita, marginTop: espacio.s },
   tipo: { gap: espacio.xs },
   etiqueta: { color: colores.textoSecundario },
   valor: { color: colores.texto, fontFamily: fuentes.seminegrita },
@@ -260,7 +356,4 @@ const estilos = StyleSheet.create({
   chipElegido: { backgroundColor: colores.primarioOscuro },
   textoChip: { fontFamily: fuentes.seminegrita },
   textoChipElegido: { fontFamily: fuentes.negrita },
-  // Sin el relleno lateral del ítem, el círculo se alinea con los campos.
-  opcion: { paddingHorizontal: 0 },
-  etiquetaOpcion: { color: colores.texto, textAlign: 'left' },
 });

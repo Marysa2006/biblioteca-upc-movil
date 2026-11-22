@@ -3,8 +3,9 @@
  * de HU-17 al tocar una franja disponible, con la fecha y la hora en la ruta.
  * Reservar pide cuenta: sin sesión, invita a iniciarla y vuelve aquí después. Con sesión, solo
  * docentes y administrativos reservan (#240): a los demás se les explica en lugar del formulario.
+ * Desde la 1.1 (#251), por pasos: la solicitud, tus datos (prellenados) y los términos.
  *
- * Patrón de datos: useEspacios() / useParametros() / useSolicitarReserva() (src/hooks)
+ * Patrón de datos: useEspacios() / useParametros() / usePerfil() / useSolicitarReserva() (src/hooks)
  * → src/api → mock o API.
  */
 import { router, useLocalSearchParams } from 'expo-router';
@@ -17,6 +18,7 @@ import { ServicioNoPermitido } from '@/components/reservas/ServicioNoPermitido';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useEspacios } from '@/hooks/useEspacios';
 import { useParametros } from '@/hooks/useParametros';
+import { usePerfil } from '@/hooks/usePerfil';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio } from '@/theme';
 import { MENSAJE_NO_RESERVA_ESPACIOS, puedeReservarEspacios } from '@/utils/roles';
@@ -28,6 +30,8 @@ export default function ReservarEspacio() {
   const { usuario } = useRol();
   const espacios = useEspacios();
   const parametros = useParametros();
+  // Prellena el celular (#224). Sin sesión no consulta; si falla, no bloquea: se escribe.
+  const perfil = usePerfil();
   const lugar = espacios.data?.find((e) => e.id === id);
 
   const reintentar = () => {
@@ -36,7 +40,7 @@ export default function ReservarEspacio() {
   };
 
   let contenido;
-  if (espacios.isPending || parametros.isPending) {
+  if (espacios.isPending || parametros.isPending || (usuario != null && perfil.isPending)) {
     contenido = <EstadoCarga mensaje="Cargando el espacio…" />;
   } else if (espacios.isError || parametros.isError) {
     contenido = <EstadoError mensaje="No pudimos cargar el espacio." onReintentar={reintentar} />;
@@ -56,6 +60,8 @@ export default function ReservarEspacio() {
       <FormularioSolicitudReserva
         espacio={lugar}
         parametros={parametros.data}
+        usuario={usuario}
+        perfil={perfil.data}
         fecha={fecha}
         hora={hora}
       />

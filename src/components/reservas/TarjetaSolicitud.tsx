@@ -11,7 +11,12 @@ import { AvisoError, EtiquetaEstado } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Reserva } from '@/types';
 import { fechaLegible } from '@/utils/fechas';
-import { ACCIONES_POR_ESTADO, NOMBRE_ACCION, type AccionReserva } from '@/utils/reservas';
+import {
+  ACCIONES_POR_ESTADO,
+  NOMBRE_ACCION,
+  textoRecursos,
+  type AccionReserva,
+} from '@/utils/reservas';
 
 type Props = {
   reserva: Reserva;
@@ -39,6 +44,7 @@ export function TarjetaSolicitud({ reserva, nombreEspacio, onAccion, aprobando, 
   const fecha = fechaLegible(reserva.fecha);
   const horario = `${reserva.horaInicio} – ${reserva.horaFin}`;
   const asistentes = `${reserva.asistentes} ${reserva.asistentes === 1 ? 'asistente' : 'asistentes'}`;
+  const recursos = textoRecursos(reserva.recursos);
 
   return (
     <View style={estilos.tarjeta}>
@@ -65,6 +71,19 @@ export function TarjetaSolicitud({ reserva, nombreEspacio, onAccion, aprobando, 
         <Text variant="bodySmall" style={estilos.secundario}>
           {reserva.requerimientos ? `${asistentes} · ${reserva.requerimientos}` : asistentes}
         </Text>
+        {recursos ? (
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {`Recursos: ${recursos}`}
+          </Text>
+        ) : null}
+        {/* Para confirmar por teléfono, como dicen los términos de los espacios (#251). */}
+        {reserva.datosSolicitante?.celular ? (
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {reserva.datosSolicitante.sede
+              ? `Celular: ${reserva.datosSolicitante.celular} · Sede: ${reserva.datosSolicitante.sede}`
+              : `Celular: ${reserva.datosSolicitante.celular}`}
+          </Text>
+        ) : null}
       </View>
 
       {reserva.motivo ? (
