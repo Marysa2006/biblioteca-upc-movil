@@ -1,7 +1,7 @@
 import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from 'react';
 import {
+  type HostInstance,
   KeyboardAvoidingView,
-  Platform,
   RefreshControl,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -82,6 +82,9 @@ export function Pantalla({
   // Si el contenido ya bajó un poco, para que el botón flotante se encoja y deje ver la lista.
   const [desplazada, setDesplazada] = useState(false);
   const desplazable = useRef<ScrollViewInstance>(null);
+  // Dónde empieza la pantalla en la ventana, para que el teclado no tape los campos (conTeclado).
+  const medidor = useRef<HostInstance>(null);
+  const [desplazamientoTeclado, setDesplazamientoTeclado] = useState(0);
   const subirAlInicio = useCallback(() => desplazable.current?.scrollTo({ y: 0, animated: true }), []);
   const alDesplazar =
     typeof flotante === 'function'
@@ -160,13 +163,27 @@ export function Pantalla({
   return (
     <SafeAreaView style={estilos.area} edges={conEncabezado ? [] : ['top']}>
       {conTeclado ? (
-        // Según la guía de Expo: 'padding' en iOS; en Android basta con el componente.
-        <KeyboardAvoidingView
+        // Desde la SDK 54, Android es edge-to-edge: la ventana ya no se achica con el teclado y
+        // un KeyboardAvoidingView sin `behavior` se queda debajo de él. La guía de Expo pide
+        // `behavior` en las dos plataformas, y 'padding' es la que mejor funciona.
+        // KeyboardAvoidingView mide su posición contra su contenedor, pero el teclado viene en
+        // coordenadas de la ventana: el desplazamiento es dónde empieza la pantalla en la
+        // ventana (debajo del encabezado y de la barra de estado), medido y no supuesto.
+        <View
+          ref={medidor}
           style={estilos.teclado}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          onLayout={() =>
+            medidor.current?.measureInWindow((_x, y) => setDesplazamientoTeclado(y))
+          }
         >
-          {conPie}
-        </KeyboardAvoidingView>
+          <KeyboardAvoidingView
+            style={estilos.teclado}
+            behavior="padding"
+            keyboardVerticalOffset={desplazamientoTeclado}
+          >
+            {conPie}
+          </KeyboardAvoidingView>
+        </View>
       ) : (
         conPie
       )}
