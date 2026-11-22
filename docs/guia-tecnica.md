@@ -177,7 +177,7 @@ ver [trampas conocidas](#trampas-conocidas).
 | Servicio | Cómo se usa |
 |---|---|
 | **Koha** (catálogo) | Búsqueda por RSS, en `src/api/catalogo.ts`. La URL está en `URL_CATALOGO_KOHA` |
-| **DSpace** (repositorio) | API de DSpace, en `src/api/repositorio.ts`. Va por HTTP: el APK lo permite con `usesCleartextTraffic`, configurado en el plugin `expo-build-properties` |
+| **DSpace** (repositorio) | API de DSpace, en `src/api/repositorio.ts`. Va por HTTPS desde noviembre de 2026 (#165); la URL está en `URL_REPOSITORIO` |
 | **Notificaciones** | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend |
 
 ---
@@ -253,10 +253,9 @@ lugar se puede reescribir el lockfile y meter ruido en el PR.
 
 | Clave | Qué hace |
 |---|---|
-| `plugins` | `expo-router`, `expo-splash-screen`, `expo-secure-store`, `expo-camera` (con el texto del permiso) y `expo-build-properties` |
+| `plugins` | `expo-router`, `expo-splash-screen`, `expo-secure-store` y `expo-camera` (con el texto del permiso) |
 | `experiments.typedRoutes` | Tipa las rutas: `router.push('/asesorias/mis-citas')` falla en `tsc` si la ruta no existe |
 | `experiments.reactCompiler` | Activa el compilador de React |
-| `expo-build-properties` → `android.usesCleartextTraffic` | Permite el HTTP del repositorio institucional. Se quita cuando la Universidad active HTTPS |
 | `android.package` | `com.biblioupc.app` |
 | `android.adaptiveIcon` | Fondo, primer plano y monocromo del ícono |
 | `extra.eas.projectId` | El proyecto de EAS |
@@ -725,10 +724,13 @@ computador abierto en el puerto que muestra la terminal.
 Expo Go muestra **su propio** ícono y su propio splash. Hace falta el APK o un build de
 desarrollo.
 
-### No se puede abrir el repositorio institucional
+### El APK no conecta con un servidor por HTTP
 
-Va por HTTP (`usesCleartextTraffic` en el plugin `expo-build-properties`). Depende de que el área
-de sistemas active HTTPS; está anotado como bloqueado en el issue #165.
+Desde el #165 el APK ya no permite tráfico HTTP (`usesCleartextTraffic`): el repositorio
+institucional responde por HTTPS. Un APK no puede hablar con un Backend por `http://`, por ejemplo
+el Django local del `.env` de ejemplo (`http://192.168.1.10:8000/api`). En Expo Go sí funciona.
+Para probar un APK contra un servidor local hace falta un túnel HTTPS; en producción, el Backend
+va por HTTPS.
 
 ### Trampas conocidas
 

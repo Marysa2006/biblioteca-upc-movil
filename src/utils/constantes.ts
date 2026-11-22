@@ -10,11 +10,11 @@ export const DOMINIO_CORREO = 'unicesar.edu.co';
 export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
 
 /**
- * Repositorio Institucional (DSpace 7.5, HU-11). Va con http porque el servidor todavía no
- * responde por https: el APK lo permite con usesCleartextTraffic en app.json. Cuando la
- * Universidad active https, se cambia aquí y se quita esa opción.
+ * Repositorio Institucional (DSpace 7.5, HU-11). Por https desde noviembre de 2026 (#165): la
+ * Universidad lo activó con certificado de DigiCert y el http redirige aquí. Por eso el APK ya no
+ * necesita usesCleartextTraffic.
  */
-export const URL_REPOSITORIO: string = 'http://repositorio.unicesar.edu.co';
+export const URL_REPOSITORIO: string = 'https://repositorio.unicesar.edu.co';
 
 /**
  * Programas de pregrado de cada facultad de la UPC, con la lista que entregó María (#251).
