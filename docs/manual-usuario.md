@@ -179,15 +179,14 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
 4. **Portal:** en tres grupos. Cada persona ve solo las filas de sus permisos.
    - **Publicaciones** (lo que ve la comunidad):
      - **Contenidos del portal:** los avisos, novedades y servicios que ve la comunidad.
-     - **Fotos de Inicio** y **Guías de la biblioteca**, que se explican abajo.
+     - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra las fotos que trae la aplicación.
+     - **Guías de la biblioteca:** las guías que ve la comunidad en Catálogo. En **Cómo se lee** se elige el formato: **PDF** (con **Elegir PDF** se sube el archivo del celular, hasta 10 MB), **Enlace** (Drive o una página web) o **Escrita** (se escribe en la aplicación). Con el menú **⋮** de cada guía se edita y se **publica** u **oculta**.
    - **Servicios** (lo que se puede solicitar):
      - **Temas de asesoría:** los temas en los que la comunidad puede pedir una asesoría.
      - **Líneas de formación:** las capacitaciones que se ofrecen.
      - **Espacios:** crear y editar espacios (con **Nuevo espacio**, abajo a la derecha), activarlos o desactivarlos, y bloquearlos por mantenimiento o eventos.
    - **Configuración:**
      - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
-   - **Guías de la biblioteca:** las guías que ve la comunidad en Catálogo. En **Cómo se lee** se elige el formato: **PDF** (con **Elegir PDF** se sube el archivo del celular, hasta 10 MB), **Enlace** (Drive o una página web) o **Escrita** (se escribe en la aplicación). Con el menú **⋮** de cada guía se edita y se **publica** u **oculta**.
-   - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra las fotos que trae la aplicación.
 
 ![Gestión: Solicitudes](manual-usuario/personal-gestion-solicitudes.png)
 ![Gestión: Portal](manual-usuario/personal-gestion-portal.png)

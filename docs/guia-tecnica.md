@@ -93,9 +93,9 @@ docs/               manual de usuario, guía técnica, paleta y mockups
 assets/images/      íconos, splash, logos y fotos
 ```
 
-Tamaño **al 16 de noviembre de 2026**: **48 pantallas**, **153 componentes**, **22 módulos de API**
-(20 con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **25 hooks**, **44
-utilidades**, **16 archivos de tipos** y **18 mocks**. Van a cambiar antes del cierre de la 1.1.
+Tamaño **al 23 de noviembre de 2026**: **58 pantallas**, **184 componentes**, **24 módulos de API**
+(22 con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **27 hooks**, **54
+utilidades**, **16 archivos de tipos** y **19 mocks**.
 
 ### El stack
 
@@ -881,7 +881,16 @@ Son las que más rompen la app, y casi ninguna da un error claro:
 
 ## Anexo: la integración con el Backend
 
-La app se entrega con datos de prueba. **[Integración con el Backend](integracion-backend.md)**
-tiene el inventario de los 88 endpoints que usa `src/api`, cuáles existen ya en el servidor
-(`develop` del 18 de noviembre: 72 tienen contraparte y 16 no), cuáles cambian y cuáles faltan, y el
-orden para apagar `USAR_MOCKS` módulo por módulo.
+La app se entrega con datos de prueba. La comparación del **23 de noviembre de 2026** contra el
+Backend (`develop` `53d1350`, versión 2.0.1) dice que la app llama **103 endpoints**: **50** tienen
+contraparte, **23** existen con otra forma (método, ruta o campos) y **30** faltan. Casi todo lo que
+falta son funciones nuevas de la 1.1: guías, fotos de Inicio, permisos por persona, la firma de la
+constancia, la sede y los indicadores de estadísticas.
+
+- **Lo que se le pide al Backend**, con prioridades, campos y preguntas, está en el documento
+  «App móvil y Backend: campos pendientes y archivos», que se les envía.
+- **Lo que adapta la app por su cuenta** (rutas en inglés con `/api/v1/`, inicio de sesión con
+  `access` y `refresh`, paginación, días de la semana, nombres de campos y estados) va en una capa de
+  traducción en `src/api/cliente.ts`, sin cambios del Backend.
+- [Integración con el Backend](integracion-backend.md) tiene el orden para apagar `USAR_MOCKS` módulo
+  por módulo.
