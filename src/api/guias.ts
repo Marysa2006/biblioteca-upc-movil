@@ -13,6 +13,7 @@
 import type { Guia, Usuario } from '@/types';
 import { enlaceValido } from '@/utils/agenda';
 import { hoyISO } from '@/utils/fechas';
+import type { DatosGuia } from '@/utils/guias';
 import { tienePermiso } from '@/utils/roles';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -21,8 +22,8 @@ import { GUIAS } from './mocks/guias';
 /** Copia mutable: con mocks, los cambios se ven durante la sesión de la app. */
 let guias: Guia[] = GUIAS.map((guia) => ({ ...guia }));
 
-/** Lo que envía el formulario; el id y la fecha de actualización los asigna el sistema. */
-export type DatosGuia = Omit<Guia, 'id' | 'actualizada'>;
+/** Lo que envía el formulario (utils/guias); `enlace: null` borra el enlace (#297). */
+export type { DatosGuia };
 
 /** ¿Esta persona puede publicar guías? (#258): con `contenidos` o `novedades`. */
 export function puedeGestionarGuias(usuario: Usuario | null): boolean {
@@ -89,14 +90,25 @@ export function guardarGuia(usuario: Usuario, datos: DatosGuia, id?: string): Pr
     if (error) return Promise.reject(error);
     const actualizada = hoyISO();
     if (!id) {
-      const nueva: Guia = { ...datos, id: `guia-${Date.now()}`, actualizada };
+      const nueva: Guia = {
+        ...datos,
+        enlace: datos.enlace ?? undefined,
+        id: `guia-${Date.now()}`,
+        actualizada,
+      };
       guias = [...guias, nueva];
       return simularRed({ ...nueva });
     }
     const indice = guias.findIndex((guia) => guia.id === id);
     if (indice === -1) return Promise.reject(new ErrorApi(404, 'La guía no existe.'));
-    // `enlace` sin valor también se quita: la guía pasó a ser escrita.
-    const editada: Guia = { ...guias[indice], ...datos, enlace: datos.enlace, id, actualizada };
+    // `enlace: null` lo quita: la guía pasó a ser escrita (#297). La API real recibe el null.
+    const editada: Guia = {
+      ...guias[indice],
+      ...datos,
+      enlace: datos.enlace ?? undefined,
+      id,
+      actualizada,
+    };
     guias = guias.map((guia, i) => (i === indice ? editada : guia));
     return simularRed({ ...editada });
   }

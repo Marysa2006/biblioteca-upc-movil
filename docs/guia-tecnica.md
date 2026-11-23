@@ -336,6 +336,30 @@ miente y la persona no se entera.
 Marcar un préstamo como **vencido** es responsabilidad de los datos; la interfaz solo lee
 `estado: 'vencido'`.
 
+### Las guías (HU-29)
+
+Una guía la publica la biblioteca desde Gestión → Portal → Guías. Es de uno de dos formatos:
+**con enlace** (PDF o Drive, se abre en el navegador) o **escrita** en la app (se guarda en el
+celular y se lee sin conexión). El tipo es `Guia` (`src/types/guias.ts`); las reglas del
+formulario, `esquemaGuia` (`src/utils/guias.ts`).
+
+| Campo | Tipo | Obligatorio | Límite y reglas |
+|---|---|---|---|
+| `id` | texto | lo asigna el sistema | — |
+| `titulo` | texto | sí | hasta 80 caracteres |
+| `descripcion` | texto | sí | hasta 200 caracteres |
+| `contenido` | texto plano | si es escrita | hasta 5000 caracteres; la primera línea es el título y las que empiezan con `1.` son pasos. Vacío si tiene enlace |
+| `enlace` | texto (URL) o `null` | si es con enlace | empieza por `https://`. Al editar, `null` borra el enlace: la guía pasó a ser escrita (#297) |
+| `publicado` | sí o no | sí | solo las publicadas las ve la comunidad |
+| `actualizada` | fecha `AAAA-MM-DD` | la asigna el sistema al guardar | sirve para saber si la copia del celular está al día |
+| `sede` | texto | no | **sin uso**: ni el formulario ni las pantallas lo leen |
+
+- Lo que envía el formulario al crear o editar es `DatosGuia`: la guía sin `id` ni `actualizada`.
+- **La copia en el celular** (`GuiaGuardada`) es la guía completa más `guardadaEn` (milisegundos).
+  Cada una es un JSON en la carpeta de documentos de la app (`src/utils/guiasOffline.ts`).
+- Las publica quien tenga el permiso `contenidos` o `novedades`.
+- En la versión 1.1 se suma un tercer formato: **archivo PDF** que se guarda en el celular (#303).
+
 ---
 
 ## 5. Programación
