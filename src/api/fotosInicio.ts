@@ -22,6 +22,8 @@ import { FOTOS_INICIO } from './mocks/fotosInicio';
 
 /** Copia mutable: con mocks, los cambios se ven durante la sesión de la app. */
 let fotos: FotoInicio[] = FOTOS_INICIO.map((foto) => ({ ...foto }));
+/** Para que dos fotos creadas en el mismo milisegundo no repitan el id. */
+let siguienteId = 1;
 
 /** Lo que envía el formulario; el id y el orden los asigna el sistema. */
 export type DatosFotoInicio = Pick<FotoInicio, 'imagen' | 'descripcion' | 'publicada'>;
@@ -96,7 +98,7 @@ export function guardarFotoInicio(
     const limpios: DatosFotoInicio = { ...datos, descripcion: datos.descripcion.trim() };
     if (!id) {
       const orden = Math.max(0, ...fotos.map((foto) => foto.orden)) + 1;
-      const nueva: FotoInicio = { ...limpios, id: `foto-${Date.now()}`, orden };
+      const nueva: FotoInicio = { ...limpios, id: `foto-${Date.now()}-${siguienteId++}`, orden };
       fotos = [...fotos, nueva];
       return simularRed({ ...nueva });
     }
