@@ -4,34 +4,25 @@
  * (camposSolicitante y reglasSolicitante): sede, nivel, facultad, programa y semestre son
  * obligatorios solo para estudiantes, y el semestre solo se pide a ellos.
  * La sede es la de la persona (Valledupar o Aguachica), no la del espacio. El programa se elige
- * de los de la facultad (PROGRAMAS_POR_FACULTAD) o, con «Otro programa», se escribe (#251).
+ * de los de la facultad o, con «Otro programa», se escribe (#251; SelectorFacultadPrograma, #294).
  *
  * Es controlado y no depende de react-hook-form: recibe los valores y los errores, y avisa con
  * onCambiar. Así la pueden usar la asesoría, la capacitación, la reserva y la tablet.
  * El tipo de usuario sale de la sesión: se muestra, no se elige. La identificación también sale
  * de la cuenta: el campo solo aparece si la reserva la exige y la cuenta no la tiene (#251).
  */
-import { useState } from 'react';
 import { StyleSheet, View, type KeyboardTypeOptions } from 'react-native';
 import { Chip, HelperText, Text, TextInput } from 'react-native-paper';
 
 import { SelectorSemestre } from '@/components/autenticacion/SelectorSemestre';
-import { AvisoError, CampoDesplegable } from '@/components/ui';
+import { AvisoError } from '@/components/ui';
 import { colores, espacio, fuentes } from '@/theme';
 import type { TipoUsuario } from '@/types';
-import {
-  FACULTADES,
-  NIVELES_FORMACION,
-  NOMBRE_NIVEL_FORMACION,
-  PROGRAMAS_POR_FACULTAD,
-  SEDES,
-} from '@/utils/constantes';
+import { NIVELES_FORMACION, NOMBRE_NIVEL_FORMACION, SEDES } from '@/utils/constantes';
 import { NOMBRE_TIPO } from '@/utils/roles';
-import {
-  LARGO_MAXIMO_DATO_ACADEMICO,
-  LARGO_MAXIMO_NOMBRE,
-  type ValoresSolicitante,
-} from '@/utils/solicitante';
+import { LARGO_MAXIMO_NOMBRE, type ValoresSolicitante } from '@/utils/solicitante';
+
+import { SelectorFacultadPrograma } from './SelectorFacultadPrograma';
 
 export type CampoSolicitante = keyof ValoresSolicitante;
 
@@ -48,9 +39,6 @@ type Props = {
   deshabilitado?: boolean;
 };
 
-/** La última opción de cada facultad: abre un campo para escribir el programa. */
-const OTRO_PROGRAMA = 'Otro programa';
-
 /** Lleva el chip a 48 px de área táctil sin cambiar su tamaño visible. */
 const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
 
@@ -64,34 +52,6 @@ export function SeccionDatosSolicitante({
   const esEstudiante = valores.tipo === 'estudiante';
   const opcional = esEstudiante ? '' : ' (opcional)';
   const nombreTipo = NOMBRE_TIPO[valores.tipo as TipoUsuario] ?? 'Sin tipo';
-  // La facultad del perfil que no está en la lista también se ofrece, para no perderla.
-  const facultades =
-    valores.facultad && !FACULTADES.includes(valores.facultad)
-      ? [...FACULTADES, valores.facultad]
-      : FACULTADES;
-  const programas = PROGRAMAS_POR_FACULTAD[valores.facultad] ?? [];
-  // «Otro programa»: elegido a mano, o un programa de la cuenta que no está en la lista.
-  const [otroElegido, setOtroElegido] = useState(false);
-  const otroPrograma =
-    otroElegido || (valores.programa !== '' && !programas.includes(valores.programa));
-
-  const elegirFacultad = (facultad: string) => {
-    onCambiar('facultad', facultad);
-    // El programa que no es de la nueva facultad se borra.
-    const nuevos = PROGRAMAS_POR_FACULTAD[facultad] ?? [];
-    if (valores.programa && !nuevos.includes(valores.programa)) onCambiar('programa', '');
-    setOtroElegido(false);
-  };
-
-  const elegirPrograma = (programa: string) => {
-    if (programa === OTRO_PROGRAMA) {
-      setOtroElegido(true);
-      if (programas.includes(valores.programa)) onCambiar('programa', '');
-      return;
-    }
-    setOtroElegido(false);
-    onCambiar('programa', programa);
-  };
 
   const texto = (
     campo: CampoSolicitante,
@@ -177,35 +137,16 @@ export function SeccionDatosSolicitante({
         deshabilitado={deshabilitado}
       />
 
-      {/* Desplegables y no chips: los nombres son largos; el menú los muestra sin cortarlos. */}
-      <CampoDesplegable
-        etiqueta={`Facultad${opcional}`}
-        nombre="Facultad"
-        opciones={facultades}
-        valor={valores.facultad}
-        onCambiar={elegirFacultad}
-        textoVacio="Elige tu facultad"
-        mensajeError={errores.facultad}
+      <SelectorFacultadPrograma
+        facultad={valores.facultad}
+        programa={valores.programa}
+        onCambiarFacultad={(facultad) => onCambiar('facultad', facultad)}
+        onCambiarPrograma={(programa) => onCambiar('programa', programa)}
+        errorFacultad={errores.facultad}
+        errorPrograma={errores.programa}
+        opcional={!esEstudiante}
         deshabilitado={deshabilitado}
       />
-
-      <CampoDesplegable
-        etiqueta={`Programa${opcional}`}
-        nombre="Programa"
-        opciones={[...programas, OTRO_PROGRAMA]}
-        valor={otroPrograma ? OTRO_PROGRAMA : valores.programa}
-        onCambiar={elegirPrograma}
-        textoVacio={valores.facultad ? 'Elige tu programa' : 'Elige primero la facultad'}
-        // Con «Otro programa», el error va bajo el campo de texto.
-        mensajeError={otroPrograma ? undefined : errores.programa}
-        deshabilitado={deshabilitado || !valores.facultad}
-      />
-      {otroPrograma
-        ? texto('programa', 'Escribe tu programa', {
-            largoMaximo: LARGO_MAXIMO_DATO_ACADEMICO,
-            ayuda: 'Por ejemplo, un posgrado o tu dependencia.',
-          })
-        : null}
 
       {esEstudiante ? (
         <SelectorSemestre

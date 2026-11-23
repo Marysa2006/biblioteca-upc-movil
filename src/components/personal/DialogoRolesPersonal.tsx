@@ -8,9 +8,10 @@
  * useActualizarRolesPersonal() rechaza que la administración se quite su propio rol.
  * No guarda: la pantalla llama a useActualizarRolesPersonal() con onConfirmar.
  *
- * Versión 1.1 (#257): debajo de los roles, "Permisos adicionales" con el interruptor "Publicar
- * novedades y avisos" (PERMISOS_ASIGNABLES). No es un rol: se suma a los de los roles, y la
- * pantalla lo guarda con useActualizarPermisosExtra().
+ * Versión 1.1 (#257 y #296): debajo de los roles, "Permisos adicionales" con tres interruptores
+ * (PERMISOS_ASIGNABLES): publicar novedades y avisos, administrar las fotos de Inicio y editar los
+ * parámetros generales. No son roles: se suman a los de los roles, y la pantalla los guarda con
+ * useActualizarPermisosExtra(). Sin ningún rol marcado se deshabilitan y, al guardar, se quitan.
  */
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -47,6 +48,14 @@ const PERMISO_ADICIONAL: Partial<Record<Permiso, { etiqueta: string; ayuda: stri
   novedades: {
     etiqueta: 'Publicar novedades y avisos',
     ayuda: 'Publica avisos e informativos en Inicio, sin tocar los servicios.',
+  },
+  fotos: {
+    etiqueta: 'Administrar las fotos de Inicio',
+    ayuda: 'Agrega, ordena, publica y oculta las fotos del carrusel de Inicio.',
+  },
+  parametros: {
+    etiqueta: 'Editar los parámetros generales',
+    ayuda: 'Periodos, festivos, horarios de atención, tiempos mínimos y textos automáticos.',
   },
 };
 
@@ -89,11 +98,15 @@ function Contenido({
   const opciones: RolPersonal[] = usuario.rolesPersonal.includes('administrador')
     ? ['administrador', ...ROLES_ASIGNABLES]
     : [...ROLES_ASIGNABLES];
+  // Sin ningún rol del personal, los permisos adicionales no sirven (no entra a esa vista): se
+  // deshabilitan y, al guardar, se quitan (#296).
+  const sinRoles = roles.length === 0;
+  const extraVigente = sinRoles ? [] : extra;
   const sinCambios =
     ordenar(roles).join() === ordenar(usuario.rolesPersonal).join() &&
-    extra.join() === ordenarPermisos(usuario.permisosExtra ?? []).join();
+    extraVigente.join() === ordenarPermisos(usuario.permisosExtra ?? []).join();
   // Los permisos vigentes: los de los roles más los adicionales.
-  const permisos = [...new Set([...permisosDeRoles(roles), ...extra])];
+  const permisos = [...new Set([...permisosDeRoles(roles), ...extraVigente])];
 
   const alternar = (rol: RolPersonal, activo: boolean) =>
     setRoles((actuales) => (activo ? [...actuales, rol] : actuales.filter((r) => r !== rol)));
@@ -126,6 +139,11 @@ function Contenido({
           <Text variant="titleSmall" style={estilos.seccion} accessibilityRole="header">
             Permisos adicionales
           </Text>
+          <Text variant="bodySmall" style={estilos.nota} accessibilityLiveRegion="polite">
+            {sinRoles
+              ? 'Primero asígnale un rol del personal: sin él, estos permisos no le sirven.'
+              : 'Tareas que le encargas aparte de sus roles.'}
+          </Text>
           {PERMISOS_ASIGNABLES.map((permiso) => {
             const info = PERMISO_ADICIONAL[permiso] ?? { etiqueta: NOMBRE_PERMISO[permiso], ayuda: '' };
             return (
@@ -133,9 +151,9 @@ function Contenido({
                 key={permiso}
                 etiqueta={info.etiqueta}
                 ayuda={info.ayuda || undefined}
-                valor={extra.includes(permiso)}
+                valor={!sinRoles && extra.includes(permiso)}
                 onCambiar={(activo) => alternarPermiso(permiso, activo)}
-                deshabilitado={guardando}
+                deshabilitado={guardando || sinRoles}
               />
             );
           })}
@@ -174,7 +192,9 @@ function Contenido({
         </Button>
         <Button
           mode="contained"
-          onPress={() => onConfirmar({ rolesPersonal: ordenar(roles), permisosExtra: extra })}
+          onPress={() =>
+            onConfirmar({ rolesPersonal: ordenar(roles), permisosExtra: extraVigente })
+          }
           loading={guardando}
           disabled={guardando || sinCambios}
           contentStyle={estilos.contenidoBoton}
@@ -196,6 +216,7 @@ const estilos = StyleSheet.create({
   texto: { color: colores.texto },
   secundario: { color: colores.textoSecundario, marginTop: espacio.s },
   seccion: { color: colores.primario, fontFamily: fuentes.seminegrita, marginTop: espacio.s },
+  nota: { color: colores.textoSecundario },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
   chip: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 /**
  * Fotos del carrusel de Inicio (#290, versión 1.1).
  * - La comunidad consulta las publicadas, sin sesión, como los avisos.
- * - Las administra quien tenga el permiso `contenidos` o `novedades` (403 en los demás casos):
+ * - Las administra quien tenga el permiso `fotos` (#296; 403 en los demás casos):
  *   crear, editar, publicar u ocultar y cambiar el orden.
  * - Se publican máximo MAXIMO_FOTOS_INICIO (400 si se pasa) y la descripción es obligatoria.
  *
@@ -22,6 +22,8 @@ import { FOTOS_INICIO } from './mocks/fotosInicio';
 
 /** Copia mutable: con mocks, los cambios se ven durante la sesión de la app. */
 let fotos: FotoInicio[] = FOTOS_INICIO.map((foto) => ({ ...foto }));
+/** Para que dos fotos creadas en el mismo milisegundo no repitan el id. */
+let siguienteId = 1;
 
 /** Lo que envía el formulario; el id y el orden los asigna el sistema. */
 export type DatosFotoInicio = Pick<FotoInicio, 'imagen' | 'descripcion' | 'publicada'>;
@@ -36,9 +38,9 @@ function copia(lista: FotoInicio[]): FotoInicio[] {
   return lista.map((foto) => ({ ...foto }));
 }
 
+/** Con el permiso `fotos` (#296): la administración por su rol, o quien ella lo encargue. */
 function errorDePermiso(usuario: Usuario | null): ErrorApi | null {
-  const puede =
-    usuario != null && (tienePermiso(usuario, 'contenidos') || tienePermiso(usuario, 'novedades'));
+  const puede = usuario != null && tienePermiso(usuario, 'fotos');
   return puede ? null : new ErrorApi(403, 'No tienes permiso para cambiar las fotos de Inicio.');
 }
 
@@ -96,7 +98,7 @@ export function guardarFotoInicio(
     const limpios: DatosFotoInicio = { ...datos, descripcion: datos.descripcion.trim() };
     if (!id) {
       const orden = Math.max(0, ...fotos.map((foto) => foto.orden)) + 1;
-      const nueva: FotoInicio = { ...limpios, id: `foto-${Date.now()}`, orden };
+      const nueva: FotoInicio = { ...limpios, id: `foto-${Date.now()}-${siguienteId++}`, orden };
       fotos = [...fotos, nueva];
       return simularRed({ ...nueva });
     }

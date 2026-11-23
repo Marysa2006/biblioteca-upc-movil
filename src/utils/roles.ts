@@ -30,10 +30,14 @@ export const NOMBRE_TIPO: Record<TipoUsuario, string> = {
 };
 
 /**
- * Permisos que la administración puede dar aparte de los roles (versión 1.1).
- * Por ahora solo `novedades`: publicar avisos e informativos en Inicio sin tocar los servicios.
+ * Permisos que la administración puede dar a quien quiera del personal, aparte de sus roles
+ * (versión 1.1, #296): la bibliotecóloga encarga estas tareas sin depender del rol.
+ * - `novedades`: publicar avisos e informativos en Inicio, sin tocar los servicios;
+ * - `fotos`: administrar las fotos del carrusel de Inicio;
+ * - `parametros`: editar los parámetros generales.
+ * Solo cuentan para quien tiene un rol del personal: la comunidad no entra a esa vista.
  */
-export const PERMISOS_ASIGNABLES: readonly Permiso[] = ['novedades'];
+export const PERMISOS_ASIGNABLES: readonly Permiso[] = ['novedades', 'fotos', 'parametros'];
 
 export const NOMBRE_ROL_PERSONAL: Record<RolPersonal, string> = {
   administrador: 'Administración de la biblioteca',
@@ -60,6 +64,7 @@ export const PERMISOS_POR_ROL: Record<RolPersonal, readonly Permiso[]> = {
     'tablets',
     'formacion',
     'estadisticas',
+    'fotos',
   ],
   facilitador: ['asesorias', 'formacion'],
   gestor_espacios: ['espacios', 'reservas'],
@@ -77,6 +82,7 @@ export const NOMBRE_PERMISO: Record<Permiso, string> = {
   formacion: 'Capacitaciones',
   estadisticas: 'Estadísticas',
   novedades: 'Novedades y avisos',
+  fotos: 'Fotos de Inicio',
 };
 
 type ConRoles = Pick<Usuario, 'rolesPersonal' | 'permisosExtra'> | null | undefined;
@@ -106,12 +112,14 @@ export function permisosDeRoles(roles: readonly RolPersonal[]): Permiso[] {
 
 /**
  * Permisos del usuario: los de sus roles más los que le dio la administración en `permisosExtra`
- * (versión 1.1). Sin sesión, o de la comunidad, solo puede tener los extra.
+ * (versión 1.1). Los adicionales solo cuentan con algún rol del personal (#296): sin él, la
+ * persona no entra a esa vista, y un permiso guardado de antes no debe darle nada.
  */
 export function permisosDe(usuario: ConRoles): Permiso[] {
+  const roles = usuario?.rolesPersonal ?? [];
   const suma = new Set([
-    ...permisosDeRoles(usuario?.rolesPersonal ?? []),
-    ...(usuario?.permisosExtra ?? []),
+    ...permisosDeRoles(roles),
+    ...(roles.length > 0 ? (usuario?.permisosExtra ?? []) : []),
   ]);
   return (Object.keys(NOMBRE_PERMISO) as Permiso[]).filter((permiso) => suma.has(permiso));
 }
@@ -121,18 +129,27 @@ export function tienePermiso(usuario: ConRoles, permiso: Permiso): boolean {
   return permisosDe(usuario).includes(permiso);
 }
 
+/** Cómo se nombra cada permiso adicional dentro de una frase ("también: novedades, …"). */
+const PERMISO_ADICIONAL_CORTO: Partial<Record<Permiso, string>> = {
+  novedades: 'novedades',
+  fotos: 'fotos de Inicio',
+  parametros: 'parámetros',
+};
+
 /**
- * "Facilitador · Gestor de espacios" para el personal; el tipo para la comunidad. Con el permiso
- * adicional de novedades (#257), agrega "puede publicar novedades".
+ * "Facilitador · Gestor de espacios" para el personal; el tipo para la comunidad. Con permisos
+ * adicionales (#257, #296), agrega "también: novedades, fotos de Inicio". A la comunidad no se los
+ * nombra: no le sirven sin un rol del personal.
  */
 export function describirRoles(
   usuario: Pick<Usuario, 'tipo' | 'rolesPersonal'> & Partial<Pick<Usuario, 'permisosExtra'>>,
 ): string {
-  const base =
-    usuario.rolesPersonal.length === 0
-      ? NOMBRE_TIPO[usuario.tipo]
-      : usuario.rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(' · ');
-  return usuario.permisosExtra?.includes('novedades') ? `${base} · puede publicar novedades` : base;
+  if (usuario.rolesPersonal.length === 0) return NOMBRE_TIPO[usuario.tipo];
+  const base = usuario.rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(' · ');
+  const extras = PERMISOS_ASIGNABLES.filter((permiso) =>
+    usuario.permisosExtra?.includes(permiso),
+  ).map((permiso) => PERMISO_ADICIONAL_CORTO[permiso] ?? NOMBRE_PERMISO[permiso]);
+  return extras.length > 0 ? `${base} · también: ${extras.join(', ')}` : base;
 }
 
 /**

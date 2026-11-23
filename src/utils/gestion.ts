@@ -27,8 +27,13 @@ export const SECCIONES_GESTION: readonly InfoSeccionGestion[] = [
   { valor: 'prestamos', etiqueta: 'Préstamos', permisos: ['tablets'] },
   { valor: 'vencidos', etiqueta: 'Vencidos', permisos: ['tablets'] },
   { valor: 'espacios', etiqueta: 'Espacios', permisos: ['espacios'] },
-  // `novedades` (#257): quien solo publica avisos también entra al Portal, solo a lo suyo.
-  { valor: 'portal', etiqueta: 'Portal', permisos: ['contenidos', 'parametros', 'novedades'] },
+  // Con un permiso adicional (`novedades`, `fotos` o `parametros`, #257 y #296) también se entra
+  // al Portal, solo a lo suyo.
+  {
+    valor: 'portal',
+    etiqueta: 'Portal',
+    permisos: ['contenidos', 'parametros', 'novedades', 'fotos'],
+  },
 ];
 
 /** Las secciones que se ven con estos permisos, en su orden. */

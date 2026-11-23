@@ -71,13 +71,12 @@ const ACCESOS: Acceso[] = [
     tambienCon: 'novedades',
   },
   {
-    // Versión 1.1 (#290): las fotos del carrusel de Inicio, con `contenidos` o `novedades`.
+    // Versión 1.1 (#290): las fotos del carrusel de Inicio, con su propio permiso (#296).
     titulo: 'Fotos de Inicio',
     descripcion: 'Las fotos del carrusel que ve la comunidad al abrir la app.',
     icono: 'image-multiple-outline',
     destino: '/administracion/fotos-inicio',
-    permiso: 'contenidos',
-    tambienCon: 'novedades',
+    permiso: 'fotos',
   },
 ];
 

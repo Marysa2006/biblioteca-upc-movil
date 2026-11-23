@@ -217,8 +217,8 @@ export function horasPosibles(
 
 /**
  * La solicitud: la franja de inicio, las horas, los datos de quien la pide con las reglas de
- * #224 (utils/solicitante, con la identificación obligatoria), las condiciones (CA3) y la
- * responsabilidad (#163). La fecha la lleva la pantalla, porque con ella pide las franjas.
+ * #224 (utils/solicitante: la identificación y, para estudiantes, la sede, #294), las condiciones
+ * (CA3) y la responsabilidad (#163). La fecha la lleva la pantalla, porque con ella pide las franjas.
  * Cada campo se valida por su lado para que los errores se vean todos a la vez; las reglas
  * entre campos del solicitante van en superRefine.
  */
@@ -240,7 +240,9 @@ export function esquemaPrestamo({ maximoHoras }: { maximoHoras: number }) {
         error: 'Acepta la responsabilidad sobre el préstamo para enviar la solicitud.',
       }),
     })
-    .superRefine((datos, ctx) => reglasSolicitante(datos, ctx, { pedirIdentificacion: true }));
+    .superRefine((datos, ctx) =>
+      reglasSolicitante(datos, ctx, { pedirIdentificacion: true, pedirSede: true }),
+    );
 }
 
 export type DatosPrestamo = z.input<ReturnType<typeof esquemaPrestamo>>;

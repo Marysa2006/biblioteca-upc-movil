@@ -44,7 +44,7 @@ Si eres estudiante, docente o administrativo de la Universidad y todavía no tie
 
 1. Toca el botón de arriba a la derecha, elige **Iniciar sesión** y, debajo del formulario, toca **Regístrate**.
 2. Escribe tus nombres, tus apellidos, tu número de cédula y tu correo institucional (`@unicesar.edu.co`). El celular es opcional.
-3. Elige si eres **Estudiante**, **Docente** o **Administrativo**. Si eres estudiante, escribe tu programa y elige tu semestre; si estás en el 11.º o más, elige **Otro** y ajusta el número. Si eres docente o administrativo, puedes escribir tu dependencia. Los coordinadores, directores y decanos se registran como docente o administrativo.
+3. Elige si eres **Estudiante**, **Docente** o **Administrativo**, y tu sede (**Valledupar** o **Aguachica**; obligatoria si eres estudiante). Si eres estudiante, elige tu facultad y tu programa en las listas (si no está, elige **Otro programa** y escríbelo) y tu semestre; si estás en el 11.º o más, elige **Otro** y ajusta el número. Si eres docente o administrativo, puedes escribir tu dependencia. Los coordinadores, directores y decanos se registran como docente o administrativo.
 4. Escribe una contraseña de al menos 8 caracteres, que no sea solo números, y repítela.
 5. Toca **Leer la autorización** para ver el formato del Acuerdo 019, marca **He leído y acepto…** y toca **Crear cuenta**.
 
@@ -107,7 +107,7 @@ El día de la asesoría aprobada, desde 30 minutos antes, **Mis citas** y el det
 1. En **Servicios**, abre **Préstamo de tablets** y toca **Solicitar tablet**.
 2. Elige el día (con hasta 7 días de anticipación) y la hora de inicio, en punto o y media. Si no hay tablets, la aplicación sugiere otras horas.
 3. Elige por cuántas horas la necesitas, de 1 a 4 (empieza en 3). La aplicación muestra la hora de devolución.
-4. Revisa tus datos, acepta las condiciones de uso y la responsabilidad sobre el préstamo, y toca **Confirmar solicitud**.
+4. Revisa tus datos (vienen de tu cuenta; si eres estudiante, también la sede, la facultad y el programa), acepta las condiciones de uso y la responsabilidad sobre el préstamo, y toca **Confirmar solicitud**.
 
 La tablet se recoge en el mostrador de la biblioteca.
 
@@ -186,7 +186,14 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
 - **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos**, **Vencidos** e **Inventario** de tablets.
 - **Facilitador:** las solicitudes de capacitación y la **Agenda** de sus asesorías.
 - **Gestora de espacios:** las solicitudes de reserva y la sección **Espacios**, con sus bloqueos.
-- **Quien tiene el permiso de novedades y avisos:** en **Portal**, los avisos y las novedades, las **Guías de la biblioteca** y las **Fotos de Inicio**, sin tocar los servicios.
+
+**Permisos adicionales.** La administración puede encargar tres tareas a quien quiera del personal, sea facilitador o gestor de espacios. En **Personal**, toca **Roles y permisos** en la tarjeta de la persona y activa los que correspondan en **Permisos adicionales**:
+
+- **Publicar novedades y avisos:** en **Portal**, los avisos y los informativos de Inicio y las **Guías de la biblioteca**, sin tocar los servicios.
+- **Administrar las fotos de Inicio:** en **Portal**, las **Fotos de Inicio**.
+- **Editar los parámetros generales:** en **Portal**, los **Parámetros generales**.
+
+Solo se le pueden dar a alguien que tenga un rol del personal: a una cuenta de la comunidad no le servirían, porque no entra a esa vista. Si se le quitan todos los roles, también pierde estos permisos.
 
 ## 5. Usuarios de prueba
 

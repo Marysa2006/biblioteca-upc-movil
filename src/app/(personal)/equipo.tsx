@@ -37,6 +37,7 @@ import { colores, espacio, fuentes, radio } from '@/theme';
 import type { RolPersonal, TipoUsuario, Usuario } from '@/types';
 import {
   esPersonal,
+  NOMBRE_PERMISO,
   NOMBRE_ROL_PERSONAL,
   NOMBRE_TIPO,
   ROLES_PERSONAL,
@@ -132,10 +133,14 @@ function GestionRoles() {
       rolesPersonal.length > 0
         ? `${persona.nombre} ahora tiene: ${rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(', ')}`
         : `${persona.nombre} no tiene roles del personal`;
-    const novedades = permisosExtra.includes('novedades')
-      ? ' y puede publicar novedades y avisos.'
-      : '.';
-    setAviso(`${roles}${novedades}`);
+    // Los permisos adicionales (#296), o que se quitaron al quedar sin roles.
+    let adicionales = '.';
+    if (permisosExtra.length > 0) {
+      adicionales = `, y también: ${permisosExtra.map((permiso) => NOMBRE_PERMISO[permiso]).join(', ')}.`;
+    } else if (anteriores.length > 0) {
+      adicionales = ', y ya no tiene permisos adicionales.';
+    }
+    setAviso(`${roles}${adicionales}`);
   };
 
   let filtros = null;

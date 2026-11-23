@@ -67,4 +67,6 @@ export type Permiso =
   | 'formacion'
   | 'estadisticas'
   /** Publicar avisos e informativos en Inicio, sin tocar los servicios (versión 1.1). */
-  | 'novedades';
+  | 'novedades'
+  /** Administrar las fotos del carrusel de Inicio (#290, #296). */
+  | 'fotos';
