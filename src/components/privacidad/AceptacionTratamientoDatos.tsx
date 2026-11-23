@@ -1,14 +1,14 @@
 /**
  * Autorización de tratamiento de datos personales (#225, CA2).
  *
- * Aparece la primera vez que alguien inicia sesión en este celular, y también cuando la
- * Universidad publica otra política: sin la aceptación no se puede usar la app con cuenta,
- * porque las pantallas con sesión manejan datos personales. No se cierra tocando fuera ni con
+ * Revisión de la 1.1: la autorización se acepta al registrarse y queda en el usuario
+ * (`aceptacionDatos`), así que al iniciar sesión no se vuelve a pedir. Este diálogo solo aparece
+ * si la cuenta no la tiene o si la Universidad publica otra política: sin la aceptación no se
+ * puede usar la app con cuenta, porque las pantallas con sesión manejan datos personales. No se cierra tocando fuera ni con
  * el botón atrás de Android: hay que aceptar o salir de la sesión.
  *
- * La aceptación queda guardada por usuario en la sesión (src/store/sesion.ts), con la fecha de
- * la política y el momento en que se aceptó, que es la prueba de la autorización. No se vuelve
- * a pedir hasta que cambie la política.
+ * Al aceptar, queda en el usuario (mock o Backend, `POST /me/privacy-acceptance/`) y en la sesión,
+ * con la fecha de la política y el momento, que es la prueba de la autorización.
  *
  * EL TEXTO LEGAL NO ES NUESTRO. Se transcribe literal del Acuerdo 019 del 5 de octubre de 2020
  * de la UPC: el formato «Autorización para el tratamiento de datos personales» de las páginas 18
@@ -29,11 +29,11 @@ import {
 } from 'react-native';
 import { Button, Checkbox, Dialog, Portal, Text } from 'react-native-paper';
 
-import { useCerrarSesion } from '@/hooks/useAutenticacion';
+import { useAceptarTratamientoDatos, useCerrarSesion } from '@/hooks/useAutenticacion';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes } from '@/theme';
 import { VERSION_POLITICA_DATOS } from '@/utils/constantes';
-import { aceptoPoliticaVigente } from '@/utils/privacidad';
+import { aceptacionVigente } from '@/utils/privacidad';
 
 import { TextoAutorizacionDatos } from './TextoAutorizacionDatos';
 
@@ -46,7 +46,7 @@ export function AceptacionTratamientoDatos() {
   const usuario = useSesion((estado) => estado.usuario);
   const hidratada = useSesion((estado) => estado.hidratada);
   const aceptaciones = useSesion((estado) => estado.aceptaciones);
-  const aceptar = useSesion((estado) => estado.aceptarTratamientoDatos);
+  const aceptar = useAceptarTratamientoDatos();
   const cerrarSesion = useCerrarSesion();
   // El texto se desplaza dentro del diálogo: en un celular bajo o con letra grande, ocupa menos.
   const { height } = useWindowDimensions();
@@ -59,7 +59,9 @@ export function AceptacionTratamientoDatos() {
   const [avisoSalida, setAvisoSalida] = useState(false);
   const aceptada = claveAceptacion != null && marcadaPara === claveAceptacion;
 
-  const visible = hidratada && usuario != null && !aceptoPoliticaVigente(aceptaciones, usuario.id);
+  // Revisión de la 1.1: quien se registró ya la aceptó; solo se pide si la Universidad publica
+  // otra política (o si la cuenta no la tiene, como una creada por la administración).
+  const visible = hidratada && usuario != null && aceptacionVigente(usuario, aceptaciones) == null;
 
   // En iOS el diálogo no se anuncia solo; en Android lo hace el propio Portal.
   useEffect(() => {
@@ -78,7 +80,7 @@ export function AceptacionTratamientoDatos() {
 
   const aceptarPolitica = () => {
     setMarcadaPara(null);
-    aceptar();
+    aceptar.mutate();
   };
 
   const noAceptar = () => {

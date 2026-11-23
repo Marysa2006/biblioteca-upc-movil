@@ -23,6 +23,17 @@ export type Rol = TipoUsuario | RolPersonal;
  */
 export type NivelFormacion = 'pregrado' | 'posgrado' | 'otro';
 
+/**
+ * La autorización de tratamiento de datos que aceptó una persona (#225): qué política y cuándo.
+ * Como `privacy_acceptance_required` del Backend, es un dato del usuario, no del celular.
+ */
+export type AceptacionPolitica = {
+  /** Fecha de la política aceptada; se compara con la vigente. */
+  version: string;
+  /** Momento de la aceptación, en ISO 8601. */
+  fecha: string;
+};
+
 export type Usuario = {
   id: string;
   nombre: string;
@@ -49,6 +60,11 @@ export type Usuario = {
    * Por ahora solo `novedades`. No es un rol nuevo: se suma a los de `rolesPersonal`.
    */
   permisosExtra?: Permiso[];
+  /**
+   * La autorización de tratamiento de datos que aceptó al registrarse (revisión de la 1.1). Si la
+   * Universidad publica otra política, la versión ya no coincide y se le pide otra vez.
+   */
+  aceptacionDatos?: AceptacionPolitica;
 };
 
 /**

@@ -4,7 +4,7 @@
  * permisos que van aparte de los roles (versión 1.1).
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
-import type { Permiso, RolPersonal, Usuario } from '@/types';
+import type { AceptacionPolitica, Permiso, RolPersonal, Usuario } from '@/types';
 import { NOMBRE_PERMISO, PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -65,6 +65,19 @@ export function existeIdentificacion(identificacion: string): boolean {
  */
 export function agregarAlDirectorio(usuario: Usuario): void {
   directorio = [...directorio, copiar(usuario)];
+}
+
+/**
+ * Guarda en el directorio de prueba que la persona aceptó la autorización de datos (revisión de
+ * la 1.1). Solo lo usa el mock; con la API real, lo guarda el Backend.
+ */
+export function guardarAceptacionEnDirectorio(
+  usuarioId: string,
+  aceptacion: AceptacionPolitica,
+): void {
+  directorio = directorio.map((usuario) =>
+    usuario.id === usuarioId ? { ...usuario, aceptacionDatos: { ...aceptacion } } : usuario,
+  );
 }
 
 /**

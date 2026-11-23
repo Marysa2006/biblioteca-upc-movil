@@ -7,7 +7,7 @@
 import type { Permiso } from '@/types';
 
 export type ValorSeccionGestion =
-  'solicitudes' | 'agenda' | 'prestamos' | 'espacios' | 'portal';
+  'solicitudes' | 'agenda' | 'prestamos' | 'portal';
 
 export type InfoSeccionGestion = {
   valor: ValorSeccionGestion;
@@ -26,13 +26,13 @@ export const SECCIONES_GESTION: readonly InfoSeccionGestion[] = [
   { valor: 'agenda', etiqueta: 'Agenda', permisos: ['asesorias'] },
   // Los vencidos son un grupo de Préstamos desde el #310 (antes, su propia sección).
   { valor: 'prestamos', etiqueta: 'Préstamos', permisos: ['tablets'] },
-  { valor: 'espacios', etiqueta: 'Espacios', permisos: ['espacios'] },
   // Con un permiso adicional (`novedades`, `fotos` o `parametros`, #257 y #296) también se entra
-  // al Portal, solo a lo suyo.
+  // al Portal, solo a lo suyo. Desde la revisión de la 1.1, Espacios es una fila del Portal (grupo
+  // Servicios), así que `espacios` también deja entrar.
   {
     valor: 'portal',
     etiqueta: 'Portal',
-    permisos: ['contenidos', 'parametros', 'novedades', 'fotos'],
+    permisos: ['contenidos', 'parametros', 'novedades', 'fotos', 'espacios'],
   },
 ];
 

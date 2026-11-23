@@ -5,7 +5,7 @@
  *
  * El texto legal es el Acuerdo 019 del 5 de octubre de 2020 de la UPC (Ley 1581 de 2012).
  */
-import type { Usuario } from '@/types';
+import type { AceptacionPolitica, Usuario } from '@/types';
 
 import { VERSION_POLITICA_DATOS } from './constantes';
 import { MESES } from './fechas';
@@ -13,14 +13,9 @@ import { MESES } from './fechas';
 /**
  * Autorización aceptada: qué política y cuándo. Guardar el momento de la aceptación es lo que
  * permite responder a la solicitud de prueba de la autorización, que la política reconoce como
- * derecho del titular (sección 7, literal b).
+ * derecho del titular (sección 7, literal b). Es `AceptacionPolitica` de los tipos.
  */
-export type AceptacionDatos = {
-  /** Fecha de la política aceptada; se compara con la vigente. */
-  version: string;
-  /** Momento de la aceptación, en ISO 8601. */
-  fecha: string;
-};
+export type AceptacionDatos = AceptacionPolitica;
 
 export type Aceptaciones = Record<string, AceptacionDatos>;
 
@@ -34,6 +29,21 @@ export function aceptoPoliticaVigente(
 ): boolean {
   if (!usuarioId) return false;
   return aceptaciones[usuarioId]?.version === VERSION_POLITICA_DATOS;
+}
+
+/**
+ * La autorización vigente de la persona, o null si no la tiene (revisión de la 1.1). Vale la que
+ * trae el usuario (la aceptó al registrarse; con la API, la del Backend) o, si la Universidad
+ * publicó otra política y la aceptó en este celular, la guardada en la sesión. Así quien ya se
+ * registró no la vuelve a ver al iniciar sesión, en este ni en otro celular.
+ */
+export function aceptacionVigente(
+  usuario: Pick<Usuario, 'id' | 'aceptacionDatos'> | null | undefined,
+  aceptaciones: Aceptaciones,
+): AceptacionDatos | null {
+  if (!usuario) return null;
+  if (usuario.aceptacionDatos?.version === VERSION_POLITICA_DATOS) return usuario.aceptacionDatos;
+  return aceptoPoliticaVigente(aceptaciones, usuario.id) ? aceptaciones[usuario.id] : null;
 }
 
 /** Lo que se guarda al aceptar: la política vigente y el momento. */

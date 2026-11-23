@@ -182,3 +182,24 @@ export function puedeReservarEspacios(tipo: TipoUsuario): boolean {
 export function puedePedirTablet(tipo: TipoUsuario): boolean {
   return TIPOS_QUE_PIDEN_TABLETS.includes(tipo);
 }
+
+/**
+ * Quién puede atender una asesoría (revisión de la 1.1): el personal con el permiso `asesorias`,
+ * no solo el rol de facilitador. Así aparece la administración, que hoy atiende las asesorías
+ * (es la «superfacilitadora»): va primero, marcada como Administración, y luego los
+ * facilitadores por nombre.
+ */
+export function opcionesFacilitador(personas: Usuario[]): { id: string; nombre: string }[] {
+  const esAdministracion = (persona: Usuario) => tieneRol(persona, 'administrador');
+  return personas
+    .filter((persona) => tienePermiso(persona, 'asesorias'))
+    .sort(
+      (a, b) =>
+        Number(esAdministracion(b)) - Number(esAdministracion(a)) ||
+        a.nombre.localeCompare(b.nombre),
+    )
+    .map((persona) => ({
+      id: persona.id,
+      nombre: esAdministracion(persona) ? `${persona.nombre} (Administración)` : persona.nombre,
+    }));
+}

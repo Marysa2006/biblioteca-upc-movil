@@ -48,7 +48,7 @@ import { puedeRegistrarResultado, type FormularioAprobacionCita } from '@/utils/
 import { fechaCompleta } from '@/utils/calendario';
 import { puedeTomarAsistencia } from '@/utils/asistencia';
 import { mensajeErrorGuardar } from '@/utils/errores';
-import { tieneRol } from '@/utils/roles';
+import { opcionesFacilitador } from '@/utils/roles';
 
 type Parametros = { id: string; desde: string; hasta: string };
 
@@ -118,9 +118,8 @@ function Detalle() {
     setPreguntarAprobacion(true);
   };
 
-  const facilitadores = equipo.data
-    ?.filter((persona) => tieneRol(persona, 'facilitador'))
-    .map((persona) => ({ id: persona.id, nombre: persona.nombre }));
+  // Revisión de la 1.1: la administración también atiende asesorías (opcionesFacilitador).
+  const facilitadores = equipo.data ? opcionesFacilitador(equipo.data) : undefined;
 
   const confirmarAprobacion = ({ facilitadorId, fecha, hora, enlaceVirtual }: FormularioAprobacionCita) => {
     const enlace = enlaceVirtual.trim();

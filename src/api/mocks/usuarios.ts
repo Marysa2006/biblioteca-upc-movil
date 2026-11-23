@@ -6,9 +6,20 @@
  * Es la semilla: `USUARIOS_DIRECTORIO` la copia y le suma gente. El login NO lee esta lista,
  * sino el directorio, que es el que cambian los roles y los permisos (#256).
  */
-import type { Usuario } from '@/types';
+import type { AceptacionPolitica, Usuario } from '@/types';
+import { VERSION_POLITICA_DATOS } from '@/utils/constantes';
 
-export const USUARIOS_PRUEBA: Usuario[] = [
+/**
+ * Los usuarios de prueba ya aceptaron la autorización de datos, como si se hubieran registrado
+ * (revisión de la 1.1): al iniciar sesión no se les vuelve a pedir.
+ */
+const ACEPTADA: AceptacionPolitica = {
+  version: VERSION_POLITICA_DATOS,
+  fecha: '2026-10-01T13:00:00.000Z',
+};
+const conAceptacion = (usuario: Usuario): Usuario => ({ ...usuario, aceptacionDatos: ACEPTADA });
+
+const SEMILLA_PRUEBA: Usuario[] = [
   {
     id: 'u-estudiante',
     nombre: 'Laura Pérez',
@@ -78,6 +89,8 @@ export const USUARIOS_PRUEBA: Usuario[] = [
   },
 ];
 
+export const USUARIOS_PRUEBA: Usuario[] = SEMILLA_PRUEBA.map(conAceptacion);
+
 export const TOKEN_PRUEBA = 'token-de-prueba';
 
 /**
@@ -85,7 +98,7 @@ export const TOKEN_PRUEBA = 'token-de-prueba';
  * Arranca con los seis usuarios de prueba y suma otros para tener varios roles
  * a la vista. Es la semilla del mock: src/api/usuarios.ts trabaja sobre una copia.
  */
-export const USUARIOS_DIRECTORIO: Usuario[] = [
+const SEMILLA_DIRECTORIO: Usuario[] = [
   ...USUARIOS_PRUEBA,
   {
     id: 'u-administrativo',
@@ -118,3 +131,5 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     cargo: 'Facilitador de la biblioteca',
   },
 ];
+
+export const USUARIOS_DIRECTORIO: Usuario[] = SEMILLA_DIRECTORIO.map(conAceptacion);
