@@ -734,9 +734,10 @@ export async function solicitarPrestamo(
     );
   }
   // Las reglas de #224, como en capacitaciones y reservas. El tipo de usuario sale de la sesión:
-  // decide qué datos académicos se exigen.
+  // decide qué datos académicos se exigen. Desde el #294 la tablet también exige la sede a los
+  // estudiantes, como su formulario.
   const solicitante = { ...datos.datosSolicitante, tipo: usuario.tipo };
-  const problema = problemaSolicitante(solicitante, { pedirIdentificacion: true });
+  const problema = problemaSolicitante(solicitante, { pedirIdentificacion: true, pedirSede: true });
   if (problema) {
     throw new ErrorApi(400, problema);
   }

@@ -123,8 +123,9 @@ export type OpcionesSolicitante = {
   /** La reserva de espacio pide el NIP; la capacitación no. */
   pedirIdentificacion: boolean;
   /**
-   * Los formularios que muestran la sede (asesoría, capacitación y reserva, #251) la exigen a los
-   * estudiantes. La tablet y la API todavía no: sin esto, rechazarían lo que no la trae.
+   * Los formularios que muestran la sede (asesoría, capacitación y reserva, #251; tablet, #294) la
+   * exigen a los estudiantes. La API simulada también, solo en la tablet (#294); las otras tres
+   * todavía no: sin esto, rechazarían lo que no la trae.
    */
   pedirSede?: boolean;
 };

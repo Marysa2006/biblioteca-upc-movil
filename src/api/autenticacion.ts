@@ -145,6 +145,9 @@ export async function registrarCuentaApi(cuenta: NuevaCuenta): Promise<void> {
       tipo: cuenta.tipo,
       rolesPersonal: [],
       identificacion: cuenta.identificacion,
+      // La sede y la facultad (#294) prellenan las solicitudes; el Backend aún no las recibe.
+      ...(cuenta.sede ? { sede: cuenta.sede } : {}),
+      ...(cuenta.facultad ? { facultad: cuenta.facultad } : {}),
       ...(cuenta.programa ? { programa: cuenta.programa } : {}),
       ...(cuenta.semestre != null ? { semestre: cuenta.semestre } : {}),
       ...(cuenta.dependencia ? { dependencia: cuenta.dependencia } : {}),
@@ -156,7 +159,8 @@ export async function registrarCuentaApi(cuenta: NuevaCuenta): Promise<void> {
     return;
   }
 
-  // Los nombres y valores del Backend (sección 1 del documento): el semestre va como texto.
+  // Los nombres y valores del Backend (sección 1 del documento): el semestre va como texto. La
+  // sede y la facultad no van: `POST register/` todavía no las recibe (#295).
   await peticion<unknown>('/register/', {
     method: 'POST',
     body: JSON.stringify({
