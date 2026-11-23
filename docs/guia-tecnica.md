@@ -372,6 +372,36 @@ del formulario, `esquemaGuia` (`src/utils/guias.ts`).
   "Abrir con…". No hacen falta paquetes aparte.
 - Las publica quien tenga el permiso `contenidos` o `novedades`.
 
+### Las estadísticas (HU-25, HU-26 y #307)
+
+Cada operación deja **un solo registro de uso** (`RegistroUso`, `src/types/estadisticas.ts`), que
+se actualiza en cada cambio de estado con el mismo id (`uso-reserva-<id>`, `uso-cita-<id>`…). Los
+indicadores (`IndicadoresUso`) se calculan en el celular con `calcularIndicadores()`
+(`src/utils/estadisticas.ts`), así que la pantalla, el PDF y el CSV usan los mismos números.
+
+Los campos que agregó el #307 para lo que pidió la bibliotecóloga (tabla 2.7: «calidad en tiempos y
+temáticas»):
+
+| Campo de `RegistroUso` | Qué guarda | Quién lo llena |
+|---|---|---|
+| `tematica` | El tema de la asesoría o la línea de formación | Asesorías y capacitaciones, al registrarse |
+| `solicitadaEl` | Cuándo se pidió (ISO 8601 con hora) | `registrarUso()`, en el primer registro |
+| `respondidaEl` | Cuándo respondió el personal **por primera vez** | `registrarUso()`, cuando la operación llega con `respondida: true` (aprobar, rechazar o proponer otra fecha) |
+| `duracionHoras` | Horas de la entrega a la devolución de una tablet | `registrarDevolucion()` de tablets |
+
+- **Tiempo de respuesta:** de `solicitadaEl` a `respondidaEl`, en promedio por servicio. Solo
+  cuentan espacios, asesorías y capacitaciones (las tablets se reservan solas). Cancelar la persona
+  no es una respuesta. Si el primer registro ya es la respuesta (una solicitud de los datos de
+  prueba que no se registró al pedirse), no se sabe cuándo se pidió y no entra en el promedio.
+- **Tablets:** la duración de referencia es `Parametros.horasPrestamoTablet` (3 h); el máximo
+  (`horasMaximasPrestamo`, 4 h) no cambia. `useIndicadores()` la lee de `useParametros()`. Un
+  préstamo devuelto sin `duracionHoras` cuenta como «sin hora completa».
+- **Pantalla:** las pestañas Resumen, Servicios, Tablets, Calidad y Registros comparten los
+  filtros que guarda `src/app/(personal)/estadisticas.tsx`; `BarraEstadisticas` los muestra y
+  exporta.
+- **CSV:** las columnas Temática, Tiempo de respuesta (h) y Duración del préstamo (h) van al final,
+  con coma decimal, para no mover las de antes.
+
 ---
 
 ## 5. Programación
@@ -780,6 +810,7 @@ Son las que más rompen la app, y casi ninguna da un error claro:
 | **Los paquetes se instalan con `npx expo install`** | `npm install` puede traer una versión incompatible con la SDK |
 | **Nunca `npm audit fix`** | Aunque npm lo sugiera al final de `npm ci`. Rompe versiones fijadas por Expo |
 | **Con React Compiler activo, `useWatch` y no `watch()`** | `watch()` no se re-ejecuta como el compilador espera |
+| **Un PDF de `expo-print` no se comparte tal cual** | En Expo Go, `shareAsync` responde «Not allowed to read file under given URL»: el archivo queda en una carpeta de expo-print. Se usa `guardarPdf()` (`src/utils/exportarPdf.ts`), que lo pide en base64 y lo escribe en `Paths.cache` |
 | **Los tipos de RN 0.88 son estrictos** | `onPress={() => handleSubmit(fn)()}`, y en `tabBarIcon` el `color` es `ColorValue` |
 
 ## Anexo: la integración con el Backend

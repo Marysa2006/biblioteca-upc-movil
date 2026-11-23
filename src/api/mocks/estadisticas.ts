@@ -4,8 +4,15 @@
  * PROVISIONAL: son 38 operaciones de octubre repartidas entre servicios, tipos de usuario y
  * programas, en días hábiles, con algunos datos no informados (HU-25, CA2), para que los
  * indicadores y los filtros de HU-26 tengan qué mostrar. La captura real la hará el Backend.
+ *
+ * #307: las asesorías y las capacitaciones llevan una temática real (los temas y las líneas de
+ * los mocks, que son los de la bibliotecóloga), y lo que se aprueba (espacios, asesorías y
+ * capacitaciones), la hora de la solicitud y de la respuesta, con tiempos de ejemplo.
  */
-import { NO_INFORMADO, type RegistroUso } from '@/types';
+import { NO_INFORMADO, type RegistroUso, type ServicioEstadistica } from '@/types';
+
+import { TEMAS_ASESORIA } from './asesorias';
+import { LINEAS_FORMACION } from './capacitaciones';
 
 /** Fecha de octubre de 2026, por día. Ayuda a repartir los 38 registros. */
 const dia = (n: number) => `2026-10-${String(n).padStart(2, '0')}`;
@@ -79,9 +86,50 @@ const FILAS: Fila[] = [
   { usuarioId: 'u-egresado', nombre: 'Diego Salas', tipoUsuario: 'egresado', programa: 'Contaduría', servicio: 'capacitaciones', finalidad: 'Actualización', fecha: dia(30), modalidad: 'virtual', estado: 'pendiente' },
 ];
 
+/** Duración de los préstamos de tablet de ejemplo, en horas (#307): alrededor de 3, alguno más. */
+const HORAS_TABLET = [2, 3, 3.5, 2.5];
+
+/** Horas que tardó el personal en responder, repartidas entre los ejemplos (#307). */
+const HORAS_RESPUESTA = [6, 20, 3, 30, 12, 48, 9];
+
+const TEMAS = TEMAS_ASESORIA.map((tema) => tema.nombre);
+const LINEAS = LINEAS_FORMACION.map((linea) => linea.nombre);
+
+/** Los servicios que el personal aprueba: solo ellos tienen tiempo de respuesta. */
+const SE_APRUEBAN: readonly ServicioEstadistica[] = ['espacios', 'asesorias', 'capacitaciones'];
+
+/**
+ * La temática y las horas de cada ejemplo (#307): se pidió 4 días antes a las 9:00 y se respondió
+ * unas horas después; lo pendiente todavía no tiene respuesta.
+ */
+function calidad(
+  fila: Fila,
+  indice: number,
+): Pick<RegistroUso, 'tematica' | 'solicitadaEl' | 'respondidaEl' | 'duracionHoras'> {
+  // Tablets: cada préstamo devuelto con su duración; el del inventario, sin hora completa.
+  if (fila.servicio === 'tablets') {
+    const completo = fila.estado === 'completada' && fila.finalidad !== 'Inventario';
+    return completo ? { duracionHoras: HORAS_TABLET[indice % HORAS_TABLET.length] } : {};
+  }
+  let tematica: string | undefined;
+  if (fila.servicio === 'asesorias') tematica = TEMAS[indice % TEMAS.length];
+  if (fila.servicio === 'capacitaciones') tematica = LINEAS[indice % LINEAS.length];
+  if (!SE_APRUEBAN.includes(fila.servicio) || fila.usuarioId === NO_INFORMADO) return { tematica };
+  const solicitada = new Date(`${fila.fecha}T09:00:00`);
+  solicitada.setDate(solicitada.getDate() - 4);
+  if (fila.estado === 'pendiente') return { tematica, solicitadaEl: solicitada.toISOString() };
+  const horas = HORAS_RESPUESTA[indice % HORAS_RESPUESTA.length];
+  return {
+    tematica,
+    solicitadaEl: solicitada.toISOString(),
+    respondidaEl: new Date(solicitada.getTime() + horas * 3_600_000).toISOString(),
+  };
+}
+
 /** Los registros de uso, con un id estable `uso-1`, `uso-2`… */
 export const REGISTROS_USO: RegistroUso[] = FILAS.map((fila, indice) => ({
   id: `uso-${indice + 1}`,
   ...dePersona(fila.usuarioId),
+  ...calidad(fila, indice),
   ...fila,
 }));

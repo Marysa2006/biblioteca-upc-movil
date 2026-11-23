@@ -202,6 +202,8 @@ export async function decidirReserva(
       id: `uso-reserva-${actualizada.id}`,
       servicio: 'espacios',
       finalidad: actualizada.proposito,
+      // #307: la decisión del personal cuenta para el tiempo de respuesta.
+      respondida: true,
       fecha: actualizada.fecha,
       modalidad: 'presencial',
       // Rechazar o cancelar es una operación cancelada; aprobar, completada; nueva fecha, pendiente.

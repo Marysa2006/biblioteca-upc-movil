@@ -58,6 +58,25 @@ export type RegistroUso = {
   semestre: DatoUso;
   /** Calificación que dejó la persona, de 1 a 5; si no calificó, no viene. */
   calificacion?: number;
+
+  // ── Versión 1.1: calidad en tiempos y temáticas (#307) ────
+  /**
+   * Tema de la asesoría o línea de formación de la capacitación: las «temáticas» que pidió la
+   * bibliotecóloga. Los demás servicios no la tienen.
+   */
+  tematica?: string;
+  /** Cuándo se pidió, en ISO 8601 con hora (`toISOString()`). */
+  solicitadaEl?: string;
+  /**
+   * Cuándo la respondió el personal por primera vez (aprobó, rechazó o propuso otra fecha), en
+   * ISO 8601 con hora. Solo en los servicios que se aprueban: espacios, asesorías y capacitaciones.
+   */
+  respondidaEl?: string;
+  /**
+   * Solo en las tablets: horas entre la entrega y la devolución, si se registraron las dos (#307).
+   * Un préstamo devuelto sin ellas cuenta como «sin hora completa».
+   */
+  duracionHoras?: number;
 };
 
 /**
@@ -113,4 +132,48 @@ export type IndicadoresUso = {
   porPeriodo: ConteoIndicador[];
   /** Promedio de las calificaciones recibidas; no viene si nadie calificó. */
   calificacionPromedio?: number;
+
+  // ── Versión 1.1: lo que pidió la bibliotecóloga (#307) ────
+  /** Completadas, canceladas y pendientes. */
+  porEstado: ConteoIndicador[];
+  /** Presencial y virtual. */
+  porModalidad: ConteoIndicador[];
+  /**
+   * Temáticas, aparte para no confundir nombres parecidos («Normas APA y Turnitin» es un tema;
+   * «Normas APA», una línea): por tema de asesoría y por línea de formación.
+   */
+  porTemaAsesoria: ConteoIndicador[];
+  porLineaFormacion: ConteoIndicador[];
+  /** Tiempo promedio de respuesta del personal, por servicio; solo los que tienen respuesta. */
+  tiempoRespuesta: TiempoRespuesta[];
+  /** La pestaña Tablets, como el tablero de Análisis de datos (#307). */
+  tablets: IndicadoresTablets;
+};
+
+/** Préstamos de tablets: cuántos, cuánto duran y si cumplen la duración de referencia (#307). */
+export type IndicadoresTablets = {
+  prestamos: number;
+  /** Devueltos con la hora de entrega y de devolución. */
+  conDuracion: number;
+  /** Duración promedio en horas, con un decimal; no viene si ninguno tiene las dos horas. */
+  duracionPromedio?: number;
+  /** La duración de un préstamo en los parámetros (`horasPrestamoTablet`). */
+  horasReferencia: number;
+  /** Cuántos de los que tienen duración duraron esas horas o menos. */
+  dentroDeReferencia: number;
+  /** Devueltos sin la hora de entrega o de devolución: calidad de los datos. */
+  sinHoraCompleta: number;
+  porMes: ConteoIndicador[];
+  porPrograma: ConteoIndicador[];
+};
+
+/** Cuánto tarda el personal en responder las solicitudes de un servicio (#307). */
+export type TiempoRespuesta = {
+  servicio: ServicioEstadistica;
+  /** Nombre del servicio para mostrar. */
+  etiqueta: string;
+  /** Promedio en horas, con un decimal. */
+  horasPromedio: number;
+  /** Cuántas solicitudes respondidas entran en el promedio. */
+  cantidad: number;
 };
