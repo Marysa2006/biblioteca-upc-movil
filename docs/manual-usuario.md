@@ -185,7 +185,14 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
 - **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos**, **Vencidos** e **Inventario** de tablets.
 - **Facilitador:** las solicitudes de capacitación y la **Agenda** de sus asesorías.
 - **Gestora de espacios:** las solicitudes de reserva y la sección **Espacios**, con sus bloqueos.
-- **Quien tiene el permiso de novedades y avisos:** en **Portal**, los avisos y las novedades, las **Guías de la biblioteca** y las **Fotos de Inicio**, sin tocar los servicios.
+
+**Permisos adicionales.** La administración puede encargar tres tareas a quien quiera del personal, sea facilitador o gestor de espacios. En **Personal**, toca **Roles y permisos** en la tarjeta de la persona y activa los que correspondan en **Permisos adicionales**:
+
+- **Publicar novedades y avisos:** en **Portal**, los avisos y los informativos de Inicio y las **Guías de la biblioteca**, sin tocar los servicios.
+- **Administrar las fotos de Inicio:** en **Portal**, las **Fotos de Inicio**.
+- **Editar los parámetros generales:** en **Portal**, los **Parámetros generales**.
+
+Solo se le pueden dar a alguien que tenga un rol del personal: a una cuenta de la comunidad no le servirían, porque no entra a esa vista. Si se le quitan todos los roles, también pierde estos permisos.
 
 ## 5. Usuarios de prueba
 
