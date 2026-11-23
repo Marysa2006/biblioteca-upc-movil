@@ -30,6 +30,9 @@ import {
   leerGuiaGuardada,
 } from '@/utils/guiasOffline';
 
+/** Para el formulario y la pantalla de una guía, que no importan de src/api (#297). */
+export type { DatosGuia };
+
 export function useGuias() {
   return useQuery({
     queryKey: claves.guias,
@@ -117,6 +120,8 @@ export function useGuiasAdministracion() {
   const usuario = useSesion((estado) => estado.usuario);
   return useQuery({
     queryKey: claves.guiasAdministracion,
+    // Sin sesión no se consulta (#297), como los demás hooks del personal.
+    enabled: usuario != null,
     queryFn: () => {
       if (!usuario) return Promise.reject(new Error('No hay sesión'));
       return obtenerGuiasAdministracion(usuario);

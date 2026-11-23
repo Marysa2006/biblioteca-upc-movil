@@ -5,7 +5,6 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 
-import type { DatosGuia } from '@/api/guias';
 import { FormularioGuia } from '@/components/guias/FormularioGuia';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import {
@@ -15,7 +14,7 @@ import {
   EstadoVacio,
   Pantalla,
 } from '@/components/ui';
-import { useEditarGuia, useGuiasAdministracion } from '@/hooks/useGuias';
+import { useEditarGuia, useGuiasAdministracion, type DatosGuia } from '@/hooks/useGuias';
 import { useRol } from '@/hooks/useRol';
 import { mensajeErrorGuardar } from '@/utils/errores';
 

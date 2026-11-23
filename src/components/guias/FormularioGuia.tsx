@@ -11,7 +11,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, HelperText, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 
 import { AvisoError, FilaInterruptor } from '@/components/ui';
-import type { DatosGuia } from '@/api/guias';
+import type { DatosGuia } from '@/hooks/useGuias';
 import { colores, espacio, fuentes } from '@/theme';
 import type { Guia } from '@/types';
 import {

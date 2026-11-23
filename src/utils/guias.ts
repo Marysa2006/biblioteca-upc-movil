@@ -102,14 +102,21 @@ export const esquemaGuia = z
 
 export type FormularioGuia = z.input<typeof esquemaGuia>;
 
+/**
+ * Lo que se envía a la API al crear o editar una guía; el id y la fecha de actualización los
+ * asigna el sistema. `enlace: null` = la guía no tiene enlace (es escrita): al editar, el Backend
+ * lo borra (#297). Con `undefined`, `JSON.stringify` quitaría el campo y el enlace se quedaría.
+ */
+export type DatosGuia = Omit<Guia, 'id' | 'actualizada' | 'enlace'> & { enlace: string | null };
+
 /** Lo que se envía a la API: solo el enlace o solo el contenido, según el formato. */
-export function datosDeGuia(valores: z.output<typeof esquemaGuia>): Omit<Guia, 'id' | 'actualizada'> {
+export function datosDeGuia(valores: z.output<typeof esquemaGuia>): DatosGuia {
   const conEnlace = valores.formato === 'enlace';
   return {
     titulo: valores.titulo,
     descripcion: valores.descripcion,
     contenido: conEnlace ? '' : valores.contenido,
-    enlace: conEnlace ? valores.enlace : undefined,
+    enlace: conEnlace ? valores.enlace : null,
     publicado: valores.publicado,
   };
 }
