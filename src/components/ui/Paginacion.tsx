@@ -1,7 +1,9 @@
 /**
- * Paginación de las listas largas (#161): "Anterior", "Página N de M" y "Siguiente".
+ * Paginación de las listas largas (#161): «‹  Pág. N de M  ›», en una fila centrada (#307: antes
+ * eran dos botones grandes que con poco ancho quedaban uno sobre otro). Los botones son de ícono,
+ * de 44 px, y el lector de pantalla dice «Página anterior», «Página N de M» y «Página siguiente».
  * Con una sola página no se muestra. Al cambiar de página, la pantalla sube al inicio y la
- * página nueva se anuncia al lector de pantalla. Con letra grande, pasa a dos líneas.
+ * página nueva se anuncia al lector de pantalla.
  *
  * Para una lista, lo común es ListaPaginada, que guarda la página y muestra los botones:
  *
@@ -11,7 +13,7 @@
  */
 import { useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Text } from 'react-native-paper';
+import { IconButton, Text } from 'react-native-paper';
 
 import { colores, espacio, fuentes } from '@/theme';
 import { paginar, type Pagina } from '@/utils/paginacion';
@@ -81,46 +83,47 @@ export function Paginacion({ pagina, paginas, onCambiar }: Props) {
 
   return (
     <View style={estilos.paginacion}>
-      <Button
-        mode="outlined"
+      <IconButton
         icon="chevron-left"
+        mode="outlined"
+        size={24}
         onPress={() => ir(pagina - 1)}
         disabled={pagina <= 1}
-        contentStyle={estilos.boton}
-        accessibilityRole="button"
+        iconColor={colores.primario}
+        style={estilos.boton}
         accessibilityLabel="Página anterior"
+      />
+      <Text
+        variant="labelLarge"
+        style={estilos.texto}
+        accessibilityLiveRegion="polite"
+        accessibilityLabel={`Página ${pagina} de ${paginas}`}
       >
-        Anterior
-      </Button>
-      <Text variant="labelLarge" style={estilos.texto} accessibilityLiveRegion="polite">
-        {`Página ${pagina} de ${paginas}`}
+        {`Pág. ${pagina} de ${paginas}`}
       </Text>
-      <Button
-        mode="outlined"
+      <IconButton
         icon="chevron-right"
+        mode="outlined"
+        size={24}
         onPress={() => ir(pagina + 1)}
         disabled={pagina >= paginas}
-        contentStyle={[estilos.boton, estilos.iconoDerecha]}
-        accessibilityRole="button"
+        iconColor={colores.primario}
+        style={estilos.boton}
         accessibilityLabel="Página siguiente"
-      >
-        Siguiente
-      </Button>
+      />
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  // Con letra grande, el texto pasa a su propia línea en vez de cortar los botones.
   paginacion: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: espacio.s,
+    justifyContent: 'center',
+    gap: espacio.m,
     paddingTop: espacio.s,
   },
-  boton: { minHeight: 44 },
-  iconoDerecha: { flexDirection: 'row-reverse' },
-  texto: { flexGrow: 1, textAlign: 'center', color: colores.texto, fontFamily: fuentes.seminegrita },
+  // 44 × 44: el área táctil mínima.
+  boton: { width: 44, height: 44, margin: 0, borderColor: colores.bordeFuerte },
+  texto: { color: colores.texto, fontFamily: fuentes.seminegrita },
 });

@@ -44,6 +44,15 @@ export type OperacionUso = {
   estado?: EstadoUso;
   /** Calificación de la calidad, de 1 a 5, si la persona la dejó (versión 1.1). */
   calificacion?: number;
+  /** Tema de la asesoría o línea de formación (#307). */
+  tematica?: string;
+  /** Solo tablets: horas de la entrega a la devolución (#307). */
+  duracionHoras?: number;
+  /**
+   * true cuando esta operación es la respuesta del personal (aprobar, rechazar o proponer otra
+   * fecha): guarda la hora de la primera respuesta para el tiempo de respuesta (#307).
+   */
+  respondida?: boolean;
 };
 
 /** Hoy en la hora del celular, 'AAAA-MM-DD'. */
@@ -84,6 +93,19 @@ export function registrarUso(operacion: OperacionUso): RegistroUso {
       anterior?.semestre ||
       NO_INFORMADO,
     calificacion: operacion.calificacion ?? anterior?.calificacion,
+    // #307: la temática se conserva; la hora de la solicitud es la del primer registro, y la de
+    // la respuesta, la de la primera vez que el personal respondió (reprogramar no la cambia).
+    // Si el primer registro ya es la respuesta (una solicitud de los datos de prueba que no se
+    // registró al pedirse), no se sabe cuándo se pidió: no entra en el tiempo de respuesta.
+    tematica: operacion.tematica?.trim() || anterior?.tematica,
+    duracionHoras: operacion.duracionHoras ?? anterior?.duracionHoras,
+    solicitadaEl: anterior
+      ? anterior.solicitadaEl
+      : operacion.respondida
+        ? undefined
+        : new Date().toISOString(),
+    respondidaEl:
+      anterior?.respondidaEl ?? (operacion.respondida ? new Date().toISOString() : undefined),
   };
   registros = anterior
     ? registros.map((actual) => (actual.id === id ? registro : actual))

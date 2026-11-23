@@ -423,6 +423,7 @@ export async function solicitarCapacitacion(
     usuario,
     servicio: 'capacitaciones',
     finalidad: `${linea.nombre}: ${nueva.objetivo}`,
+    tematica: linea.nombre,
     fecha: nueva.fecha,
     modalidad: nueva.modalidad,
     estado: 'pendiente',
@@ -471,6 +472,17 @@ function buscarSolicitud(id: string): SolicitudCapacitacion {
   return solicitud;
 }
 
+/**
+ * Estados a los que solo se llega con una respuesta del personal (#307): desde el primero, la
+ * solicitud cuenta para el tiempo de respuesta. Cancelar la persona no es una respuesta.
+ */
+const ESTADOS_RESPONDIDOS: readonly EstadoSolicitud[] = [
+  'aprobada',
+  'rechazada',
+  'nueva_fecha',
+  'realizada',
+];
+
 /** Deja la solicitud en el almacén y avisa al solicitante (CA1 y CA3). */
 function guardarSolicitud(
   actualizada: SolicitudCapacitacion,
@@ -489,6 +501,9 @@ function guardarSolicitud(
     id: `uso-capacitacion-${actualizada.id}`,
     servicio: 'capacitaciones',
     finalidad: `${actualizada.linea}: ${actualizada.objetivo}`,
+    tematica: actualizada.linea,
+    // #307: aprobar, rechazar o proponer otra fecha es la respuesta del personal.
+    respondida: ESTADOS_RESPONDIDOS.includes(actualizada.estado),
     fecha: actualizada.fecha,
     modalidad: actualizada.modalidad,
     estado:

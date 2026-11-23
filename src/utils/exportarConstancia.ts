@@ -3,10 +3,9 @@
  * en la app, en el orden del formato, convertido con `expo-print` y compartido con `expo-sharing`.
  * Los dos se importan solo aquí, como en exportarPdf.ts, para que no pesen en el resto.
  */
-import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { escaparHtml } from '@/utils/exportarPdf';
+import { escaparHtml, guardarPdf } from '@/utils/exportarPdf';
 import { hoyISO } from '@/utils/fechas';
 import { fechaHoraLegible, type ConstanciaPrestamo, type DatoConstancia } from '@/utils/prestamos';
 
@@ -71,7 +70,9 @@ export function htmlDeConstancia(constancia: ConstanciaPrestamo): string {
 export async function compartirConstanciaPdf(
   constancia: ConstanciaPrestamo,
 ): Promise<{ compartido: boolean }> {
-  const { uri } = await Print.printToFileAsync({ html: htmlDeConstancia(constancia) });
+  // Como el reporte de estadísticas: el PDF va a la caché de la app para poder compartirlo (#307).
+  const fecha = constancia.prestamo.slice(0, 10);
+  const uri = await guardarPdf(htmlDeConstancia(constancia), `constancia-prestamo-${fecha}.pdf`);
   if (!(await Sharing.isAvailableAsync())) {
     return { compartido: false };
   }

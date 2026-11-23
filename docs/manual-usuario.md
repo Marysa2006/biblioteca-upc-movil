@@ -173,10 +173,18 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
 
 ### Estadísticas
 
-1. **Indicadores:** el total de operaciones y gráficos por servicio, mes, programa y tipo de usuario.
-   - Se puede filtrar por periodo, servicio, tipo de usuario y programa.
-   - **Exportar CSV** genera un archivo que se abre en Excel y lo comparte por correo, WhatsApp o Drive.
-2. **Registros:** cada operación registrada, con quién la hizo, para qué, cuándo y cómo terminó. Lo que la persona no informó dice "No informado".
+Arriba están las pestañas **Resumen**, **Servicios**, **Tablets**, **Calidad** y **Registros**. Debajo, dos botones que valen para todas:
+
+- **Filtros:** el periodo (con los atajos **Este mes**, **Este semestre** y **Todo**, o las fechas **Desde** y **Hasta**) y listas para elegir el servicio, el tipo de usuario, el programa, la facultad, la sede y el periodo académico. Cada opción dice cuántas operaciones tiene. Los filtros elegidos aparecen debajo de los botones; la **✕** de cada uno lo quita y **Limpiar** los quita todos.
+- **Exportar:** **Para Excel (CSV)** guarda los registros que se están viendo, con su temática, el tiempo de respuesta y la duración del préstamo; **PDF con los indicadores** arma un informe con las cuatro pestañas y los filtros aplicados. Los dos se comparten por correo, WhatsApp o Drive.
+
+Qué muestra cada pestaña:
+
+1. **Resumen:** el total de operaciones, el servicio más usado, quiénes usan más los servicios y el último mes frente al anterior; los **hallazgos clave** (frases cortas con lo más llamativo) y las operaciones en el tiempo, **por mes** o **por semestre**.
+2. **Servicios:** la demanda por servicio, cómo terminaron las solicitudes (completadas, canceladas y pendientes), presencial y virtual, los **temas de asesoría** y las **líneas de formación**, y quién usa los servicios: programa, tipo de usuario, facultad y sede.
+3. **Tablets:** los préstamos, su duración promedio, cuántos duraron las horas de un préstamo normal (las de **Parámetros generales**) y cuántos se devolvieron sin la hora de entrega o de devolución; además, los préstamos por mes y por programa.
+4. **Calidad:** la calificación promedio, las operaciones sin programa registrado y el **tiempo de respuesta**: cuánto tarda el personal, en promedio, en aprobar o rechazar una solicitud de cada servicio.
+5. **Registros:** cada operación registrada, con quién la hizo, para qué, cuándo y cómo terminó, 10 por página. Lo que la persona no informó dice "No informado".
 
 ![Estadísticas: Indicadores](manual-usuario/personal-estadisticas-indicadores.png)
 ![Estadísticas: Registros](manual-usuario/personal-estadisticas-registros.png)

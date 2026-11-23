@@ -24,6 +24,7 @@ import type {
 import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
+import { horasEntreFechasHoras } from '@/utils/estadisticas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
 import { constanciaDe, type ConstanciaPrestamo } from '@/utils/prestamos';
 import { MENSAJE_NO_PIDE_TABLET, puedePedirTablet, tienePermiso } from '@/utils/roles';
@@ -451,6 +452,10 @@ export function registrarDevolucion(
       fechaFin: actualizado.fecha,
       modalidad: 'presencial',
       estado: 'completada',
+      // #307: la duración real, de la entrega a la devolución, para la pestaña Tablets.
+      duracionHoras:
+        horasEntreFechasHoras(actualizado.entrega?.fechaHora, actualizado.devolucion?.fechaHora) ??
+        undefined,
       ...datosDeSolicitante(actualizado.solicitanteId),
     });
     return simularRed(copiarPrestamo(actualizado));

@@ -1,126 +1,73 @@
 /**
- * Sección Indicadores de Estadísticas (HU-26): el total de operaciones y los gráficos por
- * servicio, tipo de usuario, programa y mes, con filtros (CA1); la exportación a CSV de lo
- * que se está viendo (CA2) y el aviso cuando los filtros no dejan resultados (CA3).
- * Versión 1.1 (#260): filtros y barras por facultad, sede y periodo, la calificación promedio
- * y dos exportaciones, para Excel (el CSV) y PDF (con los filtros aplicados).
- *
- * Las opciones de los chips salen de los registros del periodo (solo desde y hasta), así cada
- * chip dice cuántas operaciones tiene. Los indicadores y el CSV usan todos los filtros.
+ * Indicadores de Estadísticas (HU-26, CA1 y CA3): el contenido de las pestañas Resumen,
+ * Servicios, Tablets y Calidad, con los filtros que guarda la pantalla.
+ * - Versión 1.1 (#260): facultad, sede y periodo, y la calificación promedio.
+ * - #307 (tabla 2.7 de la bibliotecóloga y el tablero de Análisis de datos): por estado,
+ *   presencial y virtual, tiempo de respuesta, temas de asesoría y líneas de formación, la
+ *   pestaña Tablets (duración y cumplimiento de la duración de los parámetros), los hallazgos
+ *   clave y las operaciones en el tiempo por mes o por semestre.
+ * Los filtros y la exportación van en BarraEstadisticas, encima de todas las pestañas; el total
+ * es una tarjeta del Resumen.
  */
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
-import { FiltrosIndicadores } from '@/components/estadisticas/FiltrosIndicadores';
 import { BarraDistribucion } from '@/components/estadisticas/BarraDistribucion';
 import { ColumnasMes } from '@/components/estadisticas/ColumnasMes';
 import { GraficoBarras } from '@/components/estadisticas/GraficoBarras';
+import { GraficoTiempoRespuesta } from '@/components/estadisticas/GraficoTiempoRespuesta';
 import { TarjetaIndicador } from '@/components/estadisticas/TarjetaIndicador';
-import { AvisoError, EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
-import {
-  useExportarEstadisticas,
-  useExportarPdf,
-  useIndicadores,
-  useRegistrosUso,
-} from '@/hooks/useEstadisticas';
-import { acentoServicio, colores, espacio, fuentes, radio } from '@/theme';
+import { EstadoCarga, EstadoError, EstadoVacio, PestanasFiltro } from '@/components/ui';
+import { useIndicadores } from '@/hooks/useEstadisticas';
+import { acentoServicio, colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import {
   NO_INFORMADO,
-  type CategoriaServicio,
   type FiltrosEstadisticas,
   type IndicadoresUso,
   type ServicioEstadistica,
 } from '@/types';
-import { NOMBRE_TIPO_USUARIO } from '@/utils/estadisticas';
+import { NOMBRE_ESTADO_USO, NOMBRE_MODALIDAD_USO, NOMBRE_TIPO_USUARIO } from '@/utils/estadisticas';
 import {
   conMayuscula,
+  hallazgosClave,
   hayFiltros,
   LIMITE_PROGRAMAS,
+  nombrePeriodo,
   operacionesSinPrograma,
-  opcionesFiltros,
+  periodosEnOrden,
   servicioDeEtiqueta,
+  textoCalificacion,
+  textoHoras,
   textoOperaciones,
   textoPeriodo,
-  textoCalificacion,
   textoPorcentaje,
   variacionUltimoMes,
 } from '@/utils/filtrosEstadisticas';
 
-export function SeccionIndicadores() {
-  const [filtros, setFiltros] = useState<FiltrosEstadisticas>({});
-  const [aviso, setAviso] = useState<string | null>(null);
+/** Las pestañas con indicadores; Registros va aparte, en SeccionRegistros. */
+export type PestanaIndicadores = 'resumen' | 'servicios' | 'tablets' | 'calidad';
 
-  const periodo = useRegistrosUso({ desde: filtros.desde, hasta: filtros.hasta });
+type Props = {
+  filtros: FiltrosEstadisticas;
+  pestana: PestanaIndicadores;
+  onQuitarFiltros: () => void;
+};
+
+export function SeccionIndicadores({ filtros, pestana, onQuitarFiltros }: Props) {
   const indicadores = useIndicadores(filtros);
-  const registros = useRegistrosUso(filtros);
-  const exportar = useExportarEstadisticas();
-  const exportarPdf = useExportarPdf();
-  // Mientras se genera cualquiera de los dos archivos, los dos botones quedan ocupados.
-  const exportando = exportar.isPending || exportarPdf.isPending;
 
-  // En Android lo lee accessibilityLiveRegion; en iOS se anuncia aquí.
-  useEffect(() => {
-    if (Platform.OS === 'ios' && aviso) {
-      AccessibilityInfo.announceForAccessibility(aviso);
-    }
-  }, [aviso]);
-
-  const cambiarFiltros = (nuevos: FiltrosEstadisticas) => {
-    setFiltros(nuevos);
-    setAviso(null);
-    exportar.reset();
-    exportarPdf.reset();
-  };
-
-  const alExportar = () => {
-    const lista = registros.data;
-    if (!lista) return;
-    setAviso(null);
-    exportarPdf.reset();
-    exportar.mutate(lista, {
-      onSuccess: ({ archivo, compartido }) =>
-        setAviso(
-          compartido
-            ? `Se exportó ${textoOperaciones(lista.length)} en ${archivo}.`
-            : `El celular no permite compartir: el archivo ${archivo} quedó guardado en la app.`,
-        ),
-    });
-  };
-
-  const alExportarPdf = () => {
-    if (!indicadores.data) return;
-    setAviso(null);
-    exportar.reset();
-    exportarPdf.mutate(
-      { indicadores: indicadores.data, filtros },
-      {
-        onSuccess: ({ compartido }) =>
-          setAviso(
-            compartido
-              ? `Se exportó el PDF con ${textoOperaciones(indicadores.data.total)} y los filtros aplicados.`
-              : 'El celular no permite compartir: el PDF quedó generado en la app.',
-          ),
-      },
+  if (indicadores.isPending) return <EstadoCarga mensaje="Calculando los indicadores…" />;
+  if (indicadores.isError) {
+    return (
+      <EstadoError
+        mensaje="No pudimos cargar los indicadores."
+        onReintentar={() => indicadores.refetch()}
+      />
     );
-  };
-
-  const opciones = opcionesFiltros(periodo.data ?? [], filtros);
-  const reintentar = () => {
-    indicadores.refetch();
-    registros.refetch();
-    periodo.refetch();
-  };
-
-  let contenido;
-  if (indicadores.isPending) {
-    contenido = <EstadoCarga mensaje="Calculando los indicadores…" />;
-  } else if (indicadores.isError) {
-    contenido = (
-      <EstadoError mensaje="No pudimos cargar los indicadores." onReintentar={reintentar} />
-    );
-  } else if (indicadores.data.total === 0) {
-    contenido = hayFiltros(filtros) ? (
+  }
+  if (indicadores.data.total === 0) {
+    return hayFiltros(filtros) ? (
       <View style={estilos.vacio}>
         <EstadoVacio
           pose="buscando"
@@ -129,7 +76,7 @@ export function SeccionIndicadores() {
         <Button
           mode="contained-tonal"
           icon="filter-remove-outline"
-          onPress={() => cambiarFiltros({})}
+          onPress={onQuitarFiltros}
           style={estilos.botonVacio}
           accessibilityLabel="Quitar todos los filtros"
         >
@@ -139,162 +86,129 @@ export function SeccionIndicadores() {
     ) : (
       <EstadoVacio mensaje="Todavía no hay operaciones registradas. Cada reserva, asesoría, préstamo o capacitación aparecerá en los indicadores." />
     );
-  } else {
-    contenido = (
-      <>
-        <Resumen
-          indicadores={indicadores.data}
-          periodo={textoPeriodo(filtros.desde, filtros.hasta)}
-          onExportar={alExportar}
-          onExportarPdf={alExportarPdf}
-          exportando={exportando}
-          exportandoPdf={exportarPdf.isPending}
-          exportandoExcel={exportar.isPending}
-          puedeExportar={Boolean(registros.data)}
-        />
-        {exportar.error || exportarPdf.error ? (
-          <AvisoError mensaje="No pudimos exportar el archivo. Inténtalo de nuevo." />
-        ) : null}
-        {aviso ? (
-          <Text variant="bodyMedium" style={estilos.aviso} accessibilityLiveRegion="polite">
-            {aviso}
-          </Text>
-        ) : null}
-        <Tarjetas indicadores={indicadores.data} />
-        <Graficos indicadores={indicadores.data} />
-      </>
-    );
   }
 
+  const datos = indicadores.data;
   return (
     <View style={estilos.seccion}>
-      <FiltrosIndicadores filtros={filtros} onCambiar={cambiarFiltros} opciones={opciones} />
-      {contenido}
+      {pestana === 'resumen' ? (
+        <PestanaResumen indicadores={datos} periodo={textoPeriodo(filtros.desde, filtros.hasta)} />
+      ) : null}
+      {pestana === 'servicios' ? <PestanaServicios indicadores={datos} /> : null}
+      {pestana === 'tablets' ? <PestanaTablets indicadores={datos} /> : null}
+      {pestana === 'calidad' ? <PestanaCalidad indicadores={datos} /> : null}
     </View>
   );
 }
 
-/** Bloque oscuro del total con el botón de exportar, como en el mockup. */
-function Resumen({
-  indicadores,
-  periodo,
-  onExportar,
-  onExportarPdf,
-  exportando,
-  exportandoExcel,
-  exportandoPdf,
-  puedeExportar,
-}: {
-  indicadores: IndicadoresUso;
-  periodo: string | null;
-  onExportar: () => void;
-  onExportarPdf: () => void;
-  /** Cualquiera de los dos: ocupa los dos botones. */
-  exportando: boolean;
-  exportandoExcel: boolean;
-  exportandoPdf: boolean;
-  puedeExportar: boolean;
-}) {
-  const subtitulo = periodo ? `operaciones · ${periodo.toLowerCase()}` : 'operaciones registradas';
-  return (
-    <View style={estilos.resumen}>
-      <View
-        accessible
-        accessibilityLabel={`${textoOperaciones(indicadores.total)}${periodo ? `, ${periodo.toLowerCase()}` : ''}`}
-      >
-        <Text variant="displaySmall" style={estilos.total}>
-          {indicadores.total}
-        </Text>
-        <Text variant="bodyMedium" style={estilos.textoResumen}>
-          {subtitulo}
-        </Text>
-      </View>
-      {/* Con letra grande, el segundo botón pasa debajo del primero en vez de cortarse. */}
-      <View style={estilos.botonesExportar}>
-        <Button
-          mode="contained"
-          icon="microsoft-excel"
-          onPress={onExportar}
-          loading={exportandoExcel}
-          disabled={exportando || !puedeExportar}
-          buttonColor={colores.superficie}
-          textColor={colores.primarioOscuro}
-          style={estilos.exportar}
-          accessibilityLabel={`Exportar ${textoOperaciones(indicadores.total)} para Excel`}
-        >
-          Exportar para Excel
-        </Button>
-        <Button
-          mode="outlined"
-          icon="file-pdf-box"
-          onPress={onExportarPdf}
-          loading={exportandoPdf}
-          disabled={exportando}
-          textColor={colores.superficie}
-          style={[estilos.exportar, estilos.exportarPdf]}
-          accessibilityLabel={`Exportar los indicadores de ${textoOperaciones(indicadores.total)} en PDF, con los filtros aplicados`}
-        >
-          Exportar PDF
-        </Button>
-      </View>
-    </View>
-  );
-}
+/** Cómo se agrupan las operaciones en el tiempo (#307). */
+type Agrupacion = 'mes' | 'semestre';
 
 /**
- * Los cuatro indicadores principales en una cuadrícula de 2×2, como el tablero del equipo de
- * Análisis: el servicio más usado, las operaciones sin programa (calidad de los datos), quiénes
- * usan más los servicios y cómo va el último mes frente al anterior.
+ * Resumen: lo principal en tarjetas (el total, el servicio más usado, quiénes usan más y el último
+ * mes frente al anterior), los hallazgos clave y las operaciones en el tiempo.
  */
-function Tarjetas({ indicadores }: { indicadores: IndicadoresUso }) {
+function PestanaResumen({
+  indicadores,
+  periodo,
+}: {
+  indicadores: IndicadoresUso;
+  /** El periodo de los filtros en palabras, o null sin fechas. */
+  periodo: string | null;
+}) {
   const { total } = indicadores;
   const servicio = indicadores.porServicio[0];
   const usuarios = indicadores.porTipoUsuario[0];
   const ultimoMes = indicadores.porMes.at(-1);
   const variacion = variacionUltimoMes(indicadores.porMes);
-  const sinPrograma = operacionesSinPrograma(indicadores);
+  // La bibliotecóloga lo quiere por mes, con la opción de agrupar por semestre (tabla 2.7).
+  const [agrupacion, setAgrupacion] = useState<Agrupacion>('mes');
+  const hallazgos = hallazgosClave(indicadores);
 
   return (
-    <View style={estilos.cuadricula}>
-      {servicio ? (
+    <>
+      <View style={estilos.cuadricula}>
         <TarjetaIndicador
-          icono="star-outline"
-          titulo="Servicio más usado"
-          valor={servicio.etiqueta}
-          detalle={`${textoOperaciones(servicio.cantidad)} · ${textoPorcentaje(servicio.cantidad, total)}`}
+          icono="chart-box-outline"
+          titulo="Operaciones"
+          valor={String(total)}
+          detalle={periodo ?? 'Todas las registradas'}
         />
-      ) : null}
-      <TarjetaIndicador
-        icono="account-question-outline"
-        titulo="Sin programa registrado"
-        valor={textoPorcentaje(sinPrograma, total)}
-        detalle={`${sinPrograma} de ${textoOperaciones(total)}`}
+        {servicio ? (
+          <TarjetaIndicador
+            icono="star-outline"
+            titulo="Servicio más usado"
+            valor={servicio.etiqueta}
+            detalle={`${textoOperaciones(servicio.cantidad)} · ${textoPorcentaje(servicio.cantidad, total)}`}
+          />
+        ) : null}
+        {usuarios ? (
+          <TarjetaIndicador
+            icono="account-group-outline"
+            titulo="Usuarios más frecuentes"
+            valor={usuarios.etiqueta}
+            detalle={`${textoPorcentaje(usuarios.cantidad, total)} de las operaciones`}
+          />
+        ) : null}
+        {ultimoMes ? (
+          <TarjetaIndicador
+            icono="calendar-month-outline"
+            titulo={conMayuscula(ultimoMes.etiqueta)}
+            valor={String(ultimoMes.cantidad)}
+            detalle={variacion.texto}
+            sentido={variacion.sentido}
+          />
+        ) : null}
+      </View>
+
+      {hallazgos.length > 0 ? <HallazgosClave frases={hallazgos} /> : null}
+
+      <ColumnasMes
+        titulo="Operaciones en el tiempo"
+        descripcion={
+          agrupacion === 'mes'
+            ? 'Cuántas operaciones hubo cada mes'
+            : 'Cuántas hubo cada periodo: 1, de enero a junio; 2, de julio a diciembre'
+        }
+        selector={
+          <PestanasFiltro
+            opciones={[
+              { valor: 'mes', etiqueta: 'Por mes' },
+              { valor: 'semestre', etiqueta: 'Por semestre' },
+            ]}
+            valor={agrupacion}
+            onCambiar={setAgrupacion}
+            descripcion="Agrupar las operaciones por mes o por semestre"
+          />
+        }
+        {...(agrupacion === 'mes'
+          ? { datos: indicadores.porMes }
+          : {
+              datos: periodosEnOrden(indicadores.porPeriodo),
+              etiquetaCorta: (etiqueta: string) => etiqueta,
+              nombreAccesible: nombrePeriodo,
+              nombrePico: 'el periodo con más operaciones',
+            })}
       />
-      {usuarios ? (
-        <TarjetaIndicador
-          icono="account-group-outline"
-          titulo="Usuarios más frecuentes"
-          valor={usuarios.etiqueta}
-          detalle={`${textoPorcentaje(usuarios.cantidad, total)} de las operaciones`}
-        />
-      ) : null}
-      {indicadores.calificacionPromedio != null ? (
-        <TarjetaIndicador
-          icono="star-half-full"
-          titulo="Calificación promedio"
-          valor={textoCalificacion(indicadores.calificacionPromedio)}
-          detalle="De las asesorías y capacitaciones calificadas"
-        />
-      ) : null}
-      {ultimoMes ? (
-        <TarjetaIndicador
-          icono="calendar-month-outline"
-          titulo={conMayuscula(ultimoMes.etiqueta)}
-          valor={String(ultimoMes.cantidad)}
-          detalle={variacion.texto}
-          sentido={variacion.sentido}
-        />
-      ) : null}
+    </>
+  );
+}
+
+/** Hallazgos clave (#307): frases cortas con su cifra, como en el tablero de Análisis. */
+function HallazgosClave({ frases }: { frases: string[] }) {
+  return (
+    <View style={estilos.tarjeta}>
+      <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
+        Hallazgos clave
+      </Text>
+      {frases.map((frase) => (
+        <View key={frase} style={estilos.hallazgo}>
+          <View style={estilos.marcaHallazgo} />
+          <Text variant="bodyMedium" style={estilos.textoHallazgo}>
+            {frase}
+          </Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -308,8 +222,26 @@ const COLORES_TIPO = [
   acentoServicio.capacitaciones,
 ];
 
-/** Un gráfico de cada tipo, como el tablero: distribución, columnas y ranking. */
-function Graficos({ indicadores }: { indicadores: IndicadoresUso }) {
+/** Color de cada estado de la operación, el mismo de las solicitudes (`coloresEstado`). */
+const COLOR_ESTADO: Record<string, string> = {
+  [NOMBRE_ESTADO_USO.completada]: coloresEstado.aprobada.texto,
+  [NOMBRE_ESTADO_USO.pendiente]: coloresEstado.pendiente.texto,
+  [NOMBRE_ESTADO_USO.cancelada]: coloresEstado.cancelada.texto,
+};
+
+/** Presencial y virtual; lo no informado, en gris. */
+const COLOR_MODALIDAD: Record<string, string> = {
+  [NOMBRE_MODALIDAD_USO.presencial]: colores.primarioOscuro,
+  [NOMBRE_MODALIDAD_USO.virtual]: acentoServicio.asesorias,
+};
+
+const sumar = (datos: { cantidad: number }[]) => datos.reduce((suma, d) => suma + d.cantidad, 0);
+
+/**
+ * Servicios: qué se usa, cómo terminó, en qué modalidad, de qué temas, y quién lo usa (programa,
+ * tipo de usuario, facultad y sede).
+ */
+function PestanaServicios({ indicadores }: { indicadores: IndicadoresUso }) {
   const { total } = indicadores;
   const noInformado = NOMBRE_TIPO_USUARIO[NO_INFORMADO];
 
@@ -317,7 +249,7 @@ function Graficos({ indicadores }: { indicadores: IndicadoresUso }) {
     const servicio = servicioDeEtiqueta(grupo.etiqueta);
     return {
       ...grupo,
-      color: servicio ? acentoServicio[CATEGORIA_DE_SERVICIO[servicio]] : colores.bordeFuerte,
+      color: servicio ? COLOR_SERVICIO[servicio] : colores.bordeFuerte,
     };
   });
   let siguiente = 0;
@@ -328,6 +260,14 @@ function Graficos({ indicadores }: { indicadores: IndicadoresUso }) {
         ? colores.bordeFuerte
         : COLORES_TIPO[siguiente++ % COLORES_TIPO.length],
   }));
+  const estados = indicadores.porEstado.map((grupo) => ({
+    ...grupo,
+    color: COLOR_ESTADO[grupo.etiqueta] ?? colores.bordeFuerte,
+  }));
+  const modalidades = indicadores.porModalidad.map((grupo) => ({
+    ...grupo,
+    color: COLOR_MODALIDAD[grupo.etiqueta] ?? colores.bordeFuerte,
+  }));
 
   return (
     <>
@@ -337,11 +277,34 @@ function Graficos({ indicadores }: { indicadores: IndicadoresUso }) {
         datos={servicios}
         total={total}
       />
-      <ColumnasMes
-        titulo="Operaciones por mes"
-        descripcion="Cuántas operaciones hubo cada mes"
-        datos={indicadores.porMes}
+      <BarraDistribucion
+        titulo="Por estado"
+        descripcion="Cómo terminaron las solicitudes y operaciones"
+        datos={estados}
+        total={total}
       />
+      <BarraDistribucion
+        titulo="Presencial y virtual"
+        descripcion="Modalidad de la operación"
+        datos={modalidades}
+        total={total}
+      />
+      {indicadores.porTemaAsesoria.length > 0 ? (
+        <GraficoBarras
+          titulo="Temas de asesoría"
+          descripcion="Asesorías por tema"
+          datos={indicadores.porTemaAsesoria}
+          total={sumar(indicadores.porTemaAsesoria)}
+        />
+      ) : null}
+      {indicadores.porLineaFormacion.length > 0 ? (
+        <GraficoBarras
+          titulo="Líneas de formación"
+          descripcion="Capacitaciones por línea"
+          datos={indicadores.porLineaFormacion}
+          total={sumar(indicadores.porLineaFormacion)}
+        />
+      ) : null}
       <GraficoBarras
         titulo="Programas con más operaciones"
         descripcion="Programa académico de quien hizo la operación"
@@ -371,44 +334,140 @@ function Graficos({ indicadores }: { indicadores: IndicadoresUso }) {
         datos={indicadores.porSede}
         total={total}
       />
+    </>
+  );
+}
+
+/**
+ * Tablets (#307), como la pestaña del tablero de Análisis: los préstamos, su duración promedio,
+ * cuántos duraron la referencia de los parámetros o menos, cuántos se devolvieron sin las dos
+ * horas, y los préstamos por mes y por programa.
+ */
+function PestanaTablets({ indicadores }: { indicadores: IndicadoresUso }) {
+  const { tablets } = indicadores;
+  if (tablets.prestamos === 0) {
+    return <EstadoVacio mensaje="No hay préstamos de tablets con estos filtros." />;
+  }
+  return (
+    <>
+      <View style={estilos.cuadricula}>
+        <TarjetaIndicador
+          icono="tablet"
+          titulo="Préstamos"
+          valor={String(tablets.prestamos)}
+          detalle={`${textoPorcentaje(tablets.prestamos, indicadores.total)} de las operaciones`}
+        />
+        <TarjetaIndicador
+          icono="timer-outline"
+          titulo="Duración promedio"
+          valor={
+            tablets.duracionPromedio == null ? 'Sin datos' : textoHoras(tablets.duracionPromedio)
+          }
+          detalle={`De ${tablets.conDuracion} con entrega y devolución`}
+        />
+        <TarjetaIndicador
+          icono="check-circle-outline"
+          titulo={`Cumplen ${tablets.horasReferencia} h`}
+          valor={
+            tablets.conDuracion === 0
+              ? 'Sin datos'
+              : textoPorcentaje(tablets.dentroDeReferencia, tablets.conDuracion)
+          }
+          detalle={`${tablets.dentroDeReferencia} de ${tablets.conDuracion} duraron ${tablets.horasReferencia} h o menos`}
+        />
+        <TarjetaIndicador
+          icono="clock-alert-outline"
+          titulo="Sin hora completa"
+          valor={String(tablets.sinHoraCompleta)}
+          detalle="Devueltos sin hora de entrega o de devolución"
+        />
+      </View>
+      <ColumnasMes
+        titulo="Préstamos por mes"
+        descripcion="Cuántas tablets se prestaron cada mes"
+        datos={tablets.porMes}
+      />
       <GraficoBarras
-        titulo="Por periodo académico"
-        descripcion="1: de enero a junio · 2: de julio a diciembre"
-        datos={indicadores.porPeriodo}
-        total={total}
+        titulo="Préstamos por programa"
+        descripcion="Programa académico de quien pidió la tablet"
+        datos={tablets.porPrograma}
+        total={tablets.prestamos}
+        limite={LIMITE_PROGRAMAS}
+        textoResto={(cantidad) =>
+          cantidad === 1 ? 'Y 1 programa más' : `Y ${cantidad} programas más`
+        }
       />
     </>
   );
 }
 
 /**
- * Color de cada servicio de las estadísticas: el de su categoría (HU-01). Guías y catálogo no
- * son categorías propias: usan los de repositorio y préstamo, que son los más cercanos.
+ * Calidad (#307): la «calidad en tiempos» que pidió la bibliotecóloga (el tiempo de respuesta y
+ * la calificación) y la calidad de los datos (las operaciones sin programa registrado), como
+ * «Calidad y cobertura» del tablero de Análisis.
  */
-const CATEGORIA_DE_SERVICIO: Record<ServicioEstadistica, CategoriaServicio> = {
-  espacios: 'espacios',
-  asesorias: 'asesorias',
-  tablets: 'tablets',
-  capacitaciones: 'capacitaciones',
-  guias: 'repositorio',
-  catalogo: 'prestamo',
+function PestanaCalidad({ indicadores }: { indicadores: IndicadoresUso }) {
+  const { total } = indicadores;
+  const sinPrograma = operacionesSinPrograma(indicadores);
+  return (
+    <>
+      <View style={estilos.cuadricula}>
+        {indicadores.calificacionPromedio != null ? (
+          <TarjetaIndicador
+            icono="star-half-full"
+            titulo="Calificación promedio"
+            valor={textoCalificacion(indicadores.calificacionPromedio)}
+            detalle="De las asesorías y capacitaciones calificadas"
+          />
+        ) : null}
+        <TarjetaIndicador
+          icono="account-question-outline"
+          titulo="Sin programa registrado"
+          valor={textoPorcentaje(sinPrograma, total)}
+          detalle={`${sinPrograma} de ${textoOperaciones(total)}`}
+        />
+      </View>
+      {indicadores.tiempoRespuesta.length > 0 ? (
+        <GraficoTiempoRespuesta datos={indicadores.tiempoRespuesta} />
+      ) : (
+        <EstadoVacio mensaje="Todavía no hay solicitudes respondidas con estos filtros para medir el tiempo de respuesta." />
+      )}
+    </>
+  );
+}
+
+/**
+ * Color de cada servicio de las estadísticas: el de su categoría (HU-01). Catálogo no es una
+ * categoría propia: usa el de préstamo, el más cercano. Guías tampoco, y el de repositorio es casi
+ * igual al verde de espacios (que suelen quedar juntos en la barra): va en el verde oscuro de la
+ * marca para distinguirlos (#307).
+ */
+const COLOR_SERVICIO: Record<ServicioEstadistica, string> = {
+  espacios: acentoServicio.espacios,
+  asesorias: acentoServicio.asesorias,
+  tablets: acentoServicio.tablets,
+  capacitaciones: acentoServicio.capacitaciones,
+  guias: colores.primarioOscuro,
+  catalogo: acentoServicio.prestamo,
 };
 
 const estilos = StyleSheet.create({
   seccion: { gap: espacio.m },
   vacio: { gap: espacio.m },
   botonVacio: { alignSelf: 'center' },
-  resumen: {
-    gap: espacio.m,
-    padding: espacio.l,
-    borderRadius: radio.tarjeta,
-    backgroundColor: colores.primarioOscuro,
-  },
-  total: { color: colores.superficie, fontFamily: fuentes.negrita },
-  textoResumen: { color: colores.superficie },
-  botonesExportar: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
-  exportar: { alignSelf: 'flex-start', borderRadius: radio.boton },
-  exportarPdf: { borderColor: colores.superficie },
-  aviso: { color: colores.texto },
   cuadricula: { flexDirection: 'row', flexWrap: 'wrap', gap: espacio.s },
+  tarjeta: {
+    gap: espacio.m,
+    padding: espacio.m,
+    borderRadius: radio.tarjeta,
+    backgroundColor: colores.superficie,
+  },
+  tituloTarjeta: { color: colores.texto, fontFamily: fuentes.negrita },
+  hallazgo: { flexDirection: 'row', gap: espacio.s },
+  marcaHallazgo: {
+    width: espacio.xs,
+    borderRadius: radio.boton,
+    backgroundColor: colores.primario,
+  },
+  textoHallazgo: { flex: 1, color: colores.texto },
 });

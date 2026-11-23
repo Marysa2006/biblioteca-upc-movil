@@ -5,6 +5,8 @@
  * No usa Menu.Item: corta el título en una línea y mide como máximo 280 px, así que «Licenciatura
  * en Ciencias Naturales y Educación Ambiental» quedaría a medias. Cada opción baja de línea si no
  * cabe, mide al menos 48 px y la elegida lleva ✓. Si el menú no cabe en la pantalla, se desplaza.
+ * Con `etiquetaDe`, lo que se ve puede ser distinto del valor: por ejemplo, los filtros de
+ * Estadísticas guardan 'espacios' y muestran «Espacios (9)» (#307).
  */
 import { useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
@@ -25,6 +27,8 @@ type Props = {
   textoVacio: string;
   mensajeError?: string;
   deshabilitado?: boolean;
+  /** Lo que se ve de cada opción; por defecto, la opción tal cual. */
+  etiquetaDe?: (opcion: string) => string;
 };
 
 export function CampoDesplegable({
@@ -36,6 +40,7 @@ export function CampoDesplegable({
   textoVacio,
   mensajeError,
   deshabilitado = false,
+  etiquetaDe = (opcion) => opcion,
 }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [ancho, setAncho] = useState(0);
@@ -59,12 +64,12 @@ export function CampoDesplegable({
         onPress={() => setAbierto(true)}
         disabled={deshabilitado}
         accessibilityRole="button"
-        accessibilityLabel={`${nombre}: ${valor || 'sin elegir'}. Cambiar ${nombre.toLowerCase()}`}
+        accessibilityLabel={`${nombre}: ${valor ? etiquetaDe(valor) : 'sin elegir'}. Cambiar ${nombre.toLowerCase()}`}
         accessibilityState={{ disabled: deshabilitado, expanded: abierto }}
       >
         <View style={estilos.contenido}>
           <Text variant="bodyLarge" style={valor ? estilos.nombre : estilos.vacio}>
-            {valor || textoVacio}
+            {valor ? etiquetaDe(valor) : textoVacio}
           </Text>
           <Icon
             source={abierto ? 'menu-up' : 'menu-down'}
@@ -96,7 +101,7 @@ export function CampoDesplegable({
               key={opcion}
               onPress={() => elegir(opcion)}
               accessibilityRole="menuitem"
-              accessibilityLabel={`${opcion}${elegida ? ', elegida' : ''}`}
+              accessibilityLabel={`${etiquetaDe(opcion)}${elegida ? ', elegida' : ''}`}
               accessibilityState={{ selected: elegida }}
             >
               <View style={estilos.opcion}>
@@ -104,7 +109,7 @@ export function CampoDesplegable({
                   variant="bodyLarge"
                   style={elegida ? estilos.textoElegida : estilos.textoOpcion}
                 >
-                  {opcion}
+                  {etiquetaDe(opcion)}
                 </Text>
                 {elegida ? <Icon source="check" size={20} color={colores.primario} /> : null}
               </View>

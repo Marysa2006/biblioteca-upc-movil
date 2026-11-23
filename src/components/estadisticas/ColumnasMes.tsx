@@ -3,7 +3,11 @@
  * Sin paquete de gráficos: cada columna es un View con la altura proporcional al mes con más
  * operaciones, con su número encima y el mes abreviado debajo. El mes con más operaciones va en
  * el verde oscuro y dice "Pico", así no depende solo del color.
+ *
+ * Desde el #307 también sirve para los periodos académicos: `etiquetaCorta`, `nombreAccesible` y
+ * `nombrePico` dicen cómo nombrar cada columna, y `selector` va debajo del título (Mes · Semestre).
  */
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
@@ -23,9 +27,25 @@ type Props = {
   titulo: string;
   descripcion?: string;
   datos: ConteoIndicador[];
+  /** Debajo del título; por ejemplo, el selector Mes · Semestre (#307). */
+  selector?: ReactNode;
+  /** Lo que va debajo de cada columna; por defecto, el mes abreviado. */
+  etiquetaCorta?: (etiqueta: string) => string;
+  /** Cómo lee cada columna el lector de pantalla; por defecto, la etiqueta con mayúscula. */
+  nombreAccesible?: (etiqueta: string) => string;
+  /** Lo que dice el lector en la columna más alta; por defecto, «el mes con más operaciones». */
+  nombrePico?: string;
 };
 
-export function ColumnasMes({ titulo, descripcion, datos }: Props) {
+export function ColumnasMes({
+  titulo,
+  descripcion,
+  datos,
+  selector,
+  etiquetaCorta,
+  nombreAccesible = conMayuscula,
+  nombrePico = 'el mes con más operaciones',
+}: Props) {
   const maximo = Math.max(...datos.map((mes) => mes.cantidad), 1);
   const conAnio = hayVariosAnios(datos);
   // Solo se marca el pico si hay más de un mes para comparar.
@@ -43,6 +63,7 @@ export function ColumnasMes({ titulo, descripcion, datos }: Props) {
           </Text>
         ) : null}
       </View>
+      {selector}
 
       <View style={estilos.columnas}>
         {datos.map((mes) => {
@@ -52,7 +73,7 @@ export function ColumnasMes({ titulo, descripcion, datos }: Props) {
               key={mes.etiqueta}
               style={estilos.columna}
               accessible
-              accessibilityLabel={`${conMayuscula(mes.etiqueta)}: ${textoOperaciones(mes.cantidad)}${esPico ? ', el mes con más operaciones' : ''}`}
+              accessibilityLabel={`${nombreAccesible(mes.etiqueta)}: ${textoOperaciones(mes.cantidad)}${esPico ? `, ${nombrePico}` : ''}`}
             >
               {esPico ? (
                 <Text variant="labelSmall" style={estilos.pico}>
@@ -72,7 +93,9 @@ export function ColumnasMes({ titulo, descripcion, datos }: Props) {
                 ]}
               />
               <Text variant="labelMedium" style={estilos.mes}>
-                {abreviaturaMes(mes.etiqueta, conAnio)}
+                {etiquetaCorta
+                  ? etiquetaCorta(mes.etiqueta)
+                  : abreviaturaMes(mes.etiqueta, conAnio)}
               </Text>
             </View>
           );
