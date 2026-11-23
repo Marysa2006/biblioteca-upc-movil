@@ -5,11 +5,12 @@
  */
 import { PestanasFiltro } from '@/components/ui';
 
-/** La cantidad es opcional: Gestión la usa para los vencidos. */
+/** La cantidad y la alerta son opcionales: Gestión las usa en Préstamos para los vencidos. */
 export type OpcionSeccion<T extends string> = {
   valor: T;
   etiqueta: string;
   cantidad?: number;
+  alerta?: boolean;
 };
 
 type Props<T extends string> = {

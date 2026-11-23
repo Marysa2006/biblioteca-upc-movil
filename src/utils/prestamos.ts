@@ -5,9 +5,16 @@
  */
 import { z } from 'zod';
 
-import type { CondicionTablet, EstadoEquipo, EstadoPrestamo, Prestamo, Tablet } from '@/types';
+import type {
+  CondicionTablet,
+  EstadoEquipo,
+  EstadoPrestamo,
+  FirmaElectronica,
+  Prestamo,
+  Tablet,
+} from '@/types';
 import { NOTAS_PRESTAMO } from '@/utils/constantes';
-import { fechaLegible } from '@/utils/fechas';
+import { fechaLegible, hoyISO } from '@/utils/fechas';
 import { minutosDeRetraso } from '@/utils/tablets';
 
 export const NOMBRE_CONDICION: Record<CondicionTablet, string> = {
@@ -23,17 +30,20 @@ export const AYUDA_CONDICION: Record<CondicionTablet, string> = {
 };
 
 /** Grupos de la sección Préstamos: lo que hay que entregar, lo que hay que recibir y lo cerrado. */
-export type GrupoPrestamos = 'entregar' | 'recibir' | 'devueltos';
+/** Desde el #310, Vencidos es un grupo de Préstamos (antes, una pestaña de Gestión). */
+export type GrupoPrestamos = 'entregar' | 'recibir' | 'vencidos' | 'devueltos';
 
 export const ESTADOS_DE_GRUPO: Record<GrupoPrestamos, readonly EstadoPrestamo[]> = {
   entregar: ['reservado'],
-  recibir: ['entregado', 'vencido'],
+  recibir: ['entregado'],
+  vencidos: ['vencido'],
   devueltos: ['devuelto'],
 };
 
 export const NOMBRE_GRUPO: Record<GrupoPrestamos, string> = {
   entregar: 'Entregar',
   recibir: 'Recibir',
+  vencidos: 'Vencidos',
   devueltos: 'Historial',
 };
 
@@ -49,6 +59,33 @@ export function prestamosDeGrupo(prestamos: Prestamo[], grupo: GrupoPrestamos): 
 export function fechaHoraLegible(fechaHora: string): string {
   const [fecha, hora] = fechaHora.split(' ');
   return `${fechaLegible(fecha)}, ${hora}`;
+}
+
+/** AAAA-MM-DD → "Hoy", "Mañana", "Ayer" o "21 de noviembre" (tarjetas de préstamos). */
+export function diaRelativo(fecha: string, hoy: string = hoyISO()): string {
+  const dia = (iso: string) => {
+    const [a, m, d] = iso.split('-').map(Number);
+    return Date.UTC(a, m - 1, d) / 86400000;
+  };
+  const diferencia = dia(fecha) - dia(hoy);
+  if (diferencia === 0) return 'Hoy';
+  if (diferencia === 1) return 'Mañana';
+  if (diferencia === -1) return 'Ayer';
+  return fechaLegible(fecha);
+}
+
+/**
+ * La franja de la tarjeta en una línea: "Hoy · 09:00 a 12:00". Entregado, empieza a la hora
+ * real de salida; si salió otro día, lo dice: "Ayer, 16:00 · hasta hoy, 12:00".
+ */
+export function franjaDelPrestamo(prestamo: Prestamo, hoy: string = hoyISO()): string {
+  const [fechaSalida, horaSalida] = prestamo.entrega
+    ? prestamo.entrega.fechaHora.split(' ')
+    : [prestamo.fecha, prestamo.horaInicio];
+  if (fechaSalida !== prestamo.fecha) {
+    return `${diaRelativo(fechaSalida, hoy)}, ${horaSalida} · hasta ${diaRelativo(prestamo.fecha, hoy).toLowerCase()}, ${prestamo.horaLimite}`;
+  }
+  return `${diaRelativo(prestamo.fecha, hoy)} · ${horaSalida} a ${prestamo.horaLimite}`;
 }
 
 /** 135 → "2 h 15 min"; 40 → "40 min". */
@@ -195,12 +232,86 @@ export type ConstanciaPrestamo = {
   recibio?: string;
   /** Las tres notas del formato, con el valor de la tablet en la tercera (CA3). */
   notasLegales: string[];
+  /**
+   * Cuándo aceptó la persona el formato de responsabilidad en la app, 'AAAA-MM-DD HH:MM' (#310).
+   * Opcional: si el Backend no lo manda, la constancia no lo dice.
+   */
+  aceptoEl?: string;
+  /** La firma del usuario responsable en la pantalla, si firmó así (#310). */
+  firmaUsuario?: FirmaElectronica;
+  /** Cuándo se entregó y cuándo se recibió: quien lo hizo firma con su sesión (#310). */
+  entregadaEl?: string;
+  recibidaEl?: string;
 };
+
+/** Solo M, L, números, espacios, puntos y signos: lo que deja el panel de firma (#310). */
+const TRAZO_VALIDO = /^[ML0-9 .-]+$/;
+
+/** ¿La firma tiene trazos y medidas válidas? Se revisa al guardar y antes de ponerla en el PDF. */
+export function esFirmaValida(firma: FirmaElectronica | undefined): firma is FirmaElectronica {
+  return (
+    firma != null &&
+    firma.trazo.length > 0 &&
+    firma.trazo.length <= 60000 &&
+    TRAZO_VALIDO.test(firma.trazo) &&
+    firma.trazo.includes('L') &&
+    firma.ancho > 0 &&
+    firma.alto > 0
+  );
+}
+
+/** Cómo firmó cada quien en la constancia (#310). */
+export type ModoFirma =
+  { tipo: 'trazo'; firma: FirmaElectronica } | { tipo: 'sesion'; fechaHora: string };
+
+/** Un recuadro de firma del formato: quién firma y sus datos; la firma va a mano (#310). */
+export type FirmaConstancia = { titulo: string; datos: DatoConstancia[]; firma?: ModoFirma };
+
+/**
+ * Los tres recuadros de "Para constancia de lo anterior firman", como en el papel: quien
+ * entrega, el usuario responsable del bien y quien recibe. Los datos van llenos si ya se
+ * conocen; si no, en blanco para escribirlos a mano. Es pura.
+ */
+export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstancia[] {
+  const dato = (etiqueta: string) =>
+    constancia.usuario.find((actual) => actual.etiqueta === etiqueta)?.valor ?? '';
+  const identificacion = dato('Identificación');
+  return [
+    {
+      titulo: 'Quien entrega · Biblioteca',
+      datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.entrego ?? '' }],
+      ...(constancia.entrego && constancia.entregadaEl
+        ? { firma: { tipo: 'sesion' as const, fechaHora: constancia.entregadaEl } }
+        : {}),
+    },
+    {
+      titulo: 'Usuario responsable del bien',
+      datos: [
+        { etiqueta: 'Nombres completos', valor: dato('Nombres') },
+        {
+          etiqueta: 'Documento',
+          valor: identificacion === 'Sin registrar' ? '' : identificacion,
+        },
+      ],
+      ...(esFirmaValida(constancia.firmaUsuario)
+        ? { firma: { tipo: 'trazo' as const, firma: constancia.firmaUsuario } }
+        : {}),
+    },
+    {
+      titulo: 'Quien recibe · Biblioteca',
+      datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.recibio ?? '' }],
+      ...(constancia.recibio && constancia.recibidaEl
+        ? { firma: { tipo: 'sesion' as const, fechaHora: constancia.recibidaEl } }
+        : {}),
+    },
+  ];
+}
 
 /**
  * Arma la constancia del préstamo en el orden del formato (CA1): los datos del usuario, el
- * dispositivo, el estado, las notas y quién entregó y recibió. Las firmas del papel se
- * reemplazan por quién hizo cada paso, que es lo que registra la app.
+ * dispositivo, el estado, las notas y quién entregó y recibió. Las firmas del papel van en el
+ * PDF, en recuadros para firmar a mano (firmasDeConstancia, #310); la app registra quién hizo
+ * cada paso y cuándo aceptó la persona el formato.
  *
  * Es pura: recibe el préstamo y la tablet, y no consulta nada.
  */
@@ -246,7 +357,32 @@ export function constanciaDe(prestamo: Prestamo, tablet: Tablet): ConstanciaPres
       ? `${devolucion.responsable.nombre}${devolucion.responsable.cargo ? ` · ${devolucion.responsable.cargo}` : ''}`
       : undefined,
     notasLegales,
+    ...(prestamo.responsabilidadAceptada
+      ? { aceptoEl: prestamo.responsabilidadAceptada.fechaHora }
+      : {}),
+    ...(entrega?.firmaUsuario ? { firmaUsuario: entrega.firmaUsuario } : {}),
+    ...(entrega?.responsable ? { entregadaEl: entrega.fechaHora } : {}),
+    ...(devolucion?.responsable ? { recibidaEl: devolucion.fechaHora } : {}),
   };
+}
+
+/**
+ * El código de verificación de la constancia (#310): una huella de todos sus datos, firmas
+ * incluidas, en 4 grupos de 4 («9F3A-…»). Si alguien cambia un dato del PDF, ya no coincide con
+ * el que da la app para ese préstamo. Es una huella de comprobación (dos FNV-1a de 32 bits), no
+ * una firma criptográfica. Es pura.
+ */
+export function codigoVerificacion(constancia: ConstanciaPrestamo): string {
+  const texto = JSON.stringify(constancia);
+  let a = 0x811c9dc5;
+  let b = 0x01000193 ^ texto.length;
+  for (let i = 0; i < texto.length; i++) {
+    const codigo = texto.charCodeAt(i);
+    a = Math.imul(a ^ codigo, 0x01000193) >>> 0;
+    b = Math.imul(b ^ codigo, 0x5bd1e995) >>> 0;
+  }
+  const hex = (a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0')).toUpperCase();
+  return hex.match(/.{4}/g)!.join('-');
 }
 
 /** Nombre del estado del equipo como lo escribe el formato. */

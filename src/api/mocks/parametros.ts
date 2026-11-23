@@ -26,7 +26,8 @@ export const PARAMETROS: Parametros = {
     { dia: 5, abre: '07:00', cierra: '21:00' },
     { dia: 6, abre: '08:00', cierra: '14:00' },
   ],
-  // 3 días para solicitar y 1 día para cancelar, iguales para todos los servicios.
+  // 3 días para solicitar y 1 día para cancelar espacios, asesorías y capacitaciones. La tablet
+  // no tiene anticipación mínima: se aparta hasta que empieza la franja (#310).
   horasMinimasSolicitud: 72,
   horasMinimasCancelacion: 24,
   textoRecordatorio: 'Recuerda tu compromiso con la biblioteca.',

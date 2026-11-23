@@ -17,6 +17,7 @@ import type {
   Parametros,
   Prestamo,
   RegistroTablet,
+  FirmaElectronica,
   ResponsableTablet,
   Tablet,
   Usuario,
@@ -26,12 +27,13 @@ import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
 import { horasEntreFechasHoras } from '@/utils/estadisticas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
-import { constanciaDe, type ConstanciaPrestamo } from '@/utils/prestamos';
+import { constanciaDe, esFirmaValida, type ConstanciaPrestamo } from '@/utils/prestamos';
 import { MENSAJE_NO_PIDE_TABLET, puedePedirTablet, tienePermiso } from '@/utils/roles';
 import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/utils/solicitante';
 import { normalizarTexto } from '@/utils/texto';
 import {
   ahoraFechaHora,
+  asignarTabletAlEntregar,
   estadoTabletAlDevolver,
   estadoTabletAlEntregar,
   esInicioTablet,
@@ -42,6 +44,8 @@ import {
   mensajeDiasMaximosTablet,
   MINUTOS_ENTRE_INICIOS_TABLET,
   minutosDeRetraso,
+  noSeRecogio,
+  prestamoOcupaFranja,
   problemaHoras,
   tabletsLibresEnFranja,
   ultimoDiaTablet,
@@ -177,9 +181,16 @@ const ESTADOS_EQUIPO: readonly EstadoEquipo[] = ['nuevo', 'optimo', 'otro'];
  * estado del equipo como lo nombra el formato y las notas.
  */
 export type DatosEntrega = Pick<RegistroTablet, 'condicion' | 'accesorios'> & {
+  /**
+   * La tablet que se entrega, elegida o leída con el escáner (#310). Sin ella, la provisional
+   * que se apartó al pedir el préstamo.
+   */
+  tabletId?: string;
   /** Nuevo, óptimo u otro. Con «otro», las notas son obligatorias (CA2). */
   estadoEquipo?: EstadoEquipo;
   notas?: string;
+  /** La firma del usuario responsable en la pantalla (#310); sin ella, firma en papel. */
+  firmaUsuario?: FirmaElectronica;
 };
 
 /** Datos de la devolución: condición, accesorios y novedades si hay daños o faltantes (CA3). */
@@ -215,10 +226,13 @@ function copiarPrestamo(prestamo: Prestamo): Prestamo {
   };
 }
 
-/** Validación de la condición y los accesorios de un registro (HU-23). */
+/** Validación de la condición y los accesorios de un registro (HU-23), y de la firma (#310). */
 function errorDeRegistro(datos: DatosEntrega): ErrorApi | null {
   if (!CONDICIONES.includes(datos.condicion)) {
     return new ErrorApi(400, 'La condición del equipo no es válida.');
+  }
+  if (datos.firmaUsuario && !esFirmaValida(datos.firmaUsuario)) {
+    return new ErrorApi(400, 'La firma no es válida: vuelve a firmar.');
   }
   if (datos.accesorios.some((accesorio) => !accesorio.trim())) {
     return new ErrorApi(400, 'Los accesorios no pueden estar vacíos.');
@@ -250,6 +264,7 @@ export function obtenerPrestamos(
   estado: EstadoPrestamo | 'todas' = 'todas',
 ): Promise<Prestamo[]> {
   if (USAR_MOCKS) {
+    liberarNoRecogidos();
     const filtrados =
       estado === 'todas' ? prestamos : prestamos.filter((prestamo) => prestamo.estado === estado);
     return simularRed(filtrados.map(copiarPrestamo));
@@ -296,9 +311,15 @@ export function registrarEntrega(
     return Promise.reject(sinEstado);
   }
   if (USAR_MOCKS) {
+    liberarNoRecogidos();
     const prestamo = prestamos.find((actual) => actual.id === prestamoId);
     if (!prestamo) {
       return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
+    }
+    if (prestamo.estado === 'cancelado') {
+      return Promise.reject(
+        new ErrorApi(400, 'El préstamo se canceló porque no se recogió a tiempo.'),
+      );
     }
     if (prestamo.estado !== 'reservado') {
       return Promise.reject(new ErrorApi(400, 'Solo se puede entregar un préstamo reservado.'));
@@ -312,13 +333,17 @@ export function registrarEntrega(
     if (error) {
       return Promise.reject(error);
     }
-    const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
-    if (!tablet) {
-      return Promise.reject(new ErrorApi(404, 'La tablet del préstamo no existe.'));
+    // #310: la tablet se asigna al entregar; la de la solicitud era provisional.
+    const asignacion = asignarTabletAlEntregar(
+      tablets,
+      prestamos,
+      prestamo,
+      datos.tabletId ?? prestamo.tabletId,
+    );
+    if ('problema' in asignacion) {
+      return Promise.reject(new ErrorApi(400, asignacion.problema));
     }
-    if (tablet.estado !== 'disponible') {
-      return Promise.reject(new ErrorApi(400, 'La tablet no está disponible para entregar.'));
-    }
+    const { tablet, intercambio } = asignacion;
     const notas = datos.notas?.trim();
     const entrega: RegistroTablet = {
       fechaHora: ahoraFechaHora(),
@@ -327,11 +352,13 @@ export function registrarEntrega(
       // Versión 1.1 (#252): la constancia necesita quién entregó y en qué estado.
       ...(notas ? { novedades: notas } : {}),
       responsable: responsableDe(usuario),
+      ...(datos.firmaUsuario ? { firmaUsuario: { ...datos.firmaUsuario } } : {}),
     };
     prestamos = prestamos.map((actual) =>
       actual.id === prestamoId
         ? {
             ...actual,
+            tabletId: tablet.id,
             estado: 'entregado',
             entrega,
             estadoEquipo: datos.estadoEquipo ?? actual.estadoEquipo,
@@ -339,6 +366,14 @@ export function registrarEntrega(
           }
         : actual,
     );
+    // El otro préstamo apartado que tenía esta tablet se queda con la provisional de este.
+    if (intercambio) {
+      prestamos = prestamos.map((actual) =>
+        actual.id === intercambio.prestamoId
+          ? { ...actual, tabletId: intercambio.tabletId }
+          : actual,
+      );
+    }
     tablets = tablets.map((actual) =>
       actual.id === tablet.id ? { ...actual, estado: estadoTabletAlEntregar() } : actual,
     );
@@ -556,7 +591,8 @@ function franjasDelDia(fecha: string, parametros: Parametros): FranjaTablets[] {
 
   const total = tablets.filter(estaOperativa).length;
   const ahora = new Date();
-  const minimo = new Date(ahora.getTime() + parametros.horasMinimasSolicitud * 60 * 60 * 1000);
+  // #310: la tablet no tiene anticipación mínima (los 3 días de `horasMinimasSolicitud` son de
+  // espacios, asesorías y capacitaciones): se aparta desde la app hasta que empieza la franja.
   const franjas: FranjaTablets[] = [];
 
   for (
@@ -574,9 +610,6 @@ function franjasDelDia(fecha: string, parametros: Parametros): FranjaTablets[] {
     if (inicioFechaHora < ahora) {
       estado = 'no_disponible';
       motivo = 'Ya pasó';
-    } else if (inicioFechaHora < minimo) {
-      estado = 'no_disponible';
-      motivo = `Faltan menos de ${parametros.horasMinimasSolicitud} h para solicitarla`;
     } else if (total === 0) {
       estado = 'no_disponible';
       motivo = 'No hay tablets operativas.';
@@ -674,6 +707,7 @@ function ordenarPrestamos(lista: Prestamo[]): Prestamo[] {
  * otras (CA2).
  */
 export async function obtenerDisponibilidadTablets(fecha: string): Promise<DiaTablets> {
+  if (USAR_MOCKS) liberarNoRecogidos();
   if (!esFechaValida(fecha)) {
     throw new ErrorApi(400, 'La fecha no es válida.');
   }
@@ -725,6 +759,8 @@ export async function solicitarPrestamo(
     // Ruta provisional: confirmar con Backend. El solicitante sale del token.
     return peticion<Prestamo>('/prestamos/', { method: 'POST', body: JSON.stringify(datos) });
   }
+  // #310: los apartados que no se recogieron ya no ocupan su cupo.
+  liberarNoRecogidos();
 
   if (!puedePedirTablet(usuario.tipo)) {
     throw new ErrorApi(403, MENSAJE_NO_PIDE_TABLET);
@@ -781,12 +817,18 @@ export async function solicitarPrestamo(
   if (fecha > ultimoDiaTablet(parametros, hoyISO())) {
     throw new ErrorApi(400, mensajeDiasMaximosTablet(parametros));
   }
-  const minimo = Date.now() + parametros.horasMinimasSolicitud * 60 * 60 * 1000;
-  if (new Date(`${fecha}T${horaInicio}:00`).getTime() < minimo) {
-    throw new ErrorApi(
-      400,
-      `La franja no cumple la anticipación mínima de ${parametros.horasMinimasSolicitud} horas.`,
-    );
+  // #310: sin anticipación mínima, como en el Backend; solo que la hora no haya pasado.
+  if (new Date(`${fecha}T${horaInicio}:00`).getTime() < Date.now()) {
+    throw new ErrorApi(400, 'Esa hora ya pasó: elige una más tarde.');
+  }
+  // #310: una persona no tiene dos préstamos que se crucen, como en el Backend.
+  const yaTiene = prestamos.some(
+    (prestamo) =>
+      prestamo.solicitanteId === usuario.id &&
+      prestamoOcupaFranja(prestamo, fecha, horaInicio, horaLimite),
+  );
+  if (yaTiene) {
+    throw new ErrorApi(400, 'Ya tienes un préstamo de tablet en esa franja.');
   }
 
   // Primero las que hoy están disponibles: HU-23 solo entrega una tablet disponible.
@@ -850,12 +892,51 @@ export async function solicitarPrestamo(
 
 /** Préstamos del usuario de la sesión, por fecha y hora, en todos sus estados (HU-22 y HU-30). */
 export function obtenerMisPrestamos(usuarioId: string): Promise<Prestamo[]> {
+  if (USAR_MOCKS) liberarNoRecogidos();
   if (USAR_MOCKS) {
     const mios = prestamos.filter((prestamo) => prestamo.solicitanteId === usuarioId);
     return simularRed(ordenarPrestamos(mios).map(copiarPrestamo));
   }
   // Ruta provisional: confirmar con Backend. El usuario sale del token.
   return peticion<Prestamo[]>('/prestamos/mios/');
+}
+
+// ── #310: los préstamos que no se recogen se liberan ─────────────
+
+/**
+ * Con mocks, cancela los préstamos apartados que nadie recogió una hora después de su hora de
+ * inicio (`noSeRecogio`) y libera su cupo, como el Backend. Se llama antes de leer o cambiar
+ * préstamos, como los vencidos. Cada uno deja su rastro una sola vez: la notificación a la
+ * persona, el evento del historial (HU-08) y el registro de uso (HU-25).
+ */
+function liberarNoRecogidos(ahora: Date = new Date()): void {
+  prestamos = prestamos.map((prestamo) => {
+    if (!noSeRecogio(prestamo, ahora)) return prestamo;
+    crearNotificacion({
+      usuarioId: prestamo.solicitanteId,
+      solicitudId: prestamo.id,
+      titulo: 'Préstamo de tablet cancelado',
+      mensaje: `No recogiste la tablet que apartaste para el ${prestamo.fecha} a las ${prestamo.horaInicio}: se liberó una hora después. Si todavía la necesitas, pide otra.`,
+    });
+    registrarEvento(
+      'prestamo',
+      prestamo.id,
+      estadoDePrestamo('cancelado'),
+      'Sistema',
+      'Se canceló porque no se recogió a tiempo: una hora después de la hora de inicio.',
+    );
+    registrarUso({
+      id: `uso-prestamo-${prestamo.id}`,
+      servicio: 'tablets',
+      finalidad: 'Préstamo de tablet',
+      fecha: prestamo.fecha,
+      fechaFin: prestamo.fecha,
+      modalidad: 'presencial',
+      estado: 'cancelada',
+      ...datosDeSolicitante(prestamo.solicitanteId),
+    });
+    return { ...prestamo, estado: 'cancelado' };
+  });
 }
 
 // ── HU-24: préstamos vencidos ──────────────────────────────────
@@ -908,6 +989,7 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
     return peticion<Prestamo[]>('/prestamos/vencidos/');
   }
 
+  liberarNoRecogidos();
   const ahora = new Date();
   prestamos = prestamos.map((prestamo) => {
     if (prestamo.estado !== 'entregado' || minutosDeRetraso(prestamo, ahora) <= 0) {

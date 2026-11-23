@@ -1,11 +1,13 @@
 /**
  * Entregar o recibir una tablet (HU-23), con ?id=<préstamo>&modo=entrega|devolucion.
- * Se abre desde Inventario → Préstamos. Con &verificada=1, la tablet se leyó con el escáner
- * (HU-31) y el resumen lo dice.
+ * Se abre desde Gestión → Préstamos. Con &verificada=1, la tablet se leyó con el escáner
+ * (HU-31) y el resumen lo dice. En la entrega, &tabletId=<tablet> la deja elegida: viene de
+ * escanear una tablet libre en "Escanear tablet" (#310).
  *
- * Antes del formulario revisa que el préstamo esté en el estado que toca, que la tablet esté
- * disponible para entregar y que no se entregue antes del día del préstamo. Al guardar muestra
- * lo que quedó registrado: entrega (CA1), cierre (CA2), novedad (CA3) y retraso (CA4).
+ * Antes del formulario revisa que el préstamo esté en el estado que toca y que no se entregue
+ * antes del día del préstamo. Desde el #310 la tablet se asigna al entregarla: se elige o se
+ * escanea aquí (SelectorTabletEntrega), entre las libres toda la franja del préstamo.
+ * Al guardar muestra lo que quedó registrado: entrega (CA1), cierre (CA2), novedad (CA3) y retraso (CA4).
  * Versión 1.1 (#253): la entrega lleva el estado del formato y la constancia; quien entrega y
  * quien recibe salen de la sesión. El resultado muestra la constancia y la comparte en PDF.
  */
@@ -28,6 +30,7 @@ import {
   EstadoVacio,
   Pantalla,
 } from '@/components/ui';
+import { SelectorTabletEntrega } from '@/components/inventario/SelectorTabletEntrega';
 import { BotonCompartirConstancia } from '@/components/inventario/BotonCompartirConstancia';
 import { VistaConstancia } from '@/components/inventario/VistaConstancia';
 import { useRol } from '@/hooks/useRol';
@@ -43,12 +46,14 @@ import type { Prestamo } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { fechaLegible, hoyISO } from '@/utils/fechas';
 import { duracionLegible, fechaHoraLegible, NOMBRE_CONDICION } from '@/utils/prestamos';
+import { tabletsParaEntregar } from '@/utils/tablets';
 
 export default function RegistroPrestamo() {
-  const { id, modo, verificada } = useLocalSearchParams<{
+  const { id, modo, verificada, tabletId } = useLocalSearchParams<{
     id?: string;
     modo?: string;
     verificada?: string;
+    tabletId?: string;
   }>();
   const { tienePermiso } = useRol();
   const modoValido: Modo | null = modo === 'entrega' || modo === 'devolucion' ? modo : null;
@@ -61,7 +66,12 @@ export default function RegistroPrestamo() {
         {!tienePermiso('tablets') ? (
           <SinPermiso />
         ) : id && modoValido ? (
-          <Registro id={id} modo={modoValido} verificada={verificada === '1'} />
+          <Registro
+            id={id}
+            modo={modoValido}
+            verificada={verificada === '1'}
+            tabletInicial={tabletId}
+          />
         ) : (
           <EstadoVacio mensaje="Elige un préstamo desde Gestión → Préstamos." />
         )}
@@ -70,13 +80,27 @@ export default function RegistroPrestamo() {
   );
 }
 
-function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada: boolean }) {
+function Registro({
+  id,
+  modo,
+  verificada,
+  tabletInicial,
+}: {
+  id: string;
+  modo: Modo;
+  verificada: boolean;
+  /** La tablet escaneada en "Escanear tablet" (#310). */
+  tabletInicial?: string;
+}) {
   const { usuario } = useRol();
   const prestamos = usePrestamos('todas');
   const tablets = useTablets();
   const entregar = useRegistrarEntrega();
   const recibir = useRegistrarDevolucion();
   const [registrado, setRegistrado] = useState<Prestamo | null>(null);
+  // #310: la tablet que se entrega. Sin elegir, la escaneada al venir de "Escanear tablet" o,
+  // si no, la provisional; cualquiera de las dos solo si sirve en este préstamo.
+  const [elegida, setElegida] = useState<{ id: string; escaneada: boolean } | null>(null);
   const mutacion = modo === 'entrega' ? entregar : recibir;
 
   if (registrado) return <Resultado prestamo={registrado} modo={modo} />;
@@ -96,8 +120,19 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
 
   const prestamo = prestamos.data.find((p) => p.id === id);
   if (!prestamo) return <EstadoVacio pose="buscando" mensaje="Este préstamo ya no existe." />;
-  const tablet = tablets.data.find((t) => t.id === prestamo.tabletId);
-  if (!tablet)
+  // En la devolución, la tablet que se entregó; en la entrega, la que se elija (#310).
+  const paraEntregar =
+    modo === 'entrega' ? tabletsParaEntregar(tablets.data, prestamos.data, prestamo) : [];
+  const tabletId =
+    modo === 'devolucion'
+      ? prestamo.tabletId
+      : (elegida?.id ??
+        paraEntregar.find((t) => t.id === tabletInicial)?.id ??
+        paraEntregar.find((t) => t.id === prestamo.tabletId)?.id ??
+        '');
+  const escaneada = elegida ? elegida.escaneada : verificada && tabletId === tabletInicial;
+  const tablet = tablets.data.find((t) => t.id === tabletId);
+  if (modo === 'devolucion' && !tablet)
     return (
       <EstadoVacio
         pose="buscando"
@@ -115,11 +150,9 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
   if (modo === 'entrega' && prestamo.fecha > hoyISO()) {
     return <AvisoError mensaje={`Este préstamo es para el ${fechaLegible(prestamo.fecha)}: la tablet se entrega ese día.`} />;
   }
-  if (modo === 'entrega' && tablet.estado !== 'disponible') {
+  if (modo === 'entrega' && paraEntregar.length === 0) {
     return (
-      <AvisoError
-        mensaje={`${tablet.codigo} no está disponible para entregar (está ${tablet.estado === 'mantenimiento' ? 'en mantenimiento' : tablet.estado === 'de_baja' ? 'de baja' : 'prestada'}). Revísala en la sección Tablets.`}
-      />
+      <AvisoError mensaje="No hay tablets libres en las horas de este préstamo. Revisa la sección Tablets." />
     );
   }
 
@@ -134,7 +167,10 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
             condicion: datos.condicion,
             accesorios: datos.accesorios,
             estadoEquipo: datos.estadoEquipo,
+            tabletId,
             ...(datos.notas ? { notas: datos.notas } : {}),
+            // #310: la firma del usuario en la pantalla; sin ella, firmó en papel.
+            ...(datos.firmaUsuario ? { firmaUsuario: datos.firmaUsuario } : {}),
           },
         },
         opciones,
@@ -150,16 +186,35 @@ function Registro({ id, modo, verificada }: { id: string; modo: Modo; verificada
       {modo === 'entrega' && prestamo.fecha < hoyISO() ? (
         <AvisoError mensaje={`Ojo: este préstamo era para el ${fechaLegible(prestamo.fecha)}. Confirma con la persona antes de entregar.`} />
       ) : null}
-      <FormularioRegistroPrestamo
-        modo={modo}
-        prestamo={prestamo}
-        tablet={tablet}
-        verificada={verificada}
-        quienEntrega={usuario ? { id: usuario.id, nombre: usuario.nombre, cargo: usuario.cargo } : undefined}
-        guardando={mutacion.isPending}
-        mensajeError={mutacion.error ? mensajeErrorGuardar(mutacion.error) : null}
-        onGuardar={guardar}
-      />
+      {modo === 'entrega' ? (
+        <SelectorTabletEntrega
+          prestamo={prestamo}
+          tablets={tablets.data}
+          prestamos={prestamos.data}
+          opciones={paraEntregar}
+          valor={tabletId}
+          onElegir={(id, escaneada) => {
+            entregar.reset();
+            setElegida({ id, escaneada });
+          }}
+        />
+      ) : null}
+      {tablet ? (
+        <FormularioRegistroPrestamo
+          // Otra tablet, otros accesorios: el formulario empieza de nuevo.
+          key={tablet.id}
+          modo={modo}
+          prestamo={prestamo}
+          tablet={tablet}
+          verificada={modo === 'entrega' ? escaneada : verificada}
+          quienEntrega={
+            usuario ? { id: usuario.id, nombre: usuario.nombre, cargo: usuario.cargo } : undefined
+          }
+          guardando={mutacion.isPending}
+          mensajeError={mutacion.error ? mensajeErrorGuardar(mutacion.error) : null}
+          onGuardar={guardar}
+        />
+      ) : null}
     </View>
   );
 }

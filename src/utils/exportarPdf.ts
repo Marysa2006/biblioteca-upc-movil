@@ -5,6 +5,8 @@
  * `expo-print`; después lo comparte con `expo-sharing`. Desde el #307 va organizado como las
  * pestañas (Resumen, Servicios, Tablets y Calidad), con los filtros en palabras, los porcentajes,
  * los hallazgos clave, el tiempo de respuesta y la duración de los préstamos de tablets.
+ * Desde el #310, con el diseño común de los PDF (estilosPdf y encabezadoPdf): logo, márgenes,
+ * tarjetas y barras. La constancia de préstamo usa el mismo diseño.
  *
  * `expo-print` y `expo-sharing` se importan solo aquí, para que no pesen en el resto.
  */
@@ -12,7 +14,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
-import { colores } from '@/theme';
+import { colores, coloresEstado } from '@/theme';
 import type {
   ConteoIndicador,
   FiltrosEstadisticas,
@@ -29,6 +31,7 @@ import {
   textoHoras,
   textoPorcentaje,
 } from '@/utils/filtrosEstadisticas';
+import { LOGO_UPC_PNG_BASE64 } from '@/utils/logoPdf';
 
 /**
  * Convierte el HTML en un PDF guardado en la caché de la app, con este nombre, y devuelve su URI.
@@ -57,125 +60,207 @@ export function escaparHtml(texto: string): string {
     .replace(/"/g, '&quot;');
 }
 
-/** Una sección con su título y una tabla. */
-const seccion = (titulo: string, contenido: string) =>
-  `<section><h3>${escaparHtml(titulo)}</h3>${contenido}</section>`;
+/**
+ * El estilo común de los PDF (#310): página carta con márgenes (en Android, `expo-print` no
+ * acepta márgenes por opción: van con @page), tarjetas con borde suave, títulos verdes en
+ * mayúsculas pequeñas y el pie con el número de página. Lo usan este reporte y la constancia.
+ */
+export function estilosPdf(): string {
+  return `
+  @page { size: letter; margin: 18mm 16mm 20mm;
+    @bottom-left { content: "BiblioUPC · Universidad Popular del Cesar"; font: 8.5px Roboto, sans-serif; color: ${colores.textoSecundario}; }
+    @bottom-right { content: "Página " counter(page) " de " counter(pages); font: 8.5px Roboto, sans-serif; color: ${colores.textoSecundario}; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Roboto, -apple-system, Arial, sans-serif; color: ${colores.texto}; font-size: 11px; line-height: 1.5; }
+  .encabezado { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-bottom: 12px; border-bottom: 3px solid ${colores.primario}; }
+  .encabezado img { height: 52px; }
+  .encabezado .generado { font-size: 9px; color: ${colores.textoSecundario}; text-align: right; }
+  h1 { font-size: 19px; line-height: 1.25; margin: 16px 0 4px; }
+  .subtitulo { color: ${colores.textoSecundario}; margin: 0 0 14px; }
+  .tarjeta { border: 1px solid ${colores.borde}; border-radius: 10px; padding: 10px 16px 12px; margin-bottom: 10px; page-break-inside: avoid; }
+  h3 { display: flex; align-items: center; gap: 8px; font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: ${colores.primario}; margin: 0 0 10px; }
+  h3::before { content: ""; width: 4px; height: 12px; border-radius: 2px; background: ${colores.verdeUpc}; }
+  .datos { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+  .etq { display: block; color: ${colores.textoSecundario}; font-size: 9px; }
+  .val { font-weight: 600; }
+  .nota { color: ${colores.textoSecundario}; font-size: 9.5px; margin: -4px 0 8px; }
+  .vacio { color: ${colores.textoSecundario}; margin: 0; }
+  `;
+}
 
-/** Una tabla de un indicador: el grupo, cuántas y qué parte del total. Sin filas, lo dice. */
-function tabla(titulo: string, filas: ConteoIndicador[], total?: number): string {
-  const base = total ?? filas.reduce((suma, fila) => suma + fila.cantidad, 0);
+/** «23 de noviembre de 2026». */
+function hoyCompleto(): string {
+  const hoy = hoyISO();
+  return `${fechaLegible(hoy)} de ${hoy.slice(0, 4)}`;
+}
+
+/** El encabezado de los PDF (#310): el logo de la UPC, la fecha, el título y una línea. */
+export function encabezadoPdf(titulo: string, subtitulo: string): string {
+  return `
+  <header class="encabezado">
+    <img src="data:image/png;base64,${LOGO_UPC_PNG_BASE64}" alt="Universidad Popular del Cesar">
+    <div class="generado">Generado el ${hoyCompleto()}</div>
+  </header>
+  <h1>${escaparHtml(titulo)}</h1>
+  <p class="subtitulo">${escaparHtml(subtitulo)}</p>`;
+}
+
+/**
+ * Un indicador como barras horizontales, con el número y el porcentaje; sin filas, lo dice.
+ * `total` es la base del porcentaje (por defecto, la suma de las filas). `color` elige el de
+ * cada barra (por estado); si no, el primario.
+ */
+function barras(
+  titulo: string,
+  filas: ConteoIndicador[],
+  opciones: { total?: number; color?: (etiqueta: string) => string; nota?: string } = {},
+): string {
+  const base = opciones.total ?? filas.reduce((suma, fila) => suma + fila.cantidad, 0);
+  const maximo = Math.max(1, ...filas.map((fila) => fila.cantidad));
   const cuerpo = filas.length
-    ? filas
-        .map(
-          (fila) =>
-            `<tr><td>${escaparHtml(fila.etiqueta)}</td><td class="n">${fila.cantidad}</td>` +
-            `<td class="n">${textoPorcentaje(fila.cantidad, base)}</td></tr>`,
-        )
-        .join('')
-    : '<tr><td colspan="3" class="vacio">Sin datos con estos filtros.</td></tr>';
-  return seccion(titulo, `<table><tbody>${cuerpo}</tbody></table>`);
+    ? `<table class="barras"><tbody>${filas
+        .map((fila) => {
+          const ancho = Math.max(2, Math.round((fila.cantidad / maximo) * 100));
+          const color = opciones.color?.(fila.etiqueta) ?? colores.primario;
+          return (
+            `<tr><th>${escaparHtml(fila.etiqueta)}</th>` +
+            `<td class="pista"><div class="barra" style="width:${ancho}%;background:${color}"></div></td>` +
+            `<td class="num">${fila.cantidad}</td>` +
+            `<td class="pct">${textoPorcentaje(fila.cantidad, base)}</td></tr>`
+          );
+        })
+        .join('')}</tbody></table>`
+    : '<p class="vacio">Sin datos con estos filtros.</p>';
+  const nota = opciones.nota ? `<p class="nota">${escaparHtml(opciones.nota)}</p>` : '';
+  return `<div class="tarjeta"><h3>${escaparHtml(titulo)}</h3>${nota}${cuerpo}</div>`;
 }
 
-/** Cifras sueltas en dos columnas: «Préstamos · 4», «Duración promedio · 3,2 h». */
-function cifras(titulo: string, filas: [string, string][]): string {
-  const cuerpo = filas
-    .map(
-      ([nombre, valor]) =>
-        `<tr><td>${escaparHtml(nombre)}</td><td class="v">${escaparHtml(valor)}</td></tr>`,
-    )
-    .join('');
-  return seccion(titulo, `<table><tbody>${cuerpo}</tbody></table>`);
+/**
+ * Dos tarjetas lado a lado. Con una tabla y no con flex o grid: al imprimir, el motor parte mal
+ * esos dos cuando el par cae en un corte de página.
+ */
+const par = (izquierda: string, derecha: string) =>
+  `<table class="par"><tbody><tr><td>${izquierda}</td><td>${derecha}</td></tr></tbody></table>`;
+
+/** Una cifra grande con lo que dice y, si hay, un detalle: «Espacios · Servicio más usado · 9 · 24 %». */
+const cifra = (valor: string, etiqueta: string, detalle?: string) =>
+  `<div class="cifra"><span class="num">${escaparHtml(valor)}</span>` +
+  `<span class="etq">${escaparHtml(etiqueta)}</span>` +
+  `${detalle ? `<span class="detalle">${escaparHtml(detalle)}</span>` : ''}</div>`;
+
+/** El título de cada pestaña de la pantalla dentro del reporte. */
+const pestana = (titulo: string, descripcion: string) =>
+  `<div class="pestana"><h2>${escaparHtml(titulo)}</h2><span>${escaparHtml(descripcion)}</span></div>`;
+
+/** Las barras de Por estado con los colores de los estados de la app. */
+const COLOR_ESTADO: Record<string, string> = {
+  Completada: coloresEstado.realizada.texto,
+  Pendiente: coloresEstado.pendiente.texto,
+  Cancelada: coloresEstado.cancelada.texto,
+};
+
+/** El tiempo de respuesta de todas las solicitudes respondidas, ponderado por servicio. */
+function respuestaPromedio(tiempos: TiempoRespuesta[]): { horas: number; cantidad: number } | null {
+  const cantidad = tiempos.reduce((suma, tiempo) => suma + tiempo.cantidad, 0);
+  if (cantidad === 0) return null;
+  const horas = tiempos.reduce((suma, tiempo) => suma + tiempo.horasPromedio * tiempo.cantidad, 0);
+  return { horas: Math.round((horas / cantidad) * 10) / 10, cantidad };
 }
 
-/** El tiempo de respuesta por servicio (#307): servicio, tiempo promedio y de cuántas solicitudes. */
-function tablaTiempos(tiempos: TiempoRespuesta[]): string {
-  const cuerpo = tiempos.length
-    ? tiempos
-        .map(
-          (fila) =>
-            `<tr><td>${escaparHtml(fila.etiqueta)}</td>` +
-            `<td class="v">${textoHoras(fila.horasPromedio)}</td>` +
-            `<td class="n">${fila.cantidad}</td></tr>`,
-        )
-        .join('')
-    : '<tr><td colspan="3" class="vacio">Todavía no hay solicitudes respondidas.</td></tr>';
-  return seccion(
-    'Tiempo de respuesta',
-    '<p class="nota">Promedio desde la solicitud hasta la primera respuesta del personal; ' +
-      'la última columna dice de cuántas solicitudes.</p>' +
-      `<table><tbody>${cuerpo}</tbody></table>`,
-  );
-}
-
-/** «Espacios (24 %)», o null si no hay grupo. */
-function conPorcentaje(grupo: ConteoIndicador | undefined, total: number): string | null {
-  return grupo ? `${grupo.etiqueta} (${textoPorcentaje(grupo.cantidad, total)})` : null;
-}
-
-/** Resumen: lo principal, los hallazgos clave y las operaciones por mes y por semestre. */
+/** Resumen: cuatro cifras, los hallazgos clave y las operaciones por mes y por semestre. */
 function htmlResumen(indicadores: IndicadoresUso): string {
   const { total } = indicadores;
-  const filas: [string, string][] = [['Operaciones', String(total)]];
-  const servicio = conPorcentaje(indicadores.porServicio[0], total);
-  if (servicio) filas.push(['Servicio más usado', servicio]);
-  const usuarios = conPorcentaje(indicadores.porTipoUsuario[0], total);
-  if (usuarios) filas.push(['Usuarios más frecuentes', usuarios]);
-
+  const servicio = indicadores.porServicio[0];
+  const usuarios = indicadores.porTipoUsuario[0];
+  const respuesta = respuestaPromedio(indicadores.tiempoRespuesta);
+  const detalle = (grupo: ConteoIndicador) =>
+    `${grupo.cantidad} · ${textoPorcentaje(grupo.cantidad, total)}`;
   const hallazgos = hallazgosClave(indicadores);
-  const listaHallazgos = hallazgos.length
-    ? seccion(
-        'Hallazgos clave',
-        `<ul>${hallazgos.map((frase) => `<li>${escaparHtml(frase)}</li>`).join('')}</ul>`,
-      )
-    : '';
 
   return (
-    cifras('Lo principal', filas) +
-    listaHallazgos +
-    tabla('Operaciones por mes', indicadores.porMes, total) +
-    tabla('Operaciones por semestre', periodosEnOrden(indicadores.porPeriodo), total)
+    pestana('Resumen', 'Lo principal del periodo') +
+    `<div class="cifras">${[
+      cifra(String(total), 'Operaciones'),
+      cifra(servicio?.etiqueta ?? 'Sin datos', 'Servicio más usado', servicio && detalle(servicio)),
+      cifra(
+        usuarios?.etiqueta ?? 'Sin datos',
+        'Usuarios más frecuentes',
+        usuarios && detalle(usuarios),
+      ),
+      cifra(
+        respuesta ? textoHoras(respuesta.horas) : 'Sin datos',
+        'Respuesta promedio',
+        respuesta ? `de ${respuesta.cantidad} solicitudes` : undefined,
+      ),
+    ].join('')}</div>` +
+    (hallazgos.length
+      ? `<div class="tarjeta"><h3>Hallazgos clave</h3><ul class="hallazgos">${hallazgos
+          .map((frase) => `<li>${escaparHtml(frase)}</li>`)
+          .join('')}</ul></div>`
+      : '') +
+    barras('Operaciones por mes', indicadores.porMes, { total }) +
+    barras('Operaciones por semestre', periodosEnOrden(indicadores.porPeriodo), { total })
   );
 }
 
 /** Servicios: qué se usa, cómo terminó, en qué modalidad, de qué temas y quién lo usa. */
 function htmlServicios(indicadores: IndicadoresUso): string {
   const { total } = indicadores;
-  return [
-    tabla('Por servicio', indicadores.porServicio, total),
-    tabla('Por estado', indicadores.porEstado, total),
-    tabla('Presencial y virtual', indicadores.porModalidad, total),
+  return (
+    pestana('Servicios', 'Qué se usa, cómo terminó y quién lo usa') +
+    barras('Por servicio', indicadores.porServicio, { total }) +
+    par(
+      barras('Por estado', indicadores.porEstado, {
+        total,
+        color: (etiqueta) => COLOR_ESTADO[etiqueta] ?? colores.primario,
+      }),
+      barras('Presencial y virtual', indicadores.porModalidad, { total }),
+    ) +
     // Las temáticas, sobre su propio total: el de las asesorías y el de las capacitaciones.
-    tabla('Temas de asesoría', indicadores.porTemaAsesoria),
-    tabla('Líneas de formación', indicadores.porLineaFormacion),
-    tabla('Por programa', indicadores.porPrograma, total),
-    tabla('Por tipo de usuario', indicadores.porTipoUsuario, total),
-    tabla('Por facultad', indicadores.porFacultad, total),
-    tabla('Por sede', indicadores.porSede, total),
-  ].join('');
+    par(
+      barras('Temas de asesoría', indicadores.porTemaAsesoria, {
+        nota: 'Sobre el total de asesorías.',
+      }),
+      barras('Líneas de formación', indicadores.porLineaFormacion, {
+        nota: 'Sobre el total de capacitaciones.',
+      }),
+    ) +
+    barras('Por programa', indicadores.porPrograma, { total }) +
+    par(
+      barras('Por tipo de usuario', indicadores.porTipoUsuario, { total }),
+      barras('Por sede', indicadores.porSede, { total }),
+    ) +
+    barras('Por facultad', indicadores.porFacultad, { total })
+  );
 }
 
-/** Tablets (#307): los préstamos, su duración, el cumplimiento y los gráficos por mes y programa. */
+/** Tablets (#307): los préstamos, su duración, el cumplimiento y los préstamos por mes y programa. */
 function htmlTablets(indicadores: IndicadoresUso): string {
   const { tablets } = indicadores;
+  const titulo = pestana('Tablets', 'Préstamos, duración y cumplimiento');
   if (tablets.prestamos === 0) {
-    return '<p class="vacio">No hay préstamos de tablets con estos filtros.</p>';
+    return `${titulo}<p class="vacio">No hay préstamos de tablets con estos filtros.</p>`;
   }
-  const duracion =
-    tablets.duracionPromedio == null ? 'Sin datos' : textoHoras(tablets.duracionPromedio);
-  const cumplen =
-    tablets.conDuracion === 0
-      ? 'Sin datos'
-      : `${tablets.dentroDeReferencia} de ${tablets.conDuracion} ` +
-        `(${textoPorcentaje(tablets.dentroDeReferencia, tablets.conDuracion)})`;
   return (
-    cifras('Préstamos de tablets', [
-      ['Préstamos', String(tablets.prestamos)],
-      ['Duración promedio', duracion],
-      [`Duraron ${tablets.horasReferencia} h o menos`, cumplen],
-      ['Sin hora completa', String(tablets.sinHoraCompleta)],
-    ]) +
-    tabla('Préstamos por mes', tablets.porMes, tablets.prestamos) +
-    tabla('Préstamos por programa', tablets.porPrograma, tablets.prestamos)
+    titulo +
+    `<div class="cifras">${[
+      cifra(String(tablets.prestamos), 'Préstamos'),
+      cifra(
+        tablets.duracionPromedio == null ? 'Sin datos' : textoHoras(tablets.duracionPromedio),
+        'Duración promedio',
+      ),
+      cifra(
+        tablets.conDuracion === 0
+          ? 'Sin datos'
+          : textoPorcentaje(tablets.dentroDeReferencia, tablets.conDuracion),
+        `Duraron ${tablets.horasReferencia} h o menos`,
+        tablets.conDuracion ? `${tablets.dentroDeReferencia} de ${tablets.conDuracion}` : undefined,
+      ),
+      cifra(String(tablets.sinHoraCompleta), 'Sin hora completa', 'Calidad de los datos'),
+    ].join('')}</div>` +
+    barras('Préstamos por mes', tablets.porMes, { total: tablets.prestamos }) +
+    barras('Préstamos por programa', tablets.porPrograma, { total: tablets.prestamos })
   );
 }
 
@@ -183,63 +268,94 @@ function htmlTablets(indicadores: IndicadoresUso): string {
 function htmlCalidad(indicadores: IndicadoresUso): string {
   const { total } = indicadores;
   const sinPrograma = operacionesSinPrograma(indicadores);
-  const calificacion =
-    indicadores.calificacionPromedio == null
-      ? 'Todavía nadie ha calificado'
-      : textoCalificacion(indicadores.calificacionPromedio);
+  const tiempos = indicadores.tiempoRespuesta.length
+    ? `<div class="envoltura"><table class="tabla"><thead><tr><th>Servicio</th>` +
+      `<th class="n">Tiempo promedio</th><th class="n">Solicitudes</th></tr></thead><tbody>${indicadores.tiempoRespuesta
+        .map(
+          (fila) =>
+            `<tr><td>${escaparHtml(fila.etiqueta)}</td>` +
+            `<td class="n">${textoHoras(fila.horasPromedio)}</td>` +
+            `<td class="n">${fila.cantidad}</td></tr>`,
+        )
+        .join('')}</tbody></table></div>`
+    : '<p class="vacio">Todavía no hay solicitudes respondidas.</p>';
   return (
-    cifras('Calidad del servicio y de los datos', [
-      ['Calificación promedio', calificacion],
-      [
+    pestana('Calidad', 'Del servicio y de los datos') +
+    `<div class="cifras dos">${[
+      cifra(
+        indicadores.calificacionPromedio == null
+          ? 'Sin calificaciones'
+          : textoCalificacion(indicadores.calificacionPromedio),
+        'Calificación promedio',
+      ),
+      cifra(
+        `${sinPrograma} de ${total}`,
         'Sin programa registrado',
-        `${sinPrograma} de ${total} (${textoPorcentaje(sinPrograma, total)})`,
-      ],
-    ]) + tablaTiempos(indicadores.tiempoRespuesta)
+        textoPorcentaje(sinPrograma, total),
+      ),
+    ].join('')}</div>` +
+    `<div class="tarjeta"><h3>Tiempo de respuesta</h3>` +
+    '<p class="nota">Promedio desde la solicitud hasta la primera respuesta del personal.</p>' +
+    `${tiempos}</div>`
   );
 }
 
 /**
- * El HTML del reporte, organizado como las pestañas de la pantalla (#307). Es puro: los mismos
- * indicadores dan el mismo documento, así que se puede comprobar sin abrir el PDF (CA3). Los
- * colores salen del tema.
+ * El HTML del reporte, organizado como las pestañas de la pantalla (#307), con el diseño del
+ * #310: encabezado con el logo, cifras clave en tarjetas, barras con su número y porcentaje, y
+ * las secciones seguidas (sin hojas medio vacías). Es puro: los mismos indicadores dan el mismo
+ * documento, así que se puede comprobar sin abrir el PDF (CA3). Los colores salen del tema.
  */
 export function htmlDelReporte(
   indicadores: IndicadoresUso,
   filtros: FiltrosEstadisticas = {},
 ): string {
   const activos = filtrosActivos(filtros);
-  const listaFiltros = activos.length
-    ? `<ul>${activos.map((activo) => `<li>${escaparHtml(activo.texto)}</li>`).join('')}</ul>`
-    : '<p class="vacio">Sin filtros: todas las operaciones.</p>';
+  const chips = activos.length
+    ? activos.map((activo) => `<span class="chip">${escaparHtml(activo.texto)}</span>`).join('')
+    : '<span class="chip">Sin filtros: todas las operaciones</span>';
 
   return `<!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
-<style>
-  body { font-family: -apple-system, Roboto, sans-serif; color: ${colores.texto}; margin: 24px; font-size: 12px; }
-  h1 { color: ${colores.primario}; font-size: 20px; margin-bottom: 0; }
-  h2 { color: ${colores.superficie}; background: ${colores.primarioOscuro}; font-size: 14px; padding: 6px 8px; margin: 24px 0 0; }
-  h3 { color: ${colores.primario}; font-size: 13px; margin-bottom: 4px; border-bottom: 1px solid ${colores.borde}; }
-  .fecha, .vacio, .nota { color: ${colores.textoSecundario}; }
-  .fecha { margin-top: 4px; }
-  .nota { margin: 2px 0 6px; }
-  section { margin-top: 12px; page-break-inside: avoid; }
-  table { width: 100%; border-collapse: collapse; }
-  td { padding: 4px 0; border-bottom: 1px solid ${colores.superficieVariante}; }
-  td.n { text-align: right; font-variant-numeric: tabular-nums; width: 4em; }
-  td.v { text-align: right; font-weight: bold; }
-  li { margin-bottom: 4px; }
+<style>${estilosPdf()}
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: -6px 0 14px; }
+  .chip { padding: 2px 10px; border-radius: 999px; background: ${colores.superficieVariante}; font-size: 9.5px; }
+  .cifras { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; page-break-inside: avoid; }
+  .cifras.dos { grid-template-columns: 1fr 1fr; }
+  .cifra { border-radius: 10px; padding: 10px 12px; background: ${colores.primarioSuave}; }
+  .cifra .num { display: block; font-size: 18px; font-weight: 700; color: ${colores.primarioOscuro}; line-height: 1.2; }
+  .cifra .etq { color: ${colores.primarioOscuro}; }
+  .cifra .detalle { display: block; font-size: 9px; color: ${colores.textoSecundario}; }
+  .hallazgos { margin: 0; padding-left: 16px; }
+  .hallazgos li { margin-bottom: 4px; }
+  .pestana { display: flex; align-items: baseline; gap: 10px; margin: 18px 0 12px; padding-bottom: 6px; border-bottom: 1px solid ${colores.borde}; page-break-after: avoid; }
+  .pestana h2 { margin: 0; font-size: 15px; color: ${colores.primarioOscuro}; }
+  .pestana span { color: ${colores.textoSecundario}; font-size: 9.5px; }
+  .par { width: 100%; border-collapse: separate; border-spacing: 0; page-break-inside: avoid; }
+  .par > tbody > tr > td { width: 50%; vertical-align: top; padding: 0; }
+  .par > tbody > tr > td:first-child { padding-right: 5px; }
+  .par > tbody > tr > td:last-child { padding-left: 5px; }
+  .barras { width: 100%; border-collapse: collapse; }
+  .barras th { text-align: left; font-weight: 400; width: 38%; padding: 3px 8px 3px 0; }
+  .par .barras th { width: 45%; }
+  .barras td { padding: 3px 0; vertical-align: middle; }
+  .pista { background: linear-gradient(${colores.superficieVariante}, ${colores.superficieVariante}) center / 100% 8px no-repeat; }
+  .barra { height: 8px; border-radius: 4px; }
+  .barras .num { width: 36px; text-align: right; font-weight: 700; }
+  .barras .pct { width: 44px; text-align: right; color: ${colores.textoSecundario}; }
+  .envoltura { border-radius: 6px; overflow: hidden; border: 1px solid ${colores.borde}; }
+  .tabla { width: 100%; border-collapse: collapse; }
+  .tabla th { background: ${colores.primarioOscuro}; color: ${colores.superficie}; text-align: left; padding: 6px 10px; font-weight: 600; }
+  .tabla td { padding: 6px 10px; border-top: 1px solid ${colores.borde}; }
+  .tabla tr:nth-child(even) td { background: ${colores.fondo}; }
+  .tabla .n { text-align: right; font-variant-numeric: tabular-nums; }
 </style></head>
 <body>
-  <h1>Estadísticas de uso de la biblioteca</h1>
-  <p class="fecha">Generado el ${fechaLegible(hoyISO())}.</p>
-  <section><h3>Filtros</h3>${listaFiltros}</section>
-  <h2>Resumen</h2>
+  ${encabezadoPdf('Estadísticas de uso de la biblioteca', 'Reporte de los servicios, con los filtros que se eligieron en la app.')}
+  <div class="chips">${chips}</div>
   ${htmlResumen(indicadores)}
-  <h2>Servicios</h2>
   ${htmlServicios(indicadores)}
-  <h2>Tablets</h2>
   ${htmlTablets(indicadores)}
-  <h2>Calidad</h2>
   ${htmlCalidad(indicadores)}
 </body></html>`;
 }

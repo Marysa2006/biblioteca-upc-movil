@@ -109,7 +109,10 @@ El día de la asesoría aprobada, desde 30 minutos antes, **Mis citas** y el det
 3. Elige por cuántas horas la necesitas, de 1 a 4 (empieza en 3). La aplicación muestra la hora de devolución.
 4. Revisa tus datos (vienen de tu cuenta; si eres estudiante, también la sede, la facultad y el programa), acepta las condiciones de uso y la responsabilidad sobre el préstamo, y toca **Confirmar solicitud**.
 
-La tablet se recoge en el mostrador de la biblioteca.
+La tablet se recoge en el mostrador de la biblioteca. Allí te asignan la tablet y firmas la constancia en la pantalla del celular de la biblioteca (o en papel, si lo prefieres).
+
+- Si no la recoges dentro de la **hora siguiente** a la hora de inicio, el préstamo se cancela y te llega un aviso.
+- No puedes tener dos préstamos de tablet que se crucen en las mismas horas.
 
 ![Pedir una tablet](manual-usuario/comunidad-solicitar-tablet.png)
 
@@ -147,7 +150,7 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
 Es lo primero que se ve al entrar. Muestra el día de cada persona, según sus permisos:
 
 1. **Las cifras del día:** cuántas solicitudes esperan respuesta (**Por revisar**), cuántas están aprobadas para hoy (**Para hoy**) y, para quien maneja el préstamo de tablets, cuántas están **prestadas**.
-2. **Resumen de hoy:** una tarjeta por área (**Reservas de espacios**, **Asesorías**, **Capacitaciones** y **Tablets**) con lo que hay por revisar y lo de hoy. Al tocarla, se abre su sección en **Gestión**; la de tablets abre **Vencidos** si hay préstamos vencidos.
+2. **Resumen de hoy:** una tarjeta por área (**Reservas de espacios**, **Asesorías**, **Capacitaciones** y **Tablets**) con lo que hay por revisar y lo de hoy. Al tocarla, se abre su sección en **Gestión**; la de tablets abre **Préstamos** en **Vencidos** si hay préstamos vencidos.
 3. **Por atender:** las solicitudes pendientes, la más próxima primero, con chips para ver solo un tipo. Al tocar una se abre su detalle para aprobarla o rechazarla; las reservas se abren en **Gestión → Solicitudes**. **Ver todo** lleva a la bandeja completa.
 4. **Afluencia semanal:** para quien tiene el permiso de estadísticas, cuántas operaciones hay en promedio cada día de la semana en las últimas 8 semanas y cuál es el día de más uso.
 
@@ -162,10 +165,20 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como realizada**.
    - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
 2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Quien asiste también puede registrarse escaneando ese QR desde su aplicación.
-3. **Préstamos:** la entrega y la devolución de tablets, también leyendo el código de barras con la cámara.
-4. **Vencidos:** las tablets que no se devolvieron a tiempo.
-5. **Espacios:** crear y editar espacios, y bloquearlos por mantenimiento o eventos.
-6. **Portal:**
+3. **Préstamos:** la entrega y la devolución de tablets. Si hay préstamos vencidos, la pestaña muestra cuántos con un aviso. Los chips separan los préstamos:
+   - **Entregar:** los apartados. Toca **Registrar entrega**:
+     1. Elige la tablet de la lista o toca **Escanear**. Solo aparecen las tablets libres durante todas las horas del préstamo; la tablet se asigna en este momento.
+     2. Marca el estado y los accesorios, revisa la constancia con la persona y marca que acepta la responsabilidad.
+     3. La persona **firma con el dedo** en el recuadro (**Borrar** para repetir). Si prefiere firmar a mano, marca **Firmará en papel**.
+     4. Toca **Registrar entrega**.
+   - **Recibir:** las tablets prestadas que van a tiempo. Toca **Registrar devolución**, marca cómo llegó y los accesorios, escribe las novedades si hay daños o faltantes, y confirma: el préstamo se cierra.
+   - **Vencidos:** las que pasaron la hora límite, con el aviso para contactar a las personas. Se reciben igual, con **Registrar devolución**.
+   - **Historial:** lo devuelto, con el retraso y las novedades.
+   - **Constancia:** el formato de responsabilidad del préstamo. **Compartir constancia (PDF)** lo envía con el logo de la Universidad, la firma del usuario, la de quien entregó y quien recibió (firmadas con su cuenta) y un **código de verificación**. Si la persona firmó en papel, imprímelo y firma en el recuadro.
+   - **Escanear tablet** (botón de abajo a la derecha): lee el código de barras con la cámara de la aplicación (la primera vez pide el permiso) o deja escribir el código. Si la tablet está prestada, abre su devolución; si está libre, muestra a quién se le puede entregar hoy.
+   - Un préstamo apartado que no se recoge dentro de la hora siguiente a su inicio se cancela solo y libera la tablet.
+4. **Espacios:** crear y editar espacios, y bloquearlos por mantenimiento o eventos.
+5. **Portal:**
    - **Contenidos del portal:** los avisos, novedades y servicios que ve la comunidad.
    - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
    - **Asesorías y jornadas:** los temas y los horarios de cada facilitador.
@@ -187,7 +200,7 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
 Arriba están las pestañas **Resumen**, **Servicios**, **Tablets**, **Calidad** y **Registros**. Debajo, dos botones que valen para todas:
 
 - **Filtros:** el periodo (con los atajos **Este mes**, **Este semestre** y **Todo**, o las fechas **Desde** y **Hasta**) y listas para elegir el servicio, el tipo de usuario, el programa, la facultad, la sede y el periodo académico. Cada opción dice cuántas operaciones tiene. Los filtros elegidos aparecen debajo de los botones; la **✕** de cada uno lo quita y **Limpiar** los quita todos.
-- **Exportar:** **Para Excel (CSV)** guarda los registros que se están viendo, con su temática, el tiempo de respuesta y la duración del préstamo; **PDF con los indicadores** arma un informe con las cuatro pestañas y los filtros aplicados. Los dos se comparten por correo, WhatsApp o Drive.
+- **Exportar:** **Para Excel (CSV)** guarda los registros que se están viendo, con su temática, el tiempo de respuesta y la duración del préstamo; **PDF con los indicadores** arma un informe con el logo de la Universidad, las cifras clave y gráficas de barras de las cuatro pestañas, con los filtros aplicados. Los dos se comparten por correo, WhatsApp o Drive.
 
 Qué muestra cada pestaña:
 
@@ -202,7 +215,7 @@ Qué muestra cada pestaña:
 
 ### Qué ve cada rol
 
-- **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos**, **Vencidos** e **Inventario** de tablets.
+- **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos** (con los vencidos) e **Inventario** de tablets.
 - **Facilitador:** las solicitudes de capacitación y la **Agenda** de sus asesorías.
 - **Gestora de espacios:** las solicitudes de reserva y la sección **Espacios**, con sus bloqueos.
 

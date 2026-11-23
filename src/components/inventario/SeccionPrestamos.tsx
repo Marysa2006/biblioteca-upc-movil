@@ -1,30 +1,26 @@
 /**
- * Sección Préstamos de Inventario (permiso `tablets`). Archivo de HU-23 (Jhon).
- * Se ve con el permiso que define inventario.tsx.
+ * Sección Préstamos de Gestión (permiso `tablets`). Archivo de HU-23 (Jhon).
  *
- * Los préstamos por grupo, con chips: Por entregar (reservados, con Registrar entrega), Por
- * recibir (entregados y vencidos, con Registrar devolución y el tiempo o el retraso) y
- * Historial (lo devuelto, con novedades y retrasos). Entregar y recibir van en
- * /administracion/prestamo. La alerta de vencidos es de la sección Vencidos (HU-24).
- * El encabezado y los chips de filtro la separan de las pestañas de Inventario.
+ * Los préstamos por grupo, con chips: Entregar (reservados, con Registrar entrega), Recibir
+ * (entregados a tiempo, con Registrar devolución y el tiempo que queda), Vencidos (HU-24: los que
+ * pasaron la hora límite, con el aviso para contactar a las personas) e Historial (lo devuelto).
+ * Entregar y recibir van en /administracion/prestamo. Vencidos era una pestaña de Gestión hasta
+ * el #310; marcarlos y avisar sigue siendo de usePrestamosVencidos(), que Gestión consulta.
+ * Con `?grupo=vencidos` (el Dashboard) abre en ese grupo; `abrir` lo repite en cada toque.
+ * El encabezado y los chips de filtro la separan del selector de Gestión.
  *
- * Escanear (HU-31): el ícono del encabezado abre "Buscar una tablet". Al leer o escribir el
- * código se abre su devolución o su entrega (CA1), verificada si se leyó con la cámara. Si
- * el código no es del inventario o la tablet no tiene préstamos activos, el aviso sale en el
- * diálogo (CA2).
- * Si el celular no tiene escáner del sistema, la cámara de la app se abre debajo del
- * encabezado: no va dentro del diálogo porque el Portal queda fuera de la navegación.
+ * Escanear (HU-31): es el botón flotante de la sección (BotonEscanearTablet), que Gestión pone
+ * en Pantalla. Abre /administracion/escanear-tablet, con la cámara de la app.
  */
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button } from 'react-native-paper';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Icon, Text } from 'react-native-paper';
 
-import { EscanerCodigos } from '@/components/camara/EscanerCodigos';
-import { DialogoBuscarTablet } from '@/components/inventario/DialogoBuscarTablet';
 import { EncabezadoSeccion } from '@/components/inventario/EncabezadoSeccion';
 import { TarjetaPrestamo } from '@/components/inventario/TarjetaPrestamo';
 import {
+  BotonFlotante,
   ChipsFiltro,
   ListaPaginada,
   EstadoCarga,
@@ -32,86 +28,39 @@ import {
   EstadoVacio,
   type OpcionFiltro,
 } from '@/components/ui';
-import { TIPOS_BARRAS, useEscanerSistema } from '@/hooks/useEscanerSistema';
-import { useBuscarTabletPorCodigo, usePrestamos, useTablets } from '@/hooks/useTablets';
-import { espacio } from '@/theme';
-import { accionDeTablet } from '@/utils/escanerTablet';
-import { hoyISO } from '@/utils/fechas';
+import { usePrestamos, useTablets } from '@/hooks/useTablets';
+import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import { NOMBRE_GRUPO, prestamosDeGrupo, type GrupoPrestamos } from '@/utils/prestamos';
+import { textoCantidadVencidos } from '@/utils/vencidos';
 
-/** El mensaje de la API si el código no sirve (400 o 404); si no, uno de conexión. */
-function mensajeBusqueda(error: Error): string {
-  if ('estado' in error && (error.estado === 400 || error.estado === 404)) return error.message;
-  return 'No pudimos buscar la tablet. Revisa tu conexión e inténtalo de nuevo.';
-}
-
-const GRUPOS: GrupoPrestamos[] = ['entregar', 'recibir', 'devueltos'];
+const GRUPOS: GrupoPrestamos[] = ['entregar', 'recibir', 'vencidos', 'devueltos'];
 
 const VACIO: Record<GrupoPrestamos, string> = {
   entregar: 'No hay préstamos reservados por entregar.',
-  recibir: 'No hay tablets prestadas por recibir.',
+  recibir: 'No hay tablets prestadas a tiempo por recibir.',
+  vencidos: 'No hay préstamos vencidos: todas las tablets están a tiempo.',
   devueltos: 'Todavía no hay devoluciones registradas.',
 };
 
 export function SeccionPrestamos() {
   const prestamos = usePrestamos('todas');
   const tablets = useTablets();
-  const [grupo, setGrupo] = useState<GrupoPrestamos>('entregar');
-  const buscar = useBuscarTabletPorCodigo();
-  const [dialogo, setDialogo] = useState(false);
-  const [camara, setCamara] = useState(false);
-  const [avisoEscaneo, setAvisoEscaneo] = useState<string | null>(null);
-  const mensajeEscaneo = buscar.error ? mensajeBusqueda(buscar.error) : avisoEscaneo;
+  const { grupo: grupoPedido, abrir: pedidoEn } = useLocalSearchParams<{
+    grupo?: string;
+    abrir?: string;
+  }>();
+  const pedido = GRUPOS.find((valor) => valor === grupoPedido);
+  const [grupo, setGrupo] = useState<GrupoPrestamos>(pedido ?? 'entregar');
+  // Como en gestion.tsx: cada toque del Dashboard vuelve a abrir el grupo pedido, sin efecto.
+  const clavePedido = `${pedido ?? ''}|${pedidoEn ?? ''}`;
+  const [pedidoPrevio, setPedidoPrevio] = useState(clavePedido);
+  if (clavePedido !== pedidoPrevio) {
+    setPedidoPrevio(clavePedido);
+    if (pedido) setGrupo(pedido);
+  }
 
-  // AvisoError ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
-  useEffect(() => {
-    if (Platform.OS === 'ios' && mensajeEscaneo) {
-      AccessibilityInfo.announceForAccessibility(mensajeEscaneo);
-    }
-  }, [mensajeEscaneo]);
-
-  const abrir = (id: string, modo: 'entrega' | 'devolucion', verificada = false) =>
-    router.push({
-      pathname: '/administracion/prestamo',
-      params: verificada ? { id, modo, verificada: '1' } : { id, modo },
-    });
-
-  // HU-31: busca la tablet leída y abre el registro que le toca. Si no hay, el diálogo
-  // (abierto o vuelto a abrir) dice por qué y deja reintentar o escribir el código.
-  // `escaneada`: solo lo que leyó una cámara se marca "Verificada con el escáner"; lo escrito a
-  // mano no.
-  const alLeer = (codigo: string, escaneada = false) => {
-    setAvisoEscaneo(null);
-    buscar.mutate(codigo, {
-      onSuccess: (tablet) => {
-        const accion = accionDeTablet(tablet, prestamos.data ?? [], hoyISO());
-        if (accion.tipo === 'abrir') {
-          buscar.reset();
-          setDialogo(false);
-          abrir(accion.prestamoId, accion.modo, escaneada);
-        } else {
-          setAvisoEscaneo(accion.mensaje);
-          setDialogo(true);
-        }
-      },
-      onError: () => setDialogo(true),
-    });
-  };
-  const escanerSistema = useEscanerSistema((codigo) => alLeer(codigo, true));
-
-  const abrirDialogo = () => {
-    buscar.reset();
-    setAvisoEscaneo(null);
-    setDialogo(true);
-  };
-
-  const escanear = async () => {
-    setDialogo(false);
-    buscar.reset();
-    setAvisoEscaneo(null);
-    // Sin escáner del sistema, o si no abre, la cámara de la app.
-    if (!(await escanerSistema.abrir())) setCamara(true);
-  };
+  const abrir = (id: string, modo: 'entrega' | 'devolucion') =>
+    router.push({ pathname: '/administracion/prestamo', params: { id, modo } });
 
   if (prestamos.isPending || tablets.isPending) return <EstadoCarga mensaje="Cargando los préstamos…" />;
   if (prestamos.isError || tablets.isError) {
@@ -140,39 +89,26 @@ export function SeccionPrestamos() {
         icono="swap-horizontal"
         titulo="Préstamos"
         descripcion="Entrega las tablets reservadas y recibe las prestadas."
-        accion={{
-          icono: 'barcode-scan',
-          etiqueta: 'Buscar una tablet con el escáner o por su código',
-          onPress: abrirDialogo,
-        }}
       />
-      {camara ? (
-        <View style={estilos.camara}>
-          <EscanerCodigos
-            tipos={TIPOS_BARRAS}
-            onLeido={(lectura) => {
-              setCamara(false);
-              alLeer(lectura.datos, true);
-            }}
-          />
-          <Button
-            mode="text"
-            icon="close"
-            onPress={() => setCamara(false)}
-            style={estilos.cerrarCamara}
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar la cámara"
-          >
-            Cerrar cámara
-          </Button>
-        </View>
-      ) : null}
       <ChipsFiltro
         opciones={opciones}
         valor={grupo}
         onCambiar={setGrupo}
         descripcion="Filtrar préstamos"
       />
+      {grupo === 'vencidos' && visibles.length > 0 ? (
+        <View style={estilos.aviso} accessibilityLiveRegion="polite">
+          <Icon source="alert-circle-outline" size={24} color={coloresEstado.rechazada.texto} />
+          <View style={estilos.textosAviso}>
+            <Text variant="titleSmall" style={estilos.tituloAviso}>
+              {textoCantidadVencidos(visibles.length)}
+            </Text>
+            <Text variant="bodyMedium" style={estilos.texto}>
+              Contacta a las personas para que devuelvan las tablets en el mostrador.
+            </Text>
+          </View>
+        </View>
+      ) : null}
       {visibles.length === 0 ? (
         <EstadoVacio mensaje={VACIO[grupo]} />
       ) : (
@@ -192,22 +128,35 @@ export function SeccionPrestamos() {
           )}
         </ListaPaginada>
       )}
-
-      <DialogoBuscarTablet
-        visible={dialogo}
-        buscando={buscar.isPending}
-        mensaje={mensajeEscaneo}
-        onEscanear={() => void escanear()}
-        // Escrito a mano: abre el registro, pero no lo marca como verificado.
-        onBuscar={(codigo) => alLeer(codigo)}
-        onCerrar={() => setDialogo(false)}
-      />
     </View>
+  );
+}
+
+/** Botón flotante "Escanear tablet" de la sección (HU-31); se encoge al deslizar. */
+export function BotonEscanearTablet({ extendido }: { extendido: boolean }) {
+  return (
+    <BotonFlotante
+      icono="barcode-scan"
+      texto="Escanear tablet"
+      etiqueta="Escanear el código de una tablet para registrar su devolución"
+      onPress={() => router.push('/administracion/escanear-tablet')}
+      extendido={extendido}
+    />
   );
 }
 
 const estilos = StyleSheet.create({
   seccion: { gap: espacio.s },
-  camara: { gap: espacio.xs },
-  cerrarCamara: { alignSelf: 'flex-start' },
+  // Sobre el fondo de color, el texto va en colores.texto (contraste AA).
+  aviso: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: espacio.s,
+    padding: espacio.m,
+    borderRadius: radio.tarjeta,
+    backgroundColor: coloresEstado.rechazada.fondo,
+  },
+  textosAviso: { flex: 1, gap: espacio.xs },
+  tituloAviso: { color: colores.texto, fontFamily: fuentes.negrita },
+  texto: { color: colores.texto },
 });

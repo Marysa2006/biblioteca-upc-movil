@@ -6,6 +6,7 @@
  */
 import type { Cita, Prestamo, RegistroUso, Reserva, SolicitudCapacitacion } from '@/types';
 import type { ValorSeccionGestion } from '@/utils/gestion';
+import type { GrupoPrestamos } from '@/utils/prestamos';
 
 /** Las listas que el Dashboard puede tener, según los permisos; undefined = no se pide. */
 export type DatosPanel = {
@@ -200,6 +201,8 @@ export type ResumenArea = {
   unidad: string;
   detalle: string;
   seccion: ValorSeccionGestion;
+  /** En Préstamos, el grupo que se abre: Vencidos si hay (#310). */
+  grupo?: GrupoPrestamos;
 };
 
 /** «1 vencida» o «3 vencidas». */
@@ -262,8 +265,9 @@ export function resumenPorArea(
       valor: prestamos.filter((p) => p.estado === 'entregado' || p.estado === 'vencido').length,
       unidad: 'prestadas',
       detalle: `${contar(vencidas, 'vencida', 'vencidas')} · ${contar(apartadas, 'apartada', 'apartadas')} hoy`,
-      // Con préstamos vencidos, la tarjeta lleva a Vencidos: es lo urgente.
-      seccion: vencidas > 0 ? 'vencidos' : 'prestamos',
+      // Con préstamos vencidos, la tarjeta abre Préstamos en Vencidos: es lo urgente (#310).
+      seccion: 'prestamos',
+      ...(vencidas > 0 ? { grupo: 'vencidos' as const } : {}),
     });
   }
   return areas;
