@@ -338,27 +338,39 @@ Marcar un préstamo como **vencido** es responsabilidad de los datos; la interfa
 
 ### Las guías (HU-29)
 
-Una guía la publica la biblioteca desde Gestión → Portal → Guías. Es de uno de dos formatos:
-**con enlace** (PDF o Drive, se abre en el navegador) o **escrita** en la app (se guarda en el
-celular y se lee sin conexión). El tipo es `Guia` (`src/types/guias.ts`); las reglas del
-formulario, `esquemaGuia` (`src/utils/guias.ts`).
+Una guía la publica la biblioteca desde Gestión → Portal → Guías. Es de uno de tres formatos:
+**PDF** (#303: se descarga al celular y se abre con su visor, también sin conexión), **con
+enlace** (Drive o una página, se abre en el navegador y no se guarda) o **escrita** en la app (se
+guarda en el celular y se lee sin conexión). El tipo es `Guia` (`src/types/guias.ts`); las reglas
+del formulario, `esquemaGuia` (`src/utils/guias.ts`).
 
 | Campo | Tipo | Obligatorio | Límite y reglas |
 |---|---|---|---|
 | `id` | texto | lo asigna el sistema | — |
 | `titulo` | texto | sí | hasta 80 caracteres |
 | `descripcion` | texto | sí | hasta 200 caracteres |
-| `contenido` | texto plano | si es escrita | hasta 5000 caracteres; la primera línea es el título y las que empiezan con `1.` son pasos. Vacío si tiene enlace |
-| `enlace` | texto (URL) o `null` | si es con enlace | empieza por `https://`. Al editar, `null` borra el enlace: la guía pasó a ser escrita (#297) |
+| `contenido` | texto plano | si es escrita | hasta 5000 caracteres; la primera línea es el título y las que empiezan con `1.` son pasos. Vacío en los otros formatos |
+| `enlace` | texto (URL) o `null` | si es con enlace | empieza por `https://`. Al editar, `null` borra el enlace: la guía cambió de formato (#297) |
+| `archivo` | `ArchivoGuia` o `null` | si es PDF | `url` (de dónde se descarga), `nombre` y `bytes`. Solo PDF, hasta 10 MB. Al editar, `null` borra el PDF (#303) |
 | `publicado` | sí o no | sí | solo las publicadas las ve la comunidad |
 | `actualizada` | fecha `AAAA-MM-DD` | la asigna el sistema al guardar | sirve para saber si la copia del celular está al día |
 | `sede` | texto | no | **sin uso**: ni el formulario ni las pantallas lo leen |
 
 - Lo que envía el formulario al crear o editar es `DatosGuia`: la guía sin `id` ni `actualizada`.
 - **La copia en el celular** (`GuiaGuardada`) es la guía completa más `guardadaEn` (milisegundos).
-  Cada una es un JSON en la carpeta de documentos de la app (`src/utils/guiasOffline.ts`).
+  Cada una es un JSON en la carpeta de documentos de la app (`src/utils/guiasOffline.ts`); las
+  guías PDF guardan además `<id>.pdf`, que se vuelve a descargar solo si cambió. Las guías con
+  enlace no se guardan.
+- **El envío del PDF:** con un PDF recién elegido, la petición va como `multipart/form-data` con el
+  archivo en `archivo`; sin PDF nuevo, como JSON (el PDF ya subido no se manda y se conserva).
+  `peticion()` no pone `Content-Type: application/json` cuando el cuerpo es un `FormData`.
+- **El nombre del PDF:** en Android el selector no da el nombre real del archivo
+  (`content://…/msf:2342`), así que el PDF se reconoce por su tipo y toma el nombre del título de la
+  guía (`nombreArchivoDe`).
+- El selector, la descarga y el visor salen de `expo-file-system` (`File.pickFileAsync`,
+  `File.downloadFileAsync` y `File.preview`); si el celular no tiene visor, `expo-sharing` ofrece
+  "Abrir con…". No hacen falta paquetes aparte.
 - Las publica quien tenga el permiso `contenidos` o `novedades`.
-- En la versión 1.1 se suma un tercer formato: **archivo PDF** que se guarda en el celular (#303).
 
 ---
 

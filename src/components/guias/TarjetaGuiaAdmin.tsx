@@ -1,7 +1,8 @@
 /**
- * Guía en Gestión → Portal → Guías (#258): formato (enlace o escrita), si está publicada, título,
- * descripción y fecha. Editar y Publicar o Despublicar van en el menú de tres puntos.
- * "Publicada" o "Sin publicar" va con texto, no solo color.
+ * Guía en Gestión → Portal → Guías (#258): formato (PDF, enlace o escrita), si está publicada,
+ * título, descripción, el nombre y el tamaño del PDF (#303) y la fecha. Editar y Publicar o
+ * Despublicar van en el menú de tres puntos. "Publicada" o "Sin publicar" va con texto, no solo
+ * color.
  */
 import { StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
@@ -10,7 +11,7 @@ import { MenuAcciones, type AccionMenu } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Guia } from '@/types';
 import { fechaLegible } from '@/utils/fechas';
-import { formatoDe, FORMATOS_GUIA } from '@/utils/guias';
+import { formatoDe, FORMATOS_GUIA, textoTamano } from '@/utils/guias';
 
 type Props = {
   guia: Guia;
@@ -64,6 +65,11 @@ export function TarjetaGuiaAdmin({ guia, ocupado, onEditar, onCambiarPublicacion
         <Text variant="bodyMedium" style={estilos.secundario} numberOfLines={2}>
           {guia.descripcion}
         </Text>
+        {guia.archivo ? (
+          <Text variant="bodySmall" style={estilos.secundario} numberOfLines={1}>
+            {`${guia.archivo.nombre} · ${textoTamano(guia.archivo.bytes)}`}
+          </Text>
+        ) : null}
         <Text variant="bodySmall" style={estilos.secundario}>
           {`Actualizada el ${fechaLegible(guia.actualizada)}`}
         </Text>

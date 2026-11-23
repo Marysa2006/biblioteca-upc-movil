@@ -33,7 +33,8 @@ export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {})
   const respuesta = await fetch(`${API_URL}${ruta}`, {
     ...opciones,
     headers: {
-      'Content-Type': 'application/json',
+      // Con FormData (un archivo, #303), fetch pone multipart/form-data con su separador.
+      ...(opciones.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...opciones.headers,
     },

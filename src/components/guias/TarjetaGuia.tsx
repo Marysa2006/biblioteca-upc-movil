@@ -1,7 +1,8 @@
 /**
  * Guía en la lista (HU-29): título, descripción, fecha y si está guardada en el celular,
  * con texto e ícono (CA2). Toda la tarjeta abre la guía.
- * Versión 1.1 (#258): las guías con enlace dicen que se abren con internet.
+ * Versión 1.1 (#258): las guías con enlace dicen que se abren con internet. Las guías en PDF (#303)
+ * dicen su tamaño y se guardan como las escritas.
  */
 import { StyleSheet, View } from 'react-native';
 import { Icon, Text, TouchableRipple } from 'react-native-paper';
@@ -9,7 +10,7 @@ import { Icon, Text, TouchableRipple } from 'react-native-paper';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Guia } from '@/types';
 import { fechaLegible } from '@/utils/fechas';
-import type { EstadoGuia } from '@/utils/guias';
+import { textoTamano, type EstadoGuia } from '@/utils/guias';
 
 type Marca = { texto: string; icono: string; fondo: string; color: string };
 
@@ -49,13 +50,14 @@ type Props = {
 };
 
 export function TarjetaGuia({ guia, estado, onAbrir }: Props) {
-  const marca = guia.enlace ? MARCA_ENLACE : MARCA[estado];
+  const marca = guia.enlace && !guia.archivo ? MARCA_ENLACE : MARCA[estado];
+  const pdf = guia.archivo ? `PDF · ${textoTamano(guia.archivo.bytes)}` : null;
   return (
     <View style={estilos.tarjeta}>
       <TouchableRipple
         onPress={onAbrir}
         accessibilityRole="button"
-        accessibilityLabel={`${guia.titulo}. ${guia.descripcion}. ${marca.texto}. Abrir guía`}
+        accessibilityLabel={`${guia.titulo}. ${guia.descripcion}. ${pdf ? `${pdf}. ` : ''}${marca.texto}. Abrir guía`}
       >
         <View style={estilos.contenido}>
           <Text variant="titleMedium" style={estilos.titulo}>
@@ -71,6 +73,11 @@ export function TarjetaGuia({ guia, estado, onAbrir }: Props) {
                 {marca.texto}
               </Text>
             </View>
+            {pdf ? (
+              <Text variant="bodySmall" style={estilos.descripcion}>
+                {pdf}
+              </Text>
+            ) : null}
             <Text variant="bodySmall" style={estilos.descripcion}>
               {`Actualizada el ${fechaLegible(guia.actualizada)}`}
             </Text>
