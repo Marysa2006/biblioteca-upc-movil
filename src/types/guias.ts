@@ -26,6 +26,23 @@ export type Guia = {
   enlace?: string;
   /** Sede de la biblioteca a la que aplica la guía. */
   sede?: string;
+
+  // ── Versión 1.1: guías en PDF sin conexión (#303) ────
+  /**
+   * El PDF de la guía, cuando la biblioteca lo sube en vez de escribirla o pegar un enlace. La app
+   * lo descarga al celular y lo abre con el visor del sistema, también sin conexión.
+   */
+  archivo?: ArchivoGuia;
+};
+
+/** El PDF de una guía (#303). */
+export type ArchivoGuia = {
+  /** De dónde se descarga: la URL que da el Backend (en los datos de prueba, una ruta local). */
+  url: string;
+  /** Nombre del archivo, para mostrarlo; por ejemplo «guia-apa.pdf». */
+  nombre: string;
+  /** Tamaño en bytes. */
+  bytes: number;
 };
 
 /** Guía guardada en el celular para leerla sin conexión (CA2). */

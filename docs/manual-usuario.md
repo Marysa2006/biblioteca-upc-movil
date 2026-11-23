@@ -30,7 +30,7 @@ Cualquier persona puede usar estas partes sin iniciar sesión. Abajo están las 
    - **Catálogo de la biblioteca:** libros, revistas y tesis de la biblioteca.
    - **Repositorio institucional:** trabajos de grado e investigaciones de la Universidad, en texto completo.
    - **Bibliotecas en línea:** las bases de datos y bibliotecas digitales de la Universidad. Arriba se puede buscar por nombre o tema (por ejemplo, "enfermería") y filtrar por área.
-   - **Guías de la biblioteca:** se abren una vez con internet y quedan guardadas para leerlas sin conexión.
+   - **Guías de la biblioteca:** las guías en PDF y las escritas se abren una vez con internet y quedan guardadas en el celular para leerlas sin conexión. **Abrir guía** abre el PDF con el lector de PDF del celular. Las guías con enlace (Drive o una página web) necesitan internet siempre.
 4. **Autoarchivo:** desde el servicio **Depósito de trabajos de grado**, los pasos para preparar el archivo y entrar al repositorio.
 
 ![Servicios](manual-usuario/sin-cuenta-servicios.png)
@@ -159,6 +159,7 @@ La primera vez que alguien del personal entra en el celular, Upecito le muestra 
    - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
    - **Asesorías y jornadas:** los temas y los horarios de cada facilitador.
    - **Líneas de formación:** las capacitaciones que se ofrecen.
+   - **Guías de la biblioteca:** las guías que ve la comunidad en Catálogo. En **Cómo se lee** se elige el formato: **PDF** (con **Elegir PDF** se sube el archivo del celular, hasta 10 MB), **Enlace** (Drive o una página web) o **Escrita** (se escribe en la aplicación). Con el menú **⋮** de cada guía se edita y se **publica** u **oculta**.
    - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra las fotos que trae la aplicación.
 
 ![Gestión: Solicitudes](manual-usuario/personal-gestion-solicitudes.png)

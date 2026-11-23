@@ -8,7 +8,8 @@
  * descargado.
  *
  * Versión 1.1 (#258): useGuiasAdministracion/useEditarGuia/useCambiarPublicacionGuia, para que la
- * biblioteca publique sus guías (permiso `contenidos` o `novedades`; la API decide).
+ * biblioteca publique sus guías (permiso `contenidos` o `novedades`; la API decide). Desde el #303,
+ * guardar una guía en PDF también descarga su archivo, así que es asíncrono.
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -24,6 +25,7 @@ import {
 import { useSesion } from '@/store/sesion';
 import type { Guia } from '@/types';
 import {
+  abrirPdfGuardado,
   eliminarGuia,
   guardarGuia,
   idsGuardadas,
@@ -48,7 +50,8 @@ export function useGuia(id: string) {
     queryFn: async () => {
       try {
         const guia = await obtenerGuia(id);
-        guardarGuia(guia);
+        // Con PDF, lo descarga al celular (#303); si falla, sirve la copia anterior (abajo).
+        await guardarGuia(guia);
         await queryClient.invalidateQueries({ queryKey: claves.guiasGuardadas });
         return guia;
       } catch (error) {
@@ -97,7 +100,7 @@ export function useGuardarGuia() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (guia: Guia) => {
-      guardarGuia(guia);
+      await guardarGuia(guia);
       return guia;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.guiasGuardadas }),
@@ -152,5 +155,15 @@ export function useCambiarPublicacionGuia() {
       return cambiarPublicacionGuia(usuario, id, publicado);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.guias }),
+  });
+}
+
+/**
+ * Abre el PDF guardado de una guía con el visor del celular (#303). Sin conexión también: el
+ * archivo ya está guardado. El error (no hay copia o no se pudo abrir) lo muestra la pantalla.
+ */
+export function useAbrirPdfGuia() {
+  return useMutation({
+    mutationFn: (guia: Pick<Guia, 'id' | 'titulo' | 'archivo'>) => abrirPdfGuardado(guia),
   });
 }
