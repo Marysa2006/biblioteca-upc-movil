@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 import { Button } from 'react-native-paper';
 
-import { SeccionTablets } from '@/components/inventario/SeccionTablets';
+import { BotonRegistrarTablet, SeccionTablets } from '@/components/inventario/SeccionTablets';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
@@ -24,12 +24,20 @@ type Seccion = {
   valor: ValorSeccion;
   etiqueta: string;
   Componente: ComponentType;
+  /** Botón flotante de la sección (opcional), como en Gestión; se encoge al deslizar. */
+  Flotante?: ComponentType<{ extendido: boolean }>;
   /** Se ve con cualquiera de estos permisos. */
   permisos: readonly Permiso[];
 };
 
 const SECCIONES: Seccion[] = [
-  { valor: 'tablets', etiqueta: 'Tablets', Componente: SeccionTablets, permisos: ['tablets'] },
+  {
+    valor: 'tablets',
+    etiqueta: 'Tablets',
+    Componente: SeccionTablets,
+    Flotante: BotonRegistrarTablet,
+    permisos: ['tablets'],
+  },
 ];
 
 export default function Inventario() {
@@ -39,9 +47,14 @@ export default function Inventario() {
   // Si la elegida dejó de verse (o nunca se vio), se muestra la primera visible.
   const activa: Seccion | undefined =
     visibles.find((seccion) => seccion.valor === elegida) ?? visibles[0];
+  const Flotante = activa?.Flotante;
 
   return (
-    <Pantalla titulo="Inventario" subtitulo="Tablets del inventario">
+    <Pantalla
+      titulo="Inventario"
+      subtitulo="Tablets del inventario"
+      flotante={Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null}
+    >
       {activa && visibles.length > 1 ? (
         <SelectorSeccion
           opciones={visibles}

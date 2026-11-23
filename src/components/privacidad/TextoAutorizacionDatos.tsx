@@ -77,7 +77,7 @@ export function TextoAutorizacionDatos() {
           {`${letra}) ${texto}`}
         </Text>
       ))}
-      <EnlacePoliticaDatos nota="Lee la política completa antes de aceptar:" conPqrs />
+      <EnlacePoliticaDatos nota="Lee la política completa antes de aceptar:" />
     </View>
   );
 }
