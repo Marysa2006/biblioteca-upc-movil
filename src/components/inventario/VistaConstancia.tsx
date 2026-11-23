@@ -1,14 +1,25 @@
 /**
  * La constancia del préstamo de una tablet (HU-23, #253), en el orden del formato de
  * responsabilidad de la biblioteca: fechas, usuario, dispositivo, estado del equipo, quién
- * entregó y quién recibió, y las tres notas. Las firmas del papel son quién hizo cada paso.
+ * entregó y quién recibió, y las tres notas. Si se sabe, dice cuándo aceptó la persona el
+ * formato en la app.
+ * Firmas (#310): el trazo del usuario si firmó en la pantalla; quien entrega y quien recibe firman
+ * con su sesión. Sin firma en la pantalla, se avisa que el PDF trae el recuadro para firmar a mano.
+ * Fuera del borrador, el código de verificación, el mismo del PDF.
  * Solo muestra: la constancia la arma constanciaDe() (o la API) y llega por props.
  */
 import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
+import Svg, { Path } from 'react-native-svg';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
-import { fechaHoraLegible, type ConstanciaPrestamo, type DatoConstancia } from '@/utils/prestamos';
+import {
+  codigoVerificacion,
+  esFirmaValida,
+  fechaHoraLegible,
+  type ConstanciaPrestamo,
+  type DatoConstancia,
+} from '@/utils/prestamos';
 
 type Props = {
   constancia: ConstanciaPrestamo;
@@ -28,10 +39,24 @@ export function VistaConstancia({ constancia, borrador = false }: Props) {
     { etiqueta: 'Estado', valor: constancia.estadoEquipo },
     ...(constancia.notas ? [{ etiqueta: 'Notas', valor: constancia.notas }] : []),
   ];
+  const usuario: DatoConstancia[] = constancia.aceptoEl
+    ? [
+        ...constancia.usuario,
+        { etiqueta: 'Aceptó el formato en la app', valor: fechaHoraLegible(constancia.aceptoEl) },
+      ]
+    : constancia.usuario;
+  const conSesion = (nombre: string | undefined, fechaHora: string | undefined) =>
+    nombre
+      ? `${nombre}${fechaHora ? `, con su sesión el ${fechaHoraLegible(fechaHora)}` : ''}`
+      : 'Pendiente';
   const responsables: DatoConstancia[] = [
-    { etiqueta: 'Entregó', valor: constancia.entrego ?? 'Pendiente' },
-    { etiqueta: 'Recibió la devolución', valor: constancia.recibio ?? 'Pendiente' },
+    { etiqueta: 'Entregó', valor: conSesion(constancia.entrego, constancia.entregadaEl) },
+    {
+      etiqueta: 'Recibió la devolución',
+      valor: conSesion(constancia.recibio, constancia.recibidaEl),
+    },
   ];
+  const firma = esFirmaValida(constancia.firmaUsuario) ? constancia.firmaUsuario : null;
 
   return (
     <View style={estilos.constancia}>
@@ -39,10 +64,47 @@ export function VistaConstancia({ constancia, borrador = false }: Props) {
         {borrador ? 'Constancia del préstamo (antes de entregar)' : 'Constancia del préstamo'}
       </Text>
       <Grupo titulo="Fechas" datos={fechas} />
-      <Grupo titulo="Usuario" datos={constancia.usuario} />
+      <Grupo titulo="Usuario" datos={usuario} />
       <Grupo titulo="Dispositivo" datos={constancia.dispositivo} />
       <Grupo titulo="Estado del equipo" datos={estado} />
       <Grupo titulo="Responsables" datos={responsables} />
+      {firma ? (
+        <View style={estilos.grupo}>
+          <Text variant="titleSmall" style={estilos.subtitulo} accessibilityRole="header">
+            Firma del usuario responsable
+          </Text>
+          <View
+            style={estilos.firma}
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel={`Firma electrónica del usuario, hecha el ${fechaHoraLegible(firma.fechaHora)}`}
+          >
+            <Svg width="100%" height="100%" viewBox={`0 0 ${firma.ancho} ${firma.alto}`}>
+              <Path
+                d={firma.trazo}
+                stroke={colores.texto}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </Svg>
+          </View>
+          <Text variant="bodySmall" style={estilos.nota}>
+            {`Firmada electrónicamente en la app el ${fechaHoraLegible(firma.fechaHora)}.`}
+          </Text>
+        </View>
+      ) : borrador ? null : (
+        <Text variant="bodySmall" style={estilos.nota}>
+          El usuario firmó en papel: comparte el PDF e imprímelo, trae el recuadro para firmar a
+          mano.
+        </Text>
+      )}
+      {borrador ? null : (
+        <Text variant="bodySmall" style={estilos.nota}>
+          {`Código de verificación: ${codigoVerificacion(constancia)}`}
+        </Text>
+      )}
 
       <View style={estilos.grupo}>
         <Text variant="titleSmall" style={estilos.subtitulo} accessibilityRole="header">
@@ -65,7 +127,8 @@ function Grupo({ titulo, datos }: { titulo: string; datos: DatoConstancia[] }) {
         {titulo}
       </Text>
       {datos.map((dato) => (
-        // Con letra grande, el valor pasa debajo de la etiqueta en vez de cortarse.
+        // Sin flexWrap: en una fila que se envuelve, un valor de dos líneas («ANDRÉS MEJÍA») medía
+        // mal su alto y pisaba la fila de abajo. La etiqueta y el valor bajan de línea cada uno.
         <View key={dato.etiqueta} style={estilos.dato} accessible accessibilityLabel={`${dato.etiqueta}: ${dato.valor}`}>
           <Text variant="bodySmall" style={estilos.etiqueta}>
             {dato.etiqueta}
@@ -91,8 +154,15 @@ const estilos = StyleSheet.create({
   titulo: { color: colores.texto, fontFamily: fuentes.negrita },
   grupo: { gap: espacio.xs },
   subtitulo: { color: colores.primario, fontFamily: fuentes.seminegrita },
-  dato: { flexDirection: 'row', flexWrap: 'wrap', columnGap: espacio.s },
-  etiqueta: { minWidth: 120, color: colores.textoSecundario },
-  valor: { flexShrink: 1, color: colores.texto },
+  dato: { flexDirection: 'row', alignItems: 'flex-start', gap: espacio.s },
+  etiqueta: { flexBasis: '40%', flexShrink: 0, color: colores.textoSecundario },
+  valor: { flex: 1, color: colores.texto },
   nota: { color: colores.textoSecundario },
+  // La firma, del ancho de la tarjeta y con el alto proporcional al panel donde se hizo.
+  firma: {
+    width: '100%',
+    aspectRatio: 2.4,
+    borderBottomWidth: 1,
+    borderBottomColor: colores.texto,
+  },
 });

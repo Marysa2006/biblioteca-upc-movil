@@ -94,6 +94,100 @@ export function minutosDeRetraso(prestamo: Prestamo, ahora: Date = new Date()): 
   return diferencia > 0 ? Math.ceil(diferencia / 60000) : 0;
 }
 
+// ── #310: la tablet se asigna al entregarla ────────────────────
+//
+// La bibliotecóloga decidió que la persona aparta una tablet desde la app y que la tablet
+// específica se asigna al llegar, por su código (decisión 8). Para no cambiar el contrato, el
+// préstamo sigue guardando una tablet al pedirlo, pero es provisional: solo reserva el cupo, no se
+// muestra, y al entregar el personal elige o escanea la que entrega.
+
+/** Cuánto se espera a que la persona recoja la tablet: después, el préstamo se libera (#310). */
+export const MINUTOS_PARA_RECOGER = 60;
+
+/**
+ * ¿El préstamo apartado ya no se recogió? Pasaron MINUTOS_PARA_RECOGER desde su hora de inicio
+ * sin entregarlo. Como el Backend, que libera la tablet a la hora (#310).
+ */
+export function noSeRecogio(
+  prestamo: Prestamo,
+  ahora: Date = new Date(),
+  minutos: number = MINUTOS_PARA_RECOGER,
+): boolean {
+  if (prestamo.estado !== 'reservado') return false;
+  const inicio = new Date(`${prestamo.fecha}T${prestamo.horaInicio}:00`);
+  return ahora.getTime() >= inicio.getTime() + minutos * 60000;
+}
+
+/** Lo que pasa al entregar una tablet: cuál se entrega y si hay que cambiar la de otro préstamo. */
+export type AsignacionEntrega =
+  | {
+      tablet: Tablet;
+      /** Otro préstamo apartado que tenía esta tablet: se queda con la provisional de este. */
+      intercambio?: { prestamoId: string; tabletId: string };
+    }
+  | { problema: string };
+
+/**
+ * ¿Se puede entregar esta tablet en este préstamo? (#310). Tiene que estar disponible ahora y
+ * libre toda la franja del préstamo. Si otro préstamo **apartado** la tenía provisionalmente en
+ * esas horas, se le pasa la tablet provisional de este, siempre que le sirva toda su franja; si no,
+ * no se puede.
+ */
+export function asignarTabletAlEntregar(
+  tablets: Tablet[],
+  prestamos: Prestamo[],
+  prestamo: Prestamo,
+  tabletId: string,
+): AsignacionEntrega {
+  const tablet = tablets.find((actual) => actual.id === tabletId);
+  if (!tablet) return { problema: 'La tablet no existe.' };
+  if (tablet.estado !== 'disponible') {
+    return { problema: `La tablet ${tablet.codigo} no está disponible para entregar.` };
+  }
+  const choques = prestamos.filter(
+    (otro) =>
+      otro.id !== prestamo.id &&
+      otro.tabletId === tablet.id &&
+      prestamoOcupaFranja(otro, prestamo.fecha, prestamo.horaInicio, prestamo.horaLimite),
+  );
+  if (choques.length === 0) return { tablet };
+
+  const [otro] = choques;
+  const provisional = tablets.find((actual) => actual.id === prestamo.tabletId);
+  const provisionalLeSirve =
+    choques.length === 1 &&
+    otro.estado === 'reservado' &&
+    provisional != null &&
+    provisional.id !== tablet.id &&
+    estaOperativa(provisional) &&
+    !prestamos.some(
+      (cualquiera) =>
+        cualquiera.id !== prestamo.id &&
+        cualquiera.id !== otro.id &&
+        cualquiera.tabletId === provisional.id &&
+        prestamoOcupaFranja(cualquiera, otro.fecha, otro.horaInicio, otro.horaLimite),
+    );
+  if (provisionalLeSirve) {
+    return { tablet, intercambio: { prestamoId: otro.id, tabletId: provisional.id } };
+  }
+  return {
+    problema: `La tablet ${tablet.codigo} está ocupada en esas horas por otro préstamo. Elige otra.`,
+  };
+}
+
+/** Las tablets que se pueden entregar en este préstamo, por código (#310). */
+export function tabletsParaEntregar(
+  tablets: Tablet[],
+  prestamos: Prestamo[],
+  prestamo: Prestamo,
+): Tablet[] {
+  return tablets
+    .filter(
+      (tablet) => 'tablet' in asignarTabletAlEntregar(tablets, prestamos, prestamo, tablet.id),
+    )
+    .sort((a, b) => a.codigo.localeCompare(b.codigo));
+}
+
 /** Estado de la tablet al entregarla (HU-23): queda en préstamo. */
 export function estadoTabletAlEntregar(): EstadoTablet {
   return 'en_prestamo';

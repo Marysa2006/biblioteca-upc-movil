@@ -92,7 +92,7 @@ export default function Panel() {
               <TarjetaArea
                 key={resumen.area}
                 resumen={resumen}
-                onAbrir={() => irAGestion(resumen.seccion)}
+                onAbrir={() => irAGestion(resumen.seccion, resumen.grupo)}
               />
             ))}
           </View>

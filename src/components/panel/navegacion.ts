@@ -5,13 +5,19 @@ import { router } from 'expo-router';
 
 import type { ValorSeccionGestion } from '@/utils/gestion';
 import type { Pendiente } from '@/utils/panel';
+import type { GrupoPrestamos } from '@/utils/prestamos';
 
 /**
  * Abre Gestión en una sección. `abrir` (la hora del toque) hace que Gestión vuelva a esa sección
- * aunque la persona se haya movido a otra desde la última vez (ver gestion.tsx).
+ * aunque la persona se haya movido a otra desde la última vez (ver gestion.tsx). Con `grupo`,
+ * Préstamos abre en ese grupo, por ejemplo Vencidos (#310).
  */
-export function irAGestion(seccion: ValorSeccionGestion) {
-  router.navigate({ pathname: '/gestion', params: { seccion, abrir: String(Date.now()) } });
+export function irAGestion(seccion: ValorSeccionGestion, grupo?: GrupoPrestamos) {
+  const abrir = String(Date.now());
+  router.navigate({
+    pathname: '/gestion',
+    params: grupo ? { seccion, grupo, abrir } : { seccion, abrir },
+  });
 }
 
 /**

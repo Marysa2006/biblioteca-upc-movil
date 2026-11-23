@@ -5,6 +5,9 @@
  * - Entrega con constancia (versión 1.1, #253): el estado como lo nombra el formato (Nuevo,
  *   Óptimo u Otro; con Otro, las notas son obligatorias), la constancia completa antes de
  *   confirmar (constanciaDe) y la casilla de que la persona la leyó y acepta la responsabilidad.
+ * - Firma electrónica (#310): la persona firma con el dedo (PanelFirma). Si no puede o prefiere
+ *   el papel, se marca «Firmará en papel» y la constancia impresa trae el recuadro en blanco. Una
+ *   de las dos es obligatoria para entregar.
  * - Devolución (CA2-CA4): estado, accesorios recibidos y novedades. Si volvió dañada o falta un
  *   accesorio, la novedad es obligatoria (CA3). Si llega tarde, avisa el retraso que quedará
  *   registrado (CA4).
@@ -20,7 +23,14 @@ import { Button, Checkbox, HelperText, Icon, Text, TextInput } from 'react-nativ
 import { ChipsOpcion } from '@/components/asesorias/ChipsOpcion';
 import { AvisoError } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
-import type { CondicionTablet, EstadoEquipo, Prestamo, ResponsableTablet, Tablet } from '@/types';
+import type {
+  CondicionTablet,
+  EstadoEquipo,
+  FirmaElectronica,
+  Prestamo,
+  ResponsableTablet,
+  Tablet,
+} from '@/types';
 import {
   accesoriosFaltantes,
   AYUDA_CONDICION,
@@ -36,6 +46,7 @@ import {
 import { ahoraFechaHora, minutosDeRetraso } from '@/utils/tablets';
 
 import { CasillasAccesorios } from './CasillasAccesorios';
+import { PanelFirma } from './PanelFirma';
 import { VistaConstancia } from './VistaConstancia';
 
 export type Modo = 'entrega' | 'devolucion';
@@ -47,6 +58,8 @@ export type DatosRegistro = {
   /** Solo en la entrega (#253): el estado como lo nombra el formato y sus notas. */
   estadoEquipo?: EstadoEquipo;
   notas?: string;
+  /** Solo en la entrega (#310): la firma en la pantalla; sin ella, firma en papel. */
+  firmaUsuario?: FirmaElectronica;
 };
 
 const CONDICIONES: CondicionTablet[] = ['bueno', 'regular', 'danado'];
@@ -116,20 +129,32 @@ export function FormularioRegistroPrestamo({
     name: ['condicion', 'accesorios', 'estadoEquipo', 'notas', 'acepta'],
   });
   const faltan = esDevolucion ? accesoriosFaltantes(opcionesAccesorios, accesorios) : [];
+  // #310: la firma va aparte del esquema (no es un campo de texto); se valida al guardar.
+  const [firma, setFirma] = useState<FirmaElectronica | null>(null);
+  const [enPapel, setEnPapel] = useState(false);
+  const [intentado, setIntentado] = useState(false);
+  const faltaFirma = !esDevolucion && !firma && !enPapel;
 
-  const guardar = handleSubmit((valores) =>
-    onGuardar({
-      condicion: valores.condicion as CondicionTablet,
-      accesorios: valores.accesorios,
-      ...(esDevolucion && valores.novedades.trim() ? { novedades: valores.novedades.trim() } : {}),
-      ...(!esDevolucion
-        ? {
-            estadoEquipo: valores.estadoEquipo as EstadoEquipo,
-            ...(valores.notas.trim() ? { notas: valores.notas.trim() } : {}),
-          }
-        : {}),
-    }),
-  );
+  const guardar = () => {
+    setIntentado(true);
+    handleSubmit((valores) => {
+      if (faltaFirma) return;
+      onGuardar({
+        condicion: valores.condicion as CondicionTablet,
+        accesorios: valores.accesorios,
+        ...(esDevolucion && valores.novedades.trim()
+          ? { novedades: valores.novedades.trim() }
+          : {}),
+        ...(!esDevolucion
+          ? {
+              estadoEquipo: valores.estadoEquipo as EstadoEquipo,
+              ...(valores.notas.trim() ? { notas: valores.notas.trim() } : {}),
+              ...(firma && !enPapel ? { firmaUsuario: firma } : {}),
+            }
+          : {}),
+      });
+    })();
+  };
 
   // La constancia como quedará al entregar (#253): con lo elegido y quien entrega.
   const borrador = esDevolucion
@@ -144,6 +169,7 @@ export function FormularioRegistroPrestamo({
             condicion: condicion || 'bueno',
             accesorios,
             responsable: quienEntrega,
+            ...(firma && !enPapel ? { firmaUsuario: firma } : {}),
           },
         },
         tablet,
@@ -273,6 +299,32 @@ export function FormularioRegistroPrestamo({
               {errors.acepta?.message ?? ''}
             </HelperText>
           </View>
+          {enPapel ? null : (
+            <PanelFirma
+              firmante={prestamo.solicitante}
+              valor={firma}
+              onCambiar={setFirma}
+              mensajeError={
+                intentado && faltaFirma
+                  ? 'Falta la firma: pídele que firme, o marca que firmará en papel.'
+                  : undefined
+              }
+              deshabilitado={guardando}
+            />
+          )}
+          <Checkbox.Item
+            label="Firmará en papel: imprime la constancia y firma a mano"
+            status={enPapel ? 'checked' : 'unchecked'}
+            onPress={() => setEnPapel(!enPapel)}
+            disabled={guardando}
+            position="leading"
+            mode="android"
+            color={colores.primario}
+            uncheckedColor={colores.bordeFuerte}
+            style={estilos.casilla}
+            labelStyle={estilos.etiquetaCasilla}
+            accessibilityLabel="La persona firmará en papel: imprime la constancia y firma a mano"
+          />
         </>
       ) : null}
 
@@ -313,7 +365,7 @@ export function FormularioRegistroPrestamo({
       <Button
         mode="contained"
         icon={esDevolucion ? 'clipboard-check-outline' : 'tablet'}
-        onPress={() => guardar()}
+        onPress={guardar}
         loading={guardando}
         disabled={guardando}
         contentStyle={estilos.contenidoBoton}

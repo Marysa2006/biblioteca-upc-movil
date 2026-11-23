@@ -402,6 +402,44 @@ temáticas»):
 - **CSV:** las columnas Temática, Tiempo de respuesta (h) y Duración del préstamo (h) van al final,
   con coma decimal, para no mover las de antes.
 
+### El préstamo de tablets (HU-22 a HU-24, HU-31 y #310)
+
+Desde el #310 el préstamo funciona como en el Backend (`apps/tablets/services.py`):
+
+- **La tablet se asigna al entregar.** Al pedir, el préstamo aparta una tablet provisional solo
+  para asegurar el cupo. En la entrega, el personal elige o escanea la tablet;
+  `asignarTabletAlEntregar()` (`src/utils/tablets.ts`) revisa que esté disponible y libre toda la
+  franja. Si era la provisional de otro préstamo apartado, los dos intercambian tablets cuando la
+  otra le sirve. La pantalla, el escáner y la API usan esa misma función.
+- **Sin recoger en 1 hora, se cancela.** `liberarNoRecogidos()` (`src/api/tablets.ts`) lo hace en
+  cada consulta, con su notificación, su evento del historial y su registro de uso
+  (`MINUTOS_PARA_RECOGER` = 60, como `tablet-pickup-minutes`).
+- **Una persona no tiene dos préstamos que se crucen** («Ya tienes un préstamo de tablet en esa
+  franja.»). Las 72 h de anticipación no aplican a tablets: solo a espacios, asesorías y
+  capacitaciones.
+- **Gestión → Préstamos** tiene los grupos Entregar, Recibir, Vencidos e Historial
+  (`GrupoPrestamos`); Vencidos dejó de ser una sección de Gestión. Marcar los vencidos y avisar
+  sigue siendo de `usePrestamosVencidos()`, que Gestión consulta para la alerta de la pestaña.
+- **Escanear tablet** (`src/app/administracion/escanear-tablet.tsx`) usa la cámara de la app
+  (`EscanerCodigos`), no el escáner de Google. `accionDeTablet()` decide: prestada → devolución;
+  libre → los préstamos por entregar en los que cabe; si no, un aviso.
+
+**La firma electrónica.** En la entrega, el usuario responsable firma con el dedo en `PanelFirma`
+(`react-native-svg` y las props táctiles de la `View`, sin paquetes nuevos), o se marca que
+firmará en papel. La firma es una `FirmaElectronica` (`src/types/tablets.ts`): el trazo como el
+`d` de un `path` SVG, el ancho y el alto del panel, y la hora. Va en `entrega.firmaUsuario`.
+`esFirmaValida()` la revisa al guardar y antes de ponerla en el PDF: solo M, L, números,
+espacios y puntos. Quien entrega y quien recibe firman con su sesión (`entregadaEl` y
+`recibidaEl` en la constancia).
+
+**Los PDF.** La constancia y el reporte de estadísticas comparten `estilosPdf()` y
+`encabezadoPdf()` (`src/utils/exportarPdf.ts`): página carta, márgenes con `@page` (en Android
+`expo-print` no acepta `margins`), el logo de `src/utils/logoPdf.ts` (base64, generado una vez
+desde `assets/images/logo-upc-horizontal.png`) y el pie con el número de página. Dos tarjetas lado
+a lado van en una tabla, no con flex ni grid: al imprimir, el motor las parte mal en un corte de
+página. La constancia cabe en una hoja y lleva el código de verificación
+(`codigoVerificacion()`): una huella de todos sus datos, que cambia si cambia cualquiera.
+
 ---
 
 ## 5. Programación

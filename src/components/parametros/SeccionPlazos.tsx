@@ -11,7 +11,7 @@ export function SeccionPlazos({ deshabilitado }: { deshabilitado: boolean }) {
       >
         <CampoParametro
           nombre="horasMinimasSolicitud"
-          etiqueta="Para solicitar un servicio (horas)"
+          etiqueta="Para solicitar espacios, asesorías o capacitaciones (horas)"
           tipo="numero"
           minimo={0}
           maximo={720}

@@ -192,8 +192,7 @@ const SECCION_ILUSTRADA: Record<ValorSeccionGestion, { icono: string; linea: str
     linea: 'Aprobar, rechazar o proponer otra fecha',
   },
   agenda: { icono: 'calendar-clock', linea: 'Tus asesorías por día, semana y mes' },
-  prestamos: { icono: 'tablet', linea: 'Entregar y recibir tablets' },
-  vencidos: { icono: 'clock-alert-outline', linea: 'Las tablets que no se devolvieron a tiempo' },
+  prestamos: { icono: 'tablet', linea: 'Entregar y recibir tablets, y ver las vencidas' },
   espacios: { icono: 'office-building-outline', linea: 'Crear espacios y bloquearlos' },
   portal: { icono: 'web', linea: 'Avisos, servicios y parámetros' },
 };

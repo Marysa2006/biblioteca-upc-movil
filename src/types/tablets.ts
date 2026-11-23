@@ -43,6 +43,24 @@ export type Tablet = {
   valor?: number;
 };
 
+/**
+ * Firma electrónica dibujada con el dedo en la pantalla (#310): reemplaza la firma en papel del
+ * usuario responsable en la constancia. Es una firma electrónica (Ley 527 de 1999), no una firma
+ * digital con certificado.
+ */
+export type FirmaElectronica = {
+  /**
+   * Los trazos, como el atributo `d` de un `<path>` SVG («M10 20 L12 22 …»), en las medidas del
+   * panel donde se firmó. Solo lleva M, L, números, espacios y puntos.
+   */
+  trazo: string;
+  /** Ancho y alto del panel, para dibujarla igual en el PDF (viewBox). */
+  ancho: number;
+  alto: number;
+  /** Cuándo se firmó, 'AAAA-MM-DD HH:MM'. */
+  fechaHora: string;
+};
+
 /** Entrega o devolución de una tablet (HU-23). */
 export type RegistroTablet = {
   /** Fecha y hora del registro, 'AAAA-MM-DD HH:MM'. */
@@ -57,6 +75,11 @@ export type RegistroTablet = {
   retrasoMinutos?: number;
   /** Quién entrega y quién recibe, para la constancia (versión 1.1). */
   responsable?: ResponsableTablet;
+  /**
+   * Solo en la entrega (#310): la firma del usuario responsable en la pantalla. Sin ella, firmó
+   * en papel (la constancia impresa trae el recuadro en blanco).
+   */
+  firmaUsuario?: FirmaElectronica;
 };
 
 /** Persona del personal que entrega o recibe, con su cargo (versión 1.1). */
