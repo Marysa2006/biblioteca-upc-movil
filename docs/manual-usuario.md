@@ -12,13 +12,15 @@ Para instalarla en un celular Android:
 2. Abre el archivo descargado. Si el celular lo pide, permite instalar aplicaciones de esta fuente.
 3. Toca **Instalar** y luego **Abrir**.
 
-![Inicio de BiblioUPC](manual-usuario/inicio.png)
+![Inicio de BiblioUPC](manual-usuario/inicio.jpeg)
 
 ### El tutorial de Upecito
 
 La primera vez que abres la aplicación en el celular, Upecito, la mascota de la Universidad, la presenta en seis pasos: **Servicios**, **Catálogo**, **Mis solicitudes** y el **menú**. Cada paso muestra cómo se ve esa parte y dónde la encuentras: en qué pestaña de abajo o, el menú, arriba a la derecha. Usa **Siguiente** y **Atrás** para recorrerlo, o **Saltar** para cerrarlo. Al terminar, toca **Empezar**. Si tienes una sesión abierta que todavía no aceptó la autorización de datos personales, el tutorial aparece después de aceptarla.
 
 El tutorial no vuelve a salir solo. Para verlo otra vez, toca el botón de arriba a la derecha y elige **Ver tutorial**, con sesión o sin ella.
+
+![El tutorial de Upecito](manual-usuario/tutorial-upecito.jpeg)
 
 ## 2. Sin cuenta
 
@@ -49,6 +51,11 @@ Si eres estudiante, docente o administrativo de la Universidad y todavía no tie
 5. Toca **Leer la autorización** para ver el formato del Acuerdo 019, marca **He leído y acepto…** y toca **Crear cuenta**. Esa aceptación queda guardada en tu cuenta: no se vuelve a pedir al iniciar sesión.
 
 La aplicación inicia tu sesión y te lleva a Inicio. Tus datos ya aparecen al pedir un servicio. Si el correo o la cédula ya tienen una cuenta, el mensaje aparece bajo ese campo. El registro es solo para la comunidad: los permisos del personal los da la administración de la biblioteca.
+
+![Crear una cuenta](manual-usuario/comunidad-registro.jpeg)
+![Crear una cuenta (2)](manual-usuario/comunidad-registro2.jpeg)
+![Crear una cuenta (3)](manual-usuario/comunidad-registro3.jpeg)
+![Crear una cuenta (4)](manual-usuario/comunidad-registro4.jpeg)
 
 ### Iniciar sesión
 
@@ -85,7 +92,8 @@ Solo pueden reservar docentes y administrativos.
 
 La reserva queda **Pendiente** hasta que la biblioteca la apruebe.
 
-![Solicitar un espacio](manual-usuario/comunidad-solicitar-espacio.png)
+![Solicitar un espacio](manual-usuario/comunidad-solicitar-espacio.jpeg)
+![Solicitar un espacio (2)](manual-usuario/comunidad-solicitar-espacio2.jpeg)
 
 ### Solicitar una asesoría
 
@@ -99,7 +107,7 @@ Las citas se pueden cancelar o reprogramar desde **Mis citas** o desde su detall
 
 El día de la asesoría aprobada, desde 30 minutos antes, **Mis citas** y el detalle en **Mis solicitudes** muestran **Registrar asistencia**. Tócalo y escanea el código QR que te muestra el facilitador: la aplicación confirma que quedó registrada. Si el código venció o es de otra sesión, te dice el motivo y puedes escanear otra vez. La primera vez, la aplicación pide permiso para usar la cámara; solo la usa para leer el código.
 
-![Solicitar una asesoría](manual-usuario/comunidad-agendar-asesoria.png)
+![Solicitar una asesoría](manual-usuario/comunidad-agendar-asesoria.jpeg)
 
 ### Pedir una tablet
 
@@ -113,7 +121,8 @@ La tablet se recoge en el mostrador de la biblioteca. Allí te asignan la tablet
 - Si no la recoges dentro de la **hora siguiente** a la hora de inicio, el préstamo se cancela y te llega un aviso.
 - No puedes tener dos préstamos de tablet que se crucen en las mismas horas.
 
-![Pedir una tablet](manual-usuario/comunidad-solicitar-tablet.png)
+![Pedir una tablet](manual-usuario/comunidad-solicitar-tablet.jpeg)
+![Pedir una tablet (2)](manual-usuario/comunidad-solicitar-tablet2.jpeg)
 
 ### Solicitar una capacitación
 
@@ -124,7 +133,8 @@ La tablet se recoge en el mostrador de la biblioteca. Allí te asignan la tablet
 
 Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 
-![Solicitar una capacitación](manual-usuario/comunidad-solicitar-capacitacion.png)
+![Solicitar una capacitación](manual-usuario/comunidad-solicitar-capacitacion.jpeg)
+![Solicitar una capacitación (2)](manual-usuario/comunidad-solicitar-capacitacion2.jpeg)
 
 ### Mis solicitudes y Mi calendario
 
@@ -135,8 +145,10 @@ Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
    - **Mi calendario** muestra por día las citas, las reservas y los préstamos, y envía recordatorios antes de cada uno.
    - **Notificaciones** muestra los avisos de cada cambio.
 
-![Mis solicitudes](manual-usuario/comunidad-mis-solicitudes.png)
+![Mis solicitudes](manual-usuario/comunidad-mis-solicitudes.jpeg)
 ![Mi calendario](manual-usuario/comunidad-mi-calendario.png)
+
+![Calificar una asesoría](manual-usuario/comunidad-calificar.jpeg)
 
 ## 4. Personal de la biblioteca
 
@@ -154,6 +166,10 @@ Es lo primero que se ve al entrar. Muestra el día de cada persona, según sus p
 4. **Afluencia semanal:** para quien tiene el permiso de estadísticas, cuántas operaciones hay en promedio cada día de la semana en las últimas 8 semanas y cuál es el día de más uso.
 
 Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a la pestaña.
+
+![Dashboard](manual-usuario/personal-dashboard.jpeg)
+![Dashboard (2)](manual-usuario/personal-dashboard2.jpeg)
+![Dashboard (3)](manual-usuario/personal-dashboard3.jpeg)
 
 ### Gestión
 
@@ -188,8 +204,15 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - **Configuración:**
      - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
 
-![Gestión: Solicitudes](manual-usuario/personal-gestion-solicitudes.png)
-![Gestión: Portal](manual-usuario/personal-gestion-portal.png)
+![Gestión: Solicitudes](manual-usuario/personal-gestion-solicitudes.jpeg)
+![Gestión: Solicitudes (2)](manual-usuario/personal-gestion-solicitudes2.jpeg)
+![Gestión: Portal](manual-usuario/personal-gestion-portal.jpeg)
+![Gestión: Portal (2)](manual-usuario/personal-gestion-portal2.jpeg)
+![Aprobar una asesoría](manual-usuario/personal-aprobar-asesoria.jpeg)
+![Préstamos: Vencidos](manual-usuario/personal-prestamos.jpeg)
+![Entrega con firma](manual-usuario/personal-entrega-firma.jpeg)
+![Escanear tablet](manual-usuario/personal-escanear-tablet.jpeg)
+![Portal: Espacios](manual-usuario/personal-espacios.jpeg)
 
 ### Inventario
 
@@ -198,7 +221,8 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
 - **Registrar tablet** (botón de abajo a la derecha) agrega una tablet nueva.
 - El menú **⋮** de cada tarjeta tiene **Editar** y el cambio de estado: **Enviar a mantenimiento** y luego **Marcar disponible**. Una tablet prestada se recibe en **Gestión → Préstamos**.
 
-![Inventario](manual-usuario/personal-inventario.png)
+![Inventario](manual-usuario/personal-inventario.jpeg)
+![Inventario (2)](manual-usuario/personal-inventario2.jpeg)
 
 ### Estadísticas
 
@@ -215,8 +239,9 @@ Qué muestra cada pestaña:
 4. **Calidad:** la calificación promedio, las operaciones sin programa registrado y el **tiempo de respuesta**: cuánto tarda el personal, en promedio, en aprobar o rechazar una solicitud de cada servicio.
 5. **Registros:** cada operación registrada, con quién la hizo, para qué, cuándo y cómo terminó, 10 por página. Lo que la persona no informó dice "No informado".
 
-![Estadísticas: Indicadores](manual-usuario/personal-estadisticas-indicadores.png)
-![Estadísticas: Registros](manual-usuario/personal-estadisticas-registros.png)
+![Estadísticas: Indicadores](manual-usuario/personal-estadisticas-indicadores.jpeg)
+![Estadísticas: Indicadores (2)](manual-usuario/personal-estadisticas-indicadores2.jpeg)
+![Estadísticas: Registros](manual-usuario/personal-estadisticas-registros.jpeg)
 
 ### Qué ve cada rol
 
@@ -231,6 +256,8 @@ Qué muestra cada pestaña:
 - **Editar los parámetros generales:** en **Portal**, los **Parámetros generales**.
 
 Solo se le pueden dar a alguien que tenga un rol del personal: a una cuenta de la comunidad no le servirían, porque no entra a esa vista. Si se le quitan todos los roles, también pierde estos permisos.
+
+![Permisos adicionales](manual-usuario/personal-permisos-adicionales.jpeg)
 
 ## 5. Usuarios de prueba
 
