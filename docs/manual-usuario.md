@@ -8,7 +8,7 @@ BiblioUPC reúne en el celular los servicios de la biblioteca: consultar el cat�
 
 Para instalarla en un celular Android:
 
-1. Descarga el instalador desde el enlace en el Release v1.0.0.
+1. Descarga el instalador desde el enlace en el Release v1.1.0.
 2. Abre el archivo descargado. Si el celular lo pide, permite instalar aplicaciones de esta fuente.
 3. Toca **Instalar** y luego **Abrir**.
 
@@ -46,7 +46,7 @@ Si eres estudiante, docente o administrativo de la Universidad y todavía no tie
 2. Escribe tus nombres, tus apellidos, tu número de cédula y tu correo institucional (`@unicesar.edu.co`). El celular es opcional.
 3. Elige si eres **Estudiante**, **Docente** o **Administrativo**, y tu sede (**Valledupar** o **Aguachica**; obligatoria si eres estudiante). Si eres estudiante, elige tu facultad y tu programa en las listas (si no está, elige **Otro programa** y escríbelo) y tu semestre; si estás en el 11.º o más, elige **Otro** y ajusta el número. Si eres docente o administrativo, puedes escribir tu dependencia. Los coordinadores, directores y decanos se registran como docente o administrativo.
 4. Escribe una contraseña de al menos 8 caracteres, que no sea solo números, y repítela.
-5. Toca **Leer la autorización** para ver el formato del Acuerdo 019, marca **He leído y acepto…** y toca **Crear cuenta**.
+5. Toca **Leer la autorización** para ver el formato del Acuerdo 019, marca **He leído y acepto…** y toca **Crear cuenta**. Esa aceptación queda guardada en tu cuenta: no se vuelve a pedir al iniciar sesión.
 
 La aplicación inicia tu sesión y te lleva a Inicio. Tus datos ya aparecen al pedir un servicio. Si el correo o la cédula ya tienen una cuenta, el mensaje aparece bajo ese campo. El registro es solo para la comunidad: los permisos del personal los da la administración de la biblioteca.
 
@@ -55,13 +55,12 @@ La aplicación inicia tu sesión y te lleva a Inicio. Tus datos ya aparecen al p
 1. Toca el botón de arriba a la derecha y elige **Iniciar sesión**.
 2. Escribe el usuario (por ejemplo, `laura.perez`) y la contraseña.
 3. Toca **Iniciar sesión**.
-4. La primera vez en este celular, la aplicación muestra la **autorización de tratamiento de datos personales**, con el texto del Acuerdo 019 de la Universidad (puntos I a VI). Léela, marca la casilla **He leído y acepto…** y toca **Aceptar y continuar**. El enlace **Tratamiento de datos personales** abre la política completa.
 
-Si tocas **No acepto**, se cierra la sesión y puedes seguir explorando la app sin cuenta. La aceptación queda guardada para tu usuario: no se vuelve a pedir, salvo que la Universidad publique una política nueva.
+La **autorización de tratamiento de datos personales** (Acuerdo 019 de la Universidad) se acepta al crear la cuenta y queda guardada en ella. Solo se vuelve a pedir al iniciar sesión si la Universidad publica una política nueva: en ese caso, léela, marca **He leído y acepto…** y toca **Aceptar y continuar**. Si tocas **No acepto**, se cierra la sesión y puedes seguir explorando la app sin cuenta.
 
 En **Perfil** y en el formulario de datos de contacto siempre está el enlace **Tratamiento de datos personales**, y el formulario dice para qué se usa el teléfono. En Perfil también aparecen el NIT de la Universidad y los plazos para ejercer tus derechos: 10 días hábiles para consultas y 15 para reclamos.
 
-Para ejercer esos derechos hay dos caminos, los dos del Acuerdo 019: el correo **tratamientodedatos@unicesar.edu.co** y el botón **Ejercer mis derechos por PQRS**, que abre el módulo de peticiones y quejas de la Universidad.
+Para ejercer esos derechos, escribe al correo **tratamientodedatos@unicesar.edu.co**, como indica el Acuerdo 019.
 
 ![Iniciar sesión](manual-usuario/comunidad-iniciar-sesion.png)
 
@@ -164,7 +163,7 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - Toca **Otra fecha** para proponer otro día u hora.
    - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como realizada**.
    - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
-2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Quien asiste también puede registrarse escaneando ese QR desde su aplicación.
+2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** (eligiendo quién la atiende: la administración, que aparece primero, o un facilitador) o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Quien asiste también puede registrarse escaneando ese QR desde su aplicación.
 3. **Préstamos:** la entrega y la devolución de tablets. Si hay préstamos vencidos, la pestaña muestra cuántos con un aviso. Los chips separan los préstamos:
    - **Entregar:** los apartados. Toca **Registrar entrega**:
      1. Elige la tablet de la lista o toca **Escanear**. Solo aparecen las tablets libres durante todas las horas del préstamo; la tablet se asigna en este momento.
@@ -177,12 +176,16 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - **Constancia:** el formato de responsabilidad del préstamo. **Compartir constancia (PDF)** lo envía con el logo de la Universidad, la firma del usuario, la de quien entregó y quien recibió (firmadas con su cuenta) y un **código de verificación**. Si la persona firmó en papel, imprímelo y firma en el recuadro.
    - **Escanear tablet** (botón de abajo a la derecha): lee el código de barras con la cámara de la aplicación (la primera vez pide el permiso) o deja escribir el código. Si la tablet está prestada, abre su devolución; si está libre, muestra a quién se le puede entregar hoy.
    - Un préstamo apartado que no se recoge dentro de la hora siguiente a su inicio se cancela solo y libera la tablet.
-4. **Espacios:** crear y editar espacios, y bloquearlos por mantenimiento o eventos.
-5. **Portal:**
-   - **Contenidos del portal:** los avisos, novedades y servicios que ve la comunidad.
-   - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
-   - **Asesorías y jornadas:** los temas y los horarios de cada facilitador.
-   - **Líneas de formación:** las capacitaciones que se ofrecen.
+4. **Portal:** en tres grupos. Cada persona ve solo las filas de sus permisos.
+   - **Publicaciones** (lo que ve la comunidad):
+     - **Contenidos del portal:** los avisos, novedades y servicios que ve la comunidad.
+     - **Fotos de Inicio** y **Guías de la biblioteca**, que se explican abajo.
+   - **Servicios** (lo que se puede solicitar):
+     - **Temas de asesoría:** los temas en los que la comunidad puede pedir una asesoría.
+     - **Líneas de formación:** las capacitaciones que se ofrecen.
+     - **Espacios:** crear y editar espacios (con **Nuevo espacio**, abajo a la derecha), activarlos o desactivarlos, y bloquearlos por mantenimiento o eventos.
+   - **Configuración:**
+     - **Parámetros generales:** periodos académicos, festivos, horarios de atención, tiempos mínimos para solicitar y cancelar, y textos automáticos.
    - **Guías de la biblioteca:** las guías que ve la comunidad en Catálogo. En **Cómo se lee** se elige el formato: **PDF** (con **Elegir PDF** se sube el archivo del celular, hasta 10 MB), **Enlace** (Drive o una página web) o **Escrita** (se escribe en la aplicación). Con el menú **⋮** de cada guía se edita y se **publica** u **oculta**.
    - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra las fotos que trae la aplicación.
 
@@ -191,7 +194,10 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
 
 ### Inventario
 
-**Tablets** muestra cuántas tablets hay **Disponibles**, **En préstamo** y en **Mantenimiento**, y cada tablet con su estado. Desde la tarjeta de cada una se envía **A mantenimiento** y luego se vuelve a **Marcar disponible**.
+**Tablets** muestra cuántas tablets hay **Disponibles**, **En préstamo** y en **Mantenimiento**, y cada tablet con su código, modelo, marca, valor, serial, accesorios y estado. Arriba se busca por código, serial o modelo, y los chips filtran por estado.
+
+- **Registrar tablet** (botón de abajo a la derecha) agrega una tablet nueva.
+- El menú **⋮** de cada tarjeta tiene **Editar** y el cambio de estado: **Enviar a mantenimiento** y luego **Marcar disponible**. Una tablet prestada se recibe en **Gestión → Préstamos**.
 
 ![Inventario](manual-usuario/personal-inventario.png)
 
@@ -217,7 +223,7 @@ Qué muestra cada pestaña:
 
 - **Administración de la biblioteca:** todo, incluidas la pestaña **Personal** para asignar roles, **Parámetros generales**, y **Préstamos** (con los vencidos) e **Inventario** de tablets.
 - **Facilitador:** las solicitudes de capacitación y la **Agenda** de sus asesorías.
-- **Gestora de espacios:** las solicitudes de reserva y la sección **Espacios**, con sus bloqueos.
+- **Gestora de espacios:** las solicitudes de reserva y, en **Portal → Servicios**, los **Espacios**, con sus bloqueos.
 
 **Permisos adicionales.** La administración puede encargar tres tareas a quien quiera del personal, sea facilitador o gestor de espacios. En **Personal**, toca **Roles y permisos** en la tarjeta de la persona y activa los que correspondan en **Permisos adicionales**:
 

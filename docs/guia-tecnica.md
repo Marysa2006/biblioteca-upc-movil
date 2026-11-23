@@ -276,7 +276,7 @@ inyectado en el build (el `.env` no se sube, así que el APK siempre sale con da
 
 Un archivo por módulo en `src/types/`: `usuarios`, `asesorias`, `asistencia`, `espacios`,
 `tablets`, `capacitaciones`, `solicitudes`, `estadisticas`, `parametros`, `servicios`,
-`contenidos`, `recursos`, `notificaciones`, `guias` y `perfil`. Más `index.ts`, que solo
+`contenidos`, `recursos`, `notificaciones`, `guias`, `inicio` (fotos del carrusel) y `perfil`. Más `index.ts`, que solo
 reexporta.
 
 `src/types` es **base compartida**: un cambio ahí necesita la aprobación de un guardián.
@@ -313,7 +313,7 @@ Los permisos de una persona son **la suma de los de sus roles** (`PERMISOS_POR_R
 
 | Rol | Permisos |
 |---|---|
-| `administrador` | `roles`, `contenidos`, `parametros`, `espacios`, `reservas`, `asesorias`, `tablets`, `formacion`, `estadisticas` |
+| `administrador` | `roles`, `contenidos`, `parametros`, `espacios`, `reservas`, `asesorias`, `tablets`, `formacion`, `estadisticas`, `fotos` |
 | `facilitador` | `asesorias`, `formacion` |
 | `gestor_espacios` | `espacios`, `reservas` |
 
@@ -321,6 +321,17 @@ Los permisos de una persona son **la suma de los de sus roles** (`PERMISOS_POR_R
 - Hay ayudas: `esPersonal()`, `tieneRol()`, `describirRoles()`, `NOMBRE_TIPO` y
   `NOMBRE_ROL_PERSONAL`. `NOMBRE_ROL` y `Rol` están obsoletos.
 - Los identificadores de los roles son **provisionales** hasta conectar con el Backend.
+- **Permisos adicionales** (#256 y #296): la administración da a una persona del personal
+  `novedades`, `fotos` o `parametros` aparte de sus roles (`Usuario.permisosExtra`,
+  `PERMISOS_ASIGNABLES`). `permisosDe()` los suma, y solo cuentan si la persona tiene algún rol.
+- **Quién atiende una asesoría:** `opcionesFacilitador()` lista a quien tiene el permiso
+  `asesorias`, no solo el rol de facilitador. La administración va primero: hoy es quien atiende
+  las asesorías. Las capacitaciones eligen responsable por el permiso `formacion`.
+- **La autorización de datos** (Acuerdo 019, #225) es un dato del usuario
+  (`Usuario.aceptacionDatos`, con la versión de la política y la fecha), como
+  `privacy_acceptance_required` del Backend: se acepta al registrarse y solo se vuelve a pedir si
+  cambia `VERSION_POLITICA_DATOS`. `aceptacionVigente()` (`src/utils/privacidad.ts`) lo decide; la
+  sesión guarda además la que se acepte en el celular ante una política nueva.
 
 ### El rastro de cada cambio de estado
 
@@ -401,6 +412,20 @@ temáticas»):
   exporta.
 - **CSV:** las columnas Temática, Tiempo de respuesta (h) y Duración del préstamo (h) van al final,
   con coma decimal, para no mover las de antes.
+
+### Lo nuevo de la versión 1.1, por dónde buscarlo
+
+| Función | Dónde está | En pocas palabras |
+|---|---|---|
+| Registro de cuentas (#203, #294) | `src/app/registro.tsx`, `src/utils/registro.ts` | Nombres, cédula, correo, tipo, sede y, para estudiantes, facultad y programa de la lista; acepta la autorización de datos |
+| Formularios por pasos (#251) | `PasosFormulario`, `camposDelPaso()` (`src/utils/pasos.ts`) | Solicitud · Tus datos · Términos; Enviar solo en el último |
+| Tutorial de Upecito (#261, #267) | `src/app/tutorial.tsx`, `src/components/tutorial/` | La primera vez en el celular; el del personal muestra sus secciones de Gestión |
+| Dashboard del personal (#306) | `src/app/(personal)/panel.tsx`, `usePanel()`, `src/utils/panel.ts` | Cifras del día, resumen por área, lo pendiente y la afluencia semanal; reutiliza las claves de cada módulo |
+| Estadísticas (#259, #307) | `src/app/(personal)/estadisticas.tsx`, `src/utils/estadisticas.ts` | Ver «Las estadísticas» |
+| Fotos de Inicio (#290) | `src/app/administracion/fotos-inicio.tsx`, `src/types/inicio.ts` | Hasta 5 publicadas, con orden y descripción; sin fotos o sin internet, las del APK |
+| Guías en PDF (#297, #303) | `src/app/administracion/guia.tsx`, `src/hooks/useGuias.ts` | Ver «Las guías» |
+| Gestión → Portal (revisión de la 1.1) | `MenuAdministracion` | Tres grupos: Publicaciones, Servicios (temas, líneas y Espacios, en `administracion/espacios`) y Configuración |
+| Préstamo de tablets, firma y constancia (#253, #310) | Ver la sección siguiente | |
 
 ### El préstamo de tablets (HU-22 a HU-24, HU-31 y #310)
 
@@ -644,7 +669,10 @@ Están en `src/components/ui`:
 | `ChipsFiltro` | Filtrar una lista por un valor |
 | `EtiquetaEstado` | El estado de una solicitud, con texto y color |
 | `CampoHora` y `CampoNumerico` | Horas (cada 30 min) y cantidades (− y +) |
-| `Paginacion` | Listas largas, de 10 en 10 (#210) |
+| `Paginacion`, `ListaPaginada` y `usePaginacion` | Listas largas, de 10 en 10 (#161); `ListaPaginada` vuelve a la página 1 al cambiar el filtro |
+| `CampoDesplegable` | Elegir entre nombres largos (facultad, programa, filtros): un campo con ▾ que abre un menú del mismo ancho |
+| `PasosFormulario` | Los formularios de la comunidad por pasos, con Anterior, Siguiente y Enviar en el último |
+| `Upecito` | La mascota en sus poses, en los estados vacíos y en el tutorial |
 | `AvisoError`, `FilaInterruptor`, `MenuUsuario`, `EnConstruccion` | Avisos, interruptores, menú de la sesión y pantallas pendientes |
 
 **Fechas, horas y cantidades nunca se escriben a mano.** Las fechas van con `SelectorFecha`
