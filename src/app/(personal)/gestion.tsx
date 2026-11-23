@@ -15,7 +15,12 @@
  * El nombre y los permisos de cada sección están en src/utils/gestion.ts.
  * El selector aparece solo con dos secciones o más. Esta pantalla solo compone: el contenido
  * de cada sección se cambia en su componente, no aquí.
+ * Con `?seccion=` abre en esa sección (#306: las tarjetas del Dashboard llevan a Préstamos,
+ * Agenda…); si la persona no la tiene, abre la primera que sí tenga, como sin el parámetro. El
+ * Dashboard manda también `abrir` (la hora del toque): así, tocar dos veces la misma tarjeta vuelve
+ * a abrir esa sección aunque la persona se haya movido a otra.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 
 import { SeccionAgenda } from '@/components/gestion/SeccionAgenda';
@@ -63,7 +68,17 @@ const SECCIONES: Seccion[] = SECCIONES_GESTION.map((info) => ({
 
 export default function Gestion() {
   const { tienePermiso } = useRol();
-  const [elegida, setElegida] = useState<ValorSeccion>('solicitudes');
+  const { seccion, abrir } = useLocalSearchParams<{ seccion?: string; abrir?: string }>();
+  const pedida = SECCIONES.find((opcion) => opcion.valor === seccion)?.valor;
+  const [elegida, setElegida] = useState<ValorSeccion>(pedida ?? 'solicitudes');
+  // La pestaña sigue montada: cada vez que el Dashboard vuelve a pedir una sección, se cambia
+  // aquí, durante el render y sin efecto (como usePaginacion).
+  const pedido = `${pedida ?? ''}|${abrir ?? ''}`;
+  const [pedidoPrevio, setPedidoPrevio] = useState(pedido);
+  if (pedido !== pedidoPrevio) {
+    setPedidoPrevio(pedido);
+    if (pedida) setElegida(pedida);
+  }
   // La misma consulta que SeccionVencidos: la alerta a la administración se crea apenas se abre
   // Gestión.
   // Solo con el permiso `tablets`: la consulta crea avisos, y un facilitador o un gestor de

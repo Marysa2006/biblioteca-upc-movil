@@ -142,6 +142,17 @@ Al iniciar sesión con una cuenta del personal, abajo aparecen las pestañas **D
 
 La primera vez que alguien del personal entra en el celular, Upecito le muestra su vista: **Gestión**, con las secciones que tiene, y, según su rol, **Personal**, **Inventario** y **Estadísticas**, además del menú. Cada paso dice en qué pestaña está. Para verlo otra vez, desde la vista del personal, toca el botón de arriba a la derecha y elige **Ver tutorial**.
 
+### Dashboard
+
+Es lo primero que se ve al entrar. Muestra el día de cada persona, según sus permisos:
+
+1. **Las cifras del día:** cuántas solicitudes esperan respuesta (**Por revisar**), cuántas están aprobadas para hoy (**Para hoy**) y, para quien maneja el préstamo de tablets, cuántas están **prestadas**.
+2. **Resumen de hoy:** una tarjeta por área (**Reservas de espacios**, **Asesorías**, **Capacitaciones** y **Tablets**) con lo que hay por revisar y lo de hoy. Al tocarla, se abre su sección en **Gestión**; la de tablets abre **Vencidos** si hay préstamos vencidos.
+3. **Por atender:** las solicitudes pendientes, la más próxima primero, con chips para ver solo un tipo. Al tocar una se abre su detalle para aprobarla o rechazarla; las reservas se abren en **Gestión → Solicitudes**. **Ver todo** lleva a la bandeja completa.
+4. **Afluencia semanal:** para quien tiene el permiso de estadísticas, cuántas operaciones hay en promedio cada día de la semana en las últimas 8 semanas y cuál es el día de más uso.
+
+Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a la pestaña.
+
 ### Gestión
 
 1. **Solicitudes:** las solicitudes que llegan de la comunidad. Arriba, el selector **Reservas · Capacitaciones** elige cuáles ver.
