@@ -37,7 +37,10 @@
           "cameraPermission": "BiblioUPC usa la cámara para leer códigos QR y códigos de barras.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
