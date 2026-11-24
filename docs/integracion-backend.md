@@ -263,6 +263,8 @@ Agrega `servicios` a `EXPO_PUBLIC_API_MODULOS` para leer el catálogo y las fich
 
 **Para probar toda la comunidad contra Render:** `EXPO_PUBLIC_API_MODULOS=sesion,servicios,contenidos,recursos,guias,notificaciones,parametros,fotosInicio,espacios,asesorias,capacitaciones,tablets,solicitudes`. Lo del personal (bandejas, agenda, inventario, entrega y devolución, administración) sigue con datos de prueba hasta la fase 4.
 
+**APK conectado:** el perfil `integracion` de `eas.json` compila con esa misma lista de módulos y la dirección de Render (`npx eas-cli@latest build -p android --profile integracion`). Las variables `EXPO_PUBLIC_*` quedan fijas al compilar: para cambiar los módulos hay que compilar otra vez. El perfil `preview` sigue con todos los datos de prueba: es el del APK de las entregas. Los dos son la misma app, así que uno se instala encima del otro.
+
 **Pendiente de pedir al Backend (no bloquea):** `space_id` en el detalle de `/me/requests/{id}/` de una reserva, para no buscar el espacio por su nombre.
 
 **Autoarchivo no encaja todavía:** la app muestra cuatro listas (procedimiento, requisitos, formatos y metadatos) y el Backend entrega un texto libre (`guide.body` de `portal/self-archive/`). Sigue con datos de prueba hasta acordar con el Backend cómo se separan los bloques. **Koha** sigue con `URL_CATALOGO_KOHA`, porque `portal/koha-opac/` aún no tiene dirección en Render (`KOHA_OPAC_URL`); el ingreso del personal (`staff_url`) es del #311.
