@@ -13,6 +13,7 @@ import { obtenerFacilitadores } from '@/api/asesorias';
 import {
   actualizarPermisosExtra,
   actualizarRolesPersonal,
+  cambiarAccesoUsuario,
   obtenerEquipo,
   obtenerUsuarios,
   guardarFirmaPersonal,
@@ -24,7 +25,7 @@ import { tieneRol } from '@/utils/roles';
 export function useUsuarios() {
   return useQuery({
     queryKey: claves.usuarios,
-    queryFn: obtenerUsuarios,
+    queryFn: () => obtenerUsuarios(),
   });
 }
 
@@ -60,8 +61,20 @@ export function useActualizarRolesPersonal() {
       }
       return actualizarRolesPersonal(usuarioId, rolesPersonal);
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: claves.usuarios });
+      queryClient.invalidateQueries({ queryKey: claves.equipo });
+    },
+  });
+}
+
+export function useCambiarAccesoUsuario() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, activo }: { id: string; activo: boolean }) => cambiarAccesoUsuario(id, activo),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: claves.usuarios });
+      queryClient.invalidateQueries({ queryKey: claves.equipo });
     },
   });
 }

@@ -40,6 +40,7 @@ export type Usuario = {
   nombre: string;
   correo: string;
   tipo: TipoUsuario;
+  activo?: boolean;
   /** Vacío para la comunidad. */
   rolesPersonal: RolPersonal[];
   programa?: string;

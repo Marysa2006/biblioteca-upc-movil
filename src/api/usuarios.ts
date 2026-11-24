@@ -7,7 +7,9 @@
 import type { AceptacionPolitica, FirmaElectronica, Permiso, RolPersonal, Usuario } from '@/types';
 import { NOMBRE_PERMISO, PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { permisosExtraDesdeBackend, permisosExtraHaciaBackend } from './backend/equivalencias';
+import { usuarioDirectorioDesdeBackend, type UsuarioBackend } from './backend/usuarios';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { crearNotificacion } from './notificaciones';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
@@ -20,9 +22,13 @@ const copiar = (usuario: Usuario): Usuario => ({
 /** Copia mutable: con mocks, los cambios de roles se ven durante la sesión de la app. */
 let directorio: Usuario[] = USUARIOS_DIRECTORIO.map(copiar);
 
-export function obtenerUsuarios(): Promise<Usuario[]> {
+export function obtenerUsuarios(rol?: RolPersonal): Promise<Usuario[]> {
+  if (usaApi('usuarios')) {
+    const consulta = rol ? `?role=${encodeURIComponent(rol)}` : '';
+    return peticionTodas(`/users/${consulta}`, usuarioDirectorioDesdeBackend);
+  }
   if (USAR_MOCKS) {
-    return simularRed(directorio.map(copiar));
+    return simularRed(directorio.filter((usuario) => !rol || usuario.rolesPersonal.includes(rol)).map(copiar));
   }
   return peticion<Usuario[]>('/usuarios/');
 }
@@ -32,10 +38,65 @@ export function obtenerUsuarios(): Promise<Usuario[]> {
  * Es el que usa la pantalla de permisos, y trae los `permisosExtra` de cada persona.
  */
 export function obtenerEquipo(): Promise<Usuario[]> {
+  if (usaApi('usuarios')) {
+    return obtenerUsuarios().then((usuarios) => usuarios.filter((u) => u.rolesPersonal.length > 0));
+  }
   if (USAR_MOCKS) {
     return simularRed(directorio.filter((usuario) => usuario.rolesPersonal.length > 0).map(copiar));
   }
   return peticion<Usuario[]>('/usuarios/?personal=1');
+}
+
+async function obtenerUsuarioDirectorio(id: string) {
+  const usuarios = await obtenerUsuarios();
+  const usuario = usuarios.find((actual) => actual.id === id);
+  if (!usuario) throw new ErrorApi(404, 'El usuario no existe.');
+  return usuario;
+}
+
+export async function cambiarAccesoUsuario(id: string, activo: boolean): Promise<Usuario> {
+  if (!usaApi('usuarios')) {
+    const usuario = await obtenerUsuarioDirectorio(id);
+    const siguiente = { ...usuario, activo };
+    directorio = directorio.map((actual) => actual.id === id ? siguiente : actual);
+    return siguiente;
+  }
+  return usuarioDirectorioDesdeBackend(await peticion<UsuarioBackend>(
+    `/users/${encodeURIComponent(id)}/`,
+    { method: 'PATCH', body: JSON.stringify({ is_active: activo }) },
+  ));
+}
+
+type RolBackend = { id: number; code: string; is_active: boolean };
+type RolAsignadoBackend = { role: Pick<RolBackend, 'id' | 'code'> };
+
+async function actualizarRolesBackend(usuarioId: string, roles: RolPersonal[]) {
+  const ruta = `/users/${encodeURIComponent(usuarioId)}/roles/`;
+  const actuales = await peticion<RolAsignadoBackend[]>(ruta);
+  const codigos = new Set(actuales.map(({ role }) => role.code));
+  const deseaAdmin = roles.includes('administrador');
+  if (codigos.has('administrador') !== deseaAdmin) {
+    throw new ErrorApi(400, 'La administración de la biblioteca se cambia desde el Backend.');
+  }
+  const solicitados = new Set<string>(roles);
+  const faltantes = [...solicitados].filter((codigo) => !codigos.has(codigo));
+  if (faltantes.length) {
+    const catalogo = await peticionTodas<RolBackend, RolBackend>('/roles/', (rol) => rol);
+    const nuevos = faltantes.map((codigo) => {
+      const rol = catalogo.find((actual) => actual.code === codigo && actual.is_active);
+      if (!rol) throw new ErrorApi(400, `El rol ${codigo} no está disponible.`);
+      return rol;
+    });
+    for (const rol of nuevos) {
+      await peticion(ruta, { method: 'POST', body: JSON.stringify({ role: rol.id }) });
+    }
+  }
+  for (const { role } of actuales) {
+    if ((role.code === 'facilitador' || role.code === 'gestor_espacios') && !solicitados.has(role.code)) {
+      await peticion(`${ruta}${role.id}/`, { method: 'DELETE' });
+    }
+  }
+  return obtenerUsuarioDirectorio(usuarioId);
 }
 
 /**
@@ -130,6 +191,20 @@ export function actualizarPermisosExtra(
     );
   }
 
+  if (usaApi('usuarios')) {
+    const ruta = `/users/${encodeURIComponent(usuarioId)}/permissions/`;
+    return obtenerUsuarioDirectorio(usuarioId).then(async (persona) => {
+      const respuesta = await peticion<{ permissions?: string[]; extra_permissions?: string[] }>(ruta, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions: permisosExtraHaciaBackend(permisos) }),
+      });
+      return {
+        ...persona,
+        permisosExtra: permisosExtraDesdeBackend(respuesta.permissions ?? respuesta.extra_permissions ?? []),
+      };
+    });
+  }
+
   if (USAR_MOCKS) {
     const indice = directorio.findIndex((actual) => actual.id === usuarioId);
     if (indice === -1) {
@@ -180,6 +255,7 @@ export function actualizarRolesPersonal(
   usuarioId: string,
   rolesPersonal: RolPersonal[],
 ): Promise<Usuario> {
+  if (usaApi('usuarios')) return actualizarRolesBackend(usuarioId, rolesPersonal);
   if (USAR_MOCKS) {
     const indice = directorio.findIndex((usuario) => usuario.id === usuarioId);
     if (indice === -1) {

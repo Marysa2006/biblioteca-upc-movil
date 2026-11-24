@@ -128,5 +128,6 @@ export function usuarioDirectorioDesdeBackend(usuario: UsuarioBackend): Usuario 
     tipo: TIPO_DESDE_BACKEND[usuario.user_type],
     rolesPersonal: rolesDesdeBackend(usuario.roles),
     permisosExtra: permisosExtraDesdeBackend(usuario.extra_permissions),
+    activo: usuario.is_active ?? true,
   };
 }
