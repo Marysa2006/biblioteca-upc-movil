@@ -237,9 +237,9 @@ Prioridad: 1 = alta, 2 = media, 3 = baja. La columna *En la app* indica en qué 
 
 ---
 
-## ✅ Estado del Release 1.0
+## ✅ Estado del Release 1.1
 
-La versión **1.0.0** cierra la iteración 4 (5 de noviembre de 2026).
+La versión **1.1.0** cierra el proyecto (23 de noviembre de 2026).
 
 **Historias del plan: 28 de 28.** Todas están en la app con datos de prueba. HU-24 y HU-25 son procesos del backend: mientras llega, los datos de prueba hacen su parte (marcar los préstamos vencidos y registrar cada uso).
 
@@ -275,7 +275,7 @@ La versión **1.0.0** cierra la iteración 4 (5 de noviembre de 2026).
 | #163 | Préstamo de tablet por varias horas |
 | #165 | Repositorio por HTTPS y ejemplares de Koha *(bloqueado)* |
 
-Después: la conexión con el Backend en Django, el push desde el servidor, iOS, el tutorial del primer ingreso y el ingreso con huella.
+Después: la conexión con el Backend en Django, el push desde el servidor, iOS y el tutorial del primer ingreso.
 
 ---
 
