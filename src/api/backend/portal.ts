@@ -1,4 +1,23 @@
-import type { Contenido, Recurso } from '@/types';
+import type { Contenido, FotoInicio, Recurso } from '@/types';
+
+/** `GET /portal/home-photos/` (arreglo, sin paginar, ya en su orden). */
+export type FotoInicioBackend = {
+  id: number;
+  image: string;
+  description: string;
+  order: number;
+  is_published: boolean;
+};
+
+export function fotoInicioDesdeBackend(foto: FotoInicioBackend): FotoInicio {
+  return {
+    id: String(foto.id),
+    imagen: foto.image,
+    descripcion: foto.description,
+    orden: foto.order,
+    publicada: foto.is_published,
+  };
+}
 
 export type RecursosPortal = {
   categories: {
