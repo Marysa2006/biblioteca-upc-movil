@@ -192,7 +192,7 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - **Vencidos:** las que pasaron la hora límite, con el aviso para contactar a las personas. Se reciben igual, con **Registrar devolución**.
    - **Historial:** lo devuelto, con el retraso y las novedades.
    - **Tu firma en las constancias:** regístrala una vez en **Perfil → Mi firma**. Se pone sola en el recuadro de quien entrega y de quien recibe; sin ella, la constancia dice que firmaste con tu cuenta.
-   - **Constancia:** el formato de responsabilidad del préstamo. **Compartir constancia (PDF)** lo envía con el logo de la Universidad, la firma del usuario, la de quien entregó y quien recibió (firmadas con su cuenta) y un **código de verificación**. Si la persona firmó en papel, imprímelo y firma en el recuadro.
+   - **Constancia:** el formato de responsabilidad del préstamo. **Compartir constancia (PDF)** lo envía con el logo de la Universidad, la firma del usuario, la de quien entregó y quien recibió (con la firma registrada en su Perfil o, si no la tienen, con su cuenta) y un **código de verificación**. Si la persona firmó en papel, imprímelo y firma en el recuadro.
    - **Escanear tablet** (botón de abajo a la derecha): lee el código de barras con la cámara de la aplicación (la primera vez pide el permiso) o deja escribir el código. Si la tablet está prestada, abre su devolución; si está libre, muestra a quién se le puede entregar hoy.
    - Un préstamo apartado que no se recoge dentro de la hora siguiente a su inicio se cancela solo y libera la tablet.
 4. **Portal:** en tres grupos. Cada persona ve solo las filas de sus permisos.

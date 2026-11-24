@@ -268,7 +268,7 @@ export type ModoFirma =
   | {
       tipo: 'trazo';
       firma: FirmaElectronica;
-      /** Para el personal: cuándo firmó esta constancia con su firma registrada. */
+      /** Solo el personal: la hora de la entrega o la devolución que firma con su firma registrada. */
       cuando?: string;
     }
   | { tipo: 'sesion'; fechaHora: string };
@@ -388,13 +388,19 @@ export function constanciaDe(prestamo: Prestamo, tablet: Tablet): ConstanciaPres
 }
 
 /**
- * El código de verificación de la constancia (#310): una huella de todos sus datos, firmas
- * incluidas, en 4 grupos de 4 («9F3A-…»). Si alguien cambia un dato del PDF, ya no coincide con
+ * El código de verificación de la constancia (#310): una huella de sus datos y de la firma del
+ * usuario, en 4 grupos de 4 («9F3A-…»). Si alguien cambia un dato del PDF, ya no coincide con
  * el que da la app para ese préstamo. Es una huella de comprobación (dos FNV-1a de 32 bits), no
  * una firma criptográfica. Es pura.
+ *
+ * Las firmas de quien entrega y quien recibe no entran: salen de su Perfil al leer el préstamo,
+ * así que registrarlas después cambiaría el código de una constancia ya impresa (#317).
  */
 export function codigoVerificacion(constancia: ConstanciaPrestamo): string {
-  const texto = JSON.stringify(constancia);
+  const firmado = { ...constancia };
+  delete firmado.firmaEntrega;
+  delete firmado.firmaRecibe;
+  const texto = JSON.stringify(firmado);
   let a = 0x811c9dc5;
   let b = 0x01000193 ^ texto.length;
   for (let i = 0; i < texto.length; i++) {

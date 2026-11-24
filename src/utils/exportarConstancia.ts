@@ -6,7 +6,8 @@
  * #310: con el diseño común de los PDF (logo, márgenes y tarjetas) y en una sola hoja, como el
  * papel. "Para constancia de lo anterior firman" lleva los tres recuadros (firmasDeConstancia):
  * - el usuario responsable, con el trazo de su firma en la pantalla, o en blanco si firma en papel;
- * - quien entrega y quien recibe, "Firmado electrónicamente" con su sesión y la hora;
+ * - quien entrega y quien recibe, con la firma registrada en su Perfil o, sin ella, "Firmado
+ *   electrónicamente" con su sesión y la hora (#317);
  * - lo que todavía no se sabe, con una línea para escribirlo a mano.
  * Al pie, el código de verificación (codigoVerificacion): si cambia un dato, cambia el código.
  */
@@ -32,9 +33,10 @@ const dato = (valor: DatoConstancia) =>
 function espacioFirma(firma: FirmaConstancia['firma']): string {
   if (firma?.tipo === 'trazo' && esFirmaValida(firma.firma)) {
     const { trazo, ancho, alto, fechaHora } = firma.firma;
-    // El personal firma con su firma registrada y su cuenta; el usuario, en la app al recibirla.
+    // El personal firma con la firma de su Perfil (sin hora: la de la entrega no es la de la
+    // firma); el usuario, en la app al recibir la tablet.
     const pie = firma.cuando
-      ? `Firmado electrónicamente con su cuenta el ${escaparHtml(fechaHoraLegible(firma.cuando))}`
+      ? 'Firmado con la firma registrada en su Perfil'
       : `Firmado electrónicamente en la app el ${escaparHtml(fechaHoraLegible(fechaHora))}`;
     return (
       `<div class="espacio con-trazo"><svg viewBox="0 0 ${ancho} ${alto}" preserveAspectRatio="xMidYMid meet">` +
