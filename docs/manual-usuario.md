@@ -45,10 +45,10 @@ Cualquier persona puede usar estas partes sin iniciar sesión. Abajo están las 
 Si eres estudiante, docente o administrativo de la Universidad y todavía no tienes usuario:
 
 1. Toca el botón de arriba a la derecha, elige **Iniciar sesión** y, debajo del formulario, toca **Regístrate**.
-2. Escribe tus nombres, tus apellidos, tu número de cédula y tu correo institucional (`@unicesar.edu.co`). El celular es opcional.
+2. Escribe tus nombres, tus apellidos, tu número de cédula y tu correo institucional (`@unicesar.edu.co`). El celular es opcional. Bajo cada campo hay una ayuda corta, por ejemplo «Solo números, sin puntos ni espacios».
 3. Elige si eres **Estudiante**, **Docente** o **Administrativo**, y tu sede (**Valledupar** o **Aguachica**; obligatoria si eres estudiante). Si eres estudiante, elige tu facultad y tu programa en las listas (si no está, elige **Otro programa** y escríbelo) y tu semestre; si estás en el 11.º o más, elige **Otro** y ajusta el número. Si eres docente o administrativo, puedes escribir tu dependencia. Los coordinadores, directores y decanos se registran como docente o administrativo.
 4. Escribe una contraseña de al menos 8 caracteres, que no sea solo números, y repítela.
-5. Toca **Leer la autorización** para ver el formato del Acuerdo 019, marca **He leído y acepto…** y toca **Crear cuenta**. Esa aceptación queda guardada en tu cuenta: no se vuelve a pedir al iniciar sesión.
+5. Toca **Leer la autorización**: se abre en una ventana el formato del Acuerdo 019, con el enlace a la política; **Acepto** marca la casilla. Luego toca **Crear cuenta**. Esa aceptación queda guardada en tu cuenta: no se vuelve a pedir al iniciar sesión.
 
 La aplicación inicia tu sesión y te lleva a Inicio. Tus datos ya aparecen al pedir un servicio. Si el correo o la cédula ya tienen una cuenta, el mensaje aparece bajo ese campo. El registro es solo para la comunidad: los permisos del personal los da la administración de la biblioteca.
 
@@ -62,6 +62,8 @@ La aplicación inicia tu sesión y te lleva a Inicio. Tus datos ya aparecen al p
 1. Toca el botón de arriba a la derecha y elige **Iniciar sesión**.
 2. Escribe el usuario (por ejemplo, `laura.perez`) y la contraseña.
 3. Toca **Iniciar sesión**.
+
+Abajo, **Tratamiento de datos personales** abre la autorización y el enlace a la política.
 
 La **autorización de tratamiento de datos personales** (Acuerdo 019 de la Universidad) se acepta al crear la cuenta y queda guardada en ella. Solo se vuelve a pedir al iniciar sesión si la Universidad publica una política nueva: en ese caso, léela, marca **He leído y acepto…** y toca **Aceptar y continuar**. Si tocas **No acepto**, se cierra la sesión y puedes seguir explorando la app sin cuenta.
 
@@ -114,7 +116,7 @@ El día de la asesoría aprobada, desde 30 minutos antes, **Mis citas** y el det
 1. En **Servicios**, abre **Préstamo de tablets** y toca **Solicitar tablet**.
 2. Elige el día (con hasta 7 días de anticipación) y la hora de inicio, en punto o y media. Si no hay tablets, la aplicación sugiere otras horas.
 3. Elige por cuántas horas la necesitas, de 1 a 4 (empieza en 3). La aplicación muestra la hora de devolución.
-4. Revisa tus datos (vienen de tu cuenta; si eres estudiante, también la sede, la facultad y el programa), acepta las condiciones de uso y la responsabilidad sobre el préstamo, y toca **Confirmar solicitud**.
+4. Revisa tus datos (vienen de tu cuenta; si eres estudiante, también la sede, la facultad y el programa). Marca que aceptas las **condiciones de uso** y la **responsabilidad sobre el préstamo**: **Leer las condiciones** y **Leer las notas** abren cada texto en una ventana, con **Acepto**. Toca **Confirmar solicitud**.
 
 La tablet se recoge en el mostrador de la biblioteca. Allí te asignan la tablet y firmas la constancia en la pantalla del celular de la biblioteca (o en papel, si lo prefieres).
 
@@ -184,12 +186,13 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - **Entregar:** los apartados. Toca **Registrar entrega**:
      1. Elige la tablet de la lista o toca **Escanear**. Solo aparecen las tablets libres durante todas las horas del préstamo; la tablet se asigna en este momento.
      2. Marca el estado y los accesorios, revisa la constancia con la persona y marca que acepta la responsabilidad.
-     3. La persona **firma con el dedo** en el recuadro (**Borrar** para repetir). Si prefiere firmar a mano, marca **Firmará en papel**.
+     3. Toca **Firmar** y pásale el celular a la persona: firma con el dedo en una ventana a pantalla completa (**Borrar** para repetir) y toca **Listo**. Si prefiere firmar a mano, marca **Firmará en papel**.
      4. Toca **Registrar entrega**.
    - **Recibir:** las tablets prestadas que van a tiempo. Toca **Registrar devolución**, marca cómo llegó y los accesorios, escribe las novedades si hay daños o faltantes, y confirma: el préstamo se cierra.
    - **Vencidos:** las que pasaron la hora límite, con el aviso para contactar a las personas. Se reciben igual, con **Registrar devolución**.
    - **Historial:** lo devuelto, con el retraso y las novedades.
-   - **Constancia:** el formato de responsabilidad del préstamo. **Compartir constancia (PDF)** lo envía con el logo de la Universidad, la firma del usuario, la de quien entregó y quien recibió (firmadas con su cuenta) y un **código de verificación**. Si la persona firmó en papel, imprímelo y firma en el recuadro.
+   - **Tu firma en las constancias:** regístrala una vez en **Perfil → Mi firma**. Se pone sola en el recuadro de quien entrega y de quien recibe; sin ella, la constancia dice que firmaste con tu cuenta.
+   - **Constancia:** el formato de responsabilidad del préstamo. **Compartir constancia (PDF)** lo envía con el logo de la Universidad, la firma del usuario, la de quien entregó y quien recibió (con la firma registrada en su Perfil o, si no la tienen, con su cuenta) y un **código de verificación**. Si la persona firmó en papel, imprímelo y firma en el recuadro.
    - **Escanear tablet** (botón de abajo a la derecha): lee el código de barras con la cámara de la aplicación (la primera vez pide el permiso) o deja escribir el código. Si la tablet está prestada, abre su devolución; si está libre, muestra a quién se le puede entregar hoy.
    - Un préstamo apartado que no se recoge dentro de la hora siguiente a su inicio se cancela solo y libera la tablet.
 4. **Portal:** en tres grupos. Cada persona ve solo las filas de sus permisos.

@@ -3,6 +3,7 @@ export { BotonFlotante } from './BotonFlotante';
 export { CampoDesplegable } from './CampoDesplegable';
 export { CampoHora } from './CampoHora';
 export { CampoNumerico } from './CampoNumerico';
+export { DialogoTexto } from './DialogoTexto';
 export { ChipsFiltro, type OpcionFiltro } from './ChipsFiltro';
 export { EncabezadoApilado } from './EncabezadoApilado';
 export { EnConstruccion } from './EnConstruccion';

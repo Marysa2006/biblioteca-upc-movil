@@ -4,7 +4,7 @@
  * permisos que van aparte de los roles (versión 1.1).
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
-import type { AceptacionPolitica, Permiso, RolPersonal, Usuario } from '@/types';
+import type { AceptacionPolitica, FirmaElectronica, Permiso, RolPersonal, Usuario } from '@/types';
 import { NOMBRE_PERMISO, PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -65,6 +65,31 @@ export function existeIdentificacion(identificacion: string): boolean {
  */
 export function agregarAlDirectorio(usuario: Usuario): void {
   directorio = [...directorio, copiar(usuario)];
+}
+
+/**
+ * Guarda la firma de una persona del personal, o la quita con null (revisión de la 1.1). Con la API
+ * real iría en su perfil; la ruta es provisional y está en el documento para el Backend.
+ */
+export async function guardarFirmaPersonal(
+  usuarioId: string,
+  firma: FirmaElectronica | null,
+): Promise<void> {
+  if (USAR_MOCKS) {
+    directorio = directorio.map((usuario) => {
+      if (usuario.id !== usuarioId) return usuario;
+      const { firma: _anterior, ...resto } = usuario;
+      return firma ? { ...resto, firma: { ...firma } } : resto;
+    });
+    await simularRed(null);
+    return;
+  }
+  await peticion<unknown>('/me/firma/', { method: 'PUT', body: JSON.stringify({ firma }) });
+}
+
+/** La firma registrada de una persona del directorio de prueba, para las constancias. */
+export function firmaEnDirectorio(usuarioId: string): FirmaElectronica | undefined {
+  return directorio.find((usuario) => usuario.id === usuarioId)?.firma;
 }
 
 /**

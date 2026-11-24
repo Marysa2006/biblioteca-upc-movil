@@ -26,13 +26,22 @@ type Props = {
   onCambiar: (firma: FirmaElectronica | null) => void;
   mensajeError?: string;
   deshabilitado?: boolean;
+  /** Recuadro más alto, para la ventana a pantalla completa (FirmaEnVentana). */
+  alto?: boolean;
 };
 
 /** Un decimal: la firma pesa poco y se ve igual. */
 const punto = (evento: GestureResponderEvent) =>
   `${Math.round(evento.nativeEvent.locationX * 10) / 10} ${Math.round(evento.nativeEvent.locationY * 10) / 10}`;
 
-export function PanelFirma({ firmante, valor, onCambiar, mensajeError, deshabilitado }: Props) {
+export function PanelFirma({
+  firmante,
+  valor,
+  onCambiar,
+  mensajeError,
+  deshabilitado,
+  alto = false,
+}: Props) {
   const [medidas, setMedidas] = useState({ ancho: 0, alto: 0 });
   // Los trazos que se ven mientras se firma; al soltar se entregan a quien usa el panel.
   const [trazo, setTrazo] = useState(valor?.trazo ?? '');
@@ -79,7 +88,7 @@ export function PanelFirma({ firmante, valor, onCambiar, mensajeError, deshabili
         Pídele a la persona que firme con el dedo dentro del recuadro.
       </Text>
       <View
-        style={[estilos.panel, mensajeError ? estilos.panelError : null]}
+        style={[estilos.panel, alto ? estilos.panelAlto : null, mensajeError ? estilos.panelError : null]}
         onLayout={(evento: LayoutChangeEvent) =>
           setMedidas({
             ancho: evento.nativeEvent.layout.width,
@@ -151,6 +160,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
     overflow: 'hidden',
   },
+  panelAlto: { aspectRatio: 1.6 },
   panelError: { borderColor: colores.error },
   linea: {
     position: 'absolute',

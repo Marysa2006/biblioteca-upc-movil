@@ -454,8 +454,10 @@ Desde el #310 el préstamo funciona como en el Backend (`apps/tablets/services.p
 firmará en papel. La firma es una `FirmaElectronica` (`src/types/tablets.ts`): el trazo como el
 `d` de un `path` SVG, el ancho y el alto del panel, y la hora. Va en `entrega.firmaUsuario`.
 `esFirmaValida()` la revisa al guardar y antes de ponerla en el PDF: solo M, L, números,
-espacios y puntos. Quien entrega y quien recibe firman con su sesión (`entregadaEl` y
-`recibidaEl` en la constancia).
+espacios y puntos. Quien entrega y quien recibe firman con la firma registrada en su Perfil
+(`firmaEntrega` y `firmaRecibe`, que se completan al leer el préstamo); sin ella, con su sesión
+(`entregadaEl` y `recibidaEl`). Esas dos firmas no entran en `codigoVerificacion()`: registrarlas
+después no debe cambiar el código de una constancia ya impresa.
 
 **Los PDF.** La constancia y el reporte de estadísticas comparten `estilosPdf()` y
 `encabezadoPdf()` (`src/utils/exportarPdf.ts`): página carta, márgenes con `@page` (en Android

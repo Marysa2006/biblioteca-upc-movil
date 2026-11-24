@@ -242,6 +242,9 @@ export type ConstanciaPrestamo = {
   /** Cuándo se entregó y cuándo se recibió: quien lo hizo firma con su sesión (#310). */
   entregadaEl?: string;
   recibidaEl?: string;
+  /** Las firmas registradas de quien entregó y de quien recibió (revisión de la 1.1), si las tienen. */
+  firmaEntrega?: FirmaElectronica;
+  firmaRecibe?: FirmaElectronica;
 };
 
 /** Solo M, L, números, espacios, puntos y signos: lo que deja el panel de firma (#310). */
@@ -262,7 +265,13 @@ export function esFirmaValida(firma: FirmaElectronica | undefined): firma is Fir
 
 /** Cómo firmó cada quien en la constancia (#310). */
 export type ModoFirma =
-  { tipo: 'trazo'; firma: FirmaElectronica } | { tipo: 'sesion'; fechaHora: string };
+  | {
+      tipo: 'trazo';
+      firma: FirmaElectronica;
+      /** Solo el personal: la hora de la entrega o la devolución que firma con su firma registrada. */
+      cuando?: string;
+    }
+  | { tipo: 'sesion'; fechaHora: string };
 
 /** Un recuadro de firma del formato: quién firma y sus datos; la firma va a mano (#310). */
 export type FirmaConstancia = { titulo: string; datos: DatoConstancia[]; firma?: ModoFirma };
@@ -272,6 +281,20 @@ export type FirmaConstancia = { titulo: string; datos: DatoConstancia[]; firma?:
  * entrega, el usuario responsable del bien y quien recibe. Los datos van llenos si ya se
  * conocen; si no, en blanco para escribirlos a mano. Es pura.
  */
+/**
+ * La firma de quien entregó o recibió (revisión de la 1.1): su firma registrada, con la hora en
+ * que firmó esta constancia; sin ella, su sesión. Sin nombre u hora, el recuadro queda en blanco.
+ */
+function firmaDelPersonal(
+  nombre: string | undefined,
+  fechaHora: string | undefined,
+  firma: FirmaElectronica | undefined,
+): { firma?: ModoFirma } {
+  if (!nombre || !fechaHora) return {};
+  if (esFirmaValida(firma)) return { firma: { tipo: 'trazo', firma, cuando: fechaHora } };
+  return { firma: { tipo: 'sesion', fechaHora } };
+}
+
 export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstancia[] {
   const dato = (etiqueta: string) =>
     constancia.usuario.find((actual) => actual.etiqueta === etiqueta)?.valor ?? '';
@@ -280,9 +303,7 @@ export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstan
     {
       titulo: 'Quien entrega · Biblioteca',
       datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.entrego ?? '' }],
-      ...(constancia.entrego && constancia.entregadaEl
-        ? { firma: { tipo: 'sesion' as const, fechaHora: constancia.entregadaEl } }
-        : {}),
+      ...firmaDelPersonal(constancia.entrego, constancia.entregadaEl, constancia.firmaEntrega),
     },
     {
       titulo: 'Usuario responsable del bien',
@@ -300,9 +321,7 @@ export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstan
     {
       titulo: 'Quien recibe · Biblioteca',
       datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.recibio ?? '' }],
-      ...(constancia.recibio && constancia.recibidaEl
-        ? { firma: { tipo: 'sesion' as const, fechaHora: constancia.recibidaEl } }
-        : {}),
+      ...firmaDelPersonal(constancia.recibio, constancia.recibidaEl, constancia.firmaRecibe),
     },
   ];
 }
@@ -363,17 +382,25 @@ export function constanciaDe(prestamo: Prestamo, tablet: Tablet): ConstanciaPres
     ...(entrega?.firmaUsuario ? { firmaUsuario: entrega.firmaUsuario } : {}),
     ...(entrega?.responsable ? { entregadaEl: entrega.fechaHora } : {}),
     ...(devolucion?.responsable ? { recibidaEl: devolucion.fechaHora } : {}),
+    ...(entrega?.firmaResponsable ? { firmaEntrega: entrega.firmaResponsable } : {}),
+    ...(devolucion?.firmaResponsable ? { firmaRecibe: devolucion.firmaResponsable } : {}),
   };
 }
 
 /**
- * El código de verificación de la constancia (#310): una huella de todos sus datos, firmas
- * incluidas, en 4 grupos de 4 («9F3A-…»). Si alguien cambia un dato del PDF, ya no coincide con
+ * El código de verificación de la constancia (#310): una huella de sus datos y de la firma del
+ * usuario, en 4 grupos de 4 («9F3A-…»). Si alguien cambia un dato del PDF, ya no coincide con
  * el que da la app para ese préstamo. Es una huella de comprobación (dos FNV-1a de 32 bits), no
  * una firma criptográfica. Es pura.
+ *
+ * Las firmas de quien entrega y quien recibe no entran: salen de su Perfil al leer el préstamo,
+ * así que registrarlas después cambiaría el código de una constancia ya impresa (#317).
  */
 export function codigoVerificacion(constancia: ConstanciaPrestamo): string {
-  const texto = JSON.stringify(constancia);
+  const firmado = { ...constancia };
+  delete firmado.firmaEntrega;
+  delete firmado.firmaRecibe;
+  const texto = JSON.stringify(firmado);
   let a = 0x811c9dc5;
   let b = 0x01000193 ^ texto.length;
   for (let i = 0; i < texto.length; i++) {

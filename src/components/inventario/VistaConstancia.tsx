@@ -4,7 +4,8 @@
  * entregó y quién recibió, y las tres notas. Si se sabe, dice cuándo aceptó la persona el
  * formato en la app.
  * Firmas (#310): el trazo del usuario si firmó en la pantalla; quien entrega y quien recibe firman
- * con su sesión. Sin firma en la pantalla, se avisa que el PDF trae el recuadro para firmar a mano.
+ * con la firma registrada en su Perfil o, sin ella, con su sesión, como en el PDF (#317). Sin firma
+ * del usuario en la pantalla, se avisa que el PDF trae el recuadro para firmar a mano.
  * Fuera del borrador, el código de verificación, el mismo del PDF.
  * Solo muestra: la constancia la arma constanciaDe() (o la API) y llega por props.
  */
@@ -45,15 +46,26 @@ export function VistaConstancia({ constancia, borrador = false }: Props) {
         { etiqueta: 'Aceptó el formato en la app', valor: fechaHoraLegible(constancia.aceptoEl) },
       ]
     : constancia.usuario;
-  const conSesion = (nombre: string | undefined, fechaHora: string | undefined) =>
-    nombre
-      ? `${nombre}${fechaHora ? `, con su sesión el ${fechaHoraLegible(fechaHora)}` : ''}`
-      : 'Pendiente';
+  // Lo mismo que el PDF: con la firma registrada si la tiene; si no, con su sesión y la hora.
+  const comoFirmo = (
+    nombre: string | undefined,
+    fechaHora: string | undefined,
+    firmaRegistrada: ConstanciaPrestamo['firmaEntrega'],
+  ) => {
+    if (!nombre) return 'Pendiente';
+    if (fechaHora && esFirmaValida(firmaRegistrada)) {
+      return `${nombre}, con la firma registrada en su Perfil`;
+    }
+    return `${nombre}${fechaHora ? `, con su sesión el ${fechaHoraLegible(fechaHora)}` : ''}`;
+  };
   const responsables: DatoConstancia[] = [
-    { etiqueta: 'Entregó', valor: conSesion(constancia.entrego, constancia.entregadaEl) },
+    {
+      etiqueta: 'Entregó',
+      valor: comoFirmo(constancia.entrego, constancia.entregadaEl, constancia.firmaEntrega),
+    },
     {
       etiqueta: 'Recibió la devolución',
-      valor: conSesion(constancia.recibio, constancia.recibidaEl),
+      valor: comoFirmo(constancia.recibio, constancia.recibidaEl, constancia.firmaRecibe),
     },
   ];
   const firma = esFirmaValida(constancia.firmaUsuario) ? constancia.firmaUsuario : null;

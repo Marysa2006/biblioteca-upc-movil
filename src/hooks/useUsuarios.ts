@@ -14,9 +14,10 @@ import {
   actualizarRolesPersonal,
   obtenerEquipo,
   obtenerUsuarios,
+  guardarFirmaPersonal,
 } from '@/api/usuarios';
 import { useSesion } from '@/store/sesion';
-import type { Permiso, RolPersonal } from '@/types';
+import type { FirmaElectronica, Permiso, RolPersonal } from '@/types';
 import { tieneRol } from '@/utils/roles';
 
 export function useUsuarios() {
@@ -74,6 +75,27 @@ export function useActualizarPermisosExtra() {
       if (propio && propio.id === actualizado.id) {
         useSesion.setState({ usuario: { ...propio, permisosExtra: actualizado.permisosExtra } });
       }
+    },
+  });
+}
+
+/**
+ * Guarda la firma del personal de la sesión (revisión de la 1.1), registrada una vez en el Perfil:
+ * se pone sola en las constancias que entregue o reciba. También la deja en la sesión.
+ */
+export function useGuardarMiFirma() {
+  return useMutation({
+    mutationFn: async (firma: FirmaElectronica | null) => {
+      const { usuario } = useSesion.getState();
+      if (!usuario) throw new Error('No hay sesión.');
+      await guardarFirmaPersonal(usuario.id, firma);
+      return firma;
+    },
+    onSuccess: (firma) => {
+      const { usuario } = useSesion.getState();
+      if (!usuario) return;
+      const { firma: _anterior, ...resto } = usuario;
+      useSesion.setState({ usuario: firma ? { ...resto, firma } : resto });
     },
   });
 }
