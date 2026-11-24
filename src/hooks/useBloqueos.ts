@@ -17,22 +17,30 @@ export function useBloqueos(espacioId?: string) {
 
 /** Reservas afectadas por el bloqueo que se está armando (CA1). */
 export function usePrevisualizarBloqueo() {
+  const refrescar = useRefrescarBloqueos();
   return useMutation({
     mutationFn: (datos: DatosBloqueo) => previsualizarBloqueo(datos),
+    onSuccess: (resultado) => {
+      if ('aplicado' in resultado) refrescar();
+    },
   });
 }
 
 export function useConfirmarBloqueo() {
-  const queryClient = useQueryClient();
+  const refrescar = useRefrescarBloqueos();
   return useMutation({
     mutationFn: (datos: DatosBloqueo) => confirmarBloqueo(datos),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: claves.bloqueos });
-      queryClient.invalidateQueries({ queryKey: claves.reservas });
-      queryClient.invalidateQueries({ queryKey: claves.notificaciones });
-      queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
-      // Cancela reservas: también cambian «Mis solicitudes» y su historial (HU-08).
-      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
-    },
+    onSuccess: refrescar,
   });
+}
+
+function useRefrescarBloqueos() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: claves.bloqueos });
+    queryClient.invalidateQueries({ queryKey: claves.reservas });
+    queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+    queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
+    queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
+  };
 }

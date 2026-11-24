@@ -101,7 +101,19 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
   const revisar = (formulario: DatosFormularioBloqueo) => {
     const datos = aDatosBloqueo(espacioId, formulario);
     confirmar.reset();
-    previsualizar.mutate(datos, { onSuccess: (afectadas) => setRevision({ datos, afectadas }) });
+    previsualizar.mutate(datos, {
+      onSuccess: (respuesta) => {
+        if ('aplicado' in respuesta) {
+          setRevision(null);
+          setResultado({
+            bloqueo: respuesta.aplicado.bloqueo,
+            canceladas: respuesta.aplicado.canceladas.length,
+          });
+        } else {
+          setRevision({ datos, afectadas: respuesta.afectadas });
+        }
+      },
+    });
   };
 
   const aplicar = () => {
