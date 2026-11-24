@@ -112,7 +112,7 @@ export function VistaConstancia({ constancia, borrador = false }: Props) {
           mano.
         </Text>
       )}
-      {borrador ? null : (
+      {borrador || !codigoVerificacion(constancia) ? null : (
         <Text variant="bodySmall" style={estilos.nota}>
           {`Código de verificación: ${codigoVerificacion(constancia)}`}
         </Text>

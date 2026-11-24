@@ -216,6 +216,8 @@ export type DatoConstancia = { etiqueta: string; valor: string };
 
 /** La constancia del préstamo, en el orden del formato de la biblioteca (#252). */
 export type ConstanciaPrestamo = {
+  /** Código emitido por el Backend al devolver el equipo. */
+  codigoBackend?: string;
   /** Fecha y hora del préstamo, 'AAAA-MM-DD HH:MM'. */
   prestamo: string;
   /** Fecha y hora de la devolución: la registrada, o la hora límite si aún no se devolvió. */
@@ -397,6 +399,7 @@ export function constanciaDe(prestamo: Prestamo, tablet: Tablet): ConstanciaPres
  * así que registrarlas después cambiaría el código de una constancia ya impresa (#317).
  */
 export function codigoVerificacion(constancia: ConstanciaPrestamo): string {
+  if (constancia.codigoBackend !== undefined) return constancia.codigoBackend;
   const firmado = { ...constancia };
   delete firmado.firmaEntrega;
   delete firmado.firmaRecibe;
