@@ -10,8 +10,12 @@
  */
 import type { Contenido, Usuario } from '@/types';
 import { tienePermiso } from '@/utils/roles';
+import { normalizarTexto } from '@/utils/texto';
 
-import { contenidoDesdePortal, esNovedad, type ContenidoPortal } from './backend/portal';
+import {
+  contenidoDesdePortal, contenidoGestionDesdeBackend, contenidoHaciaBackend, esNovedad,
+  type ContenidoGestionBackend, type ContenidoPortal,
+} from './backend/portal';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { CONTENIDOS } from './mocks/contenidos';
 
@@ -20,6 +24,27 @@ let contenidos: Contenido[] = CONTENIDOS.map((contenido) => ({ ...contenido }));
 
 /** Datos que envía el formulario; el id y el orden los asigna el sistema. */
 export type DatosContenido = Omit<Contenido, 'id' | 'orden'> & { orden?: number };
+const RUTA_GESTION = '/portal/manage/contents/';
+
+function listarContenidosBackend() {
+  return peticionTodas<ContenidoGestionBackend, ContenidoGestionBackend>(RUTA_GESTION, (contenido) => contenido);
+}
+
+async function guardarContenidoBackend(datos: DatosContenido, anterior?: ContenidoGestionBackend) {
+  const error = errorDeValidacion(datos);
+  if (error) throw error;
+  const id = anterior?.slug;
+  const slug = id ?? normalizarTexto(datos.titulo).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (!slug) throw new ErrorApi(400, 'El título debe incluir letras o números.');
+  const resultado = await peticion<ContenidoGestionBackend>(
+    id ? `${RUTA_GESTION}${encodeURIComponent(id)}/` : RUTA_GESTION,
+    {
+      method: id ? 'PATCH' : 'POST',
+      body: JSON.stringify({ ...contenidoHaciaBackend(datos, anterior), slug }),
+    },
+  );
+  return contenidoGestionDesdeBackend(resultado);
+}
 
 function ordenar(lista: Contenido[]): Contenido[] {
   return [...lista].sort((a, b) => a.orden - b.orden);
@@ -55,6 +80,7 @@ function errorDeValidacion(datos: DatosContenido): ErrorApi | null {
 }
 
 export function obtenerContenidos(): Promise<Contenido[]> {
+  if (usaApi('contenidos')) return listarContenidosBackend().then((lista) => lista.map(contenidoGestionDesdeBackend));
   if (USAR_MOCKS) {
     return simularRed(ordenar(contenidos).map((contenido) => ({ ...contenido })));
   }
@@ -79,6 +105,7 @@ export function crearContenido(usuario: Usuario, datos: DatosContenido): Promise
   if (sinPermiso) {
     return Promise.reject(sinPermiso);
   }
+  if (usaApi('contenidos')) return guardarContenidoBackend(datos);
   if (USAR_MOCKS) {
     const error = errorDeValidacion(datos);
     if (error) {
@@ -100,6 +127,15 @@ export function editarContenido(
   id: string,
   datos: DatosContenido,
 ): Promise<Contenido> {
+  if (usaApi('contenidos')) {
+    const permiso = errorDePermiso(usuario, datos.tipo);
+    if (permiso) return Promise.reject(permiso);
+    return peticion<ContenidoGestionBackend>(`${RUTA_GESTION}${encodeURIComponent(id)}/`).then((actual) => {
+      const error = errorDePermiso(usuario, contenidoGestionDesdeBackend(actual).tipo);
+      if (error) throw error;
+      return guardarContenidoBackend(datos, actual);
+    });
+  }
   // Se comprueba el tipo nuevo y, si existe, el que ya tenía: cambiar un aviso a servicio no
   // puede servir para colarse en los servicios.
   const actual = contenidos.find((contenido) => contenido.id === id);
@@ -129,6 +165,17 @@ export function cambiarPublicacionContenido(
   id: string,
   publicado: boolean,
 ): Promise<Contenido> {
+  if (usaApi('contenidos')) {
+    const ruta = `${RUTA_GESTION}${encodeURIComponent(id)}/`;
+    return peticion<ContenidoGestionBackend>(ruta).then(async (actual) => {
+      const error = errorDePermiso(usuario, contenidoGestionDesdeBackend(actual).tipo);
+      if (error) throw error;
+      const destino = publicado ? 'publish' : 'hide';
+      return contenidoGestionDesdeBackend(await peticion<ContenidoGestionBackend>(
+        `${ruta}${destino}/`, { method: 'POST' },
+      ));
+    });
+  }
   const actual = contenidos.find((contenido) => contenido.id === id);
   const sinPermiso = errorDePermiso(usuario, actual?.tipo ?? 'servicio');
   if (sinPermiso) {
@@ -153,6 +200,20 @@ export function cambiarPublicacionContenido(
 export function reordenarContenidos(usuario: Usuario, idsEnOrden: string[]): Promise<Contenido[]> {
   if (!tienePermiso(usuario, 'contenidos')) {
     return Promise.reject(new ErrorApi(403, 'Solo la administración puede ordenar los contenidos.'));
+  }
+  if (usaApi('contenidos')) {
+    return listarContenidosBackend().then(async (lista) => {
+      const ids = new Map(lista.map((contenido) => [contenido.slug, contenido.id]));
+      const items = idsEnOrden.map((slug, i) => {
+        const id = ids.get(slug);
+        if (id === undefined) throw new ErrorApi(404, 'El contenido no existe.');
+        return { id, order: i + 1 };
+      });
+      const ordenados = await peticion<ContenidoGestionBackend[]>(`${RUTA_GESTION}reorder/`, {
+        method: 'POST', body: JSON.stringify({ items }),
+      });
+      return ordenados.map(contenidoGestionDesdeBackend);
+    });
   }
   if (USAR_MOCKS) {
     const posiciones = new Map(idsEnOrden.map((id, indice) => [id, indice + 1]));
