@@ -1,6 +1,6 @@
 /**
  * Formulario para que el personal reserve un espacio en nombre de otra persona (HU-19).
- * La reserva queda aprobada y se notifica a la persona. Valida antes de enviar con
+ * Al crear la reserva se notifica a la persona. Valida antes de enviar con
  * esquemaReservaTercero (día hábil de HU-28 y capacidad del espacio); la API vuelve a validar
  * y responde los choques de horario (CA3), que se muestran en el aviso.
  * Al guardar, el formulario cambia a una confirmación con a quién se notificó.
@@ -68,7 +68,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
   const espacioId = useWatch({ control, name: 'espacioId' });
   const capacidadElegida = espacios.find((lugar) => lugar.id === espacioId)?.capacidad;
 
-  const aviso = creadaPara ? `Reserva creada y aprobada. Se notificó a ${creadaPara}.` : null;
+  const aviso = creadaPara ? `Reserva creada. Se notificó a ${creadaPara}.` : null;
   // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.
   useEffect(() => {
     if (Platform.OS === 'ios' && aviso) {
@@ -84,6 +84,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
         espacioId: datos.espacioId,
         solicitanteId: persona.id,
         solicitante: persona.nombre,
+        correoSolicitante: persona.correo,
         fecha: datos.fecha.trim(),
         horaInicio: datos.horaInicio.trim(),
         horaFin: datos.horaFin.trim(),

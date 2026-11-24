@@ -14,6 +14,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 import { AvisoError } from '@/components/ui';
+import { usaApi } from '@/api/cliente';
 import { colores, espacio, fuentes } from '@/theme';
 import type { Parametros, Reserva } from '@/types';
 import { sumarMeses } from '@/utils/calendario';
@@ -67,6 +68,7 @@ function Contenido({
   onConfirmar,
   onCerrar,
 }: Props & { reserva: Reserva }) {
+  const modificar = usaApi('reservas');
   const [hoy] = useState(hoyISO);
   const { control, handleSubmit } = useForm<FormularioOtraFecha>({
     resolver: zodResolver(esquemaOtraFecha),
@@ -80,7 +82,9 @@ function Contenido({
 
   return (
     <>
-      <Dialog.Title style={estilos.titulo}>Proponer otra fecha</Dialog.Title>
+      <Dialog.Title style={estilos.titulo}>
+        {modificar ? 'Cambiar fecha u horario' : 'Proponer otra fecha'}
+      </Dialog.Title>
       <Dialog.ScrollArea style={estilos.area}>
         <ScrollView contentContainerStyle={estilos.contenido} keyboardShouldPersistTaps="handled">
           <Text variant="bodyMedium" style={estilos.texto}>
@@ -141,9 +145,9 @@ function Contenido({
           disabled={guardando}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"
-          accessibilityLabel={`Proponer la nueva fecha a ${reserva.solicitante}`}
+          accessibilityLabel={`${modificar ? 'Guardar' : 'Proponer'} la nueva fecha de ${reserva.solicitante}`}
         >
-          Proponer
+          {modificar ? 'Guardar cambio' : 'Proponer'}
         </Button>
       </Dialog.Actions>
     </>

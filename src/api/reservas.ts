@@ -4,7 +4,7 @@
  * Cada decisión deja una notificación (HU-27) y un evento en el historial (HU-08) en los
  * datos de prueba.
  * Con la API (módulo `espacios`), «Mis reservas» de la comunidad sale del Backend. La bandeja del
- * personal sigue con datos de prueba hasta la fase 4 (módulo `reservas`).
+ * personal se conecta por separado (módulo `reservas`).
  */
 import { useSesion } from '@/store/sesion';
 import type {
@@ -22,6 +22,13 @@ import {
   type DetalleSolicitudBackend,
   type EspacioBackend,
 } from './backend/espacios';
+import {
+  franjasDeConflicto,
+  reservaPersonalDesdeBackend,
+  reservaTerceroHaciaBackend,
+  type ReservaPersonalBackend,
+} from './backend/reservas';
+import { ESTADO_DESDE_BACKEND } from './backend/equivalencias';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { RESERVAS } from './mocks/reservas';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
@@ -53,7 +60,40 @@ export type DatosReservaTercero = {
   proposito: string;
   asistentes: number;
   requerimientos?: string;
+  correoSolicitante?: string;
 };
+
+const RUTA_PERSONAL = '/spaces/manage/reservations/';
+const idsReserva = new Map<string, number>();
+
+function leerReservaPersonal(registro: ReservaPersonalBackend): Reserva {
+  const reserva = reservaPersonalDesdeBackend(registro);
+  idsReserva.set(reserva.id, registro.id);
+  return reserva;
+}
+
+async function rutaGestionReserva(id: string) {
+  if (!idsReserva.has(id)) await obtenerSolicitudesReserva();
+  const idBackend = idsReserva.get(id);
+  if (idBackend === undefined) throw new ErrorApi(404, 'La solicitud no existe.');
+  return `${RUTA_PERSONAL}${idBackend}/`;
+}
+
+async function guardarReservaPersonal(ruta: string, metodo: 'POST' | 'PATCH', cuerpo: object) {
+  try {
+    return leerReservaPersonal(await peticion<ReservaPersonalBackend>(ruta, {
+      method: metodo, body: JSON.stringify(cuerpo),
+    }));
+  } catch (error) {
+    if (error instanceof ErrorApi && error.estado === 409) {
+      const franjas = franjasDeConflicto(error.cuerpo);
+      if (franjas.length) {
+        error.message = `${error.message} Franjas libres: ${franjas.join(', ')}.`;
+      }
+    }
+    throw error;
+  }
+}
 
 /** Estados que ocupan una franja: con ellos se detectan los choques de horario (CA3). */
 const ESTADOS_OCUPAN: readonly EstadoSolicitud[] = ['pendiente', 'aprobada', 'nueva_fecha'];
@@ -113,9 +153,15 @@ function mensajeDeDecision(reserva: Reserva, decision: DecisionReserva, motivo?:
 }
 
 /** Solicitudes de reserva para la bandeja del personal (HU-19). */
-export function obtenerSolicitudesReserva(
+export async function obtenerSolicitudesReserva(
   estado: EstadoSolicitud | 'todas' = 'todas',
 ): Promise<Reserva[]> {
+  if (usaApi('reservas')) {
+    const estados = Object.entries(ESTADO_DESDE_BACKEND).filter(([, valor]) => valor === estado);
+    const consulta = estados.length === 1 ? `?status=${estados[0][0]}` : '';
+    const lista = await peticionTodas(`${RUTA_PERSONAL}${consulta}`, leerReservaPersonal);
+    return ordenar(estado === 'todas' ? lista : lista.filter((r) => r.estado === estado));
+  }
   if (USAR_MOCKS) {
     const lista = estado === 'todas' ? reservas : reservas.filter((r) => r.estado === estado);
     return simularRed(ordenar(lista).map((reserva) => ({ ...reserva })));
@@ -135,6 +181,27 @@ export async function decidirReserva(
   motivo?: string,
   cambios?: CambiosReserva,
 ): Promise<Reserva> {
+  if (usaApi('reservas')) {
+    const reason = motivo?.trim();
+    if ((decision === 'rechazar' || decision === 'cancelar') && !reason) {
+      throw new ErrorApi(400, 'El motivo es obligatorio para rechazar o cancelar.');
+    }
+    if (decision === 'nueva_fecha' && !cambios?.fecha) {
+      throw new ErrorApi(400, 'Indica la nueva fecha de la reserva.');
+    }
+    const ruta = await rutaGestionReserva(id);
+    if (decision === 'nueva_fecha') {
+      const actual = await peticion<ReservaPersonalBackend>(ruta);
+      return guardarReservaPersonal(ruta, 'PATCH', {
+        date: cambios?.fecha === actual.date ? undefined : cambios?.fecha,
+        start_time: cambios?.horaInicio === actual.start_time.slice(0, 5) ? undefined : cambios?.horaInicio,
+        end_time: cambios?.horaFin === actual.end_time.slice(0, 5) ? undefined : cambios?.horaFin,
+        reason,
+      });
+    }
+    const accion = { aprobar: 'approve', rechazar: 'reject', cancelar: 'cancel' }[decision];
+    return guardarReservaPersonal(`${ruta}${accion}/`, 'POST', { reason });
+  }
   if (USAR_MOCKS) {
     const indice = reservas.findIndex((reserva) => reserva.id === id);
     if (indice === -1) {
@@ -234,9 +301,17 @@ export async function decidirReserva(
 
 /**
  * El personal crea una reserva en nombre de un tercero (HU-19).
- * Queda aprobada y avisa al solicitante. Valida día hábil y choques de horario.
+ * El Backend la deja pendiente y avisa al solicitante.
  */
-export async function crearReservaTercero(datos: DatosReservaTercero): Promise<Reserva> {
+export async function crearReservaTercero({
+  correoSolicitante,
+  ...datos
+}: DatosReservaTercero): Promise<Reserva> {
+  if (usaApi('reservas')) {
+    const correo = correoSolicitante?.trim();
+    if (!correo) throw new ErrorApi(400, 'Indica el correo del solicitante.');
+    return guardarReservaPersonal(RUTA_PERSONAL, 'POST', reservaTerceroHaciaBackend(datos, correo));
+  }
   if (USAR_MOCKS) {
     if (!datos.proposito?.trim()) {
       throw new ErrorApi(400, 'El propósito es obligatorio.');
