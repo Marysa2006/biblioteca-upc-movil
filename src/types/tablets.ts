@@ -80,6 +80,8 @@ export type RegistroTablet = {
    * en papel (la constancia impresa trae el recuadro en blanco).
    */
   firmaUsuario?: FirmaElectronica;
+  /** La firma registrada de quien entrega o recibe (revisión de la 1.1), si la tiene. */
+  firmaResponsable?: FirmaElectronica;
 };
 
 /** Persona del personal que entrega o recibe, con su cargo (versión 1.1). */

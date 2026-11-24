@@ -2,6 +2,7 @@
  * Usuarios, roles y permisos (HU-05 y HU-07).
  * Base compartida: un cambio aquí necesita la aprobación de un guardián (CODEOWNERS).
  */
+import type { FirmaElectronica } from './tablets';
 
 /** Tipo de usuario institucional: quién es en la universidad. */
 export type TipoUsuario = 'estudiante' | 'docente' | 'administrativo' | 'egresado' | 'visitante';
@@ -65,6 +66,11 @@ export type Usuario = {
    * Universidad publica otra política, la versión ya no coincide y se le pide otra vez.
    */
   aceptacionDatos?: AceptacionPolitica;
+  /**
+   * La firma del personal, registrada una vez en su Perfil (revisión de la 1.1). Se pone sola en
+   * las constancias de las tablets que entrega o recibe. Sin ella, firma con su sesión.
+   */
+  firma?: FirmaElectronica;
 };
 
 /**

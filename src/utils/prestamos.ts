@@ -242,6 +242,9 @@ export type ConstanciaPrestamo = {
   /** Cuándo se entregó y cuándo se recibió: quien lo hizo firma con su sesión (#310). */
   entregadaEl?: string;
   recibidaEl?: string;
+  /** Las firmas registradas de quien entregó y de quien recibió (revisión de la 1.1), si las tienen. */
+  firmaEntrega?: FirmaElectronica;
+  firmaRecibe?: FirmaElectronica;
 };
 
 /** Solo M, L, números, espacios, puntos y signos: lo que deja el panel de firma (#310). */
@@ -262,7 +265,13 @@ export function esFirmaValida(firma: FirmaElectronica | undefined): firma is Fir
 
 /** Cómo firmó cada quien en la constancia (#310). */
 export type ModoFirma =
-  { tipo: 'trazo'; firma: FirmaElectronica } | { tipo: 'sesion'; fechaHora: string };
+  | {
+      tipo: 'trazo';
+      firma: FirmaElectronica;
+      /** Para el personal: cuándo firmó esta constancia con su firma registrada. */
+      cuando?: string;
+    }
+  | { tipo: 'sesion'; fechaHora: string };
 
 /** Un recuadro de firma del formato: quién firma y sus datos; la firma va a mano (#310). */
 export type FirmaConstancia = { titulo: string; datos: DatoConstancia[]; firma?: ModoFirma };
@@ -272,6 +281,20 @@ export type FirmaConstancia = { titulo: string; datos: DatoConstancia[]; firma?:
  * entrega, el usuario responsable del bien y quien recibe. Los datos van llenos si ya se
  * conocen; si no, en blanco para escribirlos a mano. Es pura.
  */
+/**
+ * La firma de quien entregó o recibió (revisión de la 1.1): su firma registrada, con la hora en
+ * que firmó esta constancia; sin ella, su sesión. Sin nombre u hora, el recuadro queda en blanco.
+ */
+function firmaDelPersonal(
+  nombre: string | undefined,
+  fechaHora: string | undefined,
+  firma: FirmaElectronica | undefined,
+): { firma?: ModoFirma } {
+  if (!nombre || !fechaHora) return {};
+  if (esFirmaValida(firma)) return { firma: { tipo: 'trazo', firma, cuando: fechaHora } };
+  return { firma: { tipo: 'sesion', fechaHora } };
+}
+
 export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstancia[] {
   const dato = (etiqueta: string) =>
     constancia.usuario.find((actual) => actual.etiqueta === etiqueta)?.valor ?? '';
@@ -280,9 +303,7 @@ export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstan
     {
       titulo: 'Quien entrega · Biblioteca',
       datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.entrego ?? '' }],
-      ...(constancia.entrego && constancia.entregadaEl
-        ? { firma: { tipo: 'sesion' as const, fechaHora: constancia.entregadaEl } }
-        : {}),
+      ...firmaDelPersonal(constancia.entrego, constancia.entregadaEl, constancia.firmaEntrega),
     },
     {
       titulo: 'Usuario responsable del bien',
@@ -300,9 +321,7 @@ export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstan
     {
       titulo: 'Quien recibe · Biblioteca',
       datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.recibio ?? '' }],
-      ...(constancia.recibio && constancia.recibidaEl
-        ? { firma: { tipo: 'sesion' as const, fechaHora: constancia.recibidaEl } }
-        : {}),
+      ...firmaDelPersonal(constancia.recibio, constancia.recibidaEl, constancia.firmaRecibe),
     },
   ];
 }
@@ -363,6 +382,8 @@ export function constanciaDe(prestamo: Prestamo, tablet: Tablet): ConstanciaPres
     ...(entrega?.firmaUsuario ? { firmaUsuario: entrega.firmaUsuario } : {}),
     ...(entrega?.responsable ? { entregadaEl: entrega.fechaHora } : {}),
     ...(devolucion?.responsable ? { recibidaEl: devolucion.fechaHora } : {}),
+    ...(entrega?.firmaResponsable ? { firmaEntrega: entrega.firmaResponsable } : {}),
+    ...(devolucion?.firmaResponsable ? { firmaRecibe: devolucion.firmaResponsable } : {}),
   };
 }
 

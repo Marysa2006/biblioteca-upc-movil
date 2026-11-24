@@ -165,7 +165,7 @@ function Detalle({ servicio }: { servicio: Servicio }) {
 
       {/*
         Préstamo de libros: la disponibilidad se consulta en Koha, sin cuenta. Por id y no por
-        categoría, porque Préstamo de computadores también es de la categoría prestamo.
+        categoría: otros servicios de préstamo, como las tablets, son de la misma categoría.
       */}
       {servicio.id === 'prestamo' ? (
         <Button

@@ -54,6 +54,7 @@ import {
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+import { firmaEnDirectorio } from './usuarios';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { estadoDePrestamo, registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
@@ -201,6 +202,33 @@ function responsableDe(usuario: Usuario): ResponsableTablet {
   return { id: usuario.id, nombre: usuario.nombre, cargo: usuario.cargo };
 }
 
+/**
+ * Completa la firma de quien entregó o recibió con la que tiene registrada en su Perfil, si el
+ * registro no la trae (revisión de la 1.1): por ejemplo, si registró su firma después de entregar.
+ * No cambia el préstamo guardado; solo lo que muestra la constancia.
+ */
+function conFirmasRegistradas(prestamo: Prestamo): Prestamo {
+  const completar = (registro: RegistroTablet | undefined): RegistroTablet | undefined => {
+    if (!registro?.responsable || registro.firmaResponsable) return registro;
+    const firma = firmaEnDirectorio(registro.responsable.id);
+    return firma ? { ...registro, firmaResponsable: { ...firma } } : registro;
+  };
+  return {
+    ...prestamo,
+    entrega: completar(prestamo.entrega),
+    devolucion: completar(prestamo.devolucion),
+  };
+}
+
+/**
+ * La firma registrada de quien entrega o recibe (revisión de la 1.1): la del directorio, que es la
+ * más reciente, o la de la sesión. Sin firma registrada, firma con su sesión.
+ */
+function firmaDeResponsable(usuario: Usuario): Pick<RegistroTablet, 'firmaResponsable'> {
+  const firma = firmaEnDirectorio(usuario.id) ?? usuario.firma;
+  return firma ? { firmaResponsable: { ...firma } } : {};
+}
+
 /** El estado del equipo en el formato exige notas cuando es «otro» (CA2). */
 function errorDeEstadoEquipo(datos: DatosEntrega): ErrorApi | null {
   if (datos.estadoEquipo == null) return null;
@@ -254,7 +282,7 @@ export function obtenerConstancia(prestamoId: string): Promise<ConstanciaPrestam
     if (!tablet) {
       return Promise.reject(new ErrorApi(404, 'La tablet del préstamo no existe.'));
     }
-    return simularRed(constanciaDe(prestamo, tablet));
+    return simularRed(constanciaDe(conFirmasRegistradas(prestamo), tablet));
   }
   return peticion<ConstanciaPrestamo>(`/prestamos/${prestamoId}/constancia/`);
 }
@@ -352,6 +380,7 @@ export function registrarEntrega(
       // Versión 1.1 (#252): la constancia necesita quién entregó y en qué estado.
       ...(notas ? { novedades: notas } : {}),
       responsable: responsableDe(usuario),
+      ...firmaDeResponsable(usuario),
       ...(datos.firmaUsuario ? { firmaUsuario: { ...datos.firmaUsuario } } : {}),
     };
     prestamos = prestamos.map((actual) =>
@@ -455,6 +484,7 @@ export function registrarDevolucion(
       retrasoMinutos,
       // Versión 1.1 (#252): quién recibe la tablet, con su cargo.
       responsable: responsableDe(usuario),
+      ...firmaDeResponsable(usuario),
     };
     prestamos = prestamos.map((actual) =>
       actual.id === prestamoId ? { ...actual, estado: 'devuelto', devolucion } : actual,

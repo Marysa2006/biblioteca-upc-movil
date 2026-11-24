@@ -12,13 +12,13 @@
  */
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
-import { EnlacePoliticaDatos } from '@/components/privacidad/EnlacePoliticaDatos';
-import { AvisoError, Pantalla, Upecito } from '@/components/ui';
+import { TextoAutorizacionDatos } from '@/components/privacidad/TextoAutorizacionDatos';
+import { AvisoError, DialogoTexto, Pantalla, Upecito } from '@/components/ui';
 import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
 import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
@@ -26,6 +26,7 @@ import { esPersonal } from '@/utils/roles';
 
 export default function Login() {
   const { volver } = useLocalSearchParams<{ volver?: string }>();
+  const [verAutorizacion, setVerAutorizacion] = useState(false);
   const { mutate, isPending, error, reset } = useIniciarSesion();
   const mensajeError = error ? mensajeErrorLogin(error) : null;
 
@@ -106,13 +107,29 @@ export default function Login() {
         Explorar sin iniciar sesión
       </Button>
 
-      {/* La Ley 1581: la política de la Universidad, a la vista antes de entrar (#225, CA1). */}
+      {/* La Ley 1581: la autorización y la política de la Universidad, a la vista antes de entrar
+          (#225, CA1). Revisión de la 1.1: el texto completo abre en una ventana. */}
       <View style={estilos.privacidad}>
-        <EnlacePoliticaDatos
-          centrado
-          nota="La Universidad es la responsable de tus datos personales. Lee la política antes de entrar."
-        />
+        <Text variant="bodySmall" style={estilos.textoSeparador}>
+          La Universidad es la responsable de tus datos personales.
+        </Text>
+        <Button
+          mode="text"
+          icon="shield-check-outline"
+          onPress={() => setVerAutorizacion(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Tratamiento de datos personales: leer la autorización y la política"
+        >
+          Tratamiento de datos personales
+        </Button>
       </View>
+      <DialogoTexto
+        visible={verAutorizacion}
+        titulo="Tratamiento de datos personales"
+        onCerrar={() => setVerAutorizacion(false)}
+      >
+        <TextoAutorizacionDatos />
+      </DialogoTexto>
 
       {/* La UPC, con su logo oficial, al pie (#202). */}
       <View style={estilos.universidad}>

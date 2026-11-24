@@ -32,11 +32,15 @@ const dato = (valor: DatoConstancia) =>
 function espacioFirma(firma: FirmaConstancia['firma']): string {
   if (firma?.tipo === 'trazo' && esFirmaValida(firma.firma)) {
     const { trazo, ancho, alto, fechaHora } = firma.firma;
+    // El personal firma con su firma registrada y su cuenta; el usuario, en la app al recibirla.
+    const pie = firma.cuando
+      ? `Firmado electrónicamente con su cuenta el ${escaparHtml(fechaHoraLegible(firma.cuando))}`
+      : `Firmado electrónicamente en la app el ${escaparHtml(fechaHoraLegible(fechaHora))}`;
     return (
       `<div class="espacio con-trazo"><svg viewBox="0 0 ${ancho} ${alto}" preserveAspectRatio="xMidYMid meet">` +
       `<path d="${trazo}" fill="none" stroke="${colores.texto}" stroke-width="2.5" ` +
       'stroke-linecap="round" stroke-linejoin="round"/></svg></div>' +
-      `<p class="pie">Firmado electrónicamente en la app el ${escaparHtml(fechaHoraLegible(fechaHora))}</p>`
+      `<p class="pie">${pie}</p>`
     );
   }
   if (firma?.tipo === 'sesion') {

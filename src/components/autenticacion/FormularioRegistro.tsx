@@ -23,7 +23,7 @@ import { Button, Checkbox, Chip, HelperText, Text, TextInput } from 'react-nativ
 
 import { TextoAutorizacionDatos } from '@/components/privacidad/TextoAutorizacionDatos';
 import { SelectorFacultadPrograma } from '@/components/solicitudes/SelectorFacultadPrograma';
-import { AvisoError } from '@/components/ui';
+import { AvisoError, DialogoTexto } from '@/components/ui';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { DOMINIO_CORREO, SEDES } from '@/utils/constantes';
 import {
@@ -135,6 +135,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
         <CampoTexto
           control={control}
           nombre="nombres"
+          ayuda="Como aparecen en tu documento, sin abreviar."
           etiqueta="Nombres"
           mensajeError={errores.nombres?.message}
           deshabilitado={enviando}
@@ -145,6 +146,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
         <CampoTexto
           control={control}
           nombre="apellidos"
+          ayuda="Los dos, como aparecen en tu documento."
           etiqueta="Apellidos"
           mensajeError={errores.apellidos?.message}
           deshabilitado={enviando}
@@ -155,6 +157,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
         <CampoTexto
           control={control}
           nombre="identificacion"
+          ayuda="Solo números, sin puntos ni espacios."
           etiqueta="Número de cédula"
           mensajeError={errores.identificacion?.message}
           deshabilitado={enviando}
@@ -165,6 +168,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
         <CampoTexto
           control={control}
           nombre="correo"
+          ayuda="Tu correo institucional, en minúsculas."
           etiqueta="Correo institucional"
           placeholder={`nombre@${DOMINIO_CORREO}`}
           mensajeError={errores.correo?.message}
@@ -176,6 +180,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
         <CampoTexto
           control={control}
           nombre="celular"
+          ayuda="10 dígitos, sin espacios ni indicativo (+57)."
           etiqueta="Celular (opcional)"
           mensajeError={errores.celular?.message}
           deshabilitado={enviando}
@@ -256,6 +261,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
           <CampoTexto
             control={control}
             nombre="dependencia"
+            ayuda="El nombre completo, sin siglas."
             etiqueta="Dependencia (opcional)"
             placeholder="Por ejemplo, Facultad de Ingenierías"
             mensajeError={errores.dependencia?.message}
@@ -284,6 +290,7 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
         <CampoTexto
           control={control}
           nombre="confirmacion"
+          ayuda="Escríbela igual que la anterior."
           etiqueta="Confirma la contraseña"
           mensajeError={errores.confirmacion?.message}
           deshabilitado={enviando}
@@ -301,21 +308,26 @@ export function FormularioRegistro({ enviando, errorApi, onEnviar }: Props) {
           Para crear la cuenta necesitamos tu autorización, con el formato del Acuerdo 019 de 2020
           de la Universidad.
         </Text>
+        {/* Revisión de la 1.1: el texto abre en una ventana, para no alargar el formulario. */}
         <Button
           mode="text"
-          icon={verAutorizacion ? 'chevron-up' : 'chevron-down'}
-          onPress={() => setVerAutorizacion((visible) => !visible)}
+          icon="file-document-outline"
+          onPress={() => setVerAutorizacion(true)}
           style={estilos.botonIzquierda}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"
-          accessibilityState={{ expanded: verAutorizacion }}
-          accessibilityLabel={
-            verAutorizacion ? 'Ocultar la autorización' : 'Leer la autorización completa'
-          }
+          accessibilityLabel="Leer la autorización completa"
         >
-          {verAutorizacion ? 'Ocultar la autorización' : 'Leer la autorización'}
+          Leer la autorización
         </Button>
-        {verAutorizacion ? <TextoAutorizacionDatos /> : null}
+        <DialogoTexto
+          visible={verAutorizacion}
+          titulo="Autorización de datos personales"
+          onCerrar={() => setVerAutorizacion(false)}
+          aceptar={{ texto: 'Acepto', onPress: () => setValue('aceptaPrivacidad', true, validar) }}
+        >
+          <TextoAutorizacionDatos />
+        </DialogoTexto>
         <Checkbox.Item
           label="He leído y acepto la autorización para el tratamiento de mis datos personales del Acuerdo 019 de 2020."
           status={aceptaPrivacidad ? 'checked' : 'unchecked'}

@@ -13,10 +13,12 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { DatosContacto } from '@/components/perfil/DatosContacto';
 import { DatosInstitucionales } from '@/components/perfil/DatosInstitucionales';
+import { FirmaEnVentana } from '@/components/inventario/FirmaEnVentana';
 import { EnlacePoliticaDatos } from '@/components/privacidad/EnlacePoliticaDatos';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useCerrarSesion } from '@/hooks/useAutenticacion';
 import { useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
+import { useGuardarMiFirma } from '@/hooks/useUsuarios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { DatosEditablesPerfil, Usuario } from '@/types';
@@ -28,7 +30,7 @@ import {
 } from '@/utils/constantes';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { aceptacionVigente, fechaDeAceptacion } from '@/utils/privacidad';
-import { describirRoles } from '@/utils/roles';
+import { describirRoles, esPersonal } from '@/utils/roles';
 
 /** Tiempo que se ve la confirmación al guardar. */
 const DURACION_CONFIRMACION_MS = 3000;
@@ -153,6 +155,8 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
 
       {contenido}
 
+      {esPersonal(usuario) ? <MiFirma usuario={usuario} /> : null}
+
       <View style={estilos.tarjeta}>
         <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
           Privacidad y datos personales
@@ -185,6 +189,31 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
         </Snackbar>
       </Portal>
     </Pantalla>
+  );
+}
+
+/**
+ * La firma del personal (revisión de la 1.1): se registra una vez y se pone sola en las
+ * constancias de las tablets que entregue o reciba. Sin ella, firma con su sesión.
+ */
+function MiFirma({ usuario }: { usuario: Usuario }) {
+  const guardar = useGuardarMiFirma();
+  return (
+    <View style={estilos.tarjeta}>
+      <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
+        Mi firma
+      </Text>
+      <Text variant="bodySmall" style={estilos.notaTarjeta}>
+        Regístrala una vez: se pone sola en las constancias de las tablets que entregues o recibas.
+      </Text>
+      <FirmaEnVentana
+        firmante={usuario.nombre}
+        valor={usuario.firma ?? null}
+        onCambiar={(firma) => guardar.mutate(firma)}
+        mensajeError={guardar.error ? mensajeErrorGuardar(guardar.error) : undefined}
+        deshabilitado={guardar.isPending}
+      />
+    </View>
   );
 }
 

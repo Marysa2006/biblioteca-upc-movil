@@ -46,7 +46,7 @@ import {
 import { ahoraFechaHora, minutosDeRetraso } from '@/utils/tablets';
 
 import { CasillasAccesorios } from './CasillasAccesorios';
-import { PanelFirma } from './PanelFirma';
+import { FirmaEnVentana } from './FirmaEnVentana';
 import { VistaConstancia } from './VistaConstancia';
 
 export type Modo = 'entrega' | 'devolucion';
@@ -300,7 +300,7 @@ export function FormularioRegistroPrestamo({
             </HelperText>
           </View>
           {enPapel ? null : (
-            <PanelFirma
+            <FirmaEnVentana
               firmante={prestamo.solicitante}
               valor={firma}
               onCambiar={setFirma}

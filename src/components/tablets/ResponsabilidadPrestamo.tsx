@@ -3,9 +3,13 @@
  * Sin aceptarla, la solicitud no se envía: el error va debajo de la casilla y se anuncia
  * (Android con accessibilityLiveRegion; en iOS lo anuncia el formulario). La tablet todavía no
  * está asignada, así que la tercera nota va sin el valor del bien (notasDelPrestamo).
+ * Revisión de la 1.1: las notas abren en una ventana («Leer las notas», con Acepto).
  */
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Checkbox, HelperText, Text } from 'react-native-paper';
+import { Button, Checkbox, HelperText, Text } from 'react-native-paper';
+
+import { DialogoTexto } from '@/components/ui';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { notasDelPrestamo } from '@/utils/prestamos';
@@ -23,18 +27,35 @@ export function ResponsabilidadPrestamo({
   mensajeError,
   deshabilitado,
 }: Props) {
+  const [ver, setVer] = useState(false);
   return (
     <View style={estilos.tarjeta}>
       <Text variant="titleSmall" style={estilos.titulo} accessibilityRole="header">
         Responsabilidad sobre el préstamo
       </Text>
-      <View style={estilos.puntos}>
+      <Button
+        mode="text"
+        icon="file-document-outline"
+        onPress={() => setVer(true)}
+        style={estilos.leer}
+        compact
+        accessibilityRole="button"
+        accessibilityLabel="Leer las notas de responsabilidad sobre el préstamo"
+      >
+        Leer las notas
+      </Button>
+      <DialogoTexto
+        visible={ver}
+        titulo="Responsabilidad sobre el préstamo"
+        onCerrar={() => setVer(false)}
+        aceptar={deshabilitado ? undefined : { texto: 'Acepto', onPress: () => onCambiar(true) }}
+      >
         {notasDelPrestamo(undefined).map((nota) => (
           <Text key={nota} variant="bodyMedium" style={estilos.texto}>
             {`• ${nota}`}
           </Text>
         ))}
-      </View>
+      </DialogoTexto>
 
       <Checkbox.Item
         label="Acepto la responsabilidad sobre el préstamo"
@@ -66,7 +87,7 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficie,
   },
   titulo: { color: colores.primario, fontFamily: fuentes.seminegrita },
-  puntos: { gap: espacio.xs },
+  leer: { alignSelf: 'flex-start' },
   texto: { color: colores.texto },
   // Sin el relleno lateral del ítem, la casilla se alinea con el texto de arriba.
   casilla: { paddingHorizontal: 0 },
