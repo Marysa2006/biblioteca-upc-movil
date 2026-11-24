@@ -10,7 +10,8 @@
  *
  * El registro provisional (#203) usa `POST register/` del Backend, con sus mismos campos.
  */
-import type { Usuario } from '@/types';
+import type { AceptacionPolitica, Usuario } from '@/types';
+import { nuevaAceptacion } from '@/utils/privacidad';
 import {
   problemaNuevaCuenta,
   TIPO_BACKEND,
@@ -22,7 +23,12 @@ import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { CONTRASENA_PRUEBA, USUARIOS_INACTIVOS_PRUEBA } from './mocks/autenticacion';
 import { TOKEN_PRUEBA } from './mocks/usuarios';
 import { guardarCelularRegistrado } from './perfil';
-import { agregarAlDirectorio, buscarEnDirectorio, existeIdentificacion } from './usuarios';
+import {
+  agregarAlDirectorio,
+  buscarEnDirectorio,
+  existeIdentificacion,
+  guardarAceptacionEnDirectorio,
+} from './usuarios';
 
 export type { NuevaCuenta } from '@/utils/registro';
 
@@ -151,6 +157,9 @@ export async function registrarCuentaApi(cuenta: NuevaCuenta): Promise<void> {
       ...(cuenta.programa ? { programa: cuenta.programa } : {}),
       ...(cuenta.semestre != null ? { semestre: cuenta.semestre } : {}),
       ...(cuenta.dependencia ? { dependencia: cuenta.dependencia } : {}),
+      // Revisión de la 1.1: la autorización se acepta al registrarse y queda en el usuario, así
+      // que al iniciar sesión no se vuelve a pedir.
+      aceptacionDatos: nuevaAceptacion(),
     };
     agregarAlDirectorio(nuevo);
     contrasenasRegistradas.set(correo, cuenta.contrasena);
@@ -176,5 +185,25 @@ export async function registrarCuentaApi(cuenta: NuevaCuenta): Promise<void> {
       department: cuenta.dependencia ?? '',
       accept_privacy: cuenta.aceptaPrivacidad,
     }),
+  });
+}
+
+/**
+ * Guarda que la persona aceptó la autorización de datos vigente (revisión de la 1.1). Solo se
+ * llama cuando la Universidad publica otra política: la primera se acepta al registrarse. Con la
+ * API real es `POST /me/privacy-acceptance/` del Backend, con la versión de la política.
+ */
+export async function aceptarPoliticaDatos(
+  usuarioId: string,
+  aceptacion: AceptacionPolitica,
+): Promise<void> {
+  if (USAR_MOCKS) {
+    guardarAceptacionEnDirectorio(usuarioId, aceptacion);
+    await simularRed(null);
+    return;
+  }
+  await peticion<unknown>('/me/privacy-acceptance/', {
+    method: 'POST',
+    body: JSON.stringify({ version: aceptacion.version }),
   });
 }

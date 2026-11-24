@@ -2,9 +2,9 @@
  * Sesión del usuario: quién es, su rol y su token.
  * Se guarda cifrada en el celular con expo-secure-store, así que sobrevive a cerrar la app.
  *
- * También guarda qué autorización de tratamiento de datos aceptó cada persona (#225), con la
- * versión de la política y la fecha. Se guarda por usuario y no se borra al cerrar sesión: quien
- * ya aceptó el Acuerdo 019 no la vuelve a ver, y otra cuenta en el mismo celular sí la ve.
+ * La autorización de tratamiento de datos (#225) es un dato del usuario (`aceptacionDatos`): se
+ * acepta al registrarse. Aquí se guarda además la que se acepta en el celular cuando la
+ * Universidad publica otra política, por usuario y sin borrarla al cerrar sesión.
  *
  * El inicio de sesión real (HU-05) llama a iniciarSesion() con el usuario y el token
  * que devuelva el Backend. Mientras tanto, la pantalla de login usa usuarios de prueba.
@@ -48,7 +48,11 @@ export const useSesion = create<EstadoSesion>()(
       aceptarTratamientoDatos: () => {
         const { usuario, aceptaciones } = get();
         if (!usuario) return;
-        set({ aceptaciones: { ...aceptaciones, [usuario.id]: nuevaAceptacion() } });
+        const aceptacion = nuevaAceptacion();
+        set({
+          aceptaciones: { ...aceptaciones, [usuario.id]: aceptacion },
+          usuario: { ...usuario, aceptacionDatos: aceptacion },
+        });
       },
       marcarHidratada: () => set({ hidratada: true }),
     }),

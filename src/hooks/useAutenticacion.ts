@@ -17,6 +17,7 @@ import {
   type CredencialesLogin,
   type NuevaCuenta,
 } from '@/api/autenticacion';
+import { aceptarPoliticaDatos } from '@/api/autenticacion';
 import { ErrorApi } from '@/api/cliente';
 import { useSesion } from '@/store/sesion';
 import type { CampoRegistro } from '@/utils/registro';
@@ -50,6 +51,21 @@ export function useRegistrarCuenta() {
       const sesion = useSesion.getState();
       sesion.iniciarSesion(usuario, token);
       sesion.aceptarTratamientoDatos();
+    },
+  });
+}
+
+/**
+ * Acepta la autorización de datos vigente (revisión de la 1.1): la guarda en la sesión al instante
+ * (el diálogo se cierra) y en el usuario, en el mock o en el Backend. Solo hace falta cuando la
+ * Universidad publica otra política; la primera se acepta al registrarse.
+ */
+export function useAceptarTratamientoDatos() {
+  return useMutation({
+    mutationFn: async () => {
+      useSesion.getState().aceptarTratamientoDatos();
+      const { usuario } = useSesion.getState();
+      if (usuario?.aceptacionDatos) await aceptarPoliticaDatos(usuario.id, usuario.aceptacionDatos);
     },
   });
 }

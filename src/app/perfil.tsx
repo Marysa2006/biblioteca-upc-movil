@@ -27,7 +27,7 @@ import {
   NIT_UNIVERSIDAD,
 } from '@/utils/constantes';
 import { mensajeErrorGuardar } from '@/utils/errores';
-import { aceptoPoliticaVigente, fechaDeAceptacion } from '@/utils/privacidad';
+import { aceptacionVigente, fechaDeAceptacion } from '@/utils/privacidad';
 import { describirRoles } from '@/utils/roles';
 
 /** Tiempo que se ve la confirmación al guardar. */
@@ -80,9 +80,7 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
   const [editando, setEditando] = useState(false);
   const [guardado, setGuardado] = useState(false);
   // La autorización vigente de esta persona, para mostrar cuándo la aceptó (#225).
-  const aceptacion = aceptoPoliticaVigente(aceptaciones, usuario.id)
-    ? aceptaciones[usuario.id]
-    : null;
+  const aceptacion = aceptacionVigente(usuario, aceptaciones);
 
   // El Snackbar ya trae accessibilityLiveRegion (Android); en iOS se anuncia aquí.
   useEffect(() => {
@@ -167,7 +165,7 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
             {`Aceptaste esta autorización el ${fechaDeAceptacion(aceptacion.fecha)}.`}
           </Text>
         ) : null}
-        <EnlacePoliticaDatos conPqrs />
+        <EnlacePoliticaDatos />
       </View>
 
       <Button

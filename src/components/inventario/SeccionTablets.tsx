@@ -4,18 +4,27 @@
  *
  * Como el mockup de Inventario: resumen de la flota, búsqueda por código o serial, chips de
  * filtro por estado y una tarjeta por tablet. Registrar y editar van en /administracion/tablet
- * (CA1, CA2); el cambio de estado rápido está en la tarjeta (CA3).
+ * (CA1, CA2); el cambio de estado rápido está en el menú ⋮ de la tarjeta (CA3).
+ * Revisión de la 1.1: "Registrar tablet" es el botón flotante de la pantalla
+ * (BotonRegistrarTablet), como "Nuevo espacio", y ya no un botón largo en la lista.
  * El encabezado y los chips de filtro la separan de las pestañas de Inventario.
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Portal, Searchbar, Snackbar } from 'react-native-paper';
+import { Portal, Searchbar, Snackbar } from 'react-native-paper';
 
 import { EncabezadoSeccion } from '@/components/inventario/EncabezadoSeccion';
 import { ResumenFlota } from '@/components/inventario/ResumenFlota';
 import { TarjetaTablet } from '@/components/inventario/TarjetaTablet';
-import { ChipsFiltro, EstadoCarga, EstadoError, EstadoVacio, type OpcionFiltro } from '@/components/ui';
+import {
+  BotonFlotante,
+  ChipsFiltro,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  type OpcionFiltro,
+} from '@/components/ui';
 import { useCambiarEstadoTablet, useTablets } from '@/hooks/useTablets';
 import { colores, espacio } from '@/theme';
 import type { EstadoTablet, Tablet } from '@/types';
@@ -56,29 +65,13 @@ export function SeccionTablets() {
       },
     );
 
-  const registrar = (
-    <Button
-      mode="contained"
-      icon="plus-circle-outline"
-      onPress={() => router.push('/administracion/tablet')}
-      contentStyle={estilos.contenidoBoton}
-      accessibilityRole="button"
-      accessibilityLabel="Registrar tablet"
-    >
-      Registrar tablet
-    </Button>
-  );
-
   if (isPending) return <EstadoCarga mensaje="Cargando el inventario…" />;
   if (isError) {
     return <EstadoError mensaje="No pudimos cargar el inventario de tablets." onReintentar={() => refetch()} />;
   }
   if (data.length === 0) {
     return (
-      <View style={estilos.seccion}>
-        {registrar}
-        <EstadoVacio mensaje="Todavía no hay tablets. Registra la primera." />
-      </View>
+      <EstadoVacio mensaje="Todavía no hay tablets. Toca Registrar tablet para agregar la primera." />
     );
   }
 
@@ -101,7 +94,6 @@ export function SeccionTablets() {
         descripcion="La flota de la biblioteca. Busca una tablet o filtra por estado."
       />
       <ResumenFlota resumen={resumen} />
-      {registrar}
       <Searchbar
         placeholder="Buscar por código, serial o modelo"
         value={busqueda}
@@ -148,5 +140,16 @@ export function SeccionTablets() {
 const estilos = StyleSheet.create({
   seccion: { gap: espacio.s },
   buscador: { backgroundColor: colores.superficie },
-  contenidoBoton: { paddingVertical: espacio.xs },
 });
+
+/** Botón flotante "Registrar tablet" de Inventario (revisión de la 1.1); se encoge al deslizar. */
+export function BotonRegistrarTablet({ extendido }: { extendido: boolean }) {
+  return (
+    <BotonFlotante
+      icono="plus"
+      texto="Registrar tablet"
+      onPress={() => router.push('/administracion/tablet')}
+      extendido={extendido}
+    />
+  );
+}

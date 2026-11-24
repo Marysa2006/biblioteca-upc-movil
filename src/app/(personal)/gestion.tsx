@@ -7,10 +7,11 @@
  * - Préstamos (`tablets`): la entrega y la devolución de tablets (HU-23), y los vencidos (HU-24)
  *   como un grupo más desde el #310. Con vencidos, la pestaña lleva cuántos y la alerta.
  *   Llegó de Inventario en el #162; sus componentes siguen en src/components/inventario.
- * - Espacios (`espacios`): la configuración de los espacios y sus bloqueos (HU-16 y HU-20).
- * - Portal (`contenidos` o `parametros`): contenidos (HU-04) y parámetros generales (HU-28).
+ * - Portal (`contenidos`, `parametros`, `novedades`, `fotos` o `espacios`): en tres grupos,
+ *   Publicaciones, Servicios (temas, líneas y, desde la revisión de la 1.1, Espacios, que antes
+ *   era una sección de Gestión) y Configuración. Ver MenuAdministracion.
  * Una sección puede traer un botón flotante (Solicitudes: "Reservar para un tercero";
- * Espacios: "Nuevo espacio").
+ * Préstamos: "Escanear tablet").
  * El nombre y los permisos de cada sección están en src/utils/gestion.ts.
  * El selector aparece solo con dos secciones o más. Esta pantalla solo compone: el contenido
  * de cada sección se cambia en su componente, no aquí.
@@ -27,7 +28,6 @@ import {
   BotonEscanearTablet,
   SeccionPrestamos,
 } from '@/components/inventario/SeccionPrestamos';
-import { BotonNuevoEspacio, SeccionEspacios } from '@/components/gestion/SeccionEspacios';
 import { SeccionPortal } from '@/components/gestion/SeccionPortal';
 import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
@@ -57,7 +57,6 @@ const COMPONENTES: Record<ValorSeccion, Pick<Seccion, 'Componente' | 'Flotante'>
   solicitudes: { Componente: SeccionSolicitudes, Flotante: BotonReservaTercero },
   agenda: { Componente: SeccionAgenda },
   prestamos: { Componente: SeccionPrestamos, Flotante: BotonEscanearTablet },
-  espacios: { Componente: SeccionEspacios, Flotante: BotonNuevoEspacio },
   portal: { Componente: SeccionPortal },
 };
 
@@ -100,7 +99,7 @@ export default function Gestion() {
   return (
     <Pantalla
       titulo="Gestión"
-      subtitulo="Solicitudes, préstamos, espacios y administración del portal"
+      subtitulo="Solicitudes, préstamos y administración del portal"
       flotante={Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null}
     >
       {activa && visibles.length > 1 ? (

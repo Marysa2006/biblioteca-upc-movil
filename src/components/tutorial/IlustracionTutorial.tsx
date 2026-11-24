@@ -193,8 +193,7 @@ const SECCION_ILUSTRADA: Record<ValorSeccionGestion, { icono: string; linea: str
   },
   agenda: { icono: 'calendar-clock', linea: 'Tus asesorías por día, semana y mes' },
   prestamos: { icono: 'tablet', linea: 'Entregar y recibir tablets, y ver las vencidas' },
-  espacios: { icono: 'office-building-outline', linea: 'Crear espacios y bloquearlos' },
-  portal: { icono: 'web', linea: 'Avisos, servicios y parámetros' },
+  portal: { icono: 'web', linea: 'Publicaciones, servicios (con los espacios) y parámetros' },
 };
 
 /** Las secciones de Gestión que la persona tiene, cada una con su línea. */
