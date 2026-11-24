@@ -101,6 +101,70 @@ export function espacioDesdeBackend(espacio: EspacioBackend): Espacio {
   };
 }
 
+export type HorarioAdminBackend = HorarioEspacioBackend & { id: number; is_active: boolean };
+export type EspacioAdminBackend = Omit<EspacioBackend, 'schedules'> & {
+  status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE';
+  schedules: HorarioAdminBackend[];
+};
+
+export function espacioAdminDesdeBackend(espacio: EspacioAdminBackend): Espacio {
+  return {
+    ...espacioDesdeBackend({
+      ...espacio,
+      schedules: espacio.schedules.filter((horario) => horario.is_active),
+    }),
+    activo: espacio.status === 'ACTIVE',
+  };
+}
+
+type HorarioEscritura = Pick<HorarioEspacioBackend, 'day_of_week' | 'start_time' | 'end_time'>;
+
+export function horariosHaciaBackend(texto: string): HorarioEscritura[] | undefined {
+  const dias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+  const normalizado = texto.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').trim();
+  if (!normalizado) return [];
+  const horarios: HorarioEscritura[] = [];
+  for (const grupo of normalizado.split(/\s*[·;\n]\s*/)) {
+    const partes = /^([a-z]+)(?:\s+a\s+([a-z]+))?\s*[:,]\s*(.+)$/.exec(grupo);
+    if (!partes) return undefined;
+    const inicio = dias.indexOf(partes[1]);
+    const fin = dias.indexOf(partes[2] ?? partes[1]);
+    if (inicio < 0 || fin < inicio) return undefined;
+    for (const tramo of partes[3].split(/\s+y\s+/)) {
+      const horas = /^((?:[01]\d|2[0-3]):[0-5]\d)\s*(?:[–-]|a)\s*((?:[01]\d|2[0-3]):[0-5]\d)$/.exec(tramo);
+      if (!horas || horas[1] >= horas[2]) return undefined;
+      for (let dia = inicio; dia <= fin; dia += 1) {
+        if (horarios.some((h) => h.day_of_week === dia && h.start_time < horas[2] && horas[1] < h.end_time)) {
+          return undefined;
+        }
+        horarios.push({ day_of_week: dia, start_time: horas[1], end_time: horas[2] });
+      }
+    }
+  }
+  return horarios;
+}
+
+export async function cuerpoEspacio(datos: Omit<Espacio, 'id'>, anterior?: EspacioAdminBackend) {
+  const campos = { name: datos.nombre, description: datos.descripcion, capacity: datos.capacidad };
+  const foto = datos.foto;
+  if (!foto || foto === anterior?.photo || /^https?:/.test(foto)) {
+    return JSON.stringify(!foto && anterior?.photo ? { ...campos, photo: null } : campos);
+  }
+  const cuerpo = new FormData();
+  for (const [campo, valor] of Object.entries(campos)) cuerpo.append(campo, String(valor));
+  if (/^(blob|data):/.test(foto)) {
+    const archivo = await (await fetch(foto)).blob();
+    const extension = archivo.type.split('/')[1] || 'jpg';
+    cuerpo.append('photo', archivo, `espacio.${extension}`);
+  } else {
+    const extension = /\.(png|webp)(?:$|\?)/i.exec(foto)?.[1].toLowerCase() ?? 'jpeg';
+    cuerpo.append('photo', {
+      uri: foto, name: `espacio.${extension}`, type: `image/${extension}`,
+    } as unknown as Blob);
+  }
+  return cuerpo;
+}
+
 type Tramo = { inicio: number; fin: number; estado: DiaBackend['slots'][number]['state'] };
 
 /** Los tramos abiertos del día: los del Backend que se tocan, juntos (08:00–12:00, 14:00–18:00). */

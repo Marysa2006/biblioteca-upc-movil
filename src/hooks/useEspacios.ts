@@ -61,7 +61,8 @@ export function useCrearEspacio() {
 export function useEditarEspacio() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, datos }: { id: string; datos: DatosEspacio }) => editarEspacio(id, datos),
+    mutationFn: ({ id, datos, confirmar }: { id: string; datos: DatosEspacio; confirmar?: boolean }) =>
+      editarEspacio(id, datos, confirmar),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.espacios }),
   });
 }
@@ -69,8 +70,8 @@ export function useEditarEspacio() {
 export function useCambiarEstadoEspacio() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, activo }: { id: string; activo: boolean }) =>
-      cambiarEstadoEspacio(id, activo),
+    mutationFn: ({ id, activo, confirmar }: { id: string; activo: boolean; confirmar?: boolean }) =>
+      cambiarEstadoEspacio(id, activo, confirmar),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: claves.espacios });
       queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });

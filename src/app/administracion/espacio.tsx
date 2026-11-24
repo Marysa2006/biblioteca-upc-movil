@@ -101,7 +101,7 @@ function Formulario({ id }: { id?: string }) {
         reservas={reservasFuturas}
         guardando={editar.isPending}
         mensajeError={pendientes ? mensajeError : null}
-        onConfirmar={() => pendientes && editar.mutate({ id, datos: pendientes }, volver)}
+        onConfirmar={() => pendientes && editar.mutate({ id, datos: pendientes, confirmar: true }, volver)}
         onCerrar={() => setPendientes(null)}
       />
     </>

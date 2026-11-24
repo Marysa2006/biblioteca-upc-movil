@@ -74,7 +74,7 @@ export function SeccionEspacios() {
     if (!porDesactivar) return;
     const actual = porDesactivar;
     cambiarEstado.mutate(
-      { id: actual.id, activo: false },
+      { id: actual.id, activo: false, confirmar: true },
       {
         onSuccess: () => {
           setPorDesactivar(null);
