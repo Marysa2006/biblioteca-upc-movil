@@ -42,7 +42,7 @@ import {
 } from '@/hooks/useAsesorias';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
-import { useEquipo } from '@/hooks/useUsuarios';
+import { useFacilitadores } from '@/hooks/useUsuarios';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import { puedeRegistrarResultado, type FormularioAprobacionCita } from '@/utils/agenda';
 import { fechaCompleta } from '@/utils/calendario';
@@ -79,7 +79,7 @@ function Detalle() {
   const [preguntarRechazo, setPreguntarRechazo] = useState(false);
   const [preguntarAprobacion, setPreguntarAprobacion] = useState(false);
   // Para el diálogo de aprobar (#250): quién puede atenderla y qué días hay atención.
-  const equipo = useEquipo();
+  const equipo = useFacilitadores(esAdministrador);
   const { data: parametros } = useParametros();
   const [aviso, setAviso] = useState<string | null>(null);
 

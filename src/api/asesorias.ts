@@ -33,13 +33,18 @@ import { tienePermiso } from '@/utils/roles';
 import { useSesion } from '@/store/sesion';
 
 import {
+  citaAgendaDesdeBackend,
   citaDesdeBackend,
+  citaGestionDesdeBackend,
   citaHaciaBackend,
   temaDesdeBackend,
   temaHaciaBackend,
   type CitaBackend,
+  type CitaGestionBackend,
+  type DetalleAgendaBackend,
   type TemaBackend,
 } from './backend/asesorias';
+import { usuarioDirectorioDesdeBackend, type UsuarioBackend } from './backend/usuarios';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import {
   CITAS_ASESORIA,
@@ -75,6 +80,47 @@ export type ResultadoJornada = {
 
 /** request_id de la app → id de la cita en el Backend, para cancelar, reprogramar y calificar. */
 const idsCita = new Map<string, number>();
+const RUTA_GESTION = '/advisories/manage/appointments/';
+const RUTA_AGENDA = '/advisories/agenda/';
+
+async function consultarGestion(consulta = '') {
+  const [lista, parametros] = await Promise.all([
+    peticionTodas<CitaGestionBackend, CitaGestionBackend>(`${RUTA_GESTION}${consulta}`, (cita) => cita),
+    obtenerParametros(),
+  ]);
+  return lista.map((cita) => {
+    idsCita.set(String(cita.request_id), cita.id);
+    return citaGestionDesdeBackend(cita, parametros.duracionAsesoriaMinutos);
+  });
+}
+
+export async function obtenerFacilitadores(): Promise<Usuario[]> {
+  if (!usaApi('asesorias')) return USUARIOS_DIRECTORIO.filter((u) => tienePermiso(u, 'asesorias'));
+  const lista = await peticionTodas<UsuarioBackend, UsuarioBackend>(
+    '/users/?role=facilitador', (usuario) => usuario,
+  );
+  const facilitadores = lista.filter((usuario) => usuario.is_active !== false).map(usuarioDirectorioDesdeBackend);
+  const sesion = useSesion.getState().usuario;
+  if (sesion && tienePermiso(sesion, 'asesorias') && !facilitadores.some((u) => u.id === sesion.id)) {
+    facilitadores.unshift(sesion);
+  }
+  return facilitadores;
+}
+
+async function idGestion(id: string) {
+  if (!idsCita.has(id)) await consultarGestion();
+  const encontrado = idsCita.get(id);
+  if (encontrado === undefined) throw new ErrorApi(404, 'La asesoría no existe.');
+  return encontrado;
+}
+
+async function decidirCitaBackend(idBackend: number, accion: string, datos: object) {
+  const { duracionAsesoriaMinutos } = await obtenerParametros();
+  const cita = await peticion<CitaGestionBackend>(`${RUTA_GESTION}${idBackend}/${accion}/`, {
+    method: 'POST', body: JSON.stringify(datos),
+  });
+  return citaGestionDesdeBackend(cita, duracionAsesoriaMinutos);
+}
 
 /** Quien pide, para armar la cita: el usuario de la sesión. */
 function solicitanteDeSesion() {
@@ -657,6 +703,17 @@ export async function aprobarCitaConDatos(
   id: string,
   aprobacion: AprobacionCita,
 ): Promise<Cita> {
+  if (usaApi('asesorias')) {
+    const idBackend = await idGestion(id);
+    const cita = aprobacion.fecha && aprobacion.hora ? undefined :
+      await peticion<CitaGestionBackend>(`${RUTA_GESTION}${idBackend}/`);
+    return decidirCitaBackend(idBackend, 'approve', {
+      scheduled_date: aprobacion.fecha ?? cita?.desired_date,
+      start_time: aprobacion.hora ?? cita?.desired_time,
+      facilitator: aprobacion.facilitadorId || undefined,
+      virtual_link: aprobacion.enlaceVirtual?.trim(),
+    });
+  }
   if (!USAR_MOCKS) {
     return peticion<Cita>(`/asesorias/citas/${id}/aprobar/`, {
       method: 'POST',
@@ -976,6 +1033,7 @@ function citaDecidible(usuario: Usuario, id: string): Cita {
  * notificación, evento del historial y registro de uso.
  */
 export async function aprobarCita(usuario: Usuario, id: string): Promise<Cita> {
+  if (usaApi('asesorias')) return aprobarCitaConDatos(usuario, id, { facilitadorId: usuario.id });
   if (USAR_MOCKS) {
     const cita = citaDecidible(usuario, id);
     const aprobada: Cita = { ...cita, estado: 'aprobada', motivo: undefined };
@@ -1009,6 +1067,9 @@ export async function aprobarCita(usuario: Usuario, id: string): Promise<Cita> {
  * y la persona ve el motivo en el detalle.
  */
 export async function rechazarCita(usuario: Usuario, id: string, motivo: string): Promise<Cita> {
+  if (usaApi('asesorias')) {
+    return decidirCitaBackend(await idGestion(id), 'reject', { reason: motivo.trim() });
+  }
   if (USAR_MOCKS) {
     // Primero quién puede decidir y si sigue pendiente: un rechazo sin permiso es 403 aunque
     // el motivo falte, para no revelar el estado de una cita ajena.
@@ -1060,6 +1121,63 @@ export type CitaAgenda = Cita & {
   solicitantePrograma?: string;
 };
 
+export async function cancelarCitaPersonal(id: string, motivo: string): Promise<Cita> {
+  if (!usaApi('asesorias')) {
+    const usuario = useSesion.getState().usuario;
+    if (!usuario) throw new ErrorApi(401, 'Inicia sesión para cancelar la asesoría.');
+    return cancelarCita(usuario, id);
+  }
+  return decidirCitaBackend(await idGestion(id), 'cancel', { reason: motivo.trim() });
+}
+
+async function agendaBackend(facilitadorId: string, desde: string, hasta: string) {
+  const rango = `from=${desde}&to=${hasta}`;
+  if (facilitadorId === 'todas') {
+    const lista = await consultarGestion(`?${rango}`);
+    const sesion = useSesion.getState().usuario;
+    return ordenarPorFecha(lista.map((cita) => ({
+      ...cita,
+      ...(sesion && (cita.facilitador === sesion.nombre || cita.facilitador === sesion.correo)
+        ? { facilitadorId: sesion.id } : {}),
+    })));
+  }
+
+  const fechas: string[] = [];
+  const fecha = new Date(`${desde}T00:00:00Z`);
+  while (fecha.toISOString().slice(0, 10) <= hasta) {
+    fechas.push(fecha.toISOString().slice(0, 10));
+    fecha.setUTCDate(fecha.getUTCDate() + (fecha.getUTCDay() === 0 ? 1 : 8 - fecha.getUTCDay()));
+  }
+  const [paginas, pendientes, parametros] = await Promise.all([
+    Promise.all(fechas.map((date) => peticion<{ appointments: { id: number; date: string }[] }>(
+      `${RUTA_AGENDA}?view=week&date=${date}`,
+    ))),
+    consultarGestion(`?${rango}&status=PENDING`),
+    obtenerParametros(),
+  ]);
+  const resumenes = paginas.flatMap(({ appointments }) => appointments)
+    .filter((cita) => cita.date >= desde && cita.date <= hasta);
+  const citas = await Promise.all(resumenes.map(async ({ id }) => {
+    const detalle = await peticion<DetalleAgendaBackend>(`${RUTA_AGENDA}appointments/${id}/`);
+    idsCita.set(String(detalle.request_id), detalle.id);
+    return {
+      ...citaAgendaDesdeBackend(detalle, parametros.duracionAsesoriaMinutos),
+      facilitadorId,
+    };
+  }));
+  return ordenarPorFecha([...pendientes, ...citas]);
+}
+
+async function registrarAgendaBackend(citaId: string, facilitadorId: string, attended: boolean, result?: string) {
+  const id = await idGestion(citaId);
+  const { duracionAsesoriaMinutos } = await obtenerParametros();
+  const detalle = await peticion<DetalleAgendaBackend>(`${RUTA_AGENDA}appointments/${id}/record/`, {
+    method: 'POST',
+    body: JSON.stringify({ attended, result }),
+  });
+  return { ...citaAgendaDesdeBackend(detalle, duracionAsesoriaMinutos), facilitadorId };
+}
+
 /** Copia de la cita con el tipo y el programa del solicitante, si está en el directorio. */
 function aCitaAgenda(cita: Cita): CitaAgenda {
   const solicitante = USUARIOS_DIRECTORIO.find((usuario) => usuario.id === cita.solicitanteId);
@@ -1102,6 +1220,7 @@ export function obtenerAgenda(
   if (!esFechaValida(desde) || !esFechaValida(hasta)) {
     return Promise.reject(new ErrorApi(400, 'Revisa el rango de fechas.'));
   }
+  if (usaApi('asesorias')) return agendaBackend(facilitadorId, desde, hasta);
   if (USAR_MOCKS) {
     const lista = citas.filter(
       (cita) =>
@@ -1124,6 +1243,7 @@ export async function registrarResultado(
   citaId: string,
   resultado: string,
 ): Promise<CitaAgenda> {
+  if (usaApi('asesorias')) return registrarAgendaBackend(citaId, usuario.id, true, resultado.trim());
   if (USAR_MOCKS) {
     const cita = citaAtendible(usuario.id, citaId, 'el resultado');
     const texto = resultado?.trim() ?? '';
@@ -1167,6 +1287,7 @@ export async function registrarResultado(
  * `asistio: false`, y la pantalla muestra "No asistió".
  */
 export async function registrarInasistencia(usuario: Usuario, citaId: string): Promise<CitaAgenda> {
+  if (usaApi('asesorias')) return registrarAgendaBackend(citaId, usuario.id, false);
   if (USAR_MOCKS) {
     const cita = citaAtendible(usuario.id, citaId, 'la inasistencia');
     const actualizada: Cita = { ...cita, estado: 'realizada', asistio: false, resultado: undefined };

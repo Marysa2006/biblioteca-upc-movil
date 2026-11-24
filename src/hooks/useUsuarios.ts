@@ -9,6 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
+import { obtenerFacilitadores } from '@/api/asesorias';
 import {
   actualizarPermisosExtra,
   actualizarRolesPersonal,
@@ -32,6 +33,14 @@ export function useEquipo() {
   return useQuery({
     queryKey: claves.equipo,
     queryFn: obtenerEquipo,
+  });
+}
+
+export function useFacilitadores(habilitado: boolean) {
+  return useQuery({
+    queryKey: [...claves.equipo, 'facilitadores'],
+    queryFn: obtenerFacilitadores,
+    enabled: habilitado,
   });
 }
 
