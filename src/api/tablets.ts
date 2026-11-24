@@ -51,7 +51,17 @@ import {
   ultimoDiaTablet,
 } from '@/utils/tablets';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { useSesion } from '@/store/sesion';
+
+import {
+  alternativasTabletDesdeBackend,
+  franjasTabletsDesdeBackend,
+  prestamoDesdeBackend,
+  prestamoHaciaBackend,
+  type DisponibilidadTabletsBackend,
+  type PrestamoBackend,
+} from './backend/tablets';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { CONDICIONES_TABLET, PRESTAMOS_TABLET, TABLETS } from './mocks/tablets';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 import { firmaEnDirectorio } from './usuarios';
@@ -737,9 +747,28 @@ function ordenarPrestamos(lista: Prestamo[]): Prestamo[] {
  * otras (CA2).
  */
 export async function obtenerDisponibilidadTablets(fecha: string): Promise<DiaTablets> {
-  if (USAR_MOCKS) liberarNoRecogidos();
+  if (!usaApi('tablets') && USAR_MOCKS) liberarNoRecogidos();
   if (!esFechaValida(fecha)) {
     throw new ErrorApi(400, 'La fecha no es válida.');
+  }
+  if (usaApi('tablets')) {
+    // Pide sesión. Sin franjas, la Biblioteca no presta ese día: el motivo sale de los parámetros.
+    const [dia, parametros] = await Promise.all([
+      peticion<DisponibilidadTabletsBackend>(
+        `/tablets/availability/?date=${encodeURIComponent(fecha)}&hours=1`,
+      ),
+      obtenerParametros(),
+    ]);
+    if (dia.slots.length === 0) {
+      return {
+        fecha,
+        habil: false,
+        motivo: motivoNoDisponible(fecha, parametros) ?? dia.message ?? undefined,
+        franjas: [],
+        sugerencias: [],
+      };
+    }
+    return { fecha, habil: true, franjas: franjasTabletsDesdeBackend(dia), sugerencias: [] };
   }
   if (!USAR_MOCKS) {
     // Ruta provisional: confirmar con Backend.
@@ -765,7 +794,24 @@ export async function obtenerDisponibilidadTablets(fecha: string): Promise<DiaTa
 }
 
 /** Condiciones de uso del préstamo (HU-22, CA3). Texto provisional de la biblioteca. */
-export function obtenerCondicionesTablet(): Promise<CondicionesTablet> {
+export async function obtenerCondicionesTablet(): Promise<CondicionesTablet> {
+  if (usaApi('tablets')) {
+    // La página `condiciones-tablets` del portal; mientras la biblioteca no la publica responde
+    // 404 y se muestran las condiciones de siempre.
+    try {
+      const pagina = await peticion<{ title: string; body: string; published_at: string | null }>(
+        '/portal/contents/condiciones-tablets/',
+      );
+      return {
+        titulo: pagina.title,
+        texto: pagina.body,
+        actualizada: (pagina.published_at ?? CONDICIONES_TABLET.actualizada).slice(0, 10),
+      };
+    } catch (error) {
+      if (error instanceof ErrorApi && error.estado === 404) return { ...CONDICIONES_TABLET };
+      throw error;
+    }
+  }
   if (USAR_MOCKS) {
     return simularRed({ ...CONDICIONES_TABLET });
   }
@@ -785,8 +831,28 @@ export async function solicitarPrestamo(
   usuario: Usuario,
   datos: FormularioPrestamo,
 ): Promise<Prestamo> {
+  if (usaApi('tablets')) {
+    // El solicitante sale del token. El Backend valida el horario, las horas y los 7 días; si no
+    // hay tablet libre (409), trae los siguientes horarios con tablets.
+    const parametros = await obtenerParametros();
+    const horas = datos.horas ?? horasPorDefecto(parametros);
+    try {
+      const creado = await peticion<PrestamoBackend>('/tablets/loans/', {
+        method: 'POST',
+        body: JSON.stringify(prestamoHaciaBackend({ ...datos, horas })),
+      });
+      return prestamoDesdeBackend(creado, { id: usuario.id, nombre: usuario.nombre });
+    } catch (error) {
+      if (error instanceof ErrorApi && error.estado === 409) {
+        const tramos =
+          (error.cuerpo as { next_slots?: { date: string; start: string; end: string }[] })
+            ?.next_slots ?? [];
+        throw new ErrorPrestamo(error.message, alternativasTabletDesdeBackend(tramos));
+      }
+      throw error;
+    }
+  }
   if (!USAR_MOCKS) {
-    // Ruta provisional: confirmar con Backend. El solicitante sale del token.
     return peticion<Prestamo>('/prestamos/', { method: 'POST', body: JSON.stringify(datos) });
   }
   // #310: los apartados que no se recogieron ya no ocupan su cupo.
@@ -921,7 +987,15 @@ export async function solicitarPrestamo(
 }
 
 /** Préstamos del usuario de la sesión, por fecha y hora, en todos sus estados (HU-22 y HU-30). */
-export function obtenerMisPrestamos(usuarioId: string): Promise<Prestamo[]> {
+export async function obtenerMisPrestamos(usuarioId: string): Promise<Prestamo[]> {
+  if (usaApi('tablets')) {
+    const solicitante = { id: usuarioId, nombre: useSesion.getState().usuario?.nombre ?? '' };
+    const lista = await peticionTodas<PrestamoBackend, PrestamoBackend>(
+      '/tablets/loans/',
+      (prestamo) => prestamo,
+    );
+    return ordenarPrestamos(lista.map((prestamo) => prestamoDesdeBackend(prestamo, solicitante)));
+  }
   if (USAR_MOCKS) liberarNoRecogidos();
   if (USAR_MOCKS) {
     const mios = prestamos.filter((prestamo) => prestamo.solicitanteId === usuarioId);
