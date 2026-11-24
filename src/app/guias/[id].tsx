@@ -62,7 +62,7 @@ export default function LeerGuia() {
           {guia.data.descripcion}
         </Text>
         <Text variant="bodySmall" style={estilos.secundario}>
-          {`Actualizada el ${fechaLegible(guia.data.actualizada)}`}
+          {`Actualizada el ${fechaLegible(guia.data.actualizada.slice(0, 10))}`}
         </Text>
 
         {sinAbrir ? (
@@ -110,7 +110,7 @@ export default function LeerGuia() {
         </View>
 
         <Text variant="bodySmall" style={estilos.secundario}>
-          {`Actualizada el ${fechaLegible(datos.actualizada)} · ${datos.descripcion}`}
+          {`Actualizada el ${fechaLegible(datos.actualizada.slice(0, 10))} · ${datos.descripcion}`}
         </Text>
 
         {archivo ? (

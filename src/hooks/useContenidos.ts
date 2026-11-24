@@ -14,6 +14,7 @@ import {
   crearContenido,
   editarContenido,
   obtenerContenidos,
+  obtenerContenidosPublicos,
   reordenarContenidos,
   type DatosContenido,
 } from '@/api/contenidos';
@@ -25,6 +26,13 @@ export function useContenidos() {
   return useQuery({
     queryKey: CLAVE,
     queryFn: obtenerContenidos,
+  });
+}
+
+export function useContenidosPublicos() {
+  return useQuery({
+    queryKey: claves.contenidosPublicos,
+    queryFn: obtenerContenidosPublicos,
   });
 }
 

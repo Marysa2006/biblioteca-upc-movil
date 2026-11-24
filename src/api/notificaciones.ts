@@ -10,7 +10,8 @@
  */
 import type { Notificacion } from '@/types';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { notificacionDesdeBackend, type NotificacionBackend } from './backend/notificaciones';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { NOTIFICACIONES } from './mocks/notificaciones';
 
 /** Copia mutable: con mocks, los avisos creados se ven durante la sesión de la app. */
@@ -44,7 +45,7 @@ export function crearNotificacion(datos: DatosNotificacion): Notificacion {
  * Con la API real, el usuario sale del token.
  */
 export function obtenerNotificaciones(usuarioId: string): Promise<Notificacion[]> {
-  if (USAR_MOCKS) {
+  if (!usaApi('notificaciones')) {
     // Al revés antes de ordenar: si dos avisos tienen el mismo minuto, va primero el último creado.
     const lista = [...notificaciones]
       .reverse()
@@ -53,13 +54,14 @@ export function obtenerNotificaciones(usuarioId: string): Promise<Notificacion[]
       .map((notificacion) => ({ ...notificacion }));
     return simularRed(lista);
   }
-  // Ruta provisional: confirmar con Backend.
-  return peticion<Notificacion[]>('/notificaciones/');
+  return peticionTodas<NotificacionBackend, Notificacion>('/notifications/me/', (aviso) =>
+    notificacionDesdeBackend(aviso, usuarioId),
+  );
 }
 
 /** Marca como leída una notificación del usuario (HU-27). */
 export function marcarLeida(usuarioId: string, id: string): Promise<Notificacion> {
-  if (USAR_MOCKS) {
+  if (!usaApi('notificaciones')) {
     const indice = notificaciones.findIndex(
       (notificacion) => notificacion.id === id && notificacion.usuarioId === usuarioId,
     );
@@ -71,6 +73,7 @@ export function marcarLeida(usuarioId: string, id: string): Promise<Notificacion
     );
     return simularRed({ ...notificaciones[indice] });
   }
-  // Ruta provisional: confirmar con Backend.
-  return peticion<Notificacion>(`/notificaciones/${id}/leida/`, { method: 'PATCH' });
+  return peticion<NotificacionBackend>(`/notifications/me/${encodeURIComponent(id)}/read/`, {
+    method: 'POST',
+  }).then((aviso) => notificacionDesdeBackend(aviso, usuarioId));
 }

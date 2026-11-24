@@ -71,7 +71,7 @@ export function TarjetaGuiaAdmin({ guia, ocupado, onEditar, onCambiarPublicacion
           </Text>
         ) : null}
         <Text variant="bodySmall" style={estilos.secundario}>
-          {`Actualizada el ${fechaLegible(guia.actualizada)}`}
+          {`Actualizada el ${fechaLegible(guia.actualizada.slice(0, 10))}`}
         </Text>
       </View>
     </View>

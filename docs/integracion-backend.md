@@ -241,6 +241,12 @@ provisionales en español. Se conecta **un módulo a la vez**, con su PR y su pr
 | 5 | Estadísticas y asistencia (#231) | `estadisticas`, `asistencia` |
 | 6 | APK contra el servidor con HTTPS y pruebas de aceptación | todos |
 
+En la fase 2 ya se pueden habilitar las lecturas públicas de avisos y recursos con `EXPO_PUBLIC_API_MODULOS=sesion,contenidos,recursos` y `EXPO_PUBLIC_USAR_MOCKS=true`. `contenidos` activa la lectura de Inicio, solo avisos y noticias: las páginas (`PAGE`, como `autoarchivo`) no son novedades. La administración de contenidos conserva su flujo mock. Para abrir recursos protegidos se requiere una sesión real, ya que Render entrega su URL después del login. Render puede devolver una lista vacía cuando no hay avisos publicados.
+
+Agrega `servicios` a `EXPO_PUBLIC_API_MODULOS` para leer el catálogo y las fichas de Render. La administración sigue usando los mocks con `EXPO_PUBLIC_USAR_MOCKS=true`. Virtualteca abre la solicitud de tablet y Hemeroteca conserva su ficha informativa. La app muestra los servicios activos que puede clasificar en sus categorías existentes.
+
+`guias` activa el listado, el detalle y la gestión de guías (requiere `sesion` para gestionar). `notificaciones` activa la bandeja y el marcado como leída de la cuenta real. En modo mixto, las solicitudes simuladas solo generan notificaciones simuladas.
+
 **Catálogo y repositorio** van aparte: no pasan por el Backend.
 
 ---

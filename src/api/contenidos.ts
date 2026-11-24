@@ -11,7 +11,8 @@
 import type { Contenido, Usuario } from '@/types';
 import { tienePermiso } from '@/utils/roles';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { contenidoDesdePortal, esNovedad, type ContenidoPortal } from './backend/portal';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { CONTENIDOS } from './mocks/contenidos';
 
 /** Copia mutable: con mocks, los cambios se ven durante la sesión de la app. */
@@ -58,6 +59,19 @@ export function obtenerContenidos(): Promise<Contenido[]> {
     return simularRed(ordenar(contenidos).map((contenido) => ({ ...contenido })));
   }
   return peticion<Contenido[]>('/contenidos/');
+}
+
+/**
+ * Avisos e informativos publicados, para Inicio. El portal también lista las páginas (`PAGE`,
+ * como `autoarchivo` o `condiciones-tablets`), que no son novedades: se dejan fuera.
+ */
+export async function obtenerContenidosPublicos(): Promise<Contenido[]> {
+  if (!usaApi('contenidos')) return obtenerContenidos();
+  const contenidos = await peticionTodas<ContenidoPortal, ContenidoPortal>(
+    '/portal/contents/',
+    (contenido) => contenido,
+  );
+  return contenidos.filter(esNovedad).map(contenidoDesdePortal);
 }
 
 export function crearContenido(usuario: Usuario, datos: DatosContenido): Promise<Contenido> {

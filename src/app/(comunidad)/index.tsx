@@ -18,7 +18,7 @@ import { AvisosNovedades } from '@/components/contenidos/AvisosNovedades';
 import { CarruselInicio } from '@/components/inicio/CarruselInicio';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
-import { useContenidos } from '@/hooks/useContenidos';
+import { useContenidosPublicos } from '@/hooks/useContenidos';
 import { useFotosInicio } from '@/hooks/useFotosInicio';
 import { useServicios } from '@/hooks/useServicios';
 import { useSesion } from '@/store/sesion';
@@ -40,7 +40,7 @@ export default function Inicio() {
   const usuario = useSesion((estado) => estado.usuario);
   const { data: servicios, isPending, isError, isRefetching, refetch } = useServicios();
   // Avisos y novedades (HU-04): sección secundaria; mientras carga o si falla, no se muestra.
-  const { data: contenidos, refetch: refetchContenidos } = useContenidos();
+  const { data: contenidos, refetch: refetchContenidos } = useContenidosPublicos();
   // Sin conexión o sin fotos publicadas, el carrusel usa las del APK (#290): no lleva estados.
   const { data: fotos, refetch: refetchFotos } = useFotosInicio();
   const avisos = contenidos ? contenidosVisibles(contenidos, hoyISO()) : [];

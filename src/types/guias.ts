@@ -13,7 +13,7 @@ export type Guia = {
   descripcion: string;
   /** Cuerpo de la guía, en texto plano. */
   contenido: string;
-  /** Última actualización, 'AAAA-MM-DD'. Sirve para saber si hay versión nueva (CA3). */
+  /** Última actualización, fecha local del mock o instante ISO del servidor (CA3). */
   actualizada: string;
   /** Solo las publicadas se ofrecen a la comunidad (CA1). */
   publicado: boolean;
