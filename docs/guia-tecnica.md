@@ -882,15 +882,15 @@ Son las que más rompen la app, y casi ninguna da un error claro:
 ## Anexo: la integración con el Backend
 
 La app se entrega con datos de prueba. La comparación del **23 de noviembre de 2026** contra el
-Backend (`develop` `53d1350`, versión 2.0.1) dice que la app llama **103 endpoints**: **50** tienen
-contraparte, **23** existen con otra forma (método, ruta o campos) y **30** faltan. Casi todo lo que
-falta son funciones nuevas de la 1.1: guías, fotos de Inicio, permisos por persona, la firma de la
-constancia, la sede y los indicadores de estadísticas.
+Backend (`develop` `53d1350`, esquema 2.0.1) dice que la app llama **103 endpoints**: **75** tienen
+contraparte (algunos con otro método, ruta o campos) y **28** faltan. Casi todo lo que falta son
+funciones nuevas de la 1.1: guías, fotos de Inicio, permisos por persona, la firma de la constancia,
+la sede y los indicadores de estadísticas.
 
+- **El inventario completo**, endpoint por endpoint y campo por campo, con el orden para apagar
+  `USAR_MOCKS` módulo por módulo, está en [Integración con el Backend](integracion-backend.md).
 - **Lo que se le pide al Backend**, con prioridades, campos y preguntas, está en el documento
   «App móvil y Backend: campos pendientes y archivos», que se les envía.
 - **Lo que adapta la app por su cuenta** (rutas en inglés con `/api/v1/`, inicio de sesión con
   `access` y `refresh`, paginación, días de la semana, nombres de campos y estados) va en una capa de
   traducción en `src/api/cliente.ts`, sin cambios del Backend.
-- [Integración con el Backend](integracion-backend.md) tiene el orden para apagar `USAR_MOCKS` módulo
-  por módulo.
