@@ -17,7 +17,7 @@ import { FirmaEnVentana } from '@/components/inventario/FirmaEnVentana';
 import { EnlacePoliticaDatos } from '@/components/privacidad/EnlacePoliticaDatos';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useCerrarSesion } from '@/hooks/useAutenticacion';
-import { useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
+import { CON_DIRECCION, useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
 import { useGuardarMiFirma } from '@/hooks/useUsuarios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
@@ -122,6 +122,7 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
         <DatosInstitucionales perfil={perfil} />
         <DatosContacto
           perfil={perfil}
+          conDireccion={CON_DIRECCION}
           editando={editando}
           guardando={guardando}
           mensajeError={error ? mensajeErrorGuardar(error) : null}

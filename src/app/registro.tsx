@@ -17,7 +17,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { FormularioRegistro } from '@/components/autenticacion/FormularioRegistro';
-import { EncabezadoApilado, Pantalla } from '@/components/ui';
+import { AvisoConexionLenta, EncabezadoApilado, Pantalla } from '@/components/ui';
 import { errorRegistro, useRegistrarCuenta } from '@/hooks/useAutenticacion';
 import { colores, espacio } from '@/theme';
 import type { NuevaCuenta } from '@/utils/registro';
@@ -44,6 +44,7 @@ export default function Registro() {
         conTeclado
       >
         <FormularioRegistro enviando={isPending} errorApi={errorApi} onEnviar={registrar} />
+        {isPending ? <AvisoConexionLenta /> : null}
 
         <View style={estilos.yaTengo}>
           <Text variant="bodyMedium" style={estilos.texto}>

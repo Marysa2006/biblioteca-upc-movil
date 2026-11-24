@@ -1,32 +1,33 @@
 /**
  * Perfil del usuario (HU-06): consultar y actualizar.
  *
- * Los datos institucionales vienen de la sesión (no se editan); los editables se
- * guardan aparte, por id de usuario.
- * Mismo patrón que src/api/servicios.ts: pantalla → hook → función → mock.
- *
- * La ruta '/perfil/' es provisional: confírmenla con el equipo de Backend.
+ * Los datos institucionales vienen de la cuenta (no se editan). Con datos de prueba, los editables
+ * se guardan aparte, por id de usuario. Con la API (módulo `sesion` de `usaApi()`), `GET /me/` y
+ * `PATCH /me/` del Backend; la dirección no existe allá, así que no se envía (la pantalla la oculta).
+ * Mismo patrón que src/api/servicios.ts: pantalla → hook → función → mock o API.
  */
 import type { DatosEditablesPerfil, Perfil, Usuario } from '@/types';
+import { CELULAR, MENSAJE_CELULAR } from '@/utils/solicitante';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { perfilDesdeBackend, type PerfilBackend } from './backend/usuarios';
+import { ErrorApi, peticion, simularRed, usaApi } from './cliente';
 import { EDITABLES_PRUEBA } from './mocks/perfil';
 
 /**
  * Copia en memoria de los datos editables, por id de usuario: los cambios se mantienen
- * mientras la app está abierta y se pierden al recargar (provisional hasta la API real).
+ * mientras la app está abierta y se pierden al recargar (solo datos de prueba).
  */
 const editablesPorUsuario: Record<string, DatosEditablesPerfil> = { ...EDITABLES_PRUEBA };
 
-/** Teléfono válido: solo dígitos, entre 7 y 10. */
-const TELEFONO_VALIDO = /^[0-9]{7,10}$/;
+/** ¿El perfil tiene dirección? Solo con datos de prueba: el Backend no la tiene. */
+export const PERFIL_CON_DIRECCION = !usaApi('sesion');
 
 /** Combina los datos institucionales de la sesión con los editables guardados. */
-export function obtenerPerfil(usuario: Usuario): Promise<Perfil> {
-  if (USAR_MOCKS) {
+export async function obtenerPerfil(usuario: Usuario): Promise<Perfil> {
+  if (!usaApi('sesion')) {
     return simularRed({ ...usuario, ...editablesPorUsuario[usuario.id] });
   }
-  return peticion<Perfil>('/perfil/');
+  return perfilDesdeBackend(usuario, await peticion<PerfilBackend>('/me/'));
 }
 
 /**
@@ -37,17 +38,16 @@ export function guardarCelularRegistrado(usuarioId: string, celular: string): vo
   editablesPorUsuario[usuarioId] = { ...editablesPorUsuario[usuarioId], telefono: celular };
 }
 
-export function actualizarPerfil(
+export async function actualizarPerfil(
   usuario: Usuario,
   datos: DatosEditablesPerfil,
 ): Promise<Perfil> {
-  if (USAR_MOCKS) {
-    // El teléfono es opcional: vacío es válido; solo se valida si trae texto.
+  if (!usaApi('sesion')) {
+    // El teléfono es opcional: vacío es válido; solo se valida si trae texto. Misma regla que el
+    // Backend: celular de 10 dígitos que empieza por 3.
     const telefono = datos.telefono?.trim();
-    if (telefono && !TELEFONO_VALIDO.test(telefono)) {
-      return Promise.reject(
-        new ErrorApi(400, 'El teléfono debe tener entre 7 y 10 dígitos, sin espacios ni letras.'),
-      );
+    if (telefono && !CELULAR.test(telefono)) {
+      return Promise.reject(new ErrorApi(400, MENSAJE_CELULAR));
     }
 
     // Solo se reemplazan los campos que vienen en "datos"; el resto se conserva.
@@ -62,5 +62,11 @@ export function actualizarPerfil(
     return simularRed({ ...usuario, ...guardados });
   }
 
-  return peticion<Perfil>('/perfil/', { method: 'PATCH', body: JSON.stringify(datos) });
+  // Vacío borra el teléfono. Los demás campos que el Backend deja editar (programa, sede…) no
+  // se editan desde la app.
+  const perfil = await peticion<PerfilBackend>('/me/', {
+    method: 'PATCH',
+    body: JSON.stringify({ phone: datos.telefono ?? '' }),
+  });
+  return perfilDesdeBackend(usuario, perfil);
 }
