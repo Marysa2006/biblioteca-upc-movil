@@ -1,0 +1,126 @@
+/**
+ * Asesorías del Backend traducidas a la app (HU-13 y HU-14, versión 1.1). Funciones puras.
+ *
+ * - Temas: `GET /advisories/topics/` (arreglo, solo activos) para la comunidad y
+ *   `/advisories/manage/topics/` (paginada, con `is_active`) para quien administra asesorías.
+ * - La cita (`Appointment`) se pide con fecha y hora deseadas y queda pendiente hasta que el
+ *   personal la aprueba con fecha, horas, facilitador y enlace. En la app, su id es el
+ *   `request_id`, el mismo de «Mis solicitudes» (`/me/requests/`); cancelar, reprogramar y
+ *   calificar usan el `id` de la cita, que guarda src/api/asesorias.ts.
+ */
+import type { Cita, NuevaSolicitudCita, TemaAsesoria } from '@/types';
+import { aHora, aMinutos } from '@/utils/franjas';
+
+import { datosSolicitanteHaciaBackend } from './espacios';
+import { ESTADO_DESDE_BACKEND, horaDesdeBackend, type EstadoBackend } from './equivalencias';
+
+export type TemaBackend = { id: number; name: string; description: string; is_active?: boolean };
+
+export function temaDesdeBackend(tema: TemaBackend): TemaAsesoria {
+  return {
+    id: String(tema.id),
+    nombre: tema.name,
+    descripcion: tema.description,
+    // La lista pública solo trae los activos y no dice `is_active`.
+    activo: tema.is_active ?? true,
+  };
+}
+
+export function temaHaciaBackend(tema: { nombre: string; descripcion: string; activo: boolean }) {
+  return { name: tema.nombre, description: tema.descripcion, is_active: tema.activo };
+}
+
+export type CitaBackend = {
+  id: number;
+  request_id: number;
+  status: EstadoBackend;
+  topic_id: number;
+  topic: string;
+  modality: 'IN_PERSON' | 'VIRTUAL';
+  need_description: string;
+  desired_date: string;
+  desired_time: string;
+  scheduled_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  facilitator: string | null;
+  virtual_link: string;
+  subject: string;
+  group_size: number;
+  members: string[] | null;
+  notes: string;
+  rescheduled_from: number | null;
+  attended: boolean | null;
+  quality_rating: number | null;
+  quality_comment: string;
+};
+
+const MODALIDAD_HACIA_BACKEND = { presencial: 'IN_PERSON', virtual: 'VIRTUAL' } as const;
+
+/** Lo que manda la comunidad al pedir una asesoría (`AppointmentRequest`). */
+export function citaHaciaBackend(nueva: NuevaSolicitudCita) {
+  return {
+    topic: Number(nueva.temaId),
+    modality: MODALIDAD_HACIA_BACKEND[nueva.modalidad],
+    need_description: nueva.necesidad,
+    desired_date: nueva.fecha,
+    desired_time: nueva.hora,
+    ...datosSolicitanteHaciaBackend(nueva.datosSolicitante),
+    subject: nueva.asignatura ?? '',
+    group_size: nueva.personas,
+    members: nueva.participantes,
+    notes: nueva.novedades ?? '',
+    accept_terms: nueva.terminosAceptados === true,
+  };
+}
+
+/**
+ * La cita como la usa la app. Mientras no se aprueba, la fecha y la hora son las pedidas y la
+ * hora de fin sale de la duración de una asesoría (`advisory-duration-minutes`). Si el personal
+ * cambió el día al aprobar, lo pedido queda en `fechaSolicitada` y `horaSolicitada`.
+ */
+export function citaDesdeBackend(
+  cita: CitaBackend,
+  solicitante: { id: string; nombre: string },
+  duracionMinutos: number,
+): Cita {
+  const pedida = { fecha: cita.desired_date, hora: horaDesdeBackend(cita.desired_time) };
+  const fecha = cita.scheduled_date ?? pedida.fecha;
+  const horaInicio = cita.start_time ? horaDesdeBackend(cita.start_time) : pedida.hora;
+  const horaFin = cita.end_time
+    ? horaDesdeBackend(cita.end_time)
+    : aHora(aMinutos(horaInicio) + duracionMinutos);
+  const cambio =
+    cita.scheduled_date != null && (fecha !== pedida.fecha || horaInicio !== pedida.hora);
+  return {
+    id: String(cita.request_id),
+    temaId: String(cita.topic_id),
+    tema: cita.topic,
+    ...(cita.facilitator ? { facilitador: cita.facilitator } : {}),
+    solicitanteId: solicitante.id,
+    solicitante: solicitante.nombre,
+    fecha,
+    horaInicio,
+    horaFin,
+    necesidad: cita.need_description,
+    modalidad: cita.modality === 'VIRTUAL' ? 'virtual' : 'presencial',
+    estado: ESTADO_DESDE_BACKEND[cita.status],
+    ...(cita.attended != null ? { asistio: cita.attended } : {}),
+    personas: cita.group_size,
+    participantes: cita.members ?? [],
+    ...(cita.subject ? { asignatura: cita.subject } : {}),
+    ...(cita.notes ? { novedades: cita.notes } : {}),
+    terminosAceptados: true,
+    ...(cita.virtual_link ? { enlaceVirtual: cita.virtual_link } : {}),
+    ...(cambio ? { fechaSolicitada: pedida.fecha, horaSolicitada: pedida.hora } : {}),
+    ...(cita.quality_rating != null
+      ? {
+          calificacion: {
+            puntaje: cita.quality_rating,
+            ...(cita.quality_comment ? { comentario: cita.quality_comment } : {}),
+            fecha,
+          },
+        }
+      : {}),
+  };
+}
