@@ -95,7 +95,7 @@ export type PrestamoBackend = {
 };
 
 /** El estado del préstamo en la app: reservado, entregado, vencido, devuelto o cancelado. */
-const ESTADO_PRESTAMO: Record<EstadoBackend, EstadoPrestamo> = {
+export const ESTADO_PRESTAMO: Record<EstadoBackend, EstadoPrestamo> = {
   PENDING: 'reservado',
   APPROVED: 'reservado',
   RESCHEDULE_PROPOSED: 'reservado',

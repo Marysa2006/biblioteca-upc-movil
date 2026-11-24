@@ -8,7 +8,12 @@
 import type { EstadoPrestamo, EstadoSolicitud, EventoSolicitud, TipoSolicitud } from '@/types';
 import { ahoraFechaHora } from '@/utils/tablets';
 
-import { peticion, simularRed, USAR_MOCKS } from './cliente';
+import {
+  historialDesdeBackend,
+  type CambioBackend,
+  type TipoBackend,
+} from './backend/solicitudes';
+import { peticion, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { HISTORIAL_SOLICITUDES } from './mocks/historial';
 
 /** Un evento guardado con la solicitud a la que pertenece; al devolverlo se quitan esas claves. */
@@ -66,10 +71,17 @@ export function registrarEvento(
 }
 
 /** Historial de una solicitud, del evento más antiguo al más reciente; sin eventos, []. */
-export function obtenerHistorialSolicitud(
+export async function obtenerHistorialSolicitud(
   tipo: TipoSolicitud,
   id: string,
 ): Promise<EventoSolicitud[]> {
+  if (usaApi('solicitudes')) {
+    // El id es el de la solicitud: el detalle de «Mis solicitudes» trae su historial.
+    const detalle = await peticion<{ id: number; service: TipoBackend; history: CambioBackend[] }>(
+      `/me/requests/${encodeURIComponent(id)}/`,
+    );
+    return historialDesdeBackend(detalle.id, detalle.service, detalle.history);
+  }
   if (USAR_MOCKS) {
     // sort es estable: dos eventos del mismo minuto quedan en el orden en que se registraron.
     const lista = eventos
