@@ -50,7 +50,7 @@ export type ModuloApi =
 const MODULOS_CON_API = new Set(
   (process.env.EXPO_PUBLIC_API_MODULOS ?? '')
     .split(',')
-    .map((modulo) => modulo.trim())
+    .map((modulo: string) => modulo.trim())
     .filter(Boolean),
 );
 
