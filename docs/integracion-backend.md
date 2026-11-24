@@ -303,3 +303,34 @@ Los tres documentos de la entrega de la 1.1 son:
 - **«App móvil y Backend: campos pendientes y archivos»**, con los 13 temas campo por campo y las
   preguntas para el equipo del servidor;
 - la **guía técnica** (`docs/guia-tecnica.md`), que explica cómo está hecha la app.
+
+---
+
+## 6. Plan de la fase 4: el personal (para quien continúe)
+
+**Rama:** `chore/integracion-api-personal`, que sale de la del #321. Un solo PR al final, con un commit por servicio, como la fase 3.
+
+**Reglas, las mismas de las fases 1 a 3:**
+- Cada función elige con `usaApi('<modulo>')` y traduce en `src/api/backend/<modulo>.ts`. Las pantallas y los hooks no cambian.
+- Se reusan `equivalencias.ts` (estados, días, sede), `datosSolicitanteHaciaBackend()` y las funciones de lectura de cada servicio.
+- El id de toda solicitud en la app es el `request_id`. Si una acción del Backend pide otro id, se guarda la correspondencia, como `idsCita` en `src/api/asesorias.ts`.
+- Antes de escribir cada adaptador, se compara con el contrato: `docs/schema.yml` 2.1.0 de `LibniT/BackEnd-Biblioteca`, o `/api/schema/` de Render. Hay que revisar campos, nulos, `enum`, la forma de la lista (paginada, objeto o arreglo) y los errores.
+- Se prueba con Node, compilando el adaptador con TypeScript y las respuestas reales guardadas. El typecheck se corre **sin** `expo-env.d.ts`, porque ese archivo no se sube al repositorio.
+
+**Orden propuesto** (cada uno con la cuenta de Libni, que es administradora y superusuaria):
+
+| # | Módulo | Rutas del Backend | Notas |
+|---|---|---|---|
+| 1 | `reservas` (bandeja de HU-19) | `GET /spaces/manage/reservations/` (filtros `status`, `space`, `date_from`, `date_to`), `GET`/`PATCH …/{id}/`, `POST …/{id}/approve\|reject\|cancel/` (`reason`, obligatorio para rechazar o cancelar) y `POST /spaces/manage/reservations/` para terceros (`requester_email`) | Comprobar si el `id` de la bandeja es el `request_id`. Un 409 trae `alternative_slots`, igual que la comunidad |
+| 2 | `bloqueos` (HU-20) | `GET`/`POST /spaces/blocks/` (con `confirm: true`; un 409 trae las reservas afectadas) y `POST /spaces/blocks/{id}/cancel/` (`reason`) | |
+| 3 | `espacios`, administración (HU-16) | `/spaces/manage/` (CRUD; la foto va en `photo` por `multipart`), `POST …/{id}/status/` y `/spaces/manage/{space_pk}/schedules/` | El horario del espacio es por día (`0` = lunes) |
+| 4 | `asesorias`, personal (HU-15) | `GET /advisories/manage/appointments/`, `POST …/{id}/approve/` (`scheduled_date`, `start_time`, `facilitator`, `virtual_link`), `…/reject/` (`reason`) y `…/cancel/`; agenda con `GET /advisories/agenda/` y `POST /advisories/agenda/appointments/{id}/record/` (`attended`, notas); facilitadores con `GET /users/?role=facilitador` | 400 si el facilitador ya tiene otra asesoría aprobada a esa hora |
+| 5 | `capacitaciones`, bandeja (HU-12) | `/trainings/requests/manage/` (filtros `line`, `status`, `responsible`, `from`, `to`), `…/{id}/approve\|reject\|propose-date\|assign\|close\|cancel/` y `…/manage/responsibles/` | El id ya es el de la solicitud |
+| 6 | `tablets`, personal (HU-21, 23 y 24) | Inventario `/tablets/manage/` (`?search=`; `brand`, `asset_value`, `device_type`). Préstamos `/tablets/manage/loans/` (`status` con comas, `search`, `has_incident`). `…/{id}/deliver/` (`tablet` con el código interno, `format_condition` `NEW\|OPTIMAL\|OTHER`, `observations`, `signature` `{path, width, height, signed_at}`). `…/{id}/return/` y `…/{id}/cancel/` | La constancia sale del detalle e imprime el `receipt_code` del Backend en lugar del código que calcula la app. Los vencidos son `status=OVERDUE`. La firma del personal espera a que el Backend la agregue a `/me/` |
+| 7 | `usuarios` (HU-07) | `GET /users/` (`?role=`), `POST`/`DELETE /users/{id}/roles/` (el rol `administrador` no se asigna por la API), `PUT /users/{id}/permissions/` (lista completa) y `PATCH /users/{id}/` (`is_active`) | Los permisos adicionales se traducen con `equivalencias.ts` |
+| 8 | `servicios`, `contenidos` y `fotosInicio`, administración (HU-04 y #290) | `/portal/manage/services/{slug}/` y `service-categories/`; `/portal/manage/contents/{slug}/` con `publish/`, `hide/` y `reorder/`; `/portal/manage/home-photos/` (`image` por `multipart`, máximo 5 publicadas, `reorder/`) | Hoy la comunidad ya lee los tres desde el Backend |
+| 9 | `parametros`, guardar (HU-28) | `PATCH /config/parameters/{code}/` por cada plazo que cambie, y el CRUD de `periods/`, `holidays/` y `schedules/` comparando con lo que ya había | Quitar el aviso «todavía no se guardan» de `actualizarParametros()` |
+
+**Fase 5** (después): `statistics/summary/` y `statistics/export/` (CSV y PDF del Backend), y asistencia con QR (`/attendance/`, #231).
+
+**Antes de empezar la fase 4:** probar en vivo las fases 1 a 3 con el APK del perfil `integracion` y corregir lo que aparezca.
