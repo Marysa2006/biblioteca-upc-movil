@@ -239,7 +239,7 @@ Prioridad: 1 = alta, 2 = media, 3 = baja. La columna *En la app* indica en qué 
 
 ## ✅ Estado del Release 1.1
 
-La versión **1.1.0** (24 de noviembre de 2026) cierra el proyecto con lo que pidió la bibliotecóloga en la reunión del 5 de noviembre. **Historias del plan: 28 de 28**, todas con datos de prueba, más las funciones plus.
+La versión **1.1.0** (26 de noviembre de 2026) cierra el proyecto con lo que pidió la bibliotecóloga en la reunión del 5 de noviembre. **Historias del plan: 28 de 28**, todas con datos de prueba, más las funciones plus.
 
 **Lo nuevo de la 1.1:**
 
@@ -255,7 +255,10 @@ La versión **1.1.0** (24 de noviembre de 2026) cierra el proyecto con lo que pi
 | 📚 Guías en PDF, con enlace o escritas, que se leen sin conexión | #297, #303 |
 | 🖼️ Fotos de Inicio y permisos adicionales por persona | #290, #296 |
 | 🗂️ Gestión → Portal en tres grupos (Publicaciones, Servicios con Espacios, Configuración) | #313 |
+| 🖊️ Firma del personal registrada una vez en **Perfil → Mi firma**, que sale sola en la constancia; la firma se hace en una ventana; textos legales en ventanas y ayudas en el registro | #317 |
 | 🐣 Tutorial de Upecito en el primer ingreso | #261, #267 |
+
+Además, se quitó el servicio «Préstamo de computadores», que no llegó a implementarse (#317).
 
 ### Limitaciones conocidas
 
@@ -272,7 +275,7 @@ La versión **1.1.0** (24 de noviembre de 2026) cierra el proyecto con lo que pi
 | #231 | Conectar la asistencia con QR con la del Backend (sus rutas ya existen) |
 | #311 | Ingreso de Koha para el personal |
 | #298 | Build de desarrollo (para lo que Expo Go no trae) |
-| #228 | La capa de traducción para conectar con el Backend, módulo por módulo |
+| — | Conectar la app con el Backend, módulo por módulo: el inventario y el plan están en [docs/integracion-backend.md](docs/integracion-backend.md) |
 
 ---
 
