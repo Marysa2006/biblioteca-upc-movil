@@ -21,6 +21,8 @@ import {
   cerrarCapacitacion,
   obtenerMisCapacitaciones,
   obtenerSolicitudesCapacitacion,
+  obtenerSolicitudCapacitacion,
+  obtenerResponsablesCapacitacion,
   proponerFechaCapacitacion,
   rechazarCapacitacion,
   responderNuevaFecha,
@@ -139,6 +141,20 @@ export function useSolicitudesCapacitacion(estado: EstadoSolicitud | 'todas' = '
   });
 }
 
+export function useSolicitudCapacitacion(id: string) {
+  return useQuery({
+    queryKey: [...claves.solicitudesCapacitacionTodas, 'detalle', id],
+    queryFn: () => obtenerSolicitudCapacitacion(id),
+  });
+}
+
+export function useResponsablesCapacitacion() {
+  return useQuery({
+    queryKey: ['capacitaciones', 'responsables'],
+    queryFn: obtenerResponsablesCapacitacion,
+  });
+}
+
 /** Invalida la bandeja, las de la persona, el historial (HU-08) y las estadísticas (HU-25). */
 function refrescarSolicitudes(queryClient: ReturnType<typeof useQueryClient>) {
   // La bandeja (['capacitaciones','solicitudes',estado]) y las de la persona
@@ -192,8 +208,11 @@ export function useAsignarResponsable() {
 export function useCerrarCapacitacion() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, resultado }: { id: string; resultado: string }) =>
-      cerrarCapacitacion(id, resultado),
+    mutationFn: ({ id, resultado, participantesReales }: {
+      id: string;
+      resultado: string;
+      participantesReales?: number;
+    }) => cerrarCapacitacion(id, resultado, participantesReales),
     onSuccess: () => refrescarSolicitudes(queryClient),
   });
 }

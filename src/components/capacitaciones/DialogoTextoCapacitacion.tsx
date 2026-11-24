@@ -27,7 +27,7 @@ type Props = {
   solicitud: SolicitudCapacitacion;
   guardando: boolean;
   mensajeError: string | null;
-  onConfirmar: (texto: string) => void;
+  onConfirmar: (texto: string, participantesReales?: number) => void;
   onCerrar: () => void;
 };
 
@@ -64,7 +64,7 @@ export function DialogoTextoCapacitacion({ tipo, ...props }: Props) {
   );
 }
 
-type Valores = { texto: string };
+type Valores = { texto: string; participantes: string };
 
 function Contenido({
   tipo,
@@ -81,9 +81,13 @@ function Contenido({
     resolver: zodResolver(
       z.object({
         texto: rechazar ? esquemaMotivo.shape.motivo : esquemaResultado.shape.resultado,
+        participantes: rechazar
+          ? z.string()
+          : z.string().regex(/^\d+$/, 'Indica cuántas personas asistieron.')
+              .refine((valor) => Number(valor) <= 32767, 'El número de asistentes es demasiado alto.'),
       }),
     ),
-    defaultValues: { texto: '' },
+    defaultValues: { texto: '', participantes: '' },
   });
 
   return (
@@ -97,6 +101,27 @@ function Contenido({
           <Text variant="bodyMedium" style={estilos.texto}>
             {textos.explicacion}
           </Text>
+        ) : null}
+        {!rechazar ? (
+          <Controller
+            control={control}
+            name="participantes"
+            render={({ field, fieldState: { error } }) => (
+              <View>
+                <TextInput
+                  mode="outlined"
+                  label="Asistentes reales"
+                  keyboardType="number-pad"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  disabled={guardando}
+                  error={Boolean(error)}
+                />
+                {error ? <HelperText type="error">{error.message}</HelperText> : null}
+              </View>
+            )}
+          />
         ) : null}
         {!rechazar && solicitud.responsable ? (
           <Text variant="bodyMedium" style={estilos.texto}>
@@ -145,7 +170,9 @@ function Contenido({
         </Button>
         <Button
           mode="contained"
-          onPress={() => handleSubmit(({ texto }) => onConfirmar(texto.trim()))()}
+          onPress={() => handleSubmit(({ texto, participantes }) =>
+            onConfirmar(texto.trim(), rechazar ? undefined : Number(participantes)),
+          )()}
           loading={guardando}
           disabled={guardando}
           buttonColor={rechazar ? coloresEstado.rechazada.texto : undefined}

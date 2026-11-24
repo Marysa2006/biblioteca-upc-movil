@@ -36,14 +36,17 @@ import { ahoraFechaHora } from '@/utils/tablets';
 import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
 import { useSesion } from '@/store/sesion';
-import { tienePermiso } from '@/utils/roles';
+import { describirRoles, tienePermiso } from '@/utils/roles';
 
 import {
   capacitacionDesdeBackend,
+  capacitacionGestionDesdeBackend,
   capacitacionHaciaBackend,
   lineaDesdeBackend,
   lineaHaciaBackend,
   type CapacitacionBackend,
+  type CapacitacionGestionBackend,
+  type ResponsableBackend,
   type LineaBackend,
 } from './backend/capacitaciones';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
@@ -223,19 +226,11 @@ export async function solicitudesActivasDeLinea(
 ): Promise<SolicitudCapacitacion[]> {
   if (usaApi('capacitaciones')) {
     // La bandeja del personal, filtrada por la línea; los estados activos se filtran aquí.
-    const bandeja = await peticionTodas<CapacitacionBackend, CapacitacionBackend>(
+    const bandeja = await peticionTodas(
       `/trainings/requests/manage/?line=${encodeURIComponent(lineaId)}`,
-      (solicitud) => solicitud,
+      capacitacionGestionDesdeBackend,
     );
-    return bandeja
-      .map((solicitud) =>
-        capacitacionDesdeBackend(solicitud, {
-          id: '',
-          nombre: solicitud.requester ?? '',
-          tipo: 'visitante',
-        }),
-      )
-      .filter((solicitud) => ESTADOS_ACTIVOS.includes(solicitud.estado));
+    return bandeja.filter((solicitud) => ESTADOS_ACTIVOS.includes(solicitud.estado));
   }
   if (USAR_MOCKS) {
     return simularRed(
@@ -626,6 +621,10 @@ function guardarSolicitud(
 export function obtenerSolicitudesCapacitacion(
   estado: EstadoSolicitud | 'todas' = 'todas',
 ): Promise<SolicitudCapacitacion[]> {
+  if (usaApi('capacitaciones')) {
+    return peticionTodas(RUTA_GESTION_CAPACITACIONES, capacitacionGestionDesdeBackend)
+      .then((lista) => estado === 'todas' ? lista : lista.filter((s) => s.estado === estado));
+  }
   if (USAR_MOCKS) {
     const lista = (estado === 'todas'
       ? solicitudes
@@ -639,8 +638,46 @@ export function obtenerSolicitudesCapacitacion(
   return peticion<SolicitudCapacitacion[]>(`/capacitaciones/solicitudes/${consulta}`);
 }
 
+const RUTA_GESTION_CAPACITACIONES = '/trainings/requests/manage/';
+
+export async function obtenerSolicitudCapacitacion(id: string): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) {
+    return capacitacionGestionDesdeBackend(await peticion<CapacitacionGestionBackend>(
+      `${RUTA_GESTION_CAPACITACIONES}${encodeURIComponent(id)}/`,
+    ));
+  }
+  return copiarSolicitud(buscarSolicitud(id));
+}
+
+export async function obtenerResponsablesCapacitacion() {
+  if (usaApi('capacitaciones')) {
+    const personas = await peticion<ResponsableBackend[]>(`${RUTA_GESTION_CAPACITACIONES}responsibles/`);
+    return personas.map((persona) => ({ id: persona.id, nombre: persona.name, roles: '' }));
+  }
+  return USUARIOS_DIRECTORIO.filter((persona) => tienePermiso(persona, 'formacion'))
+    .map((persona) => ({ id: persona.id, nombre: persona.nombre, roles: describirRoles(persona) }));
+}
+
+async function modificarCapacitacion(id: string, accion: string, cuerpo: object) {
+  return capacitacionGestionDesdeBackend(await peticion<CapacitacionGestionBackend>(
+    `${RUTA_GESTION_CAPACITACIONES}${encodeURIComponent(id)}/${accion}/`,
+    { method: 'POST', body: JSON.stringify(cuerpo) },
+  ));
+}
+
+export async function cancelarCapacitacionPersonal(id: string, motivo: string) {
+  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'cancel', { reason: motivo.trim() });
+  const solicitud = buscarSolicitud(id);
+  return simularRed(guardarSolicitud(
+    { ...solicitud, estado: 'cancelada', motivo: motivo.trim() },
+    'Capacitación cancelada',
+    motivo.trim(),
+  ));
+}
+
 /** Aprueba una solicitud pendiente (CA1). */
 export async function aprobarCapacitacion(id: string): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'approve', {});
   if (USAR_MOCKS) {
     const solicitud = buscarSolicitud(id);
     if (!ESTADOS_GESTIONABLES.includes(solicitud.estado)) {
@@ -669,6 +706,7 @@ export async function rechazarCapacitacion(
   id: string,
   motivo: string,
 ): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'reject', { reason: motivo.trim() });
   if (USAR_MOCKS) {
     const solicitud = buscarSolicitud(id);
     if (!ESTADOS_GESTIONABLES.includes(solicitud.estado)) {
@@ -705,6 +743,9 @@ export async function proponerFechaCapacitacion(
   fecha: string,
   hora: string,
 ): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) {
+    return modificarCapacitacion(id, 'propose-date', { proposed_date: fecha, proposed_time: hora });
+  }
   if (USAR_MOCKS) {
     const solicitud = buscarSolicitud(id);
     if (!ESTADOS_GESTIONABLES.includes(solicitud.estado)) {
@@ -760,6 +801,7 @@ export async function asignarResponsable(
   id: string,
   usuarioId: string,
 ): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'assign', { responsible: usuarioId });
   if (USAR_MOCKS) {
     const solicitud = buscarSolicitud(id);
     if (solicitud.estado !== 'aprobada') {
@@ -798,7 +840,17 @@ export async function asignarResponsable(
 export async function cerrarCapacitacion(
   id: string,
   resultado: string,
+  participantesReales?: number,
 ): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) {
+    if (participantesReales == null || !Number.isInteger(participantesReales) ||
+        participantesReales < 0 || participantesReales > 32767) {
+      throw new ErrorApi(400, 'Indica el número de asistentes reales.');
+    }
+    return modificarCapacitacion(id, 'close', {
+      result: resultado.trim(), actual_participants: participantesReales,
+    });
+  }
   if (USAR_MOCKS) {
     const solicitud = buscarSolicitud(id);
     if (solicitud.estado !== 'aprobada') {

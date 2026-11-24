@@ -16,7 +16,13 @@ import type {
 } from '@/types';
 
 import { datosSolicitanteHaciaBackend } from './espacios';
-import { ESTADO_DESDE_BACKEND, horaDesdeBackend, type EstadoBackend } from './equivalencias';
+import {
+  ESTADO_DESDE_BACKEND,
+  horaDesdeBackend,
+  TIPO_DESDE_BACKEND,
+  type EstadoBackend,
+  type TipoUsuarioBackend,
+} from './equivalencias';
 
 export type LineaBackend = { id: number; name: string; description: string; is_active?: boolean };
 
@@ -90,9 +96,40 @@ export type CapacitacionBackend = {
   quality_rating?: number | null;
   quality_comment?: string;
   created_at: string;
-  /** Solo en la bandeja del personal (`ManageTrainingRequest`). */
-  requester?: string;
 };
+
+export type ResponsableBackend = { id: string; name: string };
+
+export type CapacitacionGestionBackend = CapacitacionBackend & {
+  requester: {
+    id?: string;
+    name?: string;
+    full_name?: string;
+    email?: string;
+    user_type?: TipoUsuarioBackend;
+  };
+  program?: string;
+  responsible: ResponsableBackend | null;
+  result?: string;
+  history?: { reason: string; new_status: EstadoBackend }[];
+};
+
+export function capacitacionGestionDesdeBackend(solicitud: CapacitacionGestionBackend) {
+  const persona = solicitud.requester;
+  const capacitacion = capacitacionDesdeBackend(solicitud, {
+    id: persona.id ?? persona.email ?? '',
+    nombre: persona.name ?? persona.full_name ?? persona.email ?? '',
+    tipo: persona.user_type ? TIPO_DESDE_BACKEND[persona.user_type] : 'visitante',
+    programa: solicitud.program || undefined,
+  });
+  return {
+    ...capacitacion,
+    responsableId: solicitud.responsible?.id,
+    responsable: solicitud.responsible?.name,
+    resultado: solicitud.result || undefined,
+    motivo: solicitud.history?.filter((evento) => evento.new_status === solicitud.status).at(-1)?.reason || undefined,
+  };
+}
 
 /** «2026-11-24T08:58:21-05:00» → «2026-11-24 08:58», en la hora de Colombia que trae. */
 function fechaHoraDesdeBackend(instante: string): string {

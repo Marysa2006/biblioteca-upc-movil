@@ -52,12 +52,12 @@ import {
   useCerrarCapacitacion,
   useProponerFechaCapacitacion,
   useRechazarCapacitacion,
-  useSolicitudesCapacitacion,
+  useSolicitudCapacitacion,
+  useResponsablesCapacitacion,
 } from '@/hooks/useCapacitaciones';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
 import { useHistorialSolicitud } from '@/hooks/useSolicitudes';
-import { useUsuarios } from '@/hooks/useUsuarios';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { SolicitudCapacitacion } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
@@ -75,7 +75,7 @@ import {
 } from '@/utils/capacitaciones';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { fechaLegible } from '@/utils/fechas';
-import { describirRoles, NOMBRE_TIPO, tienePermiso as usuarioTienePermiso } from '@/utils/roles';
+import { NOMBRE_TIPO } from '@/utils/roles';
 import { textoFechaEvento } from '@/utils/solicitudes';
 
 const TITULO = 'Solicitud de capacitación';
@@ -108,9 +108,9 @@ export default function DetalleCapacitacion() {
 /** Se monta solo con el permiso: así, sin él, no se consulta nada. */
 function Detalle({ id }: { id: string }) {
   const { usuario, esAdministrador } = useRol();
-  const solicitudes = useSolicitudesCapacitacion('todas');
+  const solicitudes = useSolicitudCapacitacion(id);
   const historial = useHistorialSolicitud('capacitacion', id);
-  const solicitud = solicitudes.data?.find((actual) => actual.id === id);
+  const solicitud = solicitudes.data;
   // El aviso vive aquí y no en la barra: la barra se va cuando la solicitud queda resuelta.
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -331,7 +331,7 @@ function BarraAcciones({
   onAviso: (aviso: string) => void;
 }) {
   const parametros = useParametros();
-  const usuarios = useUsuarios();
+  const usuarios = useResponsablesCapacitacion();
   const aprobar = useAprobarCapacitacion();
   const rechazar = useRechazarCapacitacion();
   const proponer = useProponerFechaCapacitacion();
@@ -373,15 +373,7 @@ function BarraAcciones({
   };
 
   // Personal con el permiso de capacitaciones, para elegir el responsable (CA3).
-  const opciones: OpcionResponsable[] | null = usuarios.data
-    ? usuarios.data
-        .filter((usuario) => usuarioTienePermiso(usuario, 'formacion'))
-        .map((usuario) => ({
-          id: usuario.id,
-          nombre: usuario.nombre,
-          roles: describirRoles(usuario),
-        }))
-    : null;
+  const opciones: OpcionResponsable[] | null = usuarios.data ?? null;
 
   const ocupado = aprobar.isPending || (asignar.isPending && dialogo == null);
   const persona = solicitud.solicitante.nombre;
@@ -508,14 +500,14 @@ function BarraAcciones({
         solicitud={solicitud}
         guardando={rechazar.isPending || cerrar.isPending}
         mensajeError={errorDialogo}
-        onConfirmar={(texto) =>
+        onConfirmar={(texto, participantesReales) =>
           dialogo === 'rechazar'
             ? rechazar.mutate(
                 { id: solicitud.id, motivo: texto },
                 { onSuccess: listo(avisoCapacitacion('rechazar', solicitud)) },
               )
             : cerrar.mutate(
-                { id: solicitud.id, resultado: texto },
+                { id: solicitud.id, resultado: texto, participantesReales },
                 { onSuccess: listo(avisoCapacitacion('cerrar', solicitud)) },
               )
         }
