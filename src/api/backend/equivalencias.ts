@@ -6,7 +6,34 @@
  * (fase 0 de la integración, 24 de noviembre de 2026). Aquí se irán sumando los días de la semana
  * y los estados de las solicitudes cuando se conecten esos módulos.
  */
-import type { Permiso, RolPersonal, TipoUsuario } from '@/types';
+import type { EstadoSolicitud, Permiso, RolPersonal, TipoUsuario } from '@/types';
+
+/** Estados de una solicitud en el Backend (`RequestStatus`). */
+export type EstadoBackend =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'RESCHEDULE_PROPOSED'
+  | 'IN_PROGRESS'
+  | 'OVERDUE'
+  | 'COMPLETED';
+
+/**
+ * El estado de la app. El Backend tiene dos más: `IN_PROGRESS` (la reserva o el préstamo en curso)
+ * y `OVERDUE` (el préstamo vencido) siguen ocupando, así que cuentan como `aprobada`; el préstamo
+ * de tablet los lee aparte para decir «entregado» o «vencido».
+ */
+export const ESTADO_DESDE_BACKEND: Record<EstadoBackend, EstadoSolicitud> = {
+  PENDING: 'pendiente',
+  APPROVED: 'aprobada',
+  REJECTED: 'rechazada',
+  CANCELLED: 'cancelada',
+  RESCHEDULE_PROPOSED: 'nueva_fecha',
+  IN_PROGRESS: 'aprobada',
+  OVERDUE: 'aprobada',
+  COMPLETED: 'realizada',
+};
 
 /** Tipos de usuario del Backend (`UserType`). No tiene egresados: se dejó para después. */
 export type TipoUsuarioBackend = 'STUDENT' | 'TEACHER' | 'ADMINISTRATIVE';

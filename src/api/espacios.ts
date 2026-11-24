@@ -3,7 +3,11 @@
  * Para la comunidad solo se ofrecen los espacios activos.
  * La disponibilidad se calcula con los parámetros de HU-28, las reservas de HU-18/HU-19
  * y los bloqueos de HU-20, sin revelar datos de quien reservó (HU-17, CA3).
- * La ruta de la API es provisional: confirmarla con el equipo de Backend.
+ *
+ * Con la API (módulo `espacios` de `usaApi()`): el catálogo, la disponibilidad y la solicitud de
+ * reserva de la comunidad van contra el Backend (src/api/backend/espacios.ts), junto con «Mis
+ * reservas» (src/api/reservas.ts), porque las reservas apuntan a los espacios. La administración
+ * de espacios sigue con datos de prueba hasta la fase 4.
  */
 import type {
   Bloqueo,
@@ -26,8 +30,19 @@ import {
 import { MENSAJE_NO_RESERVA_ESPACIOS, puedeReservarEspacios } from '@/utils/roles';
 import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/utils/solicitante';
 
+import {
+  alternativasDesdeBackend,
+  diaDesdeDisponibilidad,
+  espacioDesdeBackend,
+  mesesEntre,
+  reservaDesdeBackend,
+  reservaHaciaBackend,
+  type DisponibilidadBackend,
+  type EspacioBackend,
+  type ReservaBackend,
+} from './backend/espacios';
 import { obtenerBloqueos } from './bloqueos';
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { ESPACIOS } from './mocks/espacios';
 import { obtenerParametros } from './parametros';
 import {
@@ -46,11 +61,12 @@ let espacios: Espacio[] = ESPACIOS.map((espacio) => ({ ...espacio }));
 const ESTADOS_QUE_OCUPAN: readonly EstadoSolicitud[] = ['pendiente', 'aprobada', 'nueva_fecha'];
 
 /** Espacios activos para la comunidad (HU-17, CA1). */
-export function obtenerEspacios(): Promise<Espacio[]> {
-  if (USAR_MOCKS) {
+export async function obtenerEspacios(): Promise<Espacio[]> {
+  if (!usaApi('espacios')) {
     return simularRed(espacios.filter((espacio) => espacio.activo).map((e) => ({ ...e })));
   }
-  return peticion<Espacio[]>('/espacios/');
+  const respuesta = await peticion<{ spaces: EspacioBackend[] }>('/spaces/');
+  return respuesta.spaces.map(espacioDesdeBackend);
 }
 
 /** 'HH:MM' → minutos desde las 00:00. */
@@ -161,6 +177,23 @@ export async function obtenerDisponibilidad(
   desde: string,
   hasta: string,
 ): Promise<DiaDisponibilidad[]> {
+  if (usaApi('espacios')) {
+    if (desde > hasta) return [];
+    // Un pedido por mes (la vista mensual del Backend); se dejan los días del rango.
+    const [parametros, ...meses] = await Promise.all([
+      obtenerParametros(),
+      ...mesesEntre(desde, hasta).map((mes) =>
+        peticion<DisponibilidadBackend>(
+          `/spaces/${encodeURIComponent(espacioId)}/availability/?view=month&date=${mes}`,
+        ),
+      ),
+    ]);
+    const minimo = new Date(Date.now() + parametros.horasMinimasSolicitud * 60 * 60 * 1000);
+    return meses
+      .flatMap((mes) => mes.days)
+      .filter((dia) => dia.date >= desde && dia.date <= hasta)
+      .map((dia) => diaDesdeDisponibilidad(dia, minimo, parametros.horasMinimasSolicitud));
+  }
   if (!USAR_MOCKS) {
     return peticion<DiaDisponibilidad[]>(
       `/espacios/${espacioId}/disponibilidad/?desde=${desde}&hasta=${hasta}`,
@@ -392,8 +425,30 @@ export async function solicitarReserva(
   usuario: Usuario,
   datos: FormularioReserva,
 ): Promise<Reserva> {
+  if (usaApi('espacios')) {
+    // El solicitante sale del token. El Backend valida todo (anticipación, horario, tipo de
+    // usuario); en un conflicto (409) trae tramos libres del mismo día.
+    try {
+      const creada = await peticion<ReservaBackend>('/spaces/reservations/', {
+        method: 'POST',
+        body: JSON.stringify(reservaHaciaBackend(datos)),
+      });
+      return reservaDesdeBackend(creada, { id: usuario.id, nombre: usuario.nombre });
+    } catch (error) {
+      if (error instanceof ErrorApi && error.codigo === 'SCHEDULE_CONFLICT') {
+        const tramos =
+          (error.cuerpo as { alternative_slots?: { start_time: string; end_time: string }[] })
+            ?.alternative_slots ?? [];
+        const duracion = aMinutos(datos.horaFin) - aMinutos(datos.horaInicio);
+        throw new ErrorReserva(
+          error.message,
+          alternativasDesdeBackend(tramos, datos.fecha, duracion),
+        );
+      }
+      throw error;
+    }
+  }
   if (!USAR_MOCKS) {
-    // Ruta provisional: confirmar con Backend. El solicitante sale del token.
     return peticion<Reserva>('/reservas/', { method: 'POST', body: JSON.stringify(datos) });
   }
 
