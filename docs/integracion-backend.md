@@ -2,26 +2,21 @@
 
 Qué tiene que existir del lado del servidor para apagar los datos de prueba (`USAR_MOCKS`), y qué
 cambia en cada módulo. Lo pidió la reunión con la bibliotecóloga del 5 de noviembre de 2026, y lo
-deja por escrito el **#228** para que quien siga no tenga que adivinarlo.
+deja por escrito el **#228**. La versión de la 1.1, con lo que falta campo por campo, es el documento
+**«App móvil y Backend: campos pendientes y archivos»**, que se le entrega al Backend: este archivo
+sigue siendo el inventario de endpoints de la app y el plan para apagarlos.
 
-**Estado de esta comparación:** `biblioteca-upc-movil` @ `develop` contra
-`LibniT/BackEnd-Biblioteca` @ `develop` `8eb5e5a` (18 de noviembre de 2026), `docs/schema.yml`
-versión **1.1.0** con **110 rutas**.
+**Estado de esta comparación:** `biblioteca-upc-movil` @ `develop` (`48b91d8`, 23 de noviembre de
+2026) contra `LibniT/BackEnd-Biblioteca` @ `develop` `53d1350` (23 de noviembre), `docs/schema.yml`
+versión **2.0.1** con **111 rutas**.
 
 > El Backend tiene `main` en `ad3b76c` (5 de noviembre), **sin** la migración `core.0004` de los
 > roles. Todo lo de roles de este documento es de `develop`, no de `main`.
 
-> **Ojo con el `develop` del Backend.** Entre el `ca50fff` (10 de noviembre, 105 rutas) y el
-> `8eb5e5a` cambió bastante, y en los dos sentidos:
->
-> - **Entró** la asistencia por QR (`/attendance/`), **aprobar y rechazar** una asesoría
->   (`/advisories/manage/appointments/{id}/approve|reject/`), el **registro** de cuentas
->   (`/register/`) y la **aceptación de la política** (`/me/privacy-acceptance/`).
-> - **Salieron** los horarios de asesoría (`/advisories/manage/schedules/`) y las franjas de un
->   tema (`/advisories/topics/{id}/slots/`): la asesoría ya se pide con fecha y hora deseadas.
->
-> Lo de abajo está medido contra `8eb5e5a`. Si alguien compara contra `ca50fff`, media tabla le
-> saldrá distinta.
+> **El `develop` del Backend se mueve.** Entre el `ca50fff` (10 de noviembre, 105 rutas) y el
+> `53d1350` (23 de noviembre, 111 rutas) hubo dos versiones de esquema. Entraron la asistencia por
+> QR, aprobar y rechazar asesoría, el registro de cuentas y la aceptación de la política; salieron
+> los horarios de asesoría y las franjas de un tema. Vuelve a medirse antes de empezar el plan.
 
 ---
 
@@ -32,12 +27,13 @@ app vacía o rota.
 
 | # | Qué pasa | Qué hace falta |
 |---|---|---|
-| 1 | **Ninguna ruta coincide.** El móvil usa español y sin prefijo (`/asesorias/citas/`), el Backend inglés con `/api/v1/` (`/api/v1/advisories/appointments/`) | Una capa de traducción en `src/api/cliente.ts`, o que el Backend exponga las rutas del móvil |
+| 1 | **Ninguna ruta coincide.** El móvil usa español y sin prefijo (`/asesorias/citas/`), el Backend inglés con `/api/v1/` (`/api/v1/advisories/appointments/`) | Una capa de traducción en `src/api/cliente.ts` |
 | 2 | **Los días de la semana están invertidos.** Móvil: `0 = domingo` (como `Date.getDay()`). Backend: `DayOfWeekEnum` con `0 = lunes` y `6 = domingo` | Que uno de los dos cambie, o traducir en el cliente |
 | 3 | **JWT distinto.** Backend devuelve `{ access, refresh }`; el móvil espera `{ usuario, token }` y **no renueva** el token | Guardar el `refresh` y renovarlo; `/me/` para el usuario |
 | 4 | **Paginación.** El Backend devuelve `{ count, next, previous, results }` en **27 GET**; el móvil espera arrays planos | Desenvolver `results` en el cliente |
 | 5 | **El login no habla el mismo idioma.** Backend pide `{ email, password }`; el móvil manda `{ correo, contrasena }` | Traducir el cuerpo, o alinear los nombres |
 | 6 | **Estados y tipos.** Estados: **6** en el móvil contra **8** en el Backend (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `RESCHEDULE_PROPOSED`, `IN_PROGRESS`, `OVERDUE`, `COMPLETED`). Tipos de usuario: **5** en el móvil contra **3** (`STUDENT`, `TEACHER`, `ADMINISTRATIVE`) | Tabla de equivalencias para los dos |
+| 7 | **El APK solo habla por HTTPS.** Desde el #299 el APK ya no permite tráfico HTTP (`usesCleartextTraffic` quitado); un Django local por `http://` solo sirve en Expo Go | El servidor de producción, con HTTPS |
 
 **Los roles ya coinciden.** `administrador`, `facilitador` y `gestor_espacios`, por **código** y no
 por nombre (`Role.code`, migración `core.0004`). Ese bloqueante desapareció.
@@ -49,139 +45,141 @@ por nombre (`Role.code`, migración `core.0004`). Ese bloqueante desapareció.
 **Leyenda:** ✅ existe una ruta del Backend que hace lo mismo · ⚠️ existe pero cambia algo (método,
 forma del cuerpo o de la respuesta) · ❌ no existe.
 
-`src/api` hace **90 llamadas** a `peticion()` con ruta, que son **88 endpoints distintos**: `GET
-/espacios` y `GET /servicios` se llaman dos veces, con y sin `?todos=1` para la administración. De
-esos 88, **72 tienen contraparte** en el Backend y **16 no**.
+`src/api` hace **109 llamadas** a `peticion()` con ruta, que son **103 endpoints distintos**: seis se
+piden dos veces (`GET /espacios`, `GET /servicios` y `GET /usuarios` con y sin filtro para la
+administración, y las tres funciones de asesoría que comparten ruta con su versión obsoleta). De esos
+103, **75 tienen contraparte** en el Backend y **28 no**.
 
-> Cómo se cuenta, para que se pueda repetir: `rg -c 'peticion<' src/api/*.ts` da **90**. Un `grep`
-> de una sola línea da **86**, porque cuatro rutas están escritas en la línea siguiente a la
-> llamada (`capacitaciones.ts:175` y `:662`, `espacios.ts:159`, `asesorias.ts:341`). Ni 84 ni 86:
-> **90 llamadas y 88 endpoints**.
-
-Los dos endpoints que llegan con la 1.1 y **todavía no están en `develop`** van marcados con su PR
-(`#269` y `#270`): con ellos serían **90 endpoints** y **18 sin contraparte**. Que vuelva a salir 90
-es casualidad —90 son hoy las *llamadas*, porque dos rutas se piden dos veces—.
+> Cómo se cuenta: `rg -c 'peticion<' src/api/*.ts` da **109** (sin contar `cliente.ts`, que es el
+> propio cliente HTTP). Cada llamada se comprobó con su método y su ruta contra el `schema.yml`
+> 2.0.1: **0 rutas inventadas y 0 métodos inexistentes**.
 
 | Módulo | Móvil | Backend | |
 |---|---|---|---|
-| **Auth** | `POST /auth/login` | `/api/v1/token/` | ⚠️ pide `{email,password}` y devuelve `{access,refresh}` |
-| | `POST /register/` *(#203)* | `/api/v1/register/` | ✅ ya manda los nombres del Backend (`first_name`, `user_type: 'STUDENT'`…); ⚠️ el semestre va como texto (`"7"`) y los 400 llegan por campo: falta leerlos en `ErrorRegistro` |
-| **Perfil** | `GET /perfil` | `/api/v1/me/` | ✅ |
-| | `PATCH /perfil` | `/api/v1/me/` | ✅ |
-| **Usuarios** | `GET /usuarios` | `/api/v1/users/` | ✅ |
-| | `PUT /usuarios/{id}/roles` | `/api/v1/users/{user_id}/roles/` | ⚠️ uno por uno, no un PUT con la lista |
-| | `PUT /usuarios/{id}/permisos` *(en el #269)* | ❌ | ❌ **falta**: los permisos del Backend son de un rol (`Role.permissions`), no de una persona |
-| **Servicios** | `GET /servicios` | `/api/v1/portal/services/` | ✅ |
-| | `POST /servicios` | ❌ | ❌ el portal solo tiene GET: no se crean servicios |
-| | `GET /servicios/{id}` | `/api/v1/portal/services/{slug}/` | ✅ el Backend usa `slug`, no id |
-| | `PUT /servicios/{id}` | ❌ | ❌ |
-| | `PATCH /servicios/{id}/estado` | ❌ | ❌ |
-| **Contenidos** | `GET /contenidos` | `/api/v1/portal/manage/contents/` | ✅ |
-| | `POST /contenidos` | `/api/v1/portal/manage/contents/` | ✅ |
-| | `PATCH /contenidos/orden` | `/api/v1/portal/manage/contents/reorder/` | ⚠️ el Backend lo expone como POST |
-| | `PUT /contenidos/{id}` | `/api/v1/portal/manage/contents/{slug}/` | ✅ |
-| | `PATCH /contenidos/{id}/publicacion` | `/api/v1/portal/manage/contents/{slug}/publish/` | ⚠️ dos rutas (`publish` y `hide`), no un PATCH |
-| **Parámetros** | `GET /parametros` | `/api/v1/config/parameters/` | ⚠️ son cuatro rutas: `parameters`, `periods`, `holidays` y `schedules` |
-| | `PUT /parametros` | `/api/v1/config/parameters/{code}/` | ⚠️ uno por código, y es PATCH |
-| **Espacios** | `GET /espacios` | `/api/v1/spaces/` | ✅ |
-| | `POST /espacios` | `/api/v1/spaces/manage/` | ✅ |
-| | `PUT /espacios/{id}` | `/api/v1/spaces/manage/{id}/` | ✅ |
-| | `GET /espacios/{id}/disponibilidad` | `/api/v1/spaces/{id}/availability/` | ✅ |
-| | `PATCH /espacios/{id}/estado` | `/api/v1/spaces/manage/{id}/status/` | ⚠️ es POST |
-| | `GET /espacios/{id}/reservas-futuras` | ❌ | ❌ ningún GET del espacio trae reservas |
-| **Reservas** | `POST /reservas` | `/api/v1/spaces/reservations/` | ✅ |
-| | `GET /reservas/mias` | `/api/v1/me/requests/` | ✅ |
-| | `POST /reservas/terceros` | `/api/v1/spaces/manage/reservations/` | ✅ con `requester_email` |
-| | `GET /reservas/{id}` | `/api/v1/me/requests/{id}/` | ✅ |
-| | `POST /reservas/{id}/decision` | `/api/v1/spaces/manage/reservations/{id}/approve/` | ✅ son tres rutas: `approve`, `reject` y `modify` |
-| **Bloqueos** | `POST /bloqueos` | `/api/v1/spaces/blocks/` | ⚠️ va con `confirm: true` |
-| | `POST /bloqueos/afectadas` | ❌ | ❌ no hay ruta: las afectadas llegan en el 409 del POST de arriba |
-| | `GET /bloqueos/{id}` | `/api/v1/spaces/blocks/` | ⚠️ el espacio llega por `?space=`, no en la ruta |
 | **Asesorías** | `GET /asesorias/agenda` | `/api/v1/advisories/agenda/` | ✅ |
-| | `POST /asesorias/citas` | `/api/v1/advisories/appointments/` | ✅ acepta `desired_date`/`desired_time` y `accept_terms`; ya no exige franja (#248) |
+| | `POST /asesorias/citas` | `/api/v1/advisories/appointments/` | ✅ con `desired_date`/`desired_time` y `accept_terms`; ya no exige franja |
 | | `GET /asesorias/citas/mias` | `/api/v1/advisories/appointments/` | ✅ |
-| | `POST /asesorias/citas/{id}/aprobar` | `/api/v1/advisories/manage/appointments/{id}/approve/` | ✅ `scheduled_date`, `start_time`, `facilitator` y `virtual_link` |
+| | `POST /asesorias/citas/{id}/aprobar` | `/api/v1/advisories/manage/appointments/{id}/approve/` | ✅ `scheduled_date`, `start_time`, `facilitator`, `virtual_link` |
 | | `POST /asesorias/citas/{id}/cancelar` | `/api/v1/advisories/appointments/{id}/cancel/` | ✅ |
-| | `POST /asesorias/citas/{id}/inasistencia` | `/api/v1/advisories/agenda/appointments/{id}/record/` | ✅ `attended: false`, sin calificación |
+| | `POST /asesorias/citas/{id}/inasistencia` | `/api/v1/advisories/agenda/appointments/{id}/record/` | ✅ `attended: false` |
 | | `POST /asesorias/citas/{id}/rechazar` | `/api/v1/advisories/manage/appointments/{id}/reject/` | ✅ el motivo es obligatorio |
-| | `POST /asesorias/citas/{id}/reprogramar` | `/api/v1/advisories/appointments/{id}/reschedule/` | ✅ |
+| | `POST /asesorias/citas/{id}/reprogramar` | `/api/v1/advisories/appointments/{id}/reschedule/` | ✅ solo fecha y hora |
 | | `POST /asesorias/citas/{id}/resultado` | `/api/v1/advisories/agenda/appointments/{id}/record/` | ✅ `attended: true` y `quality_rating` |
-| | `GET /asesorias/jornadas` | ❌ | ❌ quitaron `/manage/schedules/`: la asesoría ya no depende de una jornada |
-| | `POST /asesorias/jornadas` | ❌ | ❌ |
-| | `PUT /asesorias/jornadas/{id}` | ❌ | ❌ |
-| | `GET /asesorias/temas` | `/api/v1/advisories/topics/` | ✅ |
-| | `POST /asesorias/temas` | `/api/v1/advisories/manage/topics/` | ✅ |
-| | `PUT /asesorias/temas/{id}` | `/api/v1/advisories/manage/topics/{id}/` | ✅ |
-| | `GET /asesorias/temas/{id}/franjas` | ❌ | ❌ quitaron `/topics/{id}/slots/`: la franja se calcula con fecha y hora |
-| **Asistencia (QR)** | `GET /asesorias/citas/{id}/asistencia` | `/api/v1/attendance/{id}/` | ⚠️ trae nombre, programa y semestre de cada asistente |
-| | `POST /asesorias/citas/{id}/asistencia/abrir` | `/api/v1/attendance/{id}/qr/` | ⚠️ es GET, el `token` lo genera el servidor y vale 4 h |
-| | `POST /asesorias/citas/{id}/asistencia/cerrar` | ❌ | ❌ no hay cierre: el QR vence solo |
-| | `POST /asesorias/citas/{id}/asistencia/manual` | ❌ | ❌ no existe el registro manual |
-| | `POST /asesorias/citas/{id}/asistencia/qr` | `/api/v1/attendance/` | ⚠️ la persona sale de la sesión, no del cuerpo; 201 la primera vez y 200 si repite |
-| **Tablets** | `POST /prestamos` | `/api/v1/tablets/loans/` | ✅ |
-| | `GET /prestamos/mios` | `/api/v1/tablets/loans/` | ✅ |
-| | `GET /prestamos/vencidos` | `/api/v1/tablets/manage/loans/?status=OVERDUE` | ✅ |
-| | `GET /prestamos/{id}` | `/api/v1/tablets/manage/loans/{id}/` | ✅ |
-| | `POST /prestamos/{id}/devolucion` | `/api/v1/tablets/manage/loans/{id}/return/` | ✅ |
-| | `GET /prestamos/{id}/constancia` *(en el #270)* | ❌ | ❌ **falta**: el formato de responsabilidad |
-| | `POST /prestamos/{id}/entrega` | `/api/v1/tablets/manage/loans/{id}/deliver/` | ✅ |
-| | `GET /tablets` | `/api/v1/tablets/manage/` | ✅ |
-| | `POST /tablets` | `/api/v1/tablets/manage/` | ✅ |
-| | `GET /tablets/codigo/{id}` | ❌ | ❌ no hay búsqueda por código; el listado solo pagina |
-| | `GET /tablets/condiciones` | ❌ | ❌ solo guarda `conditions_accepted` (booleano) |
-| | `GET /tablets/disponibilidad` | `/api/v1/tablets/availability/` | ✅ |
-| | `PUT /tablets/{id}` | `/api/v1/tablets/manage/{id}/` | ✅ |
-| | `PATCH /tablets/{id}/estado` | `/api/v1/tablets/manage/{id}/` | ✅ |
-| **Capacitaciones** | `GET /capacitaciones/lineas` | `/api/v1/trainings/lines/` | ✅ |
-| | `POST /capacitaciones/lineas` | `/api/v1/trainings/lines/manage/` | ✅ |
-| | `PUT /capacitaciones/lineas/{id}` | `/api/v1/trainings/lines/manage/{id}/` | ✅ |
-| | `PATCH /capacitaciones/lineas/{id}/estado` | `/api/v1/trainings/lines/manage/{id}/` | ✅ con `is_active` |
-| | `GET /capacitaciones/lineas/{id}/solicitudes-activas` | ❌ | ⚠️ no es un GET: las activas llegan en el 409 al desactivar sin `confirm` |
-| | `POST /capacitaciones/solicitudes` | `/api/v1/trainings/requests/` | ✅ |
+| | `POST /solicitudes/cita/{id}/calificacion` | `/api/v1/advisories/appointments/{id}/rate/` | ⚠️ el Backend lo cuelga de la cita, no de `/solicitudes/` |
+| | `GET` · `POST /asesorias/jornadas` · `PUT /{id}` | ❌ | ❌ el Backend quitó `/manage/schedules/` en la 2.0.0: la asesoría no depende de una jornada |
+| | `GET /asesorias/temas` · `POST` · `PUT` | `/advisories/topics/` · `/manage/topics/` | ✅ |
+| | `GET /asesorias/temas/{id}/franjas` | ❌ | ❌ quitó `/topics/{id}/slots/`: la franja se calcula con fecha y hora |
+| **Asistencia** | `POST …/asistencia/abrir` | `GET /api/v1/attendance/{id}/qr/` | ⚠️ es GET y el token lo genera el servidor; vale 4 h |
+| | `POST …/asistencia/qr` | `POST /api/v1/attendance/` | ⚠️ la persona sale de la sesión, no del cuerpo; 201 la primera vez y 200 después |
+| | `GET …/asistencia` | `GET /api/v1/attendance/{id}/` | ⚠️ devuelve nombre, programa y semestre, sin id de usuario ni medio |
+| | `POST …/asistencia/manual` | ❌ | ❌ no existe el registro a mano |
+| | `POST …/asistencia/cerrar` | ❌ | ❌ no hay cierre: el token vence solo |
+| **Auth** | `POST /auth/login` | `/api/v1/token/` (+ `/token/refresh/`) | ⚠️ pide `{email,password}` y devuelve `{access,refresh}` |
+| | `POST /register` | `/api/v1/register/` | ⚠️ falta la sede y la facultad (ver §3) |
+| **Autoarchivo** | `GET /autoarchivo` | `/api/v1/portal/self-archive/` | ✅ |
+| **Bloqueos** | `GET /bloqueos` · `POST /bloqueos` | `GET`/`POST /spaces/blocks/` | ⚠️ el espacio va por `?space=` y el POST con `confirm: true` |
+| | `POST /bloqueos/afectadas` | ❌ | ❌ las afectadas llegan en el 409 del POST |
+| **Capacitaciones** | `GET` · `POST /capacitaciones/lineas` · `PUT /{id}` | `/trainings/lines/` · `/lines/manage/` | ✅ |
+| | `PATCH /lineas/{id}/estado` | `PATCH /lines/manage/{id}/` (`is_active`) | ✅ |
+| | `GET /lineas/{id}/solicitudes-activas` | `/trainings/requests/manage/` | ⚠️ hoy es un filtro `?line=&status=`, no una ruta aparte |
+| | `POST /capacitaciones/solicitudes` | `/api/v1/trainings/requests/` | ⚠️ faltan novedades, datos del solicitante y `accept_terms` |
 | | `GET /capacitaciones/solicitudes/mias` | `/api/v1/trainings/requests/` | ✅ |
-| | `GET /capacitaciones/solicitudes/{id}` | `/api/v1/trainings/requests/manage/{id}/` | ✅ |
-| | `POST /capacitaciones/solicitudes/{id}/aprobar` | `/api/v1/trainings/requests/manage/{id}/approve/` | ✅ |
-| | `POST /capacitaciones/solicitudes/{id}/cerrar` | `/api/v1/trainings/requests/manage/{id}/close/` | ✅ |
-| | `POST /capacitaciones/solicitudes/{id}/nueva-fecha` | `/api/v1/trainings/requests/manage/{id}/propose-date/` | ✅ |
-| | `POST /capacitaciones/solicitudes/{id}/rechazar` | `/api/v1/trainings/requests/manage/{id}/reject/` | ✅ |
-| | `POST /capacitaciones/solicitudes/{id}/responder-fecha` | `/api/v1/trainings/requests/{id}/accept-date/` | ✅ son dos rutas: `accept-date` y `decline-date` |
-| | `PATCH /capacitaciones/solicitudes/{id}/responsable` | `/api/v1/trainings/requests/manage/{id}/assign/` | ⚠️ es POST |
-| **Guías** | `GET /guias` | ❌ | ❌ HU-29 no existe en el Backend (las guías sin conexión) |
-| | `GET /guias/{id}` | ❌ | ❌ |
-| **Recursos y autoarchivo** | `GET /autoarchivo` | `/api/v1/portal/self-archive/` | ✅ |
-| | `GET /recursos` | `/api/v1/portal/resources/` | ✅ |
-| **Notificaciones** | `GET /notificaciones` | `/api/v1/notifications/me/` | ✅ |
-| | `PATCH /notificaciones/{id}/leida` | `/api/v1/notifications/me/{id}/read/` | ⚠️ es POST |
+| | `GET /capacitaciones/solicitudes/{id}` | `/trainings/requests/manage/{id}/` | ✅ |
+| | `…/aprobar` · `/rechazar` · `/nueva-fecha` · `/cerrar` | `/manage/{id}/approve\|reject\|propose-date\|close/` | ✅ |
+| | `PATCH …/responsable` | `POST /manage/{id}/assign/` | ⚠️ es POST |
+| | `…/responder-fecha` | `/requests/{id}/accept-date\|decline-date/` | ✅ |
+| | `POST /solicitudes/capacitacion/{id}/calificacion` | ❌ | ❌ solo existe `rate` de asesorías |
+| **Contenidos** | `GET` · `POST /contenidos` | `/portal/manage/contents/` | ✅ |
+| | `PUT /contenidos/{id}` | `/manage/contents/{slug}/` | ✅ |
+| | `PATCH /contenidos/{id}/publicacion` | `…/{slug}/publish/` y `/hide/` | ⚠️ dos rutas, no un PATCH |
+| | `PATCH /contenidos/orden` | `…/manage/contents/reorder/` | ⚠️ el Backend lo expone como POST |
+| **Espacios** | `GET` · `POST /espacios` · `PUT /{id}` | `/spaces/` · `/spaces/manage/` | ✅ |
+| | `GET /espacios/{id}/disponibilidad` | `/spaces/{id}/availability/` | ✅ |
+| | `PATCH /espacios/{id}/estado` | `POST /spaces/manage/{id}/status/` | ⚠️ es POST |
+| | `GET /espacios/{id}/reservas-futuras` | `/spaces/manage/reservations/` | ⚠️ hoy es un filtro `?space=&date_from=&status=` |
+| | `POST /reservas` | `/api/v1/spaces/reservations/` | ⚠️ faltan recursos de apoyo, datos del solicitante y `accept_terms` |
+| **Estadísticas** | `GET /estadisticas/registros` | ❌ | ❌ solo hay `summary/` y `export/` |
+| **Fotos de Inicio** | 6 rutas (`GET`, `POST`, administración, orden, `PUT`, publicación) | ❌ | ❌ el recurso no existe: rutas y campos propuestos en el documento de campos |
+| **Guías** | 6 rutas (`GET`, `POST`, administración, `PUT`, detalle, publicación) | ❌ | ❌ no hay modelo de guías: los contenidos del portal son aviso, noticia y página |
+| **Historial** | `GET /solicitudes/{tipo}/{id}/historial` | `/me/requests/{id}/` | ✅ el historial viene dentro del detalle |
+| **Notificaciones** | `GET /notificaciones` | `/notifications/me/` | ✅ |
+| | `PATCH /notificaciones/{id}/leida` | `/notifications/me/{id}/read/` | ⚠️ es POST |
+| **Parámetros** | `GET /parametros` | `/config/parameters/` | ⚠️ son cuatro rutas: `parameters`, `periods`, `holidays` y `schedules` |
+| | `PUT /parametros` | `/config/parameters/{code}/` | ⚠️ uno por código, y es PATCH |
+| **Perfil** | `GET` · `PATCH /perfil` | `/api/v1/me/` | ✅ |
+| **Recursos** | `GET /recursos` | `/portal/resources/` | ✅ |
+| **Reservas** | `GET /reservas/mias` · `GET /reservas/{id}` | `/me/requests/` · `/{id}/` | ✅ |
+| | `POST /reservas/terceros` | `/spaces/manage/reservations/` | ✅ con `requester_email` |
+| | `POST /reservas/{id}/decision` | `…/manage/reservations/{id}/approve\|reject\|cancel/` | ✅ son tres rutas |
+| **Servicios** | `GET /servicios` · `GET /servicios/{id}` | `/portal/services/` · `/{slug}/` | ✅ |
+| | `POST` · `PUT` · `PATCH /estado` | ❌ | ❌ el portal solo tiene GET |
 | **Solicitudes** | `GET /solicitudes/mias/{id}` | `/api/v1/me/requests/{id}/` | ✅ |
-| | `GET /solicitudes/{tipo}/{id}/historial` | `/api/v1/me/requests/{id}/` | ✅ el historial viene dentro del detalle, sin ruta aparte |
-| **Estadísticas** | `GET /estadisticas/registros` | ❌ | ❌ solo hay `summary/` y `export/`: no hay lista de registros |
+| **Tablets** | `GET` · `POST /tablets` · `PUT /{id}` | `/tablets/manage/` | ✅ |
+| | `PATCH /tablets/{id}/estado` | `PATCH /tablets/manage/{id}/` | ✅ |
+| | `GET /tablets/disponibilidad` | `/tablets/availability/` | ✅ |
+| | `GET /tablets/codigo/{codigo}` | ❌ | ❌ no hay búsqueda por código; propuesto `?search=` |
+| | `GET /tablets/condiciones` | ❌ | ❌ solo guarda `conditions_accepted` |
+| | `GET /prestamos/mios` · `POST /prestamos` | `/tablets/loans/` | ✅ |
+| | `GET /prestamos/{id}` | `/tablets/manage/loans/{id}/` | ✅ |
+| | `GET /prestamos/vencidos` | `/tablets/manage/loans/?status=OVERDUE` | ✅ |
+| | `POST /prestamos/{id}/entrega` · `/devolucion` | `…/manage/loans/{id}/deliver/` · `/return/` | ✅ |
+| | `GET /prestamos/{id}/constancia` | ❌ | ❌ **no hace falta**: la app arma la constancia con el detalle |
+| **Usuarios** | `GET /usuarios` | `/api/v1/users/` | ✅ |
+| | `PUT /usuarios/{id}/roles` | `POST`/`DELETE /users/{user_id}/roles/` | ⚠️ uno por uno, no un PUT con la lista |
+| | `PUT /usuarios/{id}/permisos` | ❌ | ❌ el Backend solo tiene permisos **por rol** (`Role.permissions`) |
 
-**Resumen:** **57 ✅ · 15 ⚠️ · 16 ❌ = 88** endpoints, más los dos que traen el #269 y el #270 (90 en total, con 18 sin contraparte). Con contraparte (✅+⚠️) hay **72**; sin ella, **16**.
+**Resumen:** **55 ✅ · 20 ⚠️ · 28 ❌ = 103** endpoints. Con contraparte (✅+⚠️) **75**; sin ella, **28**.
 
 ---
 
-## 3. Lo que cambia en la versión 1.1
+## 3. Lo que falta campo por campo
 
-Campos y comportamientos nuevos que el Backend tiene que aceptar cuando se conecte:
+Esto ya no va por endpoint sino por **dato**: es lo que la app ya pide y el Backend no recibe. Lo
+desarrolla, con las preguntas para el equipo del servidor, el documento **«App móvil y Backend:
+campos pendientes y archivos»**; aquí queda el resumen para no tener que abrirlo.
 
-| Tema | Issue | Qué necesita el Backend |
+### Prioridad alta: la app lo pide y el Backend no lo recibe
+
+| Dato | Dónde | Estado en el Backend (`53d1350`) |
 |---|---|---|
-| Asesorías sin jornadas | **#248** | Ya está: `POST /appointments/` con fecha y hora deseadas (`PENDING` sin facilitador), y `approve` con `facilitator`, `scheduled_date` y `virtual_link` |
-| Campos de los formularios | **#251**, **#224** | `datosSolicitante` (identificación, celular, nivel, facultad, programa, semestre), `asignatura`, `participantes` y `novedades` en citas, capacitaciones y reservas |
-| Constancia del préstamo | **#252** | `estadoEquipo`, `notas`, `responsable` (id, nombre y cargo), `marca`, `valor` y `tipo` de la tablet |
-| Calificación | **#254** | Ya está en citas: `quality_rating` (1 a 5) al registrar el resultado. Falta en capacitaciones |
-| Permiso de novedades | **#256** | Un permiso suelto por persona. Hoy el Backend solo tiene permisos **dentro de un rol** |
-| Guías con enlace | **#258** | `GET /guias/` con `enlace` y `sede` |
-| Estadísticas | **#259** | `facultad`, `sede`, `semestre` y `calificacion` en los registros; los tres filtros; y el PDF (que se genera en el celular) |
-| **Aceptación de la Ley 1581** | **#225**, **#246** | Ya está: `POST /me/privacy-acceptance/` guarda la aceptación con la versión de la política, y el perfil trae `privacy_acceptance_required`. Falta que el móvil lo llame |
-| Registro de cuentas | **#203** | Ya está: `POST /register/` con el correo `@unicesar.edu.co`, `accept_privacy` y los datos del #224; la cuenta queda activa y sin rol. El móvil ya tiene la pantalla (`registro`) con los mismos campos; al conectar, falta leer los errores por campo del 400 |
-| QR de asistencia | **#231** | Están **3 de las 5**: el QR lo genera el servidor (`/attendance/{id}/qr/`), la persona lo envía (`POST /attendance/`) y la lista se consulta (`/attendance/{id}/`). **Faltan** el registro manual y el cierre |
+| **Sede de la persona** (Valledupar o Aguachica) | las cuatro solicitudes y el registro | no existe en el usuario ni en la solicitud |
+| **Solicitud de capacitación**: novedades, datos del solicitante y `accept_terms` | `POST /trainings/requests/` | `TrainingRequest` no tiene ninguno de los tres |
+| **Reserva de espacios**: recursos de apoyo, datos del solicitante y `accept_terms` | `POST /spaces/reservations/` | no existen |
+| **Registro**: sede y facultad | `POST /register/` | `Register` no las tiene |
+| **Tablets y constancia**: marca, valor y tipo de la tablet; estado del formato y firma | `POST …/deliver/` | `Tablet` no tiene marca ni valor; la entrega no tiene estado del formato ni firma |
+
+### Prioridad media
+
+| Tema | Qué falta |
+|---|---|
+| **Archivos** | Cómo se suben (`multipart/form-data`) y dónde se guardan en producción (`MEDIA_ROOT` o un servicio externo). Hoy la app manda la **ruta local** de la foto del espacio dentro del JSON, que el servidor no puede abrir |
+| **Estadísticas** | Sede, temáticas (tema de asesoría y línea de formación), tiempo de respuesta, duración de los préstamos y calificación promedio en `summary/`; y una serie por día de la semana para la afluencia del Dashboard |
+| **Asistencia con QR** | El registro a mano y cinco preguntas: la ventana de 4 h, si se valida que quien escanea esté inscrito, el id y el medio de cada asistente, y si entra en los registros de uso |
+| **Guías de la biblioteca** | El modelo y las rutas, con el PDF y `updated_at` con hora |
+| **Fotos de Inicio y permisos por persona** | El recurso de fotos (máximo 5 publicadas) y una lista de permisos **aparte de los roles** |
+
+### Prioridad baja
+
+| Tema | Qué falta |
+|---|---|
+| **Servicios del portal** | Crear, editar y activar o desactivar: hoy el portal solo tiene GET |
+| **Calificar la capacitación** | `POST /trainings/requests/{id}/rate/`, igual que el de asesorías |
+| **Koha para el personal** | La dirección de `KOHA_STAFF_URL`: la app la usa en el #311 |
+
+### Lo que la app ya resuelve por su cuenta
+
+Para no pedirle cambios de forma al Backend, la app se adapta en `src/api/cliente.ts`: las rutas al
+inglés con `/api/v1/`, el login a `{email,password}` con `refresh`, `results` de las paginadas, los
+días de la semana (`0 = lunes`), los nombres de los campos, los estados y los tipos de usuario.
+
+Y **deja de enviar** lo que el Backend no necesita: la sede de la reserva, la identificación, los
+nombres de los participantes de la capacitación y la asignatura aparte del grupo.
 
 ---
 
 ## 4. Plan para apagar los mocks
 
-El interruptor es uno (`USAR_MOCKS`), pero **no se puede apagar de golpe**: con 88 endpoints en
+El interruptor es uno (`USAR_MOCKS`), pero **no se puede apagar de golpe**: con 103 endpoints en
 español y el Backend en inglés, apagarlo dejaría la app vacía. Orden propuesto, un módulo por PR y
 con su prueba:
 
@@ -196,6 +194,9 @@ con su prueba:
 5. **Estadísticas y asistencia**: al final, porque dependen de que todo lo anterior escriba de verdad.
 6. **Catálogo y repositorio** van aparte: no pasan por el Backend.
 
+**Antes del punto 1 hay que cerrar los cinco temas de prioridad alta de §3**, o la app no podrá
+guardar los datos de los formularios aunque consiga hablar con el servidor.
+
 ---
 
 ## 5. Lo que este documento no cubre
@@ -204,6 +205,9 @@ No hay una instancia del Backend en el entorno donde se escribió esto: **el con
 `schema.yml`**, que es lo que el Backend declara, no contra respuestas reales. Las pruebas de
 integración de verdad siguen pendientes de un entorno.
 
-Y como el `develop` del Backend se mueve (dos versiones del esquema en ocho días), esto hay que
-volver a medirlo antes de empezar el punto 1 del plan: lo que hoy falta puede aparecer, y lo que hoy
-existe puede desaparecer sin avisar en el móvil.
+Los tres documentos de la entrega de la 1.1 son:
+
+- **este archivo**, con el inventario de endpoints y el plan;
+- **«App móvil y Backend: campos pendientes y archivos»**, con los 13 temas campo por campo y las
+  preguntas para el equipo del servidor;
+- la **guía técnica** (`docs/guia-tecnica.md`), que explica cómo está hecha la app.
