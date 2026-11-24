@@ -227,10 +227,13 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
 }
 
 /** Valores del formulario ya validados → lo que guarda la API. */
-export function aParametros(datos: FormularioParametros): Parametros {
+export function aParametros(datos: FormularioParametros, anteriores?: Parametros): Parametros {
   const horarios: HorarioAtencion[] = datos.dias
     .filter((d) => d.abierto)
-    .map((d) => ({ dia: d.dia, abre: d.abre.trim(), cierra: d.cierra.trim() }))
+    .flatMap((d) => {
+      const adicionales = anteriores?.horarios.filter((h) => h.dia === d.dia).slice(1) ?? [];
+      return [{ dia: d.dia, abre: d.abre.trim(), cierra: d.cierra.trim() }, ...adicionales];
+    })
     .sort((a, b) => a.dia - b.dia);
   return {
     periodos: datos.periodos.map((p) => ({

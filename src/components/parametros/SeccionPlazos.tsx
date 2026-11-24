@@ -2,7 +2,10 @@
 import { CampoParametro } from './CampoParametro';
 import { TarjetaSeccion } from './TarjetaSeccion';
 
-export function SeccionPlazos({ deshabilitado }: { deshabilitado: boolean }) {
+export function SeccionPlazos({
+  deshabilitado,
+  editarTextos = true,
+}: { deshabilitado: boolean; editarTextos?: boolean }) {
   return (
     <>
       <TarjetaSeccion
@@ -27,7 +30,7 @@ export function SeccionPlazos({ deshabilitado }: { deshabilitado: boolean }) {
         />
       </TarjetaSeccion>
 
-      <TarjetaSeccion
+      {editarTextos ? <TarjetaSeccion
         titulo="Textos automáticos"
         ayuda="Mensajes que recibe la comunidad en las comunicaciones automáticas."
       >
@@ -45,7 +48,7 @@ export function SeccionPlazos({ deshabilitado }: { deshabilitado: boolean }) {
           largoMaximo={300}
           deshabilitado={deshabilitado}
         />
-      </TarjetaSeccion>
+      </TarjetaSeccion> : null}
     </>
   );
 }

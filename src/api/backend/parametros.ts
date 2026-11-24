@@ -10,7 +10,7 @@
  */
 import type { Festivo, HorarioAtencion, Parametros, PeriodoAcademico } from '@/types';
 
-import { diaDesdeBackend, horaDesdeBackend } from './equivalencias';
+import { diaDesdeBackend, diaHaciaBackend, horaDesdeBackend } from './equivalencias';
 
 export type PeriodoBackend = {
   id: number;
@@ -30,7 +30,12 @@ export type HorarioBackend = {
   is_active?: boolean;
 };
 
-export type ParametroBackend = { code: string; value: string; typed_value: unknown };
+export type ParametroBackend = {
+  code: string;
+  value: string;
+  typed_value: unknown;
+  data_type?: 'STRING' | 'INTEGER' | 'DECIMAL' | 'BOOLEAN' | 'DATE' | 'TIME';
+};
 
 export function periodoDesdeBackend(periodo: PeriodoBackend): PeriodoAcademico {
   return {
@@ -60,25 +65,51 @@ export function horariosDesdeBackend(horarios: HorarioBackend[]): HorarioAtencio
  * Cada código del Backend y el campo de la app que llena. `min-notice-days` viene en días y la
  * app lo guarda en horas.
  */
-const PLAZOS: Record<string, (valor: number) => Partial<Parametros>> = {
-  'min-notice-days': (dias) => ({ horasMinimasSolicitud: dias * 24 }),
-  'cancel-min-hours': (horas) => ({ horasMinimasCancelacion: horas }),
-  'tablet-max-loan-hours': (horas) => ({ horasMaximasPrestamo: horas }),
-  'tablet-loan-hours': (horas) => ({ horasPrestamoTablet: horas }),
-  'tablet-max-days-ahead': (dias) => ({ diasMaximosTablet: dias }),
-  'tablet-pickup-minutes': (minutos) => ({ minutosRecogerTablet: minutos }),
-  'advisory-duration-minutes': (minutos) => ({ duracionAsesoriaMinutos: minutos }),
-  'advisory-max-group': (personas) => ({ maximoPersonasAsesoria: personas }),
-  'attendance-qr-hours': (horas) => ({ horasVigenciaQr: horas }),
+type CampoPlazo = {
+  [Campo in keyof Parametros]: Parametros[Campo] extends number ? Campo : never;
+}[keyof Parametros];
+
+const PLAZOS: Record<string, { campo: CampoPlazo; factor: number }> = {
+  'min-notice-days': { campo: 'horasMinimasSolicitud', factor: 24 },
+  'cancel-min-hours': { campo: 'horasMinimasCancelacion', factor: 1 },
+  'tablet-max-loan-hours': { campo: 'horasMaximasPrestamo', factor: 1 },
+  'tablet-loan-hours': { campo: 'horasPrestamoTablet', factor: 1 },
+  'tablet-max-days-ahead': { campo: 'diasMaximosTablet', factor: 1 },
+  'tablet-pickup-minutes': { campo: 'minutosRecogerTablet', factor: 1 },
+  'advisory-duration-minutes': { campo: 'duracionAsesoriaMinutos', factor: 1 },
+  'advisory-max-group': { campo: 'maximoPersonasAsesoria', factor: 1 },
+  'attendance-qr-hours': { campo: 'horasVigenciaQr', factor: 1 },
 };
 
 /** Los plazos que trae el Backend, sobre los valores de siempre (`base`). */
 export function plazosDesdeBackend(valores: ParametroBackend[], base: Parametros): Parametros {
-  let resultado = { ...base };
+  const resultado = { ...base };
   for (const { code, value, typed_value: tipado } of valores) {
     const numero = typeof tipado === 'number' ? tipado : Number(value);
     const plazo = PLAZOS[code];
-    if (plazo && Number.isFinite(numero)) resultado = { ...resultado, ...plazo(numero) };
+    if (plazo && Number.isFinite(numero)) resultado[plazo.campo] = numero * plazo.factor;
   }
   return resultado;
+}
+
+export function plazosHaciaBackend(deseados: Parametros, actuales: Parametros) {
+  return Object.entries(PLAZOS)
+    .filter(([, { campo }]) => deseados[campo] !== actuales[campo])
+    .map(([code, { campo, factor }]) => ({ code, value: deseados[campo] / factor }));
+}
+
+export function periodoHaciaBackend(periodo: PeriodoAcademico) {
+  return { name: periodo.nombre.trim(), start_date: periodo.inicio, end_date: periodo.fin };
+}
+
+export function festivoHaciaBackend(festivo: Festivo) {
+  return { date: festivo.fecha, name: festivo.motivo.trim() };
+}
+
+export function horarioHaciaBackend(horario: HorarioAtencion) {
+  return {
+    day_of_week: diaHaciaBackend(horario.dia),
+    opening_time: horario.abre,
+    closing_time: horario.cierra,
+  };
 }
