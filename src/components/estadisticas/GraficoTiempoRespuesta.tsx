@@ -17,8 +17,8 @@ type Props = {
 };
 
 /** "de 1 solicitud" o "de 7 solicitudes". */
-const textoSolicitudes = (cantidad: number) =>
-  `de ${cantidad} ${cantidad === 1 ? 'solicitud' : 'solicitudes'}`;
+const textoSolicitudes = (cantidad?: number) =>
+  cantidad == null ? '' : `de ${cantidad} ${cantidad === 1 ? 'solicitud' : 'solicitudes'}`;
 
 export function GraficoTiempoRespuesta({ datos }: Props) {
   const maximo = Math.max(...datos.map((fila) => fila.horasPromedio), 1);

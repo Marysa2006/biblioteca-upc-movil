@@ -21,7 +21,8 @@ import { periodoDe } from '@/utils/estadisticas';
 
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
-import { peticion, simularRed, USAR_MOCKS } from './cliente';
+import { consultaEstadisticas, indicadoresDesdeBackend, type ResumenBackend } from './backend/estadisticas';
+import { peticion, peticionRespuesta, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { REGISTROS_USO } from './mocks/estadisticas';
 
 /** Copia mutable: con mocks, lo que se registra se ve durante la sesión. */
@@ -54,6 +55,15 @@ export type OperacionUso = {
    */
   respondida?: boolean;
 };
+
+export async function obtenerResumenEstadistico(filtros: FiltrosEstadisticas = {}) {
+  const respuesta = await peticion<ResumenBackend>(`/statistics/summary/${consultaEstadisticas(filtros)}`);
+  return indicadoresDesdeBackend(respuesta);
+}
+
+export function descargarEstadisticas(filtros: FiltrosEstadisticas, formato: 'csv' | 'pdf') {
+  return peticionRespuesta(`/statistics/export/${consultaEstadisticas(filtros, formato)}`);
+}
 
 /** Hoy en la hora del celular, 'AAAA-MM-DD'. */
 function hoy(): string {
@@ -155,6 +165,7 @@ export function filtrarRegistros(
 
 /** Registros de uso que cumplen los filtros, del más reciente al más antiguo (HU-25, CA3). */
 export function obtenerRegistrosUso(filtros: FiltrosEstadisticas = {}): Promise<RegistroUso[]> {
+  if (usaApi('estadisticas')) return Promise.resolve([]);
   if (USAR_MOCKS) {
     const filtrados = filtrarRegistros(registros, filtros).sort((a, b) =>
       b.fecha.localeCompare(a.fecha),

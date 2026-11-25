@@ -29,7 +29,6 @@ import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes } from '@/theme';
 import { fechaCompleta } from '@/utils/calendario';
 import {
-  afluenciaSemanal,
   cifrasDelDia,
   pendientesPorAtender,
   resumenPorArea,
@@ -119,7 +118,7 @@ export default function Panel() {
       );
     } else {
       afluencia = (
-        <AfluenciaSemanal afluencia={afluenciaSemanal(panel.registros.lista, panel.hoy)} />
+        <AfluenciaSemanal afluencia={panel.registros.lista} />
       );
     }
   }

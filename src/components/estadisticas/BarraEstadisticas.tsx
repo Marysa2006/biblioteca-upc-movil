@@ -12,6 +12,8 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Chip, Menu, Portal, Snackbar } from 'react-native-paper';
 
 import { FiltrosIndicadores } from '@/components/estadisticas/FiltrosIndicadores';
+import { usaApi } from '@/api/cliente';
+import { servicioEstadistico } from '@/api/backend/estadisticas';
 import {
   useExportarEstadisticas,
   useExportarPdf,
@@ -20,7 +22,7 @@ import {
 } from '@/hooks/useEstadisticas';
 import { colores, espacio, fuentes } from '@/theme';
 import type { FiltrosEstadisticas } from '@/types';
-import { filtrosActivos, opcionesFiltros, textoOperaciones } from '@/utils/filtrosEstadisticas';
+import { CAMPOS_FILTRO, filtrosActivos, opcionesFiltros, textoOperaciones } from '@/utils/filtrosEstadisticas';
 
 /**
  * El aviso cuando falla una exportación. En desarrollo (Expo Go) también dice el error técnico y
@@ -48,13 +50,30 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
   // Las opciones de cada lista salen del periodo (solo desde y hasta): así cada opción dice
   // cuántas operaciones tiene. Los registros y los indicadores usan todos los filtros.
   const periodo = useRegistrosUso({ desde: filtros.desde, hasta: filtros.hasta });
+  const conApi = usaApi('estadisticas');
+  const resumenPeriodo = useIndicadores({ desde: filtros.desde, hasta: filtros.hasta }, conApi && abierto);
   const registros = useRegistrosUso(filtros);
   const indicadores = useIndicadores(filtros);
   const exportar = useExportarEstadisticas();
   const exportarPdf = useExportarPdf();
   const exportando = exportar.isPending || exportarPdf.isPending;
   const activos = filtrosActivos(filtros);
-  const sinDatos = (registros.data?.length ?? 0) === 0;
+  const total = (conApi ? indicadores.data?.total : registros.data?.length) ?? 0;
+  const sinDatos = total === 0;
+  const opciones = opcionesFiltros(periodo.data ?? [], filtros);
+  const resumen = resumenPeriodo.data;
+  if (conApi && resumen) {
+    for (const [campo, filas] of [
+      ['servicio', resumen.porServicio], ['programa', resumen.porPrograma],
+      ['facultad', resumen.porFacultad], ['sede', resumen.porSede],
+    ] as const) {
+      opciones[campo] = [{ valor: 'todos', etiqueta: 'Todos', cantidad: resumen.total },
+        ...filas.flatMap((fila) => {
+          const valor = campo === 'servicio' ? servicioEstadistico(fila.etiqueta) : fila.etiqueta;
+          return valor ? [{ ...fila, valor }] : [];
+        })];
+    }
+  }
 
   // El Snackbar ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
   useEffect(() => {
@@ -72,13 +91,13 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
   const alExportarExcel = () => {
     setMenu(false);
     const lista = registros.data;
-    if (!lista) return;
+    if (!conApi && !lista) return;
     exportarPdf.reset();
-    exportar.mutate(lista, {
+    exportar.mutate({ registros: lista ?? [], filtros }, {
       onSuccess: ({ archivo, compartido }) =>
         setAviso(
           compartido
-            ? `Se exportaron ${textoOperaciones(lista.length)} en ${archivo}.`
+            ? `Se exportaron ${textoOperaciones(total)} en ${archivo}.`
             : `El celular no permite compartir: el archivo ${archivo} quedó guardado en la app.`,
         ),
       onError: (error) => setAviso(mensajeDeError('No pudimos exportar el archivo.', error)),
@@ -146,7 +165,7 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
             leadingIcon="microsoft-excel"
             title="Para Excel (CSV)"
             onPress={alExportarExcel}
-            accessibilityLabel={`Exportar ${textoOperaciones(registros.data?.length ?? 0)} para Excel`}
+            accessibilityLabel={`Exportar ${textoOperaciones(total)} para Excel`}
           />
           <Menu.Item
             leadingIcon="file-pdf-box"
@@ -179,7 +198,8 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
         <FiltrosIndicadores
           filtros={filtros}
           onCambiar={cambiar}
-          opciones={opcionesFiltros(periodo.data ?? [], filtros)}
+          opciones={opciones}
+          campos={conApi ? CAMPOS_FILTRO.filter((campo) => campo !== 'tipoUsuario' && campo !== 'periodo') : CAMPOS_FILTRO}
         />
       ) : null}
 

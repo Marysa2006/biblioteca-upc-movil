@@ -8,7 +8,30 @@ import * as Sharing from 'expo-sharing';
 
 import { hoyISO } from '@/utils/fechas';
 import { nombreArchivoCsv, registrosACsv } from '@/utils/estadisticas';
-import type { RegistroUso } from '@/types';
+import type { FiltrosEstadisticas, RegistroUso } from '@/types';
+import { descargarEstadisticas } from '@/api/estadisticas';
+
+export async function exportarEstadisticasBackend(filtros: FiltrosEstadisticas, formato: 'csv' | 'pdf') {
+  const respuesta = await descargarEstadisticas(filtros, formato);
+  const datos = new Uint8Array(await respuesta.arrayBuffer());
+  const nombre = `estadisticas_${hoyISO()}.${formato}`;
+  const mimeType = formato === 'pdf' ? 'application/pdf' : 'text/csv';
+  if (typeof document !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    const url = URL.createObjectURL(new Blob([datos], { type: mimeType }));
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    enlace.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    return { archivo: nombre, compartido: true };
+  }
+  const archivo = new File(Paths.cache, nombre);
+  archivo.create({ overwrite: true });
+  archivo.writeSync(datos);
+  const compartido = await Sharing.isAvailableAsync();
+  if (compartido) await Sharing.shareAsync(archivo.uri, { mimeType, dialogTitle: 'Compartir las estadísticas' });
+  return { archivo: nombre, compartido };
+}
 
 /**
  * Guarda los registros como CSV y abre el menú del sistema para compartirlo o enviarlo.

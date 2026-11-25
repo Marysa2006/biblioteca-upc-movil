@@ -112,6 +112,10 @@ export type ConteoIndicador = {
  * programa y mes. Sin datos, el total es 0 y las listas van vacías (CA3).
  */
 export type IndicadoresUso = {
+  usuariosUnicos?: number;
+  asistentes?: number;
+  porDiaSemana?: ConteoIndicador[];
+  porTematica?: ConteoIndicador[];
   total: number;
   porServicio: ConteoIndicador[];
   porTipoUsuario: ConteoIndicador[];
@@ -162,7 +166,8 @@ export type IndicadoresTablets = {
   /** Cuántos de los que tienen duración duraron esas horas o menos. */
   dentroDeReferencia: number;
   /** Devueltos sin la hora de entrega o de devolución: calidad de los datos. */
-  sinHoraCompleta: number;
+  sinHoraCompleta?: number;
+  menosDeUnaHora?: number;
   porMes: ConteoIndicador[];
   porPrograma: ConteoIndicador[];
 };
@@ -175,5 +180,5 @@ export type TiempoRespuesta = {
   /** Promedio en horas, con un decimal. */
   horasPromedio: number;
   /** Cuántas solicitudes respondidas entran en el promedio. */
-  cantidad: number;
+  cantidad?: number;
 };

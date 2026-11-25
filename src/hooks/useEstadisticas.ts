@@ -6,10 +6,11 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
-import { obtenerRegistrosUso } from '@/api/estadisticas';
+import { obtenerRegistrosUso, obtenerResumenEstadistico } from '@/api/estadisticas';
+import { usaApi } from '@/api/cliente';
 import type { FiltrosEstadisticas, IndicadoresUso } from '@/types';
 import { calcularIndicadores, HORAS_REFERENCIA_TABLET } from '@/utils/estadisticas';
-import { exportarRegistrosCsv } from '@/utils/exportarEstadisticas';
+import { exportarEstadisticasBackend, exportarRegistrosCsv } from '@/utils/exportarEstadisticas';
 import { exportarPdf } from '@/utils/exportarPdf';
 
 import { useParametros } from './useParametros';
@@ -19,6 +20,7 @@ export function useRegistrosUso(filtros: FiltrosEstadisticas = {}) {
   return useQuery({
     queryKey: claves.registrosUso(filtros),
     queryFn: () => obtenerRegistrosUso(filtros),
+    enabled: !usaApi('estadisticas'),
   });
 }
 
@@ -28,13 +30,15 @@ export function useRegistrosUso(filtros: FiltrosEstadisticas = {}) {
  * La duración de referencia de las tablets sale de los parámetros (#307): si la biblioteca la
  * cambia, el cumplimiento se recalcula.
  */
-export function useIndicadores(filtros: FiltrosEstadisticas = {}) {
+export function useIndicadores(filtros: FiltrosEstadisticas = {}, enabled = true) {
   const horasReferenciaTablet =
     useParametros().data?.horasPrestamoTablet ?? HORAS_REFERENCIA_TABLET;
   return useQuery({
     queryKey: [...claves.indicadoresUso(filtros), horasReferenciaTablet],
-    queryFn: async () =>
-      calcularIndicadores(await obtenerRegistrosUso(filtros), { horasReferenciaTablet }),
+    enabled,
+    queryFn: async () => usaApi('estadisticas')
+      ? obtenerResumenEstadistico(filtros)
+      : calcularIndicadores(await obtenerRegistrosUso(filtros), { horasReferenciaTablet }),
   });
 }
 
@@ -45,14 +49,14 @@ export function useIndicadores(filtros: FiltrosEstadisticas = {}) {
 export function useExportarPdf() {
   return useMutation({
     mutationFn: ({ indicadores, filtros }: { indicadores: IndicadoresUso; filtros: FiltrosEstadisticas }) =>
-      exportarPdf(indicadores, filtros),
+      usaApi('estadisticas') ? exportarEstadisticasBackend(filtros, 'pdf') : exportarPdf(indicadores, filtros),
   });
 }
 
 /** Exporta los registros que se están viendo a un CSV y abre el menú para compartirlo. */
 export function useExportarEstadisticas() {
   return useMutation({
-    mutationFn: (registros: Parameters<typeof exportarRegistrosCsv>[0]) =>
-      exportarRegistrosCsv(registros),
+    mutationFn: ({ registros, filtros }: { registros: Parameters<typeof exportarRegistrosCsv>[0]; filtros: FiltrosEstadisticas }) =>
+      usaApi('estadisticas') ? exportarEstadisticasBackend(filtros, 'csv') : exportarRegistrosCsv(registros),
   });
 }

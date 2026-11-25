@@ -178,14 +178,19 @@ export function afluenciaSemanal(
     const dia = diaDeLaSemana(registro.fecha);
     if (dia >= 1 && dia <= 6) totales[dia - 1] += 1;
   }
+  return afluenciaDesdeTotales(totales, semanas);
+}
+
+export function afluenciaDesdeTotales(totales: number[], semanas = SEMANAS_AFLUENCIA): Afluencia {
+  const dias = totales.length === 7 ? [...DIAS, { corto: 'D', nombre: 'domingo' }] : DIAS;
   const maximo = Math.max(...totales);
   return {
-    dias: DIAS.map((dia, indice) => ({
+    dias: dias.map((dia, indice) => ({
       ...dia,
       total: totales[indice],
       promedio: Math.round((totales[indice] / semanas) * 10) / 10,
     })),
-    pico: maximo > 0 ? DIAS[totales.indexOf(maximo)].nombre : null,
+    pico: maximo > 0 ? dias[totales.indexOf(maximo)].nombre : null,
     semanas,
   };
 }
