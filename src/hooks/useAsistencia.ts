@@ -24,6 +24,7 @@ import {
 import { claves } from '@/api/claves';
 import { usaApi } from '@/api/cliente';
 import { useSesion } from '@/store/sesion';
+import { tienePermiso } from '@/utils/roles';
 
 /**
  * Asistencia de la sesión: código vigente, registros y total (CA2).
@@ -59,8 +60,12 @@ export function useCodigoAsistencia(sesionId: string) {
 export function useMarcarAsistenciaManual() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ sesionId, ...datos }: { sesionId: string } & DatosAsistenciaManual) =>
-      marcarAsistenciaManual(sesionId, datos),
+    mutationFn: ({ sesionId, ...datos }: { sesionId: string } & DatosAsistenciaManual) => {
+      if ('usuarioId' in datos && !tienePermiso(useSesion.getState().usuario, 'roles')) {
+        throw new Error('Registra la asistencia con el nombre de la persona.');
+      }
+      return marcarAsistenciaManual(sesionId, datos);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: claves.asistenciasTodas });
       queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });

@@ -73,11 +73,14 @@ export default function TomarAsistencia() {
 }
 
 function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {
+  const { tienePermiso } = useRol();
   const asistencia = useAsistencia(sesionId, { actualizar: true });
   const qr = useCodigoAsistencia(sesionId);
   const marcar = useMarcarAsistenciaManual();
   const [ahora, setAhora] = useState(Date.now);
-  const [conCuenta, setConCuenta] = useState(false);
+  const [eligeCuenta, setConCuenta] = useState(false);
+  const puedeElegirCuenta = tienePermiso('roles');
+  const conCuenta = puedeElegirCuenta && eligeCuenta;
   const [nombre, setNombre] = useState('');
   const [usuarioId, setUsuarioId] = useState('');
   const [tipo, setTipo] = useState<'' | 'STUDENT' | 'TEACHER' | 'ADMINISTRATIVE'>('');
@@ -122,9 +125,9 @@ function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {
       ) : null}
       {asistencia.data ? <ListaAsistentes registros={asistencia.data.registros} total={asistencia.data.total} /> : null}
       <Text variant="titleMedium">Registrar a mano</Text>
-      <SegmentedButtons value={conCuenta ? 'cuenta' : 'sin-cuenta'}
+      {puedeElegirCuenta ? <SegmentedButtons value={conCuenta ? 'cuenta' : 'sin-cuenta'}
         onValueChange={(valor) => setConCuenta(valor === 'cuenta')}
-        buttons={[{ value: 'sin-cuenta', label: 'Sin cuenta' }, { value: 'cuenta', label: 'Con cuenta' }]} />
+        buttons={[{ value: 'sin-cuenta', label: 'Sin cuenta' }, { value: 'cuenta', label: 'Con cuenta' }]} /> : null}
       {conCuenta ? (
         <TextInput label="ID de la cuenta (UUID)" value={usuarioId} onChangeText={setUsuarioId} autoCapitalize="none" />
       ) : (
@@ -174,6 +177,7 @@ function Asistencia() {
 }
 
 function ControlAsistencia({ cita }: { cita: Cita }) {
+  const { tienePermiso } = useRol();
   const cerrar = useCerrarAsistencia();
   const asistencia = useAsistencia(cita.id, { actualizar: !cerrar.isSuccess });
   const abrir = useAbrirAsistencia();
@@ -208,7 +212,9 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
   // la consulta se actualiza.
   const cerrada = asistencia.data.cerrada || cerrar.isSuccess;
   const abierta = codigo != null && !cerrada;
-  const yaRegistrada = registros.some((registro) => registro.usuarioId === cita.solicitanteId);
+  const yaRegistrada = registros.some((registro) =>
+    registro.usuarioId === cita.solicitanteId || (!registro.usuarioId && registro.nombre === cita.solicitante),
+  );
 
   const abrirAsistencia = () => {
     setAviso(null);
@@ -217,8 +223,15 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
 
   const marcarAMano = () => {
     setAviso(null);
+    const persona = cita.datosSolicitante;
+    const tipos = { estudiante: 'STUDENT', docente: 'TEACHER', administrativo: 'ADMINISTRATIVE' } as const;
+    const tipo = persona?.tipo && persona.tipo in tipos ? tipos[persona.tipo as keyof typeof tipos] : undefined;
+    const datos: DatosAsistenciaManual = tienePermiso('roles')
+      ? { usuarioId: cita.solicitanteId }
+      : { nombre: cita.solicitante, tipo, programa: persona?.programa,
+          semestre: persona?.semestre != null ? String(persona.semestre) : undefined };
     marcar.mutate(
-      { sesionId: cita.id, usuarioId: cita.solicitanteId },
+      { sesionId: cita.id, ...datos },
       { onSuccess: () => setAviso(`Marcamos la asistencia de ${cita.solicitante} a mano.`) },
     );
   };
