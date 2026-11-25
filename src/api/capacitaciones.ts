@@ -10,6 +10,7 @@ import type {
   EstadoSolicitud,
   LineaFormacion,
   ModalidadCapacitacion,
+  SolicitanteCapacitacion,
   SolicitudCapacitacion,
   Usuario,
 } from '@/types';
@@ -34,7 +35,18 @@ import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/ut
 import { ahoraFechaHora } from '@/utils/tablets';
 import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { useSesion } from '@/store/sesion';
+import { tienePermiso } from '@/utils/roles';
+
+import {
+  capacitacionDesdeBackend,
+  capacitacionHaciaBackend,
+  lineaDesdeBackend,
+  lineaHaciaBackend,
+  type CapacitacionBackend,
+  type LineaBackend,
+} from './backend/capacitaciones';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
@@ -97,8 +109,52 @@ function errorDeLinea(datos: DatosLinea): ErrorApi | null {
   return null;
 }
 
+// ── Con la API (módulo `capacitaciones` de `usaApi()`) ────────────────────────────────────
+
+const RUTA_LINEAS_GESTION = '/trainings/lines/manage/';
+
+/** Quien pide, como lo guarda la solicitud: el usuario de la sesión. */
+function solicitanteDeSesion(): SolicitanteCapacitacion {
+  const usuario = useSesion.getState().usuario;
+  return {
+    id: usuario?.id ?? '',
+    nombre: usuario?.nombre ?? '',
+    tipo: usuario?.tipo ?? 'visitante',
+    ...(usuario?.programa ? { programa: usuario.programa } : {}),
+  };
+}
+
+/** Las líneas: todas para quien administra la formación; las activas para los demás. */
+async function lineasBackend(): Promise<LineaFormacion[]> {
+  if (tienePermiso(useSesion.getState().usuario, 'formacion')) {
+    try {
+      return await peticionTodas<LineaBackend, LineaFormacion>(
+        RUTA_LINEAS_GESTION,
+        lineaDesdeBackend,
+      );
+    } catch (error) {
+      if (!(error instanceof ErrorApi && (error.estado === 401 || error.estado === 403))) {
+        throw error;
+      }
+    }
+  }
+  return (await peticion<LineaBackend[]>('/trainings/lines/')).map(lineaDesdeBackend);
+}
+
+/** Crea (sin id) o edita una línea en el Backend. */
+async function guardarLineaBackend(datos: DatosLinea, id?: string): Promise<LineaFormacion> {
+  const ruta = id ? `${RUTA_LINEAS_GESTION}${encodeURIComponent(id)}/` : RUTA_LINEAS_GESTION;
+  return lineaDesdeBackend(
+    await peticion<LineaBackend>(ruta, {
+      method: id ? 'PATCH' : 'POST',
+      body: JSON.stringify(lineaHaciaBackend(datos)),
+    }),
+  );
+}
+
 /** Todas las líneas, también las inactivas, para la administración (HU-09). */
 export function obtenerLineas(): Promise<LineaFormacion[]> {
+  if (usaApi('capacitaciones')) return lineasBackend();
   if (USAR_MOCKS) {
     return simularRed(lineas.map((linea) => ({ ...linea })));
   }
@@ -112,6 +168,7 @@ export async function lineasActivas(): Promise<LineaFormacion[]> {
 }
 
 export function crearLinea(datos: DatosLinea): Promise<LineaFormacion> {
+  if (usaApi('capacitaciones')) return guardarLineaBackend(datos);
   if (USAR_MOCKS) {
     const error = errorDeLinea(datos);
     if (error) {
@@ -133,6 +190,7 @@ export function crearLinea(datos: DatosLinea): Promise<LineaFormacion> {
 }
 
 export function editarLinea(id: string, datos: DatosLinea): Promise<LineaFormacion> {
+  if (usaApi('capacitaciones')) return guardarLineaBackend(datos, id);
   if (USAR_MOCKS) {
     if (!lineas.some((linea) => linea.id === id)) {
       return Promise.reject(new ErrorApi(404, 'La línea de formación no existe.'));
@@ -160,7 +218,25 @@ export function editarLinea(id: string, datos: DatosLinea): Promise<LineaFormaci
  * Cuántas solicitudes activas (pendientes, aprobadas o con nueva fecha) tiene la línea.
  * La pantalla lo consulta antes de desactivar para advertir (CA3).
  */
-export function solicitudesActivasDeLinea(lineaId: string): Promise<SolicitudCapacitacion[]> {
+export async function solicitudesActivasDeLinea(
+  lineaId: string,
+): Promise<SolicitudCapacitacion[]> {
+  if (usaApi('capacitaciones')) {
+    // La bandeja del personal, filtrada por la línea; los estados activos se filtran aquí.
+    const bandeja = await peticionTodas<CapacitacionBackend, CapacitacionBackend>(
+      `/trainings/requests/manage/?line=${encodeURIComponent(lineaId)}`,
+      (solicitud) => solicitud,
+    );
+    return bandeja
+      .map((solicitud) =>
+        capacitacionDesdeBackend(solicitud, {
+          id: '',
+          nombre: solicitud.requester ?? '',
+          tipo: 'visitante',
+        }),
+      )
+      .filter((solicitud) => ESTADOS_ACTIVOS.includes(solicitud.estado));
+  }
   if (USAR_MOCKS) {
     return simularRed(
       solicitudes
@@ -183,6 +259,16 @@ export async function cambiarEstadoLinea(
   id: string,
   activa: boolean,
 ): Promise<{ linea: LineaFormacion; solicitudesActivas: SolicitudCapacitacion[] }> {
+  if (usaApi('capacitaciones')) {
+    const solicitudesActivas = activa ? [] : await solicitudesActivasDeLinea(id);
+    const linea = lineaDesdeBackend(
+      await peticion<LineaBackend>(`${RUTA_LINEAS_GESTION}${encodeURIComponent(id)}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: activa }),
+      }),
+    );
+    return { linea, solicitudesActivas };
+  }
   if (USAR_MOCKS) {
     if (!lineas.some((linea) => linea.id === id)) {
       throw new ErrorApi(404, 'La línea de formación no existe.');
@@ -350,8 +436,15 @@ export async function solicitarCapacitacion(
   usuario: Usuario,
   datos: FormularioCapacitacion,
 ): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) {
+    // El solicitante sale del token; el Backend valida la anticipación y el máximo de 25.
+    const creada = await peticion<CapacitacionBackend>('/trainings/requests/', {
+      method: 'POST',
+      body: JSON.stringify(capacitacionHaciaBackend(datos)),
+    });
+    return capacitacionDesdeBackend(creada, solicitanteDeSesion());
+  }
   if (!USAR_MOCKS) {
-    // Ruta provisional: confirmar con Backend. El solicitante sale del token.
     return peticion<SolicitudCapacitacion>('/capacitaciones/solicitudes/', {
       method: 'POST',
       body: JSON.stringify(datos),
@@ -433,7 +526,16 @@ export async function solicitarCapacitacion(
 }
 
 /** Solicitudes de capacitación del usuario, la más reciente primero (HU-10 y HU-08). */
-export function obtenerMisCapacitaciones(usuarioId: string): Promise<SolicitudCapacitacion[]> {
+export async function obtenerMisCapacitaciones(
+  usuarioId: string,
+): Promise<SolicitudCapacitacion[]> {
+  if (usaApi('capacitaciones')) {
+    // El Backend ya las devuelve de la más reciente a la más antigua.
+    return peticionTodas<CapacitacionBackend, SolicitudCapacitacion>(
+      '/trainings/requests/',
+      (solicitud) => capacitacionDesdeBackend(solicitud, solicitanteDeSesion()),
+    );
+  }
   if (USAR_MOCKS) {
     // Al revés antes de ordenar: si dos tienen el mismo minuto, va primero la última creada.
     const mias = solicitudes
@@ -742,6 +844,14 @@ export async function responderNuevaFecha(
   id: string,
   acepta: boolean,
 ): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) {
+    const accion = acepta ? 'accept-date' : 'decline-date';
+    const respondida = await peticion<CapacitacionBackend>(
+      `/trainings/requests/${encodeURIComponent(id)}/${accion}/`,
+      { method: 'POST', body: JSON.stringify({}) },
+    );
+    return capacitacionDesdeBackend(respondida, solicitanteDeSesion());
+  }
   if (USAR_MOCKS) {
     const solicitud = buscarSolicitud(id);
     if (solicitud.estado !== 'nueva_fecha') {
@@ -793,8 +903,18 @@ export async function calificarCapacitacion(
   id: string,
   datos: DatosCalificacion,
 ): Promise<SolicitudCapacitacion> {
+  if (usaApi('capacitaciones')) {
+    // Una vez y cuando ya terminó (409 si no); quien califica sale del token.
+    const calificada = await peticion<CapacitacionBackend>(
+      `/trainings/requests/${encodeURIComponent(id)}/rate/`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ quality_rating: datos.puntaje, comment: datos.comentario ?? '' }),
+      },
+    );
+    return capacitacionDesdeBackend(calificada, solicitanteDeSesion());
+  }
   if (!USAR_MOCKS) {
-    // Ruta provisional: confirmar con Backend. Quien califica sale del token.
     return peticion<SolicitudCapacitacion>(`/solicitudes/capacitacion/${id}/calificacion/`, {
       method: 'POST',
       body: JSON.stringify(datos),

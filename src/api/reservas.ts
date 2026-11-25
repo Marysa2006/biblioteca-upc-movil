@@ -3,8 +3,10 @@
  * El personal aprueba, rechaza, propone otra fecha o cancela, y reserva para terceros.
  * Cada decisión deja una notificación (HU-27) y un evento en el historial (HU-08) en los
  * datos de prueba.
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
+ * Con la API (módulo `espacios`), «Mis reservas» de la comunidad sale del Backend. La bandeja del
+ * personal sigue con datos de prueba hasta la fase 4 (módulo `reservas`).
  */
+import { useSesion } from '@/store/sesion';
 import type {
   Bloqueo,
   DatosSolicitante,
@@ -14,7 +16,13 @@ import type {
 } from '@/types';
 import { esDiaHabil } from '@/utils/parametros';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import {
+  espacioDesdeBackend,
+  miReservaDesdeBackend,
+  type DetalleSolicitudBackend,
+  type EspacioBackend,
+} from './backend/espacios';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { RESERVAS } from './mocks/reservas';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
@@ -374,7 +382,25 @@ export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva
 }
 
 /** Reservas del usuario de la sesión, ordenadas por fecha (HU-27 y HU-08). */
-export function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
+export async function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
+  if (usaApi('espacios')) {
+    const solicitante = { id: usuarioId, nombre: useSesion.getState().usuario?.nombre ?? '' };
+    const [ids, catalogo] = await Promise.all([
+      peticionTodas<{ id: number }, number>(
+        '/me/requests/?service=SPACE_RESERVATION',
+        (solicitud) => solicitud.id,
+      ),
+      peticion<{ spaces: EspacioBackend[] }>('/spaces/'),
+    ]);
+    const espacios = catalogo.spaces.map(espacioDesdeBackend);
+    // El resumen no trae las horas ni el propósito: se pide el detalle de cada una.
+    const detalles = await Promise.all(
+      ids.map((id) => peticion<DetalleSolicitudBackend>(`/me/requests/${id}/`)),
+    );
+    return ordenar(
+      detalles.map((detalle) => miReservaDesdeBackend(detalle, solicitante, espacios)),
+    );
+  }
   if (USAR_MOCKS) {
     const mias = reservas.filter((reserva) => reserva.solicitanteId === usuarioId);
     return simularRed(ordenar(mias).map((reserva) => ({ ...reserva })));

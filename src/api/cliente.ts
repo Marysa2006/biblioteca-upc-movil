@@ -70,6 +70,8 @@ export class ErrorApi extends Error {
   estado: number;
   codigo?: string;
   campos?: Record<string, string>;
+  /** El cuerpo completo del error, para lo que traiga de más (por ejemplo `alternative_slots`). */
+  cuerpo?: unknown;
 
   constructor(
     estado: number,
@@ -225,7 +227,9 @@ export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {})
 
   if (!respuesta.ok) {
     const cuerpo: unknown = await respuesta.json().catch(() => null);
-    throw errorDesdeRespuesta(respuesta.status, cuerpo, ruta);
+    const error = errorDesdeRespuesta(respuesta.status, cuerpo, ruta);
+    error.cuerpo = cuerpo;
+    throw error;
   }
   if (respuesta.status === 204) {
     return undefined as T;

@@ -30,7 +30,17 @@ import { motivoNoDisponible } from '@/utils/parametros';
 import { problemaHorario } from '@/utils/reservas';
 import { tienePermiso } from '@/utils/roles';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { useSesion } from '@/store/sesion';
+
+import {
+  citaDesdeBackend,
+  citaHaciaBackend,
+  temaDesdeBackend,
+  temaHaciaBackend,
+  type CitaBackend,
+  type TemaBackend,
+} from './backend/asesorias';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import {
   CITAS_ASESORIA,
   FRANJAS_ASESORIA,
@@ -61,15 +71,82 @@ export type ResultadoJornada = {
   franjasGeneradas: number;
 };
 
+// ── Con la API (módulo `asesorias` de `usaApi()`) ─────────────────────────────────────────
+
+/** request_id de la app → id de la cita en el Backend, para cancelar, reprogramar y calificar. */
+const idsCita = new Map<string, number>();
+
+/** Quien pide, para armar la cita: el usuario de la sesión. */
+function solicitanteDeSesion() {
+  const usuario = useSesion.getState().usuario;
+  return { id: usuario?.id ?? '', nombre: usuario?.nombre ?? '' };
+}
+
+/** Traduce las citas del Backend y recuerda el id de cada una. */
+async function citasDesdeBackend(lista: CitaBackend[]): Promise<Cita[]> {
+  const { duracionAsesoriaMinutos } = await obtenerParametros();
+  return lista.map((cita) => {
+    idsCita.set(String(cita.request_id), cita.id);
+    return citaDesdeBackend(cita, solicitanteDeSesion(), duracionAsesoriaMinutos);
+  });
+}
+
+/** Mis citas del Backend, de la más reciente a la más antigua. */
+async function misCitasBackend(): Promise<Cita[]> {
+  return citasDesdeBackend(
+    await peticionTodas<CitaBackend, CitaBackend>('/advisories/appointments/', (cita) => cita),
+  );
+}
+
+/** El id de la cita en el Backend; si no se conoce todavía, vuelve a pedir mis citas. */
+async function idEnBackend(id: string): Promise<number> {
+  if (!idsCita.has(id)) await misCitasBackend();
+  const encontrado = idsCita.get(id);
+  if (encontrado == null) throw new ErrorApi(404, 'La asesoría no existe.');
+  return encontrado;
+}
+
+/**
+ * Los temas: para quien administra asesorías, todos (también los inactivos); para los demás,
+ * los activos, que es lo que el Backend les muestra.
+ */
+async function temasBackend(): Promise<TemaAsesoria[]> {
+  if (tienePermiso(useSesion.getState().usuario, 'asesorias')) {
+    try {
+      return await peticionTodas<TemaBackend, TemaAsesoria>(
+        '/advisories/manage/topics/',
+        temaDesdeBackend,
+      );
+    } catch (error) {
+      if (!(error instanceof ErrorApi && (error.estado === 401 || error.estado === 403))) {
+        throw error;
+      }
+    }
+  }
+  return (await peticion<TemaBackend[]>('/advisories/topics/')).map(temaDesdeBackend);
+}
+
 /** Todos los temas, también los inactivos, para la administración (HU-13). */
 export function obtenerTemas(): Promise<TemaAsesoria[]> {
+  if (usaApi('asesorias')) return temasBackend();
   if (USAR_MOCKS) {
     return simularRed(temas.map((tema) => ({ ...tema })));
   }
   return peticion<TemaAsesoria[]>('/asesorias/temas/');
 }
 
-export function guardarTema(datos: DatosTema): Promise<TemaAsesoria> {
+export async function guardarTema(datos: DatosTema): Promise<TemaAsesoria> {
+  if (usaApi('asesorias')) {
+    const ruta = datos.id
+      ? `/advisories/manage/topics/${encodeURIComponent(datos.id)}/`
+      : '/advisories/manage/topics/';
+    return temaDesdeBackend(
+      await peticion<TemaBackend>(ruta, {
+        method: datos.id ? 'PATCH' : 'POST',
+        body: JSON.stringify(temaHaciaBackend(datos)),
+      }),
+    );
+  }
   if (USAR_MOCKS) {
     if (!datos.nombre?.trim()) {
       return Promise.reject(new ErrorApi(400, 'El nombre del tema es obligatorio.'));
@@ -426,6 +503,14 @@ export async function solicitarCita(
   usuario: Usuario,
   nueva: NuevaSolicitudCita,
 ): Promise<Cita> {
+  if (usaApi('asesorias')) {
+    // Quien pide sale del token; el Backend valida el día hábil, la anticipación y el grupo.
+    const creada = await peticion<CitaBackend>('/advisories/appointments/', {
+      method: 'POST',
+      body: JSON.stringify(citaHaciaBackend(nueva)),
+    });
+    return (await citasDesdeBackend([creada]))[0];
+  }
   if (!USAR_MOCKS) {
     return peticion<Cita>('/asesorias/citas/', { method: 'POST', body: JSON.stringify(nueva) });
   }
@@ -692,6 +777,17 @@ export async function reprogramarSolicitud(
   id: string,
   nueva: NuevaSolicitudCita,
 ): Promise<Cita> {
+  if (usaApi('asesorias')) {
+    // El Backend cancela la cita y crea otra pendiente con la nueva fecha y hora.
+    const nuevaCita = await peticion<CitaBackend>(
+      `/advisories/appointments/${await idEnBackend(id)}/reschedule/`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ desired_date: nueva.fecha, desired_time: nueva.hora }),
+      },
+    );
+    return (await citasDesdeBackend([nuevaCita]))[0];
+  }
   if (!USAR_MOCKS) {
     return peticion<Cita>(`/asesorias/citas/${id}/reprogramar/`, {
       method: 'POST',
@@ -734,7 +830,8 @@ export async function reprogramarSolicitud(
 }
 
 /** Citas del usuario de la sesión, por fecha (HU-14 y HU-15). */
-export function obtenerMisCitas(usuarioId: string): Promise<Cita[]> {
+export async function obtenerMisCitas(usuarioId: string): Promise<Cita[]> {
+  if (usaApi('asesorias')) return ordenarPorFecha(await misCitasBackend());
   if (USAR_MOCKS) {
     const mias = citas.filter((cita) => cita.solicitanteId === usuarioId);
     return simularRed(ordenarPorFecha(mias).map((cita) => ({ ...cita })));
@@ -744,6 +841,14 @@ export function obtenerMisCitas(usuarioId: string): Promise<Cita[]> {
 
 /** Cancela una cita dentro del plazo y libera el cupo (CA3). */
 export async function cancelarCita(usuario: Usuario, id: string): Promise<Cita> {
+  if (usaApi('asesorias')) {
+    // Pendiente se retira cuando sea; aprobada, hasta `cancel-min-hours` antes (409 si no).
+    const cancelada = await peticion<CitaBackend>(
+      `/advisories/appointments/${await idEnBackend(id)}/cancel/`,
+      { method: 'POST', body: JSON.stringify({ reason: 'Cancelada por el usuario.' }) },
+    );
+    return { ...(await citasDesdeBackend([cancelada]))[0], motivo: 'Cancelada por el usuario.' };
+  }
   if (USAR_MOCKS) {
     const parametros = await obtenerParametros();
     const cita = citaModificable(usuario.id, id, parametros, 'cancelar');
@@ -1095,8 +1200,18 @@ export async function calificarCita(
   id: string,
   datos: DatosCalificacion,
 ): Promise<Cita> {
+  if (usaApi('asesorias')) {
+    // Una vez y cuando ya terminó; quien califica sale del token.
+    const calificada = await peticion<CitaBackend>(
+      `/advisories/appointments/${await idEnBackend(id)}/rate/`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ quality_rating: datos.puntaje, comment: datos.comentario ?? '' }),
+      },
+    );
+    return (await citasDesdeBackend([calificada]))[0];
+  }
   if (!USAR_MOCKS) {
-    // Ruta provisional: confirmar con Backend. Quien califica sale del token.
     return peticion<Cita>(`/solicitudes/cita/${id}/calificacion/`, {
       method: 'POST',
       body: JSON.stringify(datos),

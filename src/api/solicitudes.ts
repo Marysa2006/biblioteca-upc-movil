@@ -3,7 +3,10 @@
  * usuario en una sola lista, la más reciente primero. Reutiliza las consultas de cada servicio
  * y no consulta el inventario de tablets, que es del personal. El historial de cada una está
  * en ./historial. Al final, la calificación de asesorías y capacitaciones (#254).
- * La ruta es provisional: confírmenla con el equipo de Backend.
+ *
+ * Con la API (módulo `solicitudes` de `usaApi()`), la lista sale de `GET /me/requests/`. Se
+ * activa junto con `espacios`, `asesorias`, `capacitaciones` y `tablets`: el detalle de cada una
+ * la busca por su id en esos servicios.
  */
 import type {
   Cita,
@@ -19,8 +22,9 @@ import type {
 import type { DatosCalificacion } from '@/utils/calificacion';
 
 import { calificarCita, obtenerMisCitas } from './asesorias';
+import { resumenDesdeBackend, type ResumenBackend } from './backend/solicitudes';
 import { calificarCapacitacion, obtenerMisCapacitaciones } from './capacitaciones';
-import { ErrorApi, peticion, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, usaApi, USAR_MOCKS } from './cliente';
 import { obtenerEspacios } from './espacios';
 import { estadoDePrestamo } from './historial';
 import { obtenerMisReservas } from './reservas';
@@ -90,6 +94,15 @@ export async function obtenerMisSolicitudes(
   usuarioId: string,
   estado: FiltroSolicitudes = 'todas',
 ): Promise<ResumenSolicitud[]> {
+  if (usaApi('solicitudes')) {
+    // Los estados de la app juntan varios del Backend (aprobada = aprobada o en curso): se
+    // filtra aquí, con el estado ya traducido.
+    const todas = await peticionTodas<ResumenBackend, ResumenSolicitud>(
+      '/me/requests/',
+      resumenDesdeBackend,
+    );
+    return ordenar(estado === 'todas' ? todas : todas.filter((s) => s.estado === estado));
+  }
   if (!USAR_MOCKS) {
     const consulta = estado === 'todas' ? '' : `?estado=${estado}`;
     return peticion<ResumenSolicitud[]>(`/solicitudes/mias/${consulta}`);
