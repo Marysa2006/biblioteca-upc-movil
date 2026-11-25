@@ -60,7 +60,11 @@ const TEXTOS: Record<
 export function DialogoTextoCapacitacion({ tipo, ...props }: Props) {
   return (
     <Portal>
-      <Dialog visible={tipo != null} onDismiss={props.guardando ? undefined : props.onCerrar} style={estilos.dialogo}>
+      <Dialog
+        visible={tipo != null}
+        onDismiss={props.guardando ? undefined : props.onCerrar}
+        style={estilos.dialogo}
+      >
         {tipo ? (
           // key: al abrirlo para otra acción, el texto vuelve a empezar.
           <Contenido key={tipo} tipo={tipo} {...props} />
@@ -89,8 +93,13 @@ function Contenido({
         texto: pideMotivo ? esquemaMotivo.shape.motivo : esquemaResultado.shape.resultado,
         participantes: pideMotivo
           ? z.string()
-          : z.string().regex(/^\d+$/, 'Indica cuántas personas asistieron.')
-              .refine((valor) => Number(valor) <= 32767, 'El número de asistentes es demasiado alto.'),
+          : z
+              .string()
+              .regex(/^\d+$/, 'Indica cuántas personas asistieron.')
+              .refine(
+                (valor) => Number(valor) <= 32767,
+                'El número de asistentes es demasiado alto.',
+              ),
       }),
     ),
     defaultValues: { texto: '', participantes: '' },
@@ -150,9 +159,7 @@ function Contenido({
                 error={error != null}
                 disabled={guardando}
                 multiline
-                accessibilityLabel={
-                  pideMotivo ? textos.etiqueta : 'Resultado de la capacitación'
-                }
+                accessibilityLabel={pideMotivo ? textos.etiqueta : 'Resultado de la capacitación'}
               />
               <HelperText type="error" visible={error != null}>
                 {error?.message}
@@ -176,9 +183,11 @@ function Contenido({
         </Button>
         <Button
           mode="contained"
-          onPress={() => handleSubmit(({ texto, participantes }) =>
-            onConfirmar(texto.trim(), pideMotivo ? undefined : Number(participantes)),
-          )()}
+          onPress={() =>
+            handleSubmit(({ texto, participantes }) =>
+              onConfirmar(texto.trim(), pideMotivo ? undefined : Number(participantes)),
+            )()
+          }
           loading={guardando}
           disabled={guardando}
           buttonColor={pideMotivo ? coloresEstado.rechazada.texto : undefined}

@@ -145,8 +145,9 @@ export function calcularIndicadores(
       tablets: indicadoresTablets([], horasReferenciaTablet),
     };
   }
-  const asistencias = registros.filter((registro) =>
-    registro.id.startsWith('uso-asistencia-') || registro.id.startsWith('uso-asi-manual-'),
+  const asistencias = registros.filter(
+    (registro) =>
+      registro.id.startsWith('uso-asistencia-') || registro.id.startsWith('uso-asi-manual-'),
   );
   const calificadas = registros.filter((r) => r.calificacion != null);
   const porPeriodo = contarPor(registros, (r) => periodoDe(r.fecha), NOMBRE_PROGRAMA);
@@ -278,7 +279,10 @@ const COLUMNAS: { titulo: string; valor: (r: RegistroUso) => string }[] = [
   { titulo: 'Semestre del estudiante', valor: (r) => nombre(r.semestre, NOMBRE_PROGRAMA) },
   { titulo: 'Calificación', valor: (r) => (r.calificacion == null ? '' : String(r.calificacion)) },
   { titulo: 'Nombre', valor: (r) => (r.nombre === NO_INFORMADO ? 'No informado' : r.nombre) },
-  { titulo: 'Finalidad', valor: (r) => (r.finalidad === NO_INFORMADO ? 'No informado' : r.finalidad) },
+  {
+    titulo: 'Finalidad',
+    valor: (r) => (r.finalidad === NO_INFORMADO ? 'No informado' : r.finalidad),
+  },
   { titulo: 'Modalidad', valor: (r) => nombre(r.modalidad, NOMBRE_MODALIDAD_USO) },
   { titulo: 'Estado', valor: (r) => nombre(r.estado, NOMBRE_ESTADO_USO) },
   // #307: la calidad en tiempos y temáticas. Al final, para no mover las columnas de antes.
@@ -334,9 +338,9 @@ export function nombreArchivoCsv(hoy: string): string {
 export function indicadoresDeFinalizacion({ total, porEstado }: IndicadoresUso) {
   // StatisticsPage (web): suma las etiquetas Finalizada o Cancelada/Rechazada
   // respectivamente y redondea 100 × suma / total.
-  const suma = (patron: RegExp) => porEstado.reduce((n, fila) =>
-    patron.test(fila.etiqueta) ? n + fila.cantidad : n, 0);
-  const porcentaje = (conteo: number) => total > 0 ? Math.round(100 * conteo / total) : 0;
+  const suma = (patron: RegExp) =>
+    porEstado.reduce((n, fila) => (patron.test(fila.etiqueta) ? n + fila.cantidad : n), 0);
+  const porcentaje = (conteo: number) => (total > 0 ? Math.round((100 * conteo) / total) : 0);
   const finalizadas = suma(/finalizad/i);
   const noPrestadas = suma(/cancelad|rechazad/i);
   return {
@@ -347,7 +351,11 @@ export function indicadoresDeFinalizacion({ total, porEstado }: IndicadoresUso) 
   };
 }
 
-export function agregarIndicadoresAlCsv(csv: string, datos: IndicadoresUso, separador: string): string {
+export function agregarIndicadoresAlCsv(
+  csv: string,
+  datos: IndicadoresUso,
+  separador: string,
+): string {
   const { tasaFinalizacion, tasaCancelacionesYRechazos, finalizadas, noPrestadas } =
     indicadoresDeFinalizacion(datos);
   const filas = [
@@ -356,9 +364,15 @@ export function agregarIndicadoresAlCsv(csv: string, datos: IndicadoresUso, sepa
     ['Cancelaciones y rechazos', String(noPrestadas), String(tasaCancelacionesYRechazos) + '%'],
     [],
     ['Asistentes por servicio', 'Cantidad'],
-    ...(datos.asistentesPorServicio ?? []).map(({ etiqueta, cantidad }) => [etiqueta, String(cantidad)]),
+    ...(datos.asistentesPorServicio ?? []).map(({ etiqueta, cantidad }) => [
+      etiqueta,
+      String(cantidad),
+    ]),
   ];
   // Las etiquetas del servidor son texto, incluso si empiezan por un signo de fórmula.
-  const escapar = (valor: string) => '"' + (/^[=+\-@\t\r]/.test(valor) ? "'" : '') + valor.replace(/"/g, '""') + '"';
-  return csv.trimEnd() + '\r\n\r\n' + filas.map((fila) => fila.map(escapar).join(separador)).join('\r\n');
+  const escapar = (valor: string) =>
+    '"' + (/^[=+\-@\t\r]/.test(valor) ? "'" : '') + valor.replace(/"/g, '""') + '"';
+  return (
+    csv.trimEnd() + '\r\n\r\n' + filas.map((fila) => fila.map(escapar).join(separador)).join('\r\n')
+  );
 }

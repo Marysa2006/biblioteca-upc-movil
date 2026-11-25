@@ -116,9 +116,14 @@ export function useCancelarMiSolicitud() {
         capacitacion: [claves.solicitudesCapacitacionTodas],
         prestamo: [claves.prestamosTablet, claves.disponibilidadTabletsTodas, claves.tablets],
       };
-      return Promise.all([
-        claves.solicitudesTodas, claves.notificaciones, claves.estadisticasTodas, ...delServicio[tipo],
-      ].map((queryKey) => queryClient.invalidateQueries({ queryKey })));
+      return Promise.all(
+        [
+          claves.solicitudesTodas,
+          claves.notificaciones,
+          claves.estadisticasTodas,
+          ...delServicio[tipo],
+        ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
     },
   });
 }

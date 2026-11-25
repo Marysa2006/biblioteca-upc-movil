@@ -66,7 +66,7 @@ export function GraficoBarras({
             key={dato.etiqueta}
             style={estilos.grupo}
             accessible
-            accessibilityLabel={`${puesto}${dato.etiqueta}: ${(sustantivo ? dato.cantidad + ' ' + sustantivo : textoOperaciones(dato.cantidad))}, ${porcentaje} del total`}
+            accessibilityLabel={`${puesto}${dato.etiqueta}: ${sustantivo ? dato.cantidad + ' ' + sustantivo : textoOperaciones(dato.cantidad)}, ${porcentaje} del total`}
           >
             {/* Con letra grande, el número pasa debajo de la etiqueta en vez de cortarla. */}
             <View style={estilos.fila}>

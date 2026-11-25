@@ -274,14 +274,14 @@ Solo se le pueden dar a alguien que tenga un rol del personal: a una cuenta de l
 
 Todos entran con la contraseña **`biblioteca123`**. Basta con escribir el usuario: la aplicación completa el correo institucional.
 
-| Usuario | Nombre | Tipo de usuario | Rol en la biblioteca |
-|---|---|---|---|
-| `laura.perez` | Laura Pérez | Estudiante | — |
-| `carlos.ramirez` | Carlos Ramírez | Docente | — |
-| `ana.torres` | Ana Torres | Administrativo | Administración de la biblioteca |
-| `julian.mendoza` | Julián Mendoza | Administrativo | Facilitador |
-| `sofia.vargas` | Sofía Vargas | Administrativo | Gestora de espacios |
-| `mateo.castro` | Mateo Castro | Egresado | — |
+| Usuario          | Nombre         | Tipo de usuario | Rol en la biblioteca            |
+| ---------------- | -------------- | --------------- | ------------------------------- |
+| `laura.perez`    | Laura Pérez    | Estudiante      | —                               |
+| `carlos.ramirez` | Carlos Ramírez | Docente         | —                               |
+| `ana.torres`     | Ana Torres     | Administrativo  | Administración de la biblioteca |
+| `julian.mendoza` | Julián Mendoza | Administrativo  | Facilitador                     |
+| `sofia.vargas`   | Sofía Vargas   | Administrativo  | Gestora de espacios             |
+| `mateo.castro`   | Mateo Castro   | Egresado        | —                               |
 
 ## 6. Limitaciones de esta versión
 

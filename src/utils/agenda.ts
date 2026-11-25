@@ -58,7 +58,8 @@ export function esquemaAprobacionCita(virtual: boolean) {
         ctx.addIssue({
           code: 'custom',
           path: ['enlaceVirtual'],
-          message: 'Escribe un enlace completo que empiece por https://, por ejemplo https://meet.google.com/abc-defg-hij.',
+          message:
+            'Escribe un enlace completo que empiece por https://, por ejemplo https://meet.google.com/abc-defg-hij.',
         });
       }
     });

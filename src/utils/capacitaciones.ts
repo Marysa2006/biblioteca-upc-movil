@@ -74,8 +74,7 @@ const camposCapacitacion = {
     .string()
     .trim()
     .refine(
-      (valor) =>
-        /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= MAXIMO_PARTICIPANTES,
+      (valor) => /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= MAXIMO_PARTICIPANTES,
       { error: MENSAJE_MAXIMO_PARTICIPANTES },
     ),
 };

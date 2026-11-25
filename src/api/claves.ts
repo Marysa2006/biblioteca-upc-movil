@@ -89,7 +89,8 @@ export const claves = {
   disponibilidadTabletsTodas: ['tablets', 'disponibilidad'] as const,
   condicionesTablet: ['tablets', 'condiciones'] as const,
   prestamosTablet: ['prestamos'] as const,
-  incidenciasTablets: (filtros: FiltrosIncidenciasTablet) => ['prestamos', 'incidencias', filtros] as const,
+  incidenciasTablets: (filtros: FiltrosIncidenciasTablet) =>
+    ['prestamos', 'incidencias', filtros] as const,
   prestamosPorEstado: (estado: EstadoPrestamo | 'todas') => ['prestamos', estado] as const,
   /** Préstamos del usuario de la sesión (HU-22). */
   misPrestamos: (usuarioId?: string) => ['prestamos', 'mios', usuarioId] as const,
@@ -129,13 +130,10 @@ export const claves = {
 
   // ── Iteración 4: seguimiento de solicitudes (HU-08) ──────────
   /** Todas las solicitudes del usuario, de reservas, citas, préstamos y capacitaciones. */
-  misSolicitudes: (usuarioId: string | 'sin-sesion') =>
-    ['solicitudes', 'mias', usuarioId] as const,
+  misSolicitudes: (usuarioId: string | 'sin-sesion') => ['solicitudes', 'mias', usuarioId] as const,
   /** Historial de una solicitud concreta (HU-08, CA2). */
-  detalleSolicitud: (
-    tipo: 'reserva' | 'cita' | 'prestamo' | 'capacitacion',
-    id: string,
-  ) => ['solicitudes', 'detalle', tipo, id] as const,
+  detalleSolicitud: (tipo: 'reserva' | 'cita' | 'prestamo' | 'capacitacion', id: string) =>
+    ['solicitudes', 'detalle', tipo, id] as const,
   /** Prefijo que refrescan todas las mutaciones de solicitudes (HU-08). */
   solicitudesTodas: ['solicitudes'] as const,
 

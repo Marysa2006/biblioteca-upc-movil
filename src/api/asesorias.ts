@@ -84,7 +84,10 @@ const RUTA_AGENDA = '/advisories/agenda/';
 
 async function consultarGestion(consulta = '') {
   const [lista, parametros] = await Promise.all([
-    peticionTodas<CitaGestionBackend, CitaGestionBackend>(`${RUTA_GESTION}${consulta}`, (cita) => cita),
+    peticionTodas<CitaGestionBackend, CitaGestionBackend>(
+      `${RUTA_GESTION}${consulta}`,
+      (cita) => cita,
+    ),
     obtenerParametros(),
   ]);
   return lista.map((cita) => {
@@ -96,11 +99,18 @@ async function consultarGestion(consulta = '') {
 export async function obtenerFacilitadores(): Promise<Usuario[]> {
   if (!usaApi('asesorias')) return USUARIOS_DIRECTORIO.filter((u) => tienePermiso(u, 'asesorias'));
   const lista = await peticionTodas<UsuarioBackend, UsuarioBackend>(
-    '/users/?role=facilitador', (usuario) => usuario,
+    '/users/?role=facilitador',
+    (usuario) => usuario,
   );
-  const facilitadores = lista.filter((usuario) => usuario.is_active !== false).map(usuarioDirectorioDesdeBackend);
+  const facilitadores = lista
+    .filter((usuario) => usuario.is_active !== false)
+    .map(usuarioDirectorioDesdeBackend);
   const sesion = useSesion.getState().usuario;
-  if (sesion && tienePermiso(sesion, 'asesorias') && !facilitadores.some((u) => u.id === sesion.id)) {
+  if (
+    sesion &&
+    tienePermiso(sesion, 'asesorias') &&
+    !facilitadores.some((u) => u.id === sesion.id)
+  ) {
     facilitadores.unshift(sesion);
   }
   return facilitadores;
@@ -116,7 +126,8 @@ async function idGestion(id: string) {
 async function decidirCitaBackend(idBackend: number, accion: string, datos: object) {
   const { duracionAsesoriaMinutos } = await obtenerParametros();
   const cita = await peticion<CitaGestionBackend>(`${RUTA_GESTION}${idBackend}/${accion}/`, {
-    method: 'POST', body: JSON.stringify(datos),
+    method: 'POST',
+    body: JSON.stringify(datos),
   });
   return citaGestionDesdeBackend(cita, duracionAsesoriaMinutos);
 }
@@ -494,7 +505,13 @@ export async function agendarCita(
       titulo: 'Solicitud de asesoría recibida',
       mensaje: `Recibimos tu solicitud de ${cita.tema} para el ${fechaLegible(cita.fecha)} a las ${cita.horaInicio}. Te avisamos cuando la aprueben.`,
     });
-    registrarEvento('cita', cita.id, 'pendiente', usuario.nombre, 'Solicitud de asesoría recibida.');
+    registrarEvento(
+      'cita',
+      cita.id,
+      'pendiente',
+      usuario.nombre,
+      'Solicitud de asesoría recibida.',
+    );
     // HU-25: agendar deja su registro de uso.
     registrarUso({
       id: `uso-cita-${cita.id}`,
@@ -518,10 +535,7 @@ export async function agendarCita(
  * confirma y asigna quién la atiende. Es lo que pide la bibliotecóloga desde el 15 de
  * noviembre de 2026.
  */
-export async function solicitarCita(
-  usuario: Usuario,
-  nueva: NuevaSolicitudCita,
-): Promise<Cita> {
+export async function solicitarCita(usuario: Usuario, nueva: NuevaSolicitudCita): Promise<Cita> {
   if (usaApi('asesorias')) {
     // Quien pide sale del token; el Backend valida el día hábil, la anticipación y el grupo.
     const creada = await peticion<CitaBackend>('/advisories/appointments/', {
@@ -547,8 +561,15 @@ export async function solicitarCita(
 
   const inicio = aMinutos(nueva.hora);
   const fin = inicio + parametros.duracionAsesoriaMinutos;
-  if (!horariosDeFecha(nueva.fecha, parametros).some((h) => inicio >= aMinutos(h.abre) && fin <= aMinutos(h.cierra))) {
-    throw new ErrorApi(400, 'Elige una hora que permita completar la asesoría dentro de una franja de atención.');
+  if (
+    !horariosDeFecha(nueva.fecha, parametros).some(
+      (h) => inicio >= aMinutos(h.abre) && fin <= aMinutos(h.cierra),
+    )
+  ) {
+    throw new ErrorApi(
+      400,
+      'Elige una hora que permita completar la asesoría dentro de una franja de atención.',
+    );
   }
   if (!cumpleAnticipacion(nueva.fecha, nueva.hora, parametros.horasMinimasSolicitud)) {
     throw new ErrorApi(
@@ -667,8 +688,10 @@ export async function aprobarCitaConDatos(
 ): Promise<Cita> {
   if (usaApi('asesorias')) {
     const idBackend = await idGestion(id);
-    const cita = aprobacion.fecha && aprobacion.hora ? undefined :
-      await peticion<CitaGestionBackend>(`${RUTA_GESTION}${idBackend}/`);
+    const cita =
+      aprobacion.fecha && aprobacion.hora
+        ? undefined
+        : await peticion<CitaGestionBackend>(`${RUTA_GESTION}${idBackend}/`);
     return decidirCitaBackend(idBackend, 'approve', {
       scheduled_date: aprobacion.fecha ?? cita?.desired_date,
       start_time: aprobacion.hora ?? cita?.desired_time,
@@ -678,7 +701,8 @@ export async function aprobarCitaConDatos(
   }
 
   const cita = citaDecidible(usuario, id);
-  const esAdministracion = tienePermiso(usuario, 'asesorias') && usuario.rolesPersonal.includes('administrador');
+  const esAdministracion =
+    tienePermiso(usuario, 'asesorias') && usuario.rolesPersonal.includes('administrador');
   if (aprobacion.facilitadorId !== usuario.id && !esAdministracion) {
     throw new ErrorApi(403, 'Solo puedes asignarte a ti mismo como facilitador.');
   }
@@ -762,7 +786,9 @@ export async function aprobarCitaConDatos(
     cita.id,
     'aprobada',
     usuario.nombre,
-    cambio ? `Aprobada para el ${cuando} (la persona pidió el ${fechaLegible(cita.fechaSolicitada ?? cita.fecha)}).` : 'Asesoría aprobada.',
+    cambio
+      ? `Aprobada para el ${cuando} (la persona pidió el ${fechaLegible(cita.fechaSolicitada ?? cita.fecha)}).`
+      : 'Asesoría aprobada.',
   );
   registrarUso({
     id: `uso-cita-${cita.id}`,
@@ -812,7 +838,11 @@ export async function reprogramarSolicitud(
     motivo: 'Reprogramada por la persona',
   };
   citas = citas.map((cita) =>
-    cita.id === anterior.id ? cancelada : cita.id === creada.id ? { ...creada, reprogramaDe: anterior.id } : cita,
+    cita.id === anterior.id
+      ? cancelada
+      : cita.id === creada.id
+        ? { ...creada, reprogramaDe: anterior.id }
+        : cita,
   );
 
   // Rastro completo: la anterior se cancela con su notificación, como cualquier cancelación.
@@ -1066,18 +1096,32 @@ export async function cancelarCitaPersonal(id: string, motivo: string): Promise<
       throw new ErrorApi(400, 'Solo puedes cancelar una cita pendiente o aprobada.');
     }
     const cancelada: Cita = { ...cita, estado: 'cancelada', motivo: reason };
-    citas = citas.map((actual) => actual.id === id ? cancelada : actual);
+    citas = citas.map((actual) => (actual.id === id ? cancelada : actual));
     ajustarCupo(cita.franjaId, 1);
-    crearNotificacion({ usuarioId: cita.solicitanteId, solicitudId: id, titulo: 'Asesoría cancelada', mensaje: reason });
+    crearNotificacion({
+      usuarioId: cita.solicitanteId,
+      solicitudId: id,
+      titulo: 'Asesoría cancelada',
+      mensaje: reason,
+    });
     registrarEvento('cita', id, 'cancelada', usuario.nombre, reason);
     registrarUso({
-      id: `uso-cita-${id}`, servicio: 'asesorias', finalidad: cita.tema, tematica: cita.tema,
-      fecha: cita.fecha, modalidad: cita.modalidad, estado: 'cancelada', respondida: true,
+      id: `uso-cita-${id}`,
+      servicio: 'asesorias',
+      finalidad: cita.tema,
+      tematica: cita.tema,
+      fecha: cita.fecha,
+      modalidad: cita.modalidad,
+      estado: 'cancelada',
+      respondida: true,
       ...datosDeSolicitante(cita.solicitanteId),
     });
     return simularRed({ ...cancelada });
   }
-  return { ...await decidirCitaBackend(await idGestion(id), 'cancel', { reason }), motivo: reason };
+  return {
+    ...(await decidirCitaBackend(await idGestion(id), 'cancel', { reason })),
+    motivo: reason,
+  };
 }
 
 async function agendaBackend(facilitadorId: string, desde: string, hasta: string) {
@@ -1085,11 +1129,16 @@ async function agendaBackend(facilitadorId: string, desde: string, hasta: string
   if (facilitadorId === 'todas') {
     const lista = await consultarGestion(`?${rango}`);
     const sesion = useSesion.getState().usuario;
-    return ordenarPorFecha(lista.map((cita) => ({
-      ...cita,
-      ...(!cita.facilitadorId && sesion && (cita.facilitador === sesion.nombre || cita.facilitador === sesion.correo)
-        ? { facilitadorId: sesion.id } : {}),
-    })));
+    return ordenarPorFecha(
+      lista.map((cita) => ({
+        ...cita,
+        ...(!cita.facilitadorId &&
+        sesion &&
+        (cita.facilitador === sesion.nombre || cita.facilitador === sesion.correo)
+          ? { facilitadorId: sesion.id }
+          : {}),
+      })),
+    );
   }
 
   const fechas: string[] = [];
@@ -1099,26 +1148,38 @@ async function agendaBackend(facilitadorId: string, desde: string, hasta: string
     fecha.setUTCDate(fecha.getUTCDate() + (fecha.getUTCDay() === 0 ? 1 : 8 - fecha.getUTCDay()));
   }
   const [paginas, pendientes, parametros] = await Promise.all([
-    Promise.all(fechas.map((date) => peticion<{ appointments: { id: number; date: string }[] }>(
-      `${RUTA_AGENDA}?view=week&date=${date}`,
-    ))),
+    Promise.all(
+      fechas.map((date) =>
+        peticion<{ appointments: { id: number; date: string }[] }>(
+          `${RUTA_AGENDA}?view=week&date=${date}`,
+        ),
+      ),
+    ),
     consultarGestion(`?${rango}&status=PENDING`),
     obtenerParametros(),
   ]);
-  const resumenes = paginas.flatMap(({ appointments }) => appointments)
+  const resumenes = paginas
+    .flatMap(({ appointments }) => appointments)
     .filter((cita) => cita.date >= desde && cita.date <= hasta);
-  const citas = await Promise.all(resumenes.map(async ({ id }) => {
-    const detalle = await peticion<DetalleAgendaBackend>(`${RUTA_AGENDA}appointments/${id}/`);
-    idsCita.set(String(detalle.request_id), detalle.id);
-    return {
-      ...citaAgendaDesdeBackend(detalle, parametros.duracionAsesoriaMinutos),
-      facilitadorId,
-    };
-  }));
+  const citas = await Promise.all(
+    resumenes.map(async ({ id }) => {
+      const detalle = await peticion<DetalleAgendaBackend>(`${RUTA_AGENDA}appointments/${id}/`);
+      idsCita.set(String(detalle.request_id), detalle.id);
+      return {
+        ...citaAgendaDesdeBackend(detalle, parametros.duracionAsesoriaMinutos),
+        facilitadorId,
+      };
+    }),
+  );
   return ordenarPorFecha([...pendientes, ...citas]);
 }
 
-async function registrarAgendaBackend(citaId: string, facilitadorId: string, attended: boolean, result?: string) {
+async function registrarAgendaBackend(
+  citaId: string,
+  facilitadorId: string,
+  attended: boolean,
+  result?: string,
+) {
   const id = await idGestion(citaId);
   const { duracionAsesoriaMinutos } = await obtenerParametros();
   const detalle = await peticion<DetalleAgendaBackend>(`${RUTA_AGENDA}appointments/${id}/record/`, {
@@ -1189,7 +1250,8 @@ export async function registrarResultado(
   citaId: string,
   resultado: string,
 ): Promise<CitaAgenda> {
-  if (usaApi('asesorias')) return registrarAgendaBackend(citaId, usuario.id, true, resultado.trim());
+  if (usaApi('asesorias'))
+    return registrarAgendaBackend(citaId, usuario.id, true, resultado.trim());
   const cita = citaAtendible(usuario.id, citaId, 'el resultado');
   const texto = resultado?.trim() ?? '';
   if (!texto) {
@@ -1307,5 +1369,3 @@ export async function calificarCita(
   });
   return simularRed({ ...actualizada, calificacion: { ...calificacion } });
 }
-
-

@@ -54,7 +54,10 @@ export const fondoServicio: Record<CategoriaServicio, string> = {
 };
 
 /** Colores de cada estado de solicitud: fondo de la etiqueta y color del texto (≥ 5.5:1). */
-export const coloresEstado: Record<EstadoSolicitud, { fondo: string; texto: string; etiqueta: string }> = {
+export const coloresEstado: Record<
+  EstadoSolicitud,
+  { fondo: string; texto: string; etiqueta: string }
+> = {
   pendiente: { fondo: '#FEF3E3', texto: '#825A1E', etiqueta: 'Pendiente' },
   aprobada: { fondo: '#E5F2E5', texto: '#2B6B2B', etiqueta: 'Aprobada' },
   rechazada: { fondo: '#F9E0E1', texto: '#B01B25', etiqueta: 'Rechazada' },

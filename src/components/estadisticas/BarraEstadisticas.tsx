@@ -22,7 +22,12 @@ import {
 } from '@/hooks/useEstadisticas';
 import { colores, espacio, fuentes } from '@/theme';
 import type { FiltrosEstadisticas } from '@/types';
-import { CAMPOS_FILTRO, filtrosActivos, opcionesFiltros, textoOperaciones } from '@/utils/filtrosEstadisticas';
+import {
+  CAMPOS_FILTRO,
+  filtrosActivos,
+  opcionesFiltros,
+  textoOperaciones,
+} from '@/utils/filtrosEstadisticas';
 
 /**
  * El aviso cuando falla una exportación. En desarrollo (Expo Go) también dice el error técnico y
@@ -51,7 +56,10 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
   // cuántas operaciones tiene. Los registros y los indicadores usan todos los filtros.
   const periodo = useRegistrosUso({ desde: filtros.desde, hasta: filtros.hasta });
   const conApi = usaApi('estadisticas');
-  const resumenPeriodo = useIndicadores({ desde: filtros.desde, hasta: filtros.hasta }, conApi && abierto);
+  const resumenPeriodo = useIndicadores(
+    { desde: filtros.desde, hasta: filtros.hasta },
+    conApi && abierto,
+  );
   const registros = useRegistrosUso(filtros);
   const indicadores = useIndicadores(filtros);
   const exportar = useExportarEstadisticas();
@@ -64,14 +72,18 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
   const resumen = resumenPeriodo.data;
   if (conApi && resumen) {
     for (const [campo, filas] of [
-      ['servicio', resumen.porServicio], ['programa', resumen.porPrograma],
-      ['facultad', resumen.porFacultad], ['sede', resumen.porSede],
+      ['servicio', resumen.porServicio],
+      ['programa', resumen.porPrograma],
+      ['facultad', resumen.porFacultad],
+      ['sede', resumen.porSede],
     ] as const) {
-      opciones[campo] = [{ valor: 'todos', etiqueta: 'Todos', cantidad: resumen.total },
+      opciones[campo] = [
+        { valor: 'todos', etiqueta: 'Todos', cantidad: resumen.total },
         ...filas.flatMap((fila) => {
           const valor = campo === 'servicio' ? servicioEstadistico(fila.etiqueta) : fila.etiqueta;
           return valor ? [{ ...fila, valor }] : [];
-        })];
+        }),
+      ];
     }
   }
 
@@ -94,15 +106,18 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
     const datos = indicadores.data;
     if (!datos || (!conApi && !lista)) return;
     exportarPdf.reset();
-    exportar.mutate({ registros: lista ?? [], filtros, indicadores: datos }, {
-      onSuccess: ({ archivo, compartido }) =>
-        setAviso(
-          compartido
-            ? `Se exportaron ${textoOperaciones(total)} en ${archivo}.`
-            : `El celular no permite compartir: el archivo ${archivo} quedó guardado en la app.`,
-        ),
-      onError: (error) => setAviso(mensajeDeError('No pudimos exportar el archivo.', error)),
-    });
+    exportar.mutate(
+      { registros: lista ?? [], filtros, indicadores: datos },
+      {
+        onSuccess: ({ archivo, compartido }) =>
+          setAviso(
+            compartido
+              ? `Se exportaron ${textoOperaciones(total)} en ${archivo}.`
+              : `El celular no permite compartir: el archivo ${archivo} quedó guardado en la app.`,
+          ),
+        onError: (error) => setAviso(mensajeDeError('No pudimos exportar el archivo.', error)),
+      },
+    );
   };
 
   const alExportarPdf = () => {
@@ -115,9 +130,11 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
       {
         onSuccess: ({ compartido, impresion }) =>
           setAviso(
-            impresion ? 'Se abrió el diálogo para guardar el PDF.' : compartido
-              ? `Se exportó el PDF con ${textoOperaciones(datos.total)} y los filtros aplicados.`
-              : 'El celular no permite compartir: el PDF quedó generado en la app.',
+            impresion
+              ? 'Se abrió el diálogo para guardar el PDF.'
+              : compartido
+                ? `Se exportó el PDF con ${textoOperaciones(datos.total)} y los filtros aplicados.`
+                : 'El celular no permite compartir: el PDF quedó generado en la app.',
           ),
         onError: (error) => setAviso(mensajeDeError('No pudimos exportar el PDF.', error)),
       },
@@ -200,7 +217,11 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
           filtros={filtros}
           onCambiar={cambiar}
           opciones={opciones}
-          campos={conApi ? CAMPOS_FILTRO.filter((campo) => campo !== 'tipoUsuario' && campo !== 'periodo') : CAMPOS_FILTRO}
+          campos={
+            conApi
+              ? CAMPOS_FILTRO.filter((campo) => campo !== 'tipoUsuario' && campo !== 'periodo')
+              : CAMPOS_FILTRO
+          }
         />
       ) : null}
 

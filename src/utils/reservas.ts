@@ -220,9 +220,19 @@ type ContextoReserva = { parametros: Parametros; espacios: Espacio[]; hoy: strin
 export function esquemaReservaTercero({ parametros, hoy }: ContextoReserva, porCorreo = false) {
   return z
     .object({
-      solicitanteId: porCorreo ? z.string() : z.string().min(1, { error: 'Elige a la persona que reserva.' }),
-      correoSolicitante: porCorreo ? z.string().trim().email('Escribe un correo válido.')
-        .refine((correo) => correo.toLowerCase().endsWith('@unicesar.edu.co'), 'Usa un correo institucional.') : z.string(),
+      solicitanteId: porCorreo
+        ? z.string()
+        : z.string().min(1, { error: 'Elige a la persona que reserva.' }),
+      correoSolicitante: porCorreo
+        ? z
+            .string()
+            .trim()
+            .email('Escribe un correo válido.')
+            .refine(
+              (correo) => correo.toLowerCase().endsWith('@unicesar.edu.co'),
+              'Usa un correo institucional.',
+            )
+        : z.string(),
       espacioId: z.string().min(1, { error: 'Elige el espacio.' }),
       ...camposReserva,
     })

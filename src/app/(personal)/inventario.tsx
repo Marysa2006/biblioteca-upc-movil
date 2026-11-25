@@ -37,7 +37,12 @@ const SECCIONES: Seccion[] = [
     Flotante: BotonRegistrarTablet,
     permisos: ['tablets'],
   },
-  { valor: 'incidencias', etiqueta: 'Incidencias', Componente: SeccionIncidencias, permisos: ['tablets'] },
+  {
+    valor: 'incidencias',
+    etiqueta: 'Incidencias',
+    Componente: SeccionIncidencias,
+    permisos: ['tablets'],
+  },
 ];
 
 export default function Inventario() {
@@ -69,7 +74,6 @@ export default function Inventario() {
       ) : (
         <EstadoVacio mensaje="Tu rol no tiene secciones de inventario por ahora." />
       )}
-
     </Pantalla>
   );
 }

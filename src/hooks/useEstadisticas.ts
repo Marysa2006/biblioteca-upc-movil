@@ -36,9 +36,10 @@ export function useIndicadores(filtros: FiltrosEstadisticas = {}, enabled = true
   return useQuery({
     queryKey: [...claves.indicadoresUso(filtros), horasReferenciaTablet],
     enabled,
-    queryFn: async () => usaApi('estadisticas')
-      ? obtenerResumenEstadistico(filtros)
-      : calcularIndicadores(await obtenerRegistrosUso(filtros), { horasReferenciaTablet }),
+    queryFn: async () =>
+      usaApi('estadisticas')
+        ? obtenerResumenEstadistico(filtros)
+        : calcularIndicadores(await obtenerRegistrosUso(filtros), { horasReferenciaTablet }),
   });
 }
 
@@ -48,15 +49,30 @@ export function useIndicadores(filtros: FiltrosEstadisticas = {}, enabled = true
  */
 export function useExportarPdf() {
   return useMutation({
-    mutationFn: ({ indicadores, filtros }: { indicadores: IndicadoresUso; filtros: FiltrosEstadisticas }) =>
-      exportarPdf(indicadores, filtros, !usaApi('estadisticas')),
+    mutationFn: ({
+      indicadores,
+      filtros,
+    }: {
+      indicadores: IndicadoresUso;
+      filtros: FiltrosEstadisticas;
+    }) => exportarPdf(indicadores, filtros, !usaApi('estadisticas')),
   });
 }
 
 /** Exporta los registros que se están viendo a un CSV y abre el menú para compartirlo. */
 export function useExportarEstadisticas() {
   return useMutation({
-    mutationFn: ({ registros, filtros, indicadores }: { registros: Parameters<typeof exportarRegistrosCsv>[0]; filtros: FiltrosEstadisticas; indicadores: IndicadoresUso }) =>
-      usaApi('estadisticas') ? exportarCsvBackend(filtros, indicadores) : exportarRegistrosCsv(registros, indicadores),
+    mutationFn: ({
+      registros,
+      filtros,
+      indicadores,
+    }: {
+      registros: Parameters<typeof exportarRegistrosCsv>[0];
+      filtros: FiltrosEstadisticas;
+      indicadores: IndicadoresUso;
+    }) =>
+      usaApi('estadisticas')
+        ? exportarCsvBackend(filtros, indicadores)
+        : exportarRegistrosCsv(registros, indicadores),
   });
 }

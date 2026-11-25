@@ -54,7 +54,10 @@ export function TarjetaRegistro({ registro }: { registro: RegistroUso }) {
     <View
       style={estilos.tarjeta}
       accessible
-      accessibilityLabel={[`${servicio}, ${estado}`, ...filas.map(([campo, valor]) => `${campo}: ${valor}`)].join('. ')}
+      accessibilityLabel={[
+        `${servicio}, ${estado}`,
+        ...filas.map(([campo, valor]) => `${campo}: ${valor}`),
+      ].join('. ')}
     >
       <View style={estilos.encabezado}>
         <Text variant="titleMedium" style={estilos.servicio}>
@@ -90,7 +93,12 @@ const estilos = StyleSheet.create({
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
   },
-  encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.xs },
+  encabezado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.s,
+    marginBottom: espacio.xs,
+  },
   servicio: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
   estado: { paddingHorizontal: espacio.s, paddingVertical: espacio.xs, borderRadius: radio.boton },
   // Con letra grande, el valor pasa debajo del campo en vez de cortarse.

@@ -25,7 +25,19 @@ type GrupoTipos = 'qr' | 'barras' | 'todos';
 const TIPOS: Record<GrupoTipos, BarcodeType[]> = {
   qr: ['qr'],
   barras: ['code128', 'code39', 'ean13', 'ean8', 'upc_a', 'upc_e', 'itf14', 'codabar'],
-  todos: ['qr', 'code128', 'code39', 'ean13', 'ean8', 'upc_a', 'upc_e', 'itf14', 'codabar', 'datamatrix', 'pdf417'],
+  todos: [
+    'qr',
+    'code128',
+    'code39',
+    'ean13',
+    'ean8',
+    'upc_a',
+    'upc_e',
+    'itf14',
+    'codabar',
+    'datamatrix',
+    'pdf417',
+  ],
 };
 
 type Origen = 'cámara' | 'escáner del sistema' | 'a mano';
@@ -34,7 +46,11 @@ type Registro = LecturaCodigo & { id: number; origen: Origen; hora: string };
 const MAXIMO_REGISTROS = 10;
 
 function horaActual(): string {
-  return new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date().toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 }
 
 export default function PruebaCamara() {
@@ -63,14 +79,20 @@ function Prueba() {
 
   const agregar = (lectura: LecturaCodigo, origen: Origen) =>
     setRegistros((actuales) =>
-      [{ ...lectura, origen, id: Date.now(), hora: horaActual() }, ...actuales].slice(0, MAXIMO_REGISTROS),
+      [{ ...lectura, origen, id: Date.now(), hora: horaActual() }, ...actuales].slice(
+        0,
+        MAXIMO_REGISTROS,
+      ),
     );
 
   // El escáner del sistema avisa por un evento, no por una promesa.
   useEffect(() => {
     if (!CameraView.isModernBarcodeScannerAvailable) return;
     const suscripcion = CameraView.onModernBarcodeScanned((resultado) =>
-      agregar({ tipo: resultado.type, datos: resultado.data, demoraMs: null }, 'escáner del sistema'),
+      agregar(
+        { tipo: resultado.type, datos: resultado.data, demoraMs: null },
+        'escáner del sistema',
+      ),
     );
     return () => suscripcion.remove();
   }, []);
@@ -107,7 +129,11 @@ function Prueba() {
           ]}
         />
         {/* key: al cambiar los tipos se vuelve a montar la cámara con la nueva configuración. */}
-        <EscanerCodigos key={grupo} tipos={TIPOS[grupo]} onLeido={(lectura) => agregar(lectura, 'cámara')} />
+        <EscanerCodigos
+          key={grupo}
+          tipos={TIPOS[grupo]}
+          onLeido={(lectura) => agregar(lectura, 'cámara')}
+        />
       </View>
 
       <View style={estilos.grupo}>

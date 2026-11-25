@@ -145,8 +145,16 @@ function Detalle({ id }: { id: string }) {
         <AvisoNuevaFecha solicitud={solicitud} />
         <ListaDatos datos={datosDe(solicitud)} />
         {usaApi('asistencia') && solicitud.estado === 'aprobada' ? (
-          <Button mode="contained-tonal" icon="qrcode"
-            onPress={() => router.push({ pathname: '/asistencia/[id]', params: { id: solicitud.id, tipo: 'capacitacion' } })}>
+          <Button
+            mode="contained-tonal"
+            icon="qrcode"
+            onPress={() =>
+              router.push({
+                pathname: '/asistencia/[id]',
+                params: { id: solicitud.id, tipo: 'capacitacion' },
+              })
+            }
+          >
             Tomar asistencia
           </Button>
         ) : null}
@@ -498,15 +506,21 @@ function BarraAcciones({
       ) : null}
 
       {botones.cancelar ? (
-        <Button mode="outlined" disabled={ocupado || cancelar.isPending} onPress={() => {
-          cancelar.reset();
-          setDialogo('cancelar');
-        }}>
+        <Button
+          mode="outlined"
+          disabled={ocupado || cancelar.isPending}
+          onPress={() => {
+            cancelar.reset();
+            setDialogo('cancelar');
+          }}
+        >
           Cancelar capacitación
         </Button>
       ) : null}
       <DialogoTextoCapacitacion
-        tipo={dialogo === 'rechazar' || dialogo === 'cerrar' || dialogo === 'cancelar' ? dialogo : null}
+        tipo={
+          dialogo === 'rechazar' || dialogo === 'cerrar' || dialogo === 'cancelar' ? dialogo : null
+        }
         solicitud={solicitud}
         guardando={rechazar.isPending || cerrar.isPending || cancelar.isPending}
         mensajeError={errorDialogo}
@@ -516,14 +530,15 @@ function BarraAcciones({
                 { id: solicitud.id, motivo: texto },
                 { onSuccess: listo(avisoCapacitacion('rechazar', solicitud)) },
               )
-            : dialogo === 'cancelar' ? cancelar.mutate(
-                { id: solicitud.id, motivo: texto },
-                { onSuccess: listo('Cancelaste la capacitación. Le avisamos a la persona.') },
-              )
-            : cerrar.mutate(
-                { id: solicitud.id, resultado: texto, participantesReales },
-                { onSuccess: listo(avisoCapacitacion('cerrar', solicitud)) },
-              )
+            : dialogo === 'cancelar'
+              ? cancelar.mutate(
+                  { id: solicitud.id, motivo: texto },
+                  { onSuccess: listo('Cancelaste la capacitación. Le avisamos a la persona.') },
+                )
+              : cerrar.mutate(
+                  { id: solicitud.id, resultado: texto, participantesReales },
+                  { onSuccess: listo(avisoCapacitacion('cerrar', solicitud)) },
+                )
         }
         onCerrar={() => setDialogo(null)}
       />

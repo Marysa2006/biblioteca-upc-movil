@@ -166,7 +166,10 @@ const COLOR_ESTADO: Record<string, string> = {
 function respuestaPromedio(tiempos: TiempoRespuesta[]): { horas: number; cantidad: number } | null {
   const cantidad = tiempos.reduce((suma, tiempo) => suma + (tiempo.cantidad ?? 0), 0);
   if (cantidad === 0) return null;
-  const horas = tiempos.reduce((suma, tiempo) => suma + tiempo.horasPromedio * (tiempo.cantidad ?? 0), 0);
+  const horas = tiempos.reduce(
+    (suma, tiempo) => suma + tiempo.horasPromedio * (tiempo.cantidad ?? 0),
+    0,
+  );
   return { horas: Math.round((horas / cantidad) * 10) / 10, cantidad };
 }
 
@@ -187,8 +190,16 @@ function htmlResumen(indicadores: IndicadoresUso, mostrarUsuariosFrecuentes: boo
       cifra(String(total), 'Operaciones'),
       cifra(servicio?.etiqueta ?? 'Sin datos', 'Servicio más usado', servicio && detalle(servicio)),
       usuarios ? cifra(usuarios.etiqueta, 'Usuarios más frecuentes', detalle(usuarios)) : '',
-      cifra(String(cierre.tasaFinalizacion) + ' %', 'Tasa de finalización', String(cierre.finalizadas) + ' finalizadas'),
-      cifra(String(cierre.tasaCancelacionesYRechazos) + ' %', 'Cancelaciones y rechazos', String(cierre.noPrestadas) + ' solicitudes sin prestar'),
+      cifra(
+        String(cierre.tasaFinalizacion) + ' %',
+        'Tasa de finalización',
+        String(cierre.finalizadas) + ' finalizadas',
+      ),
+      cifra(
+        String(cierre.tasaCancelacionesYRechazos) + ' %',
+        'Cancelaciones y rechazos',
+        String(cierre.noPrestadas) + ' solicitudes sin prestar',
+      ),
       cifra(
         respuesta ? textoHoras(respuesta.horas) : 'Sin datos',
         'Respuesta promedio',
@@ -200,7 +211,11 @@ function htmlResumen(indicadores: IndicadoresUso, mostrarUsuariosFrecuentes: boo
           .map((frase) => `<li>${escaparHtml(frase)}</li>`)
           .join('')}</ul></div>`
       : '') +
-    (indicadores.asistentesPorServicio?.length ? barras('Asistentes por servicio', indicadores.asistentesPorServicio, { total: indicadores.asistentes }) : '') +
+    (indicadores.asistentesPorServicio?.length
+      ? barras('Asistentes por servicio', indicadores.asistentesPorServicio, {
+          total: indicadores.asistentes,
+        })
+      : '') +
     barras('Operaciones por mes', indicadores.porMes, { total }) +
     barras('Operaciones por semestre', periodosEnOrden(indicadores.porPeriodo), { total })
   );
@@ -259,7 +274,9 @@ function htmlTablets(indicadores: IndicadoresUso): string {
         `Duraron ${tablets.horasReferencia} h o menos`,
         tablets.conDuracion ? `${tablets.dentroDeReferencia} de ${tablets.conDuracion}` : undefined,
       ),
-      tablets.sinHoraCompleta != null ? cifra(String(tablets.sinHoraCompleta), 'Sin hora completa', 'Calidad de los datos') : '',
+      tablets.sinHoraCompleta != null
+        ? cifra(String(tablets.sinHoraCompleta), 'Sin hora completa', 'Calidad de los datos')
+        : '',
     ].join('')}</div>` +
     barras('Préstamos por mes', tablets.porMes, { total: tablets.prestamos }) +
     barras('Préstamos por programa', tablets.porPrograma, { total: tablets.prestamos })
@@ -382,17 +399,21 @@ export async function exportarPdf(
       marco.style.width = '1px';
       marco.style.height = '1px';
       marco.title = 'Reporte de estadísticas';
-      marco.addEventListener('load', () => {
-        const ventana = marco.contentWindow;
-        if (!ventana) {
-          marco.remove();
-          rechazar(new Error('No pudimos abrir la vista de impresión.'));
-          return;
-        }
-        ventana.addEventListener('afterprint', () => marco.remove(), { once: true });
-        ventana.print();
-        resolver();
-      }, { once: true });
+      marco.addEventListener(
+        'load',
+        () => {
+          const ventana = marco.contentWindow;
+          if (!ventana) {
+            marco.remove();
+            rechazar(new Error('No pudimos abrir la vista de impresión.'));
+            return;
+          }
+          ventana.addEventListener('afterprint', () => marco.remove(), { once: true });
+          ventana.print();
+          resolver();
+        },
+        { once: true },
+      );
       marco.srcdoc = html;
       document.body.append(marco);
     });

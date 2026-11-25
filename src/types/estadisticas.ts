@@ -9,12 +9,7 @@ import type { TipoUsuario } from './usuarios';
 
 /** Servicios de la biblioteca que se pueden contar en las estadísticas. */
 export type ServicioEstadistica =
-  | 'espacios'
-  | 'asesorias'
-  | 'tablets'
-  | 'capacitaciones'
-  | 'guias'
-  | 'catalogo';
+  'espacios' | 'asesorias' | 'tablets' | 'capacitaciones' | 'guias' | 'catalogo';
 
 /** Modalidad de la operación registrada. */
 export type ModalidadUso = 'presencial' | 'virtual';

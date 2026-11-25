@@ -31,24 +31,38 @@ export function DialogoMotivo({ solicitud, ...props }: Props) {
   return (
     <DialogoMotivoAccion
       {...props}
-      accion={reserva ? {
-        id: reserva.id,
-        titulo: `${verbo} la reserva`,
-        detalle: `${reserva.solicitante} · ${fechaLegible(reserva.fecha)}, ${reserva.horaInicio} – ${reserva.horaFin}`,
-        boton: verbo,
-      } : null}
+      accion={
+        reserva
+          ? {
+              id: reserva.id,
+              titulo: `${verbo} la reserva`,
+              detalle: `${reserva.solicitante} · ${fechaLegible(reserva.fecha)}, ${reserva.horaInicio} – ${reserva.horaFin}`,
+              boton: verbo,
+            }
+          : null
+      }
     />
   );
 }
 
 type AccionMotivo = { id: string; titulo: string; detalle: string; boton: string };
-type PropsAccion = Omit<Props, 'solicitud'> & { accion: AccionMotivo | null; impedido?: boolean; motivoOpcional?: boolean };
+type PropsAccion = Omit<Props, 'solicitud'> & {
+  accion: AccionMotivo | null;
+  impedido?: boolean;
+  motivoOpcional?: boolean;
+};
 
 export function DialogoMotivoAccion({ accion, ...props }: PropsAccion) {
   return (
     <Portal>
-      <Dialog visible={accion != null} onDismiss={props.guardando ? undefined : props.onCerrar} style={estilos.dialogo}>
-        {accion ? <Contenido key={`${accion.id}-${accion.titulo}`} accion={accion} {...props} /> : null}
+      <Dialog
+        visible={accion != null}
+        onDismiss={props.guardando ? undefined : props.onCerrar}
+        style={estilos.dialogo}
+      >
+        {accion ? (
+          <Contenido key={`${accion.id}-${accion.titulo}`} accion={accion} {...props} />
+        ) : null}
       </Dialog>
     </Portal>
   );

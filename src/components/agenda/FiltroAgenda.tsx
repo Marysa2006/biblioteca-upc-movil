@@ -111,7 +111,11 @@ export function ChipFiltroAgenda({
     return (
       <Chip
         icon={({ size }) => (
-          <Icon source={ICONO_ESTADO_AGENDA.pendiente ?? 'circle-small'} size={size} color={texto} />
+          <Icon
+            source={ICONO_ESTADO_AGENDA.pendiente ?? 'circle-small'}
+            size={size}
+            color={texto}
+          />
         )}
         onPress={() => onCambiar('pendiente')}
         style={[estilos.chip, { backgroundColor: fondo }]}

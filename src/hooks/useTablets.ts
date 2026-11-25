@@ -163,11 +163,15 @@ export function usePrestamos(estado: EstadoPrestamo | 'todas' = 'todas') {
 export function useCancelarPrestamoPersonal() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => cancelarPrestamoPersonal(id, motivo),
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) =>
+      cancelarPrestamoPersonal(id, motivo),
     onSuccess: () => {
       for (const queryKey of [
-        claves.prestamosTablet, claves.tablets, claves.solicitudesTodas,
-        claves.notificaciones, claves.estadisticasTodas,
+        claves.prestamosTablet,
+        claves.tablets,
+        claves.solicitudesTodas,
+        claves.notificaciones,
+        claves.estadisticasTodas,
       ]) {
         queryClient.invalidateQueries({ queryKey });
       }

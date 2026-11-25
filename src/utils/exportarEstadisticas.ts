@@ -7,7 +7,13 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { hoyISO } from '@/utils/fechas';
-import { agregarIndicadoresAlCsv, BOM_UTF8, nombreArchivoCsv, registrosACsv, SEPARADOR_CSV } from '@/utils/estadisticas';
+import {
+  agregarIndicadoresAlCsv,
+  BOM_UTF8,
+  nombreArchivoCsv,
+  registrosACsv,
+  SEPARADOR_CSV,
+} from '@/utils/estadisticas';
 import type { FiltrosEstadisticas, IndicadoresUso, RegistroUso } from '@/types';
 import { descargarEstadisticas } from '@/api/estadisticas';
 
@@ -37,7 +43,10 @@ async function guardarYCompartirCsv(datos: string) {
   return { archivo: nombre, compartido };
 }
 
-export async function exportarCsvBackend(filtros: FiltrosEstadisticas, indicadores: IndicadoresUso) {
+export async function exportarCsvBackend(
+  filtros: FiltrosEstadisticas,
+  indicadores: IndicadoresUso,
+) {
   const respuesta = await descargarEstadisticas(filtros, 'csv');
   const csv = await respuesta.text();
   const texto = csv.startsWith(BOM_UTF8) ? csv : BOM_UTF8 + csv;
@@ -45,5 +54,7 @@ export async function exportarCsvBackend(filtros: FiltrosEstadisticas, indicador
 }
 
 export function exportarRegistrosCsv(registros: RegistroUso[], indicadores: IndicadoresUso) {
-  return guardarYCompartirCsv(agregarIndicadoresAlCsv(registrosACsv(registros), indicadores, SEPARADOR_CSV));
+  return guardarYCompartirCsv(
+    agregarIndicadoresAlCsv(registrosACsv(registros), indicadores, SEPARADOR_CSV),
+  );
 }

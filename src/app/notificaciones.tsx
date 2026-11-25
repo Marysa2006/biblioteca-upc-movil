@@ -75,17 +75,28 @@ export default function Notificaciones() {
             : `Tienes ${sinLeer} ${sinLeer === 1 ? 'notificación' : 'notificaciones'} sin leer.`}
         </Text>
         {sinLeer > 0 ? (
-          <Button mode="outlined" icon="check-all" contentStyle={estilos.botonTodas}
-            loading={marcarTodas.isPending} disabled={marcarTodas.isPending}
-            onPress={() => marcarTodas.mutate()}>
+          <Button
+            mode="outlined"
+            icon="check-all"
+            contentStyle={estilos.botonTodas}
+            loading={marcarTodas.isPending}
+            disabled={marcarTodas.isPending}
+            onPress={() => marcarTodas.mutate()}
+          >
             Marcar todas como leídas
           </Button>
         ) : null}
         {marcarTodas.error ? <AvisoError mensaje={mensajeErrorGuardar(marcarTodas.error)} /> : null}
-        {marcar.error ? <AvisoError mensaje="No pudimos marcar la notificación como leída." /> : null}
+        {marcar.error ? (
+          <AvisoError mensaje="No pudimos marcar la notificación como leída." />
+        ) : null}
         <View style={estilos.lista}>
           {avisos.map((aviso) => (
-            <TarjetaAviso key={aviso.id} aviso={aviso} onMarcarLeida={() => marcar.mutate(aviso.id)} />
+            <TarjetaAviso
+              key={aviso.id}
+              aviso={aviso}
+              onMarcarLeida={() => marcar.mutate(aviso.id)}
+            />
           ))}
         </View>
       </>

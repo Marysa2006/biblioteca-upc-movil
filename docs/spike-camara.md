@@ -12,18 +12,20 @@
 
 La pantalla compara tres formas de leer un código:
 
-| Forma | Cómo funciona | Para qué HU |
-|---|---|---|
-| 1. Cámara dentro de la app | `CameraView` con `onBarcodeScanned`. Se ve con el diseño de la app. | HU-32 (el usuario escanea el QR de la sesión) |
-| 2. Escáner del sistema | `CameraView.launchScanner()`. En Android abre el escáner de Google y se cierra solo al leer. | Opción más rápida para HU-31 |
-| 3. Escribir el código | Campo de texto. | HU-31 CA3: sin cámara o sin permiso |
+| Forma                      | Cómo funciona                                                                                | Para qué HU                                   |
+| -------------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| 1. Cámara dentro de la app | `CameraView` con `onBarcodeScanned`. Se ve con el diseño de la app.                          | HU-32 (el usuario escanea el QR de la sesión) |
+| 2. Escáner del sistema     | `CameraView.launchScanner()`. En Android abre el escáner de Google y se cierra solo al leer. | Opción más rápida para HU-31                  |
+| 3. Escribir el código      | Campo de texto.                                                                              | HU-31 CA3: sin cámara o sin permiso           |
 
 **Tipos de código:**
+
 - QR: `qr`.
 - Códigos de barras: `code128`, `code39`, `ean13`, `ean8`, `upc_a`, `upc_e`, `itf14` y `codabar`.
 - En "Todos", también `datamatrix` y `pdf417`.
 
 **Configuración en `app.json`:**
+
 - Se agrega el plugin `expo-camera` con el texto del permiso en español.
 - `recordAudioAndroid: false`, porque no grabamos audio y así la app no pide el micrófono.
 - Expo Go no necesita el plugin. El APK de EAS sí.
@@ -32,18 +34,18 @@ La pantalla compara tres formas de leer un código:
 
 Probado por Jhon en Expo Go, en Android, el 20 de octubre de 2026. Todas las pruebas pasaron.
 
-| Prueba | Resultado | Notas |
-|---|---|---|
-| Expo Go abre la cámara | ✅ Sí | |
-| Pedir permiso → Permitir | ✅ Sí | |
-| Negar el permiso dos veces → sale "Abrir ajustes" y lleva a Ajustes | ✅ Sí | |
-| Lee un QR (por ejemplo, uno generado con un enlace) | ✅ Sí | |
-| Lee un código de barras de un producto (EAN-13) | ✅ Sí | |
-| Lee una etiqueta Code 128 (como las de inventario) | ✅ Sí | |
-| No repite la lectura hasta tocar "Escanear otro" | ✅ Sí | |
-| Linterna con poca luz | ✅ Sí | |
-| Escáner del sistema (`launchScanner`) disponible y lee | ✅ Sí | |
-| Al salir de la pantalla la cámara se apaga (se apaga la luz verde del indicador) | ✅ Sí | |
+| Prueba                                                                           | Resultado | Notas |
+| -------------------------------------------------------------------------------- | --------- | ----- |
+| Expo Go abre la cámara                                                           | ✅ Sí     |       |
+| Pedir permiso → Permitir                                                         | ✅ Sí     |       |
+| Negar el permiso dos veces → sale "Abrir ajustes" y lleva a Ajustes              | ✅ Sí     |       |
+| Lee un QR (por ejemplo, uno generado con un enlace)                              | ✅ Sí     |       |
+| Lee un código de barras de un producto (EAN-13)                                  | ✅ Sí     |       |
+| Lee una etiqueta Code 128 (como las de inventario)                               | ✅ Sí     |       |
+| No repite la lectura hasta tocar "Escanear otro"                                 | ✅ Sí     |       |
+| Linterna con poca luz                                                            | ✅ Sí     |       |
+| Escáner del sistema (`launchScanner`) disponible y lee                           | ✅ Sí     |       |
+| Al salir de la pantalla la cámara se apaga (se apaga la luz verde del indicador) | ✅ Sí     |       |
 
 ## Conclusiones y recomendación
 

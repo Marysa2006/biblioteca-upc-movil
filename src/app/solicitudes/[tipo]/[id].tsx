@@ -26,7 +26,12 @@ import {
   Pantalla,
 } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
-import { useCancelarMiSolicitud, useHistorialSolicitud, useMisSolicitudes, usePlazoCancelacion } from '@/hooks/useSolicitudes';
+import {
+  useCancelarMiSolicitud,
+  useHistorialSolicitud,
+  useMisSolicitudes,
+  usePlazoCancelacion,
+} from '@/hooks/useSolicitudes';
 import { useMisPrestamos } from '@/hooks/useTablets';
 import { puedeCancelarSolicitud } from '@/utils/cancelacionSolicitud';
 import { mensajeErrorGuardar } from '@/utils/errores';
@@ -52,11 +57,19 @@ export default function DetalleSolicitud() {
   const cancelar = useCancelarMiSolicitud();
   const [confirmando, setConfirmando] = useState(false);
   const tipoCancelable = tipo === 'reserva' || tipo === 'capacitacion' || tipo === 'prestamo';
-  const prestamo = tipo === 'prestamo' ? prestamos.data?.find((actual) => actual.id === id) : undefined;
-  const puedeCancelar = solicitud && tipoCancelable &&
+  const prestamo =
+    tipo === 'prestamo' ? prestamos.data?.find((actual) => actual.id === id) : undefined;
+  const puedeCancelar =
+    solicitud &&
+    tipoCancelable &&
     (tipo !== 'prestamo' || prestamo?.estado === 'reservado') &&
-    puedeCancelarSolicitud(tipo, solicitud.estado, prestamo?.fecha ?? solicitud.fecha,
-      prestamo?.horaInicio ?? solicitud.hora, plazo.data);
+    puedeCancelarSolicitud(
+      tipo,
+      solicitud.estado,
+      prestamo?.fecha ?? solicitud.fecha,
+      prestamo?.horaInicio ?? solicitud.hora,
+      plazo.data,
+    );
 
   const recargar = () => {
     solicitudes.refetch();
@@ -83,20 +96,38 @@ export default function DetalleSolicitud() {
         <Encabezado solicitud={solicitud} />
         <InfoSolicitud solicitud={solicitud} />
         {puedeCancelar ? (
-          <Button mode="outlined" icon="calendar-remove-outline" contentStyle={estilos.botonCancelar}
-            onPress={() => { cancelar.reset(); setConfirmando(true); }}>
+          <Button
+            mode="outlined"
+            icon="calendar-remove-outline"
+            contentStyle={estilos.botonCancelar}
+            onPress={() => {
+              cancelar.reset();
+              setConfirmando(true);
+            }}
+          >
             Cancelar solicitud
           </Button>
         ) : null}
         {tipoCancelable ? (
           <DialogoMotivoAccion
-            accion={confirmando ? { id, titulo: 'Cancelar solicitud', detalle: solicitud.titulo, boton: 'Confirmar cancelación' } : null}
+            accion={
+              confirmando
+                ? {
+                    id,
+                    titulo: 'Cancelar solicitud',
+                    detalle: solicitud.titulo,
+                    boton: 'Confirmar cancelación',
+                  }
+                : null
+            }
             guardando={cancelar.isPending}
             impedido={!puedeCancelar}
             motivoOpcional={tipo !== 'capacitacion'}
             mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
             onCerrar={() => setConfirmando(false)}
-            onConfirmar={(motivo) => cancelar.mutate({ tipo, id, motivo }, { onSuccess: () => setConfirmando(false) })}
+            onConfirmar={(motivo) =>
+              cancelar.mutate({ tipo, id, motivo }, { onSuccess: () => setConfirmando(false) })
+            }
           />
         ) : null}
 
