@@ -22,7 +22,7 @@ import type {
   Usuario,
 } from '@/types';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
-import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { esDiaHabil, horariosDeFecha, motivoNoDisponible } from '@/utils/parametros';
 import {
   LARGO_MAXIMO_NOVEDADES_RESERVA,
   problemaRecursos,
@@ -122,15 +122,12 @@ function franjasDelDia(
   bloqueos: Bloqueo[],
   minimo: Date,
 ): FranjaDisponibilidad[] {
-  const dia = new Date(`${fecha}T00:00:00`).getDay();
-  const horario = parametros.horarios.find((h) => h.dia === dia);
-  if (!horario) return [];
-
+  const inicios = horariosDeFecha(fecha, parametros).flatMap(({ abre, cierra }) =>
+    Array.from({ length: Math.floor((aMinutos(cierra) - aMinutos(abre)) / 60) },
+      (_, i) => aMinutos(abre) + i * 60),
+  );
   const franjas: FranjaDisponibilidad[] = [];
-  const abre = aMinutos(horario.abre);
-  const cierra = aMinutos(horario.cierra);
-
-  for (let inicio = abre; inicio + 60 <= cierra; inicio += 60) {
+  for (const inicio of inicios) {
     const fin = inicio + 60;
 
     const bloqueo = bloqueos.find(

@@ -3,10 +3,10 @@
  * con un interruptor; si está abierto, lleva la hora de apertura y de cierre, elegidas en el reloj.
  * Un día cerrado no se ofrece para reservas ni citas (esDiaHabil).
  */
-import { Controller, useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import { useFieldArray, useFormContext } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 
-import { FilaInterruptor } from '@/components/ui';
+import { Button, Text } from 'react-native-paper';
 import { colores, espacio, radio } from '@/theme';
 import { NOMBRE_DIA, type FormularioParametros } from '@/utils/parametros';
 
@@ -31,48 +31,34 @@ export function SeccionHorarios({ deshabilitado }: { deshabilitado: boolean }) {
 
 function FilaDia({ indice, dia, deshabilitado }: { indice: number; dia: number; deshabilitado: boolean }) {
   const { control } = useFormContext<FormularioParametros>();
-  const abierto = useWatch({ control, name: `dias.${indice}.abierto` });
+  const { fields, append, remove } = useFieldArray({ control, name: `dias.${indice}.franjas` });
   const nombreDia = NOMBRE_DIA[dia];
 
   return (
     <View style={estilos.dia}>
-      <Controller
-        control={control}
-        name={`dias.${indice}.abierto`}
-        render={({ field: { value, onChange } }) => (
-          <FilaInterruptor
-            etiqueta={nombreDia}
-            ayuda={value ? 'Abierto' : 'Cerrado'}
-            valor={value}
-            onCambiar={onChange}
-            deshabilitado={deshabilitado}
-          />
-        )}
-      />
-      {abierto ? (
-        <View style={estilos.horas}>
-          <View style={estilos.hora}>
-            <CampoParametro
-              nombre={`dias.${indice}.abre`}
-              etiqueta={`${nombreDia}: abre`}
-              tipo="hora"
-              deshabilitado={deshabilitado}
-            />
+      <Text variant="titleSmall">{nombreDia}</Text>
+      {fields.length === 0 ? <Text>Cerrado</Text> : null}
+      {fields.map((field, i) => (
+        <View key={field.id}>
+          <View style={estilos.horas}>
+            <View style={estilos.hora}>
+              <CampoParametro nombre={`dias.${indice}.franjas.${i}.abre`}
+                etiqueta={`${nombreDia}, franja ${i + 1}, abre`} tipo="hora" deshabilitado={deshabilitado} />
+            </View>
+            <View style={estilos.hora}>
+              <CampoParametro nombre={`dias.${indice}.franjas.${i}.cierra`}
+                etiqueta={`${nombreDia}, franja ${i + 1}, cierra`} tipo="hora" deshabilitado={deshabilitado} />
+            </View>
           </View>
-          <View style={estilos.hora}>
-            <CampoParametro
-              nombre={`dias.${indice}.cierra`}
-              etiqueta={`${nombreDia}: cierra`}
-              tipo="hora"
-              deshabilitado={deshabilitado}
-            />
-          </View>
+          <Button onPress={() => remove(i)} disabled={deshabilitado}
+            accessibilityLabel={`Quitar franja ${i + 1} del ${nombreDia}`}>Quitar franja</Button>
         </View>
-      ) : null}
+      ))}
+      <Button icon="plus" onPress={() => append({ abre: '', cierra: '' })} disabled={deshabilitado}
+        accessibilityLabel={`Agregar franja al ${nombreDia}`}>Agregar franja</Button>
     </View>
   );
 }
-
 const estilos = StyleSheet.create({
   dia: {
     paddingHorizontal: espacio.s,

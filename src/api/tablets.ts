@@ -13,7 +13,6 @@ import type {
   EstadoFranja,
   EstadoPrestamo,
   EstadoTablet,
-  HorarioAtencion,
   Parametros,
   Prestamo,
   RegistroTablet,
@@ -26,7 +25,7 @@ import { sumarDias } from '@/utils/calendario';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
 import { horasEntreFechasHoras } from '@/utils/estadisticas';
-import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
+import { esDiaHabil, horariosDeFecha, motivoNoDisponible } from '@/utils/parametros';
 import { constanciaDe, esFirmaValida, type ConstanciaPrestamo } from '@/utils/prestamos';
 import { MENSAJE_NO_PIDE_TABLET, puedePedirTablet, tienePermiso } from '@/utils/roles';
 import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/utils/solicitante';
@@ -768,19 +767,13 @@ function duracionHoras(inicio: string, fin: string): number {
   return (aMinutos(fin) - aMinutos(inicio)) / 60;
 }
 
-function horarioDelDia(fecha: string, parametros: Parametros): HorarioAtencion | undefined {
-  const dia = new Date(`${fecha}T00:00:00`).getDay();
-  return parametros.horarios.find((horario) => horario.dia === dia);
-}
-
 /**
  * Franjas del horario de atención con las tablets libres: empiezan cada 30 minutos
  * (MINUTOS_ENTRE_INICIOS_TABLET) y cada una dura 1 hora, la duración mínima. Es síncrona y no
  * simula red, para reutilizarla al buscar sugerencias y alternativas.
  */
 function franjasDelDia(fecha: string, parametros: Parametros): FranjaTablets[] {
-  const horario = horarioDelDia(fecha, parametros);
-  if (!horario) return [];
+
 
   const total = tablets.filter(estaOperativa).length;
   const ahora = new Date();
@@ -788,11 +781,12 @@ function franjasDelDia(fecha: string, parametros: Parametros): FranjaTablets[] {
   // espacios, asesorías y capacitaciones): se aparta desde la app hasta que empieza la franja.
   const franjas: FranjaTablets[] = [];
 
-  for (
-    let inicio = aMinutos(horario.abre);
-    inicio + 60 <= aMinutos(horario.cierra);
-    inicio += MINUTOS_ENTRE_INICIOS_TABLET
-  ) {
+  const paso = MINUTOS_ENTRE_INICIOS_TABLET;
+  const inicios = horariosDeFecha(fecha, parametros).flatMap(({ abre, cierra }) =>
+    Array.from({ length: Math.max(0, Math.floor((aMinutos(cierra) - aMinutos(abre) - 60) / paso) + 1) },
+      (_, i) => aMinutos(abre) + i * paso),
+  );
+  for (const inicio of inicios) {
     const horaInicio = aHora(inicio);
     const horaFin = aHora(inicio + 60);
     const libres = tabletsLibresEnFranja(tablets, prestamos, fecha, horaInicio, horaFin).length;
@@ -1048,11 +1042,11 @@ export async function solicitarPrestamo(
     throw new ErrorApi(400, problemaDeHoras);
   }
   const horaLimite = horaLimiteDe(horaInicio, horas);
-  const horario = horarioDelDia(fecha, parametros);
-  if (!esDiaHabil(fecha, parametros) || !horario) {
+  const horario = horariosDeFecha(fecha, parametros).find((h) => horaInicio >= h.abre && horaInicio < h.cierra);
+  if (!esDiaHabil(fecha, parametros)) {
     throw new ErrorApi(400, 'La fecha no es un día hábil de la biblioteca.');
   }
-  if (horaInicio < horario.abre || horaInicio >= horario.cierra) {
+  if (!horario) {
     throw new ErrorApi(400, 'La franja está fuera del horario de atención.');
   }
   if (horaLimite > horario.cierra) {

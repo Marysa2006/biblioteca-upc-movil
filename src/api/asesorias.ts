@@ -26,7 +26,7 @@ import {
 } from '@/utils/calificacion';
 import { esFechaValida, esHoraValida, fechaLegible, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos, conservarFranjas, generarFranjas } from '@/utils/franjas';
-import { motivoNoDisponible } from '@/utils/parametros';
+import { horariosDeFecha, motivoNoDisponible } from '@/utils/parametros';
 import { problemaHorario } from '@/utils/reservas';
 import { tienePermiso } from '@/utils/roles';
 
@@ -565,17 +565,9 @@ export async function solicitarCita(
 
   const inicio = aMinutos(nueva.hora);
   const fin = inicio + parametros.duracionAsesoriaMinutos;
-  const abre = parametros.horarios.find((h) => h.dia === new Date(`${nueva.fecha}T00:00:00`).getDay());
-  if (!abre) {
-    throw new ErrorApi(400, 'Ese día la biblioteca no atiende.');
+  if (!horariosDeFecha(nueva.fecha, parametros).some((h) => inicio >= aMinutos(h.abre) && fin <= aMinutos(h.cierra))) {
+    throw new ErrorApi(400, 'Elige una hora que permita completar la asesoría dentro de una franja de atención.');
   }
-  if (inicio < aMinutos(abre.abre) || fin > aMinutos(abre.cierra)) {
-    throw new ErrorApi(
-      400,
-      `Elige una hora del horario de atención (${abre.abre} a ${abre.cierra}); la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
-    );
-  }
-
   if (!cumpleAnticipacion(nueva.fecha, nueva.hora, parametros.horasMinimasSolicitud)) {
     throw new ErrorApi(
       400,

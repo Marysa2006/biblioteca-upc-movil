@@ -124,7 +124,7 @@ function Formulario({ guardados }: { guardados: Parametros }) {
     (datos) => {
       setHayErrores(false);
       reset();
-      mutate(aParametros(datos, guardados), { onSuccess: () => setGuardado(true) });
+      mutate(aParametros(datos), { onSuccess: () => setGuardado(true) });
     },
     // Si el error está en otra pestaña, se salta a la primera con errores; el aviso lo dice junto al botón.
     (errores) => {
