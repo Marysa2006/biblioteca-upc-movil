@@ -71,7 +71,7 @@ export default function DetalleCita() {
 
 function Detalle() {
   const { id, desde, hasta } = useLocalSearchParams<Parametros>();
-  const { esAdministrador, usuario } = useRol();
+  const { esAdministrador, usuario, tienePermiso } = useRol();
   const agenda = useAgenda(desde ?? '', hasta ?? '', esAdministrador ? 'todas' : undefined);
   const registrarResultado = useRegistrarResultado();
   const registrarInasistencia = useRegistrarInasistencia();
@@ -83,7 +83,8 @@ function Detalle() {
   const [preguntarRechazo, setPreguntarRechazo] = useState(false);
   const [preguntarAprobacion, setPreguntarAprobacion] = useState(false);
   // Para el diálogo de aprobar (#250): quién puede atenderla y qué días hay atención.
-  const equipo = useFacilitadores(esAdministrador);
+  const eligeFacilitador = esAdministrador && tienePermiso('roles');
+  const equipo = useFacilitadores(preguntarAprobacion && eligeFacilitador);
   const { data: parametros } = useParametros();
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -254,7 +255,7 @@ function Detalle() {
 
       <DialogoAprobarCita
         cita={preguntarAprobacion ? cita : null}
-        eligeFacilitador={esAdministrador}
+        eligeFacilitador={eligeFacilitador}
         yo={{ id: usuario?.id ?? '', nombre: usuario?.nombre ?? '' }}
         facilitadores={equipo.isError ? null : (facilitadores ?? null)}
         cargandoFacilitadores={equipo.isPending}

@@ -20,7 +20,7 @@ import {
 } from '@/api/usuarios';
 import { useSesion } from '@/store/sesion';
 import type { FirmaElectronica, Permiso, RolPersonal } from '@/types';
-import { tieneRol } from '@/utils/roles';
+import { tienePermiso, tieneRol } from '@/utils/roles';
 
 export function useUsuarios() {
   return useQuery({
@@ -38,10 +38,12 @@ export function useEquipo() {
 }
 
 export function useFacilitadores(habilitado: boolean) {
+  const autorizado = useSesion((estado) => tienePermiso(estado.usuario, 'roles'));
+  const consultar = habilitado && autorizado;
   return useQuery({
     queryKey: [...claves.equipo, 'facilitadores'],
-    queryFn: obtenerFacilitadores,
-    enabled: habilitado,
+    queryFn: () => consultar ? obtenerFacilitadores() : [],
+    enabled: consultar,
   });
 }
 
