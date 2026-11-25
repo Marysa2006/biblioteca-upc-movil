@@ -7,8 +7,7 @@
  * exige una cuenta del personal, que no puede ir dentro de la app. El RSS es público.
  * Tampoco usa los mocks: los datos del catálogo son públicos y reales.
  *
- * No usa peticion() de ./cliente: Koha no es nuestra API, no debe recibir el token
- * de la sesión y un 4xx también cuenta como "disponible".
+ * El Backend publica los enlaces; las solicitudes al OPAC se hacen sin el token.
  */
 import { Platform } from 'react-native';
 
@@ -16,16 +15,23 @@ import type { PaginaResultados } from '@/utils/busqueda';
 import { leerResultadosCatalogo } from '@/utils/catalogo';
 import { URL_CATALOGO_KOHA } from '@/utils/constantes';
 
-const TIEMPO_LIMITE_MS = 8000;
+import { peticion, usaApi } from './cliente';
 
-/** Página principal del OPAC. */
-export function urlCatalogoPrincipal(): string {
-  return `${URL_CATALOGO_KOHA}/cgi-bin/koha/opac-main.pl`;
+export async function obtenerEnlacesKoha() {
+  const enlaces = usaApi('servicios')
+    ? await peticion<{ url: string | null; staff_url?: string | null }>('/portal/koha-opac/')
+    : null;
+  return {
+    opac: enlaces?.url ?? `${URL_CATALOGO_KOHA}/cgi-bin/koha/opac-main.pl`,
+    personal: enlaces?.staff_url ?? null,
+  };
 }
 
-/** Resultados de búsqueda del OPAC para el texto dado. */
-export function urlBusquedaCatalogo(texto: string): string {
-  return `${URL_CATALOGO_KOHA}/cgi-bin/koha/opac-search.pl?q=${encodeURIComponent(texto.trim())}`;
+const TIEMPO_LIMITE_MS = 8000;
+
+/** URL de resultados de Koha para el texto dado. */
+export function urlBusquedaCatalogo(opac: string, texto: string): string {
+  return new URL(opac).origin + '/cgi-bin/koha/opac-search.pl?q=' + encodeURIComponent(texto.trim());
 }
 
 /**
@@ -35,16 +41,17 @@ export function urlBusquedaCatalogo(texto: string): string {
  * En la web, el navegador la bloquea por CORS: la pantalla muestra el error con reintentar.
  */
 export async function buscarEnCatalogo(texto: string, desde = 0): Promise<PaginaResultados> {
+  const { opac } = await obtenerEnlacesKoha();
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
   try {
-    const respuesta = await fetch(`${urlBusquedaCatalogo(texto)}&format=rss&offset=${desde}`, {
+    const respuesta = await fetch(`${urlBusquedaCatalogo(opac, texto)}&format=rss&offset=${desde}`, {
       signal: controlador.signal,
     });
     if (!respuesta.ok) {
       throw new Error(`Koha respondió ${respuesta.status}.`);
     }
-    return leerResultadosCatalogo(await respuesta.text(), URL_CATALOGO_KOHA);
+    return leerResultadosCatalogo(await respuesta.text(), new URL(opac).origin);
   } finally {
     clearTimeout(temporizador);
   }
@@ -59,8 +66,8 @@ export async function buscarEnCatalogo(texto: string, desde = 0): Promise<Pagina
  * En la web no se comprueba: el navegador bloquearía la petición por CORS y la
  * ventana emergente si se abre tras esperar. La web es del subequipo Frontend.
  */
-export async function comprobarDisponibilidadCatalogo(): Promise<boolean> {
-  if (URL_CATALOGO_KOHA === '') {
+export async function comprobarDisponibilidadCatalogo(opac: string): Promise<boolean> {
+  if (!opac) {
     return false;
   }
   if (Platform.OS === 'web') {
@@ -70,7 +77,7 @@ export async function comprobarDisponibilidadCatalogo(): Promise<boolean> {
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
   try {
-    const respuesta = await fetch(urlCatalogoPrincipal(), {
+    const respuesta = await fetch(opac, {
       method: 'HEAD',
       signal: controlador.signal,
     });

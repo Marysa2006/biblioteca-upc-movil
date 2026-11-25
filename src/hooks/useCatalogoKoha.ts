@@ -8,14 +8,14 @@
  * El OPAC se abre en el navegador integrado; al cerrarlo, la persona vuelve al mismo
  * punto de la app con la sesión y la pestaña intactas (CA3).
  */
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useCallback, useRef, useState } from 'react';
 
 import {
   buscarEnCatalogo,
   comprobarDisponibilidadCatalogo,
   urlBusquedaCatalogo,
-  urlCatalogoPrincipal,
+  obtenerEnlacesKoha,
 } from '@/api/catalogo';
 import { claves } from '@/api/claves';
 import { abrirEnNavegador } from '@/utils/navegador';
@@ -45,6 +45,10 @@ export function useBusquedaCatalogo(texto: string) {
   });
 }
 
+export function useEnlacesKoha() {
+  return useQuery({ queryKey: ['enlacesKoha'], queryFn: obtenerEnlacesKoha });
+}
+
 export type EstadoCatalogo = 'inactivo' | 'comprobando' | 'no_disponible';
 
 export function useCatalogoKoha() {
@@ -58,14 +62,15 @@ export function useCatalogoKoha() {
     setEstado('comprobando');
 
     try {
-      const disponible = await comprobarDisponibilidadCatalogo();
+      const { opac } = await obtenerEnlacesKoha();
+      const disponible = await comprobarDisponibilidadCatalogo(opac);
       if (!disponible) {
         setEstado('no_disponible');
         return;
       }
       setEstado('inactivo');
       const texto = busqueda?.trim() ?? '';
-      const url = texto !== '' ? urlBusquedaCatalogo(texto) : urlCatalogoPrincipal();
+      const url = texto !== '' ? urlBusquedaCatalogo(opac, texto) : opac;
       // En Android resuelve apenas se abre Custom Tabs, así que el bloqueo se libera de
       // inmediato; en iOS resuelve al cerrar, pero el navegador es modal y tapa la app.
       await abrirEnNavegador(url);
