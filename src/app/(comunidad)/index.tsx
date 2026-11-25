@@ -15,6 +15,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Card, Icon, Text } from 'react-native-paper';
 
 import { AvisosNovedades } from '@/components/contenidos/AvisosNovedades';
+import { usaApi } from '@/api/cliente';
 import { CarruselInicio } from '@/components/inicio/CarruselInicio';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
@@ -80,6 +81,11 @@ export default function Inicio() {
       <CarruselInicio imagenes={imagenesDelCarrusel(fotos)} />
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       {usuario ? null : <InvitacionSesion />}
+      {usuario && usaApi('asistencia') ? (
+        <Button mode="contained-tonal" icon="qrcode-scan" onPress={() => router.push('/asistencia/registrar')}>
+          Registrar asistencia con QR
+        </Button>
+      ) : null}
       <View style={estilos.encabezadoSeccion}>
         <Text variant="titleMedium" style={estilos.tituloSeccion} accessibilityRole="header">
           Servicios ofertados

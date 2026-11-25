@@ -331,6 +331,17 @@ Los tres documentos de la entrega de la 1.1 son:
 | 8 | `servicios`, `contenidos` y `fotosInicio`, administración (HU-04 y #290) | `/portal/manage/services/{slug}/` y `service-categories/`; `/portal/manage/contents/{slug}/` con `publish/`, `hide/` y `reorder/`; `/portal/manage/home-photos/` (`image` por `multipart`, máximo 5 publicadas, `reorder/`) | Hoy la comunidad ya lee los tres desde el Backend |
 | 9 | `parametros`, guardar (HU-28) | `PATCH /config/parameters/{code}/` por cada plazo que cambie, y el CRUD de `periods/`, `holidays/` y `schedules/` comparando con lo que ya había | Quitar el aviso «todavía no se guardan» de `actualizarParametros()` |
 
-**Fase 5** (después): `statistics/summary/` y `statistics/export/` (CSV y PDF del Backend), y asistencia con QR (`/attendance/`, #231).
+**Fase 5 · Estadísticas:** Estadísticas y la afluencia del Dashboard leen `statistics/summary/`.
+El CSV y PDF se descargan de `statistics/export/` con los filtros activos. El Backend no ofrece
+un listado JSON de registros individuales, así que la pestaña Registros solo aparece con datos
+de prueba. El CSV del servidor sí contiene el detalle. El conteo de asistentes del resumen
+incluye las marcaciones con QR y a mano.
+
+**Fase 5 · Asistencia (#231):** el QR usa el token de `attendance/{request_id}/qr/` y vence
+automáticamente según `valid_until` (normalmente cuatro horas desde el inicio). La API no
+ofrece acciones para abrir, cerrar o regenerar la asistencia. El escáner de Inicio y del Dashboard
+acepta el QR con cualquier cuenta iniciada. La lista del personal muestra los registros con su
+medio. Para marcar a mano con cuenta, la API pide su UUID. Para una persona sin cuenta, pide
+el nombre y admite tipo, programa y semestre.
 
 **Antes de empezar la fase 4:** probar en vivo las fases 1 a 3 con el APK del perfil `integracion` y corregir lo que aparezca.

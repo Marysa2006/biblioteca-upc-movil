@@ -24,6 +24,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Icon, Portal, Snackbar, Text } from 'react-native-paper';
+import { usaApi } from '@/api/cliente';
 
 import { DialogoFechaCapacitacion } from '@/components/capacitaciones/DialogoFechaCapacitacion';
 import {
@@ -145,6 +146,12 @@ function Detalle({ id }: { id: string }) {
         <Encabezado solicitud={solicitud} usuarioId={usuario?.id} />
         <AvisoNuevaFecha solicitud={solicitud} />
         <ListaDatos datos={datosDe(solicitud)} />
+        {usaApi('asistencia') && solicitud.estado === 'aprobada' ? (
+          <Button mode="contained-tonal" icon="qrcode"
+            onPress={() => router.push({ pathname: '/asistencia/[id]', params: { id: solicitud.id, tipo: 'capacitacion' } })}>
+            Tomar asistencia
+          </Button>
+        ) : null}
 
         <View style={estilos.seccion}>
           <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">

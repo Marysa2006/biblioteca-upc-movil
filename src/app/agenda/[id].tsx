@@ -24,6 +24,7 @@ import { DialogoAprobarCita } from '@/components/agenda/DialogoAprobarCita';
 import { DetalleCitaAgenda } from '@/components/agenda/DetalleCitaAgenda';
 import { DialogoInasistencia } from '@/components/agenda/DialogoInasistencia';
 import { DialogoRechazarCita } from '@/components/agenda/DialogoRechazarCita';
+import { usaApi } from '@/api/cliente';
 import { FormularioResultado } from '@/components/agenda/FormularioResultado';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import {
@@ -226,7 +227,7 @@ function Detalle() {
         </View>
       ) : null}
 
-      {puedeTomarAsistencia(cita) ? (
+      {(usaApi('asistencia') ? cita.estado === 'aprobada' : puedeTomarAsistencia(cita)) ? (
         <Button
           mode="contained"
           icon="qrcode"

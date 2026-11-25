@@ -21,7 +21,7 @@
       "env": {
         "EXPO_PUBLIC_USAR_MOCKS": "true",
         "EXPO_PUBLIC_API_URL": "https://backend-biblioteca-njx5.onrender.com/api/v1",
-        "EXPO_PUBLIC_API_MODULOS": "sesion,servicios,contenidos,recursos,guias,notificaciones,parametros,fotosInicio,espacios,asesorias,capacitaciones,tablets,solicitudes,reservas,bloqueos,usuarios,estadisticas"
+        "EXPO_PUBLIC_API_MODULOS": "sesion,servicios,contenidos,recursos,guias,notificaciones,parametros,fotosInicio,espacios,asesorias,capacitaciones,tablets,solicitudes,reservas,bloqueos,usuarios,estadisticas,asistencia"
       }
     }
   }

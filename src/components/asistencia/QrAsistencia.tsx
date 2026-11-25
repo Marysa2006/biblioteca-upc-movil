@@ -18,8 +18,8 @@ const TAMANO_MAXIMO = espacio.xl * 8;
 type Props = {
   codigo: CodigoAsistencia;
   minutosRestantes: number;
-  generando: boolean;
-  onGenerar: () => void;
+  generando?: boolean;
+  onGenerar?: () => void;
 };
 
 export function QrAsistencia({ codigo, minutosRestantes, generando, onGenerar }: Props) {
@@ -34,10 +34,11 @@ export function QrAsistencia({ codigo, minutosRestantes, generando, onGenerar }:
         style={[estilos.qr, vencido ? estilos.qrVencido : null]}
         accessible
         accessibilityRole="image"
-        accessibilityLabel={`Código QR de la asistencia. Código ${codigo.codigo.split('').join(' ')}. ${vencimiento}.`}
+        accessibilityLabel={codigo.desde ? 'Código QR de la asistencia' :
+          `Código QR de la asistencia. Código ${codigo.codigo.split('').join(' ')}. ${vencimiento}.`}
       >
         <QRCode
-          value={armarCodigoAsistencia(codigo.sesionId, codigo.codigo)}
+          value={codigo.desde ? codigo.codigo : armarCodigoAsistencia(codigo.sesionId, codigo.codigo)}
           size={tamano}
           color={colores.texto}
           backgroundColor={colores.superficie}
@@ -46,9 +47,9 @@ export function QrAsistencia({ codigo, minutosRestantes, generando, onGenerar }:
         />
       </View>
 
-      <Text variant="headlineMedium" style={estilos.codigo} accessibilityElementsHidden>
+      {!codigo.desde ? <Text variant="headlineMedium" style={estilos.codigo} accessibilityElementsHidden>
         {codigo.codigo}
-      </Text>
+      </Text> : null}
       <Text
         variant="bodyMedium"
         style={vencido ? estilos.vencido : estilos.vigente}
@@ -59,7 +60,7 @@ export function QrAsistencia({ codigo, minutosRestantes, generando, onGenerar }:
           : `${vencimiento}. Muéstralo para que lo escaneen.`}
       </Text>
 
-      {vencido ? (
+      {vencido && onGenerar ? (
         <Button
           mode="contained"
           icon="refresh"
