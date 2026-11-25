@@ -19,7 +19,7 @@ import {
   guardarFirmaPersonal,
 } from '@/api/usuarios';
 import { useSesion } from '@/store/sesion';
-import type { FirmaElectronica, Permiso, RolPersonal } from '@/types';
+import type { FirmaElectronica, Perfil, Permiso, RolPersonal } from '@/types';
 import { tienePermiso, tieneRol } from '@/utils/roles';
 
 export function useUsuarios(habilitado = true) {
@@ -112,19 +112,17 @@ export function useActualizarPermisosExtra() {
  * Guarda la firma del personal de la sesión (revisión de la 1.1), registrada una vez en el Perfil:
  * se pone sola en las constancias que entregue o reciba. También la deja en la sesión.
  */
-export function useGuardarMiFirma() {
+export function useGuardarMiFirma(perfil: Perfil) {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (firma: FirmaElectronica | null) => {
-      const { usuario } = useSesion.getState();
-      if (!usuario) throw new Error('No hay sesión.');
-      await guardarFirmaPersonal(usuario.id, firma);
-      return firma;
+      if (useSesion.getState().usuario?.id !== perfil.id) throw new Error('No hay sesión.');
+      return guardarFirmaPersonal(perfil.id, firma, perfil.admiteFirma);
     },
     onSuccess: (firma) => {
       const { usuario } = useSesion.getState();
-      if (!usuario) return;
-      const { firma: _anterior, ...resto } = usuario;
-      useSesion.setState({ usuario: firma ? { ...resto, firma } : resto });
+      queryClient.setQueryData<Perfil>(claves.perfil(perfil.id), (actual) => actual && { ...actual, firma });
+      if (usuario?.id === perfil.id) useSesion.setState({ usuario: { ...usuario, firma } });
     },
   });
 }

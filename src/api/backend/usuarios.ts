@@ -5,6 +5,8 @@
  * - `GET /me/` trae los datos de la persona (`PerfilBackend`).
  * - `GET /me/access/` trae sus roles y permisos (`AccesoBackend`).
  */
+import { firmaDesdeBackend, type FirmaBackend } from './firmas';
+
 import type { Perfil, Usuario } from '@/types';
 import { VERSION_POLITICA_DATOS } from '@/utils/constantes';
 
@@ -33,6 +35,7 @@ export type PerfilBackend = {
   faculty: string;
   position: string;
   photo: string | null;
+  signature?: FirmaBackend | null;
   is_active: boolean;
   privacy_accepted_at: string | null;
   privacy_version: string;
@@ -64,6 +67,7 @@ export function datosPersonalesDesdeBackend(
     nombre: `${perfil.first_name} ${perfil.last_name}`.trim() || perfil.email,
     correo: perfil.email,
     foto: opcional(perfil.photo),
+    firma: firmaDesdeBackend(perfil.signature),
     tipo: TIPO_DESDE_BACKEND[perfil.user_type],
     identificacion: opcional(perfil.institutional_id),
     programa: opcional(perfil.program),
@@ -105,6 +109,7 @@ export function perfilDesdeBackend(usuario: Usuario, perfil: PerfilBackend): Per
     ...usuario,
     ...datosPersonalesDesdeBackend(perfil),
     telefono: opcional(perfil.phone),
+    admiteFirma: 'signature' in perfil,
   };
 }
 

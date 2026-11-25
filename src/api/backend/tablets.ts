@@ -1,3 +1,4 @@
+import { firmaDesdeBackend, firmaHaciaBackend, type FirmaBackend } from './firmas';
 /**
  * Préstamo de tablets del Backend traducido a la app (HU-22 y HU-24, versión 1.1). Funciones
  * puras.
@@ -133,7 +134,6 @@ export function prestamoDesdeBackend(
 type EstadoTabletBackend = 'OPERATIONAL' | 'MAINTENANCE' | 'DAMAGED' | 'RETIRED';
 type CondicionBackend = 'GOOD' | 'MINOR_ISSUES' | 'DAMAGED';
 type EstadoEquipoBackend = 'NEW' | 'OPTIMAL' | 'OTHER';
-type FirmaBackend = { path: string; width: number; height: number; signed_at: string };
 
 export type TabletBackend = {
   id: number;
@@ -203,6 +203,7 @@ type RegistroBackend = {
   observations: string;
   responsible: string;
   responsible_position: string;
+  responsible_signature?: FirmaBackend | null;
 };
 type EntregaBackend = RegistroBackend & {
   delivered_at: string;
@@ -243,6 +244,7 @@ function registroDesdeBackend(registro: RegistroBackend, fecha: string): Registr
     condicion: CONDICION_DESDE[registro.device_condition],
     accesorios: leerAccesorios(registro.accessories),
     novedades: registro.observations || undefined,
+    firmaResponsable: firmaDesdeBackend(registro.responsible_signature),
     responsable: registro.responsible
       ? { id: '', nombre: registro.responsible, cargo: registro.responsible_position || undefined }
       : undefined,
@@ -268,9 +270,7 @@ export function prestamoPersonalDesdeBackend(registro: PrestamoPersonalBackend, 
     },
     entrega: delivery ? {
       ...registroDesdeBackend(delivery, delivery.delivered_at),
-      firmaUsuario: firma ? {
-        trazo: firma.path, ancho: firma.width, alto: firma.height, fechaHora: fechaHoraLocal(firma.signed_at),
-      } : undefined,
+      firmaUsuario: firmaDesdeBackend(firma),
     } : undefined,
     devolucion: devolucion ? {
       ...registroDesdeBackend(devolucion, devolucion.returned_at),
@@ -298,10 +298,7 @@ export function entregaTabletHaciaBackend(
     tablet: codigo,
     format_condition: datos.estadoEquipo ? EQUIPO_HACIA[datos.estadoEquipo] : '',
     observations: datos.notas?.trim() ?? '',
-    signature: firma ? {
-      path: firma.trazo, width: firma.ancho, height: firma.alto,
-      signed_at: `${firma.fechaHora.replace(' ', 'T')}:00-05:00`,
-    } : null,
+    signature: firmaHaciaBackend(firma ?? null),
   };
 }
 

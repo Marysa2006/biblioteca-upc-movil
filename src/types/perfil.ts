@@ -19,4 +19,4 @@ export type DatosEditablesPerfil = {
  * Perfil del usuario autenticado (HU-06): datos institucionales de solo lectura
  * más los datos editables.
  */
-export type Perfil = Usuario & DatosEditablesPerfil;
+export type Perfil = Usuario & DatosEditablesPerfil & { admiteFirma?: boolean };

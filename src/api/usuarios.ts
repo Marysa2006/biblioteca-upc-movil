@@ -1,3 +1,4 @@
+import { firmaDesdeBackend, firmaHaciaBackend } from './backend/firmas';
 /**
  * Usuarios y permisos del personal (HU-07).
  * Lista el directorio, actualiza los roles del personal de uno y le da o le quita los
@@ -121,23 +122,26 @@ export function agregarAlDirectorio(usuario: Usuario): void {
   directorio = [...directorio, copiar(usuario)];
 }
 
-/**
- * Guarda la firma en el directorio de prueba. El perfil del Backend aún no admite la firma.
- */
+/** Guarda la firma del perfil o del directorio de prueba. */
 export async function guardarFirmaPersonal(
   usuarioId: string,
   firma: FirmaElectronica | null,
-): Promise<void> {
+  admiteFirma?: boolean,
+): Promise<FirmaElectronica | undefined> {
   if (!usaApi('sesion')) {
     directorio = directorio.map((usuario) => {
       if (usuario.id !== usuarioId) return usuario;
       const { firma: _anterior, ...resto } = usuario;
       return firma ? { ...resto, firma: { ...firma } } : resto;
     });
-    await simularRed(null);
-    return;
+    return simularRed(firma ?? undefined);
   }
-  throw new ErrorApi(400, 'El perfil conectado todavía no permite guardar la firma del personal.');
+  if (!admiteFirma) throw new ErrorApi(400, 'El perfil conectado no admite firmas.');
+  const perfil = await peticion<Pick<import('./backend/usuarios').PerfilBackend, 'signature'>>('/me/', {
+    method: 'PATCH',
+    body: JSON.stringify({ signature: firmaHaciaBackend(firma) }),
+  });
+  return firmaDesdeBackend(perfil.signature);
 }
 
 /** La firma registrada de una persona del directorio de prueba, para las constancias. */

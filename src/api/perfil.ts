@@ -11,6 +11,7 @@ import { CELULAR, MENSAJE_CELULAR } from '@/utils/solicitante';
 
 import { perfilDesdeBackend, type PerfilBackend } from './backend/usuarios';
 import { ErrorApi, peticion, simularRed, usaApi } from './cliente';
+import { firmaEnDirectorio } from './usuarios';
 import { EDITABLES_PRUEBA } from './mocks/perfil';
 
 /**
@@ -36,7 +37,7 @@ export function validarFotoPerfil(foto: FotoPerfil): void {
 
 function perfilDePrueba(usuario: Usuario): Perfil {
   const foto = fotosPorUsuario.has(usuario.id) ? fotosPorUsuario.get(usuario.id) : usuario.foto;
-  return { ...usuario, ...editablesPorUsuario[usuario.id], foto };
+  return { ...usuario, ...editablesPorUsuario[usuario.id], foto, admiteFirma: true, firma: firmaEnDirectorio(usuario.id) };
 }
 
 /** ¿El perfil tiene dirección? Solo con datos de prueba: el Backend no la tiene. */

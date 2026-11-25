@@ -24,7 +24,7 @@ import { CON_DIRECCION, useActualizarFotoPerfil, useActualizarPerfil, usePerfil 
 import { useGuardarMiFirma } from '@/hooks/useUsuarios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import type { DatosEditablesPerfil, Usuario } from '@/types';
+import type { DatosEditablesPerfil, Perfil as DatosPerfil, Usuario } from '@/types';
 import {
   CORREO_DATOS_PERSONALES,
   DIAS_HABILES_CONSULTA,
@@ -202,7 +202,7 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
 
       {contenido}
 
-      {esPersonal(usuario) ? <MiFirma usuario={usuario} /> : null}
+      {esPersonal(usuario) && perfil?.admiteFirma ? <MiFirma usuario={perfil} /> : null}
 
       <View style={estilos.tarjeta}>
         <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
@@ -243,8 +243,8 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
  * La firma del personal (revisión de la 1.1): se registra una vez y se pone sola en las
  * constancias de las tablets que entregue o reciba. Sin ella, firma con su sesión.
  */
-function MiFirma({ usuario }: { usuario: Usuario }) {
-  const guardar = useGuardarMiFirma();
+function MiFirma({ usuario }: { usuario: DatosPerfil }) {
+  const guardar = useGuardarMiFirma(usuario);
   return (
     <View style={estilos.tarjeta}>
       <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
