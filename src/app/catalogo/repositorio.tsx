@@ -13,7 +13,7 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { CampoBusqueda } from '@/components/catalogo/CampoBusqueda';
 import { ResultadosBusqueda, type TextosFuente } from '@/components/catalogo/ResultadosBusqueda';
-import { EncabezadoApilado, Pantalla } from '@/components/ui';
+import { EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { usePortalAutoarchivo } from '@/hooks/useAutoarchivo';
 import { abrirRepositorio, useBusquedaRepositorio } from '@/hooks/useRepositorio';
 import { colores, espacio } from '@/theme';
@@ -34,7 +34,7 @@ export default function Repositorio() {
   // Texto enviado desde el campo; vacío, no hay resultados.
   const [textoBuscado, setTextoBuscado] = useState('');
   const portal = usePortalAutoarchivo();
-  const url = portal.data?.url ?? null;
+  const url = portal.isSuccess ? portal.data.url : null;
   const busqueda = useBusquedaRepositorio(url, textoBuscado);
   const resultados = busqueda.data?.pages.flatMap((pagina) => pagina.resultados) ?? [];
   const [aviso, setAviso] = useState<string | null>(null);
@@ -62,7 +62,14 @@ export default function Repositorio() {
             : undefined
         }
       >
-        {url ? (
+        {portal.isPending ? (
+          <EstadoCarga mensaje="Cargando el enlace del repositorio…" />
+        ) : portal.isError ? (
+          <EstadoError
+            mensaje="No pudimos obtener el enlace del repositorio."
+            onReintentar={() => void portal.refetch()}
+          />
+        ) : url ? (
           <>
             <CampoBusqueda
               etiqueta="Buscar en el repositorio"
@@ -101,27 +108,30 @@ export default function Repositorio() {
                 <Text variant="bodySmall" style={estilos.nota}>
                   El repositorio completo se abre en el navegador; al cerrarlo vuelves aquí.
                 </Text>
-                {/* HU-11: solo sin búsqueda, para no estorbar los resultados. La pregunta va como
-                    texto aparte porque la etiqueta de Button es de una sola línea. */}
-                <View style={estilos.orientacion}>
-                  <Text variant="bodyMedium" style={estilos.pregunta}>
-                    ¿Vas a depositar tu trabajo de grado?
-                  </Text>
-                  <Button
-                    mode="text"
-                    icon="book-open-page-variant-outline"
-                    onPress={() => router.push('/autoarchivo')}
-                    style={estilos.botonOrientacion}
-                    contentStyle={estilos.contenidoBoton}
-                    accessibilityRole="button"
-                    accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
-                  >
-                    Ver orientación
-                  </Button>
-                </View>
               </>
             )}
           </>
+        ) : (
+          <EstadoVacio mensaje={portal.data?.mensaje || 'El repositorio todavía no tiene un enlace publicado.'} />
+        )}
+
+        {portal.isSuccess && (!url || textoBuscado === '') ? (
+          <View style={estilos.orientacion}>
+            <Text variant="bodyMedium" style={estilos.pregunta}>
+              ¿Vas a depositar tu trabajo de grado?
+            </Text>
+            <Button
+              mode="text"
+              icon="book-open-page-variant-outline"
+              onPress={() => router.push('/autoarchivo')}
+              style={estilos.botonOrientacion}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="button"
+              accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
+            >
+              Ver orientación
+            </Button>
+          </View>
         ) : null}
 
         <Portal>

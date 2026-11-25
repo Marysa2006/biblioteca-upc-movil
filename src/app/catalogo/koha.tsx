@@ -13,7 +13,7 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { CampoBusqueda } from '@/components/catalogo/CampoBusqueda';
 import { ResultadosBusqueda, type TextosFuente } from '@/components/catalogo/ResultadosBusqueda';
-import { AvisoError, EncabezadoApilado, Pantalla } from '@/components/ui';
+import { AvisoError, EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import {
   type ResultadoBusqueda,
   useBusquedaCatalogo,
@@ -37,7 +37,7 @@ const TEXTOS_KOHA: TextosFuente = {
 
 export default function CatalogoKoha() {
   const enlaces = useEnlacesKoha();
-  const opac = enlaces.data?.opac ?? null;
+  const opac = enlaces.isSuccess ? enlaces.data.opac : null;
   const { estado, abrirCatalogo } = useCatalogoKoha(opac);
   // Texto enviado desde el campo; vacío, no hay resultados.
   const [textoBuscado, setTextoBuscado] = useState('');
@@ -76,7 +76,14 @@ export default function CatalogoKoha() {
             : undefined
         }
       >
-        {opac ? (
+        {enlaces.isPending ? (
+          <EstadoCarga mensaje="Cargando el enlace del catálogo…" />
+        ) : enlaces.isError ? (
+          <EstadoError
+            mensaje="No pudimos obtener el enlace del catálogo."
+            onReintentar={() => void enlaces.refetch()}
+          />
+        ) : opac ? (
           <>
             <CampoBusqueda
               etiqueta="Buscar en el catálogo"
@@ -135,7 +142,9 @@ export default function CatalogoKoha() {
               </>
             )}
           </>
-        ) : null}
+        ) : (
+          <EstadoVacio mensaje={enlaces.data?.mensaje || 'El catálogo todavía no tiene un enlace publicado.'} />
+        )}
 
         <Portal>
           <Snackbar

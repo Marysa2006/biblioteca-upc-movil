@@ -4,7 +4,7 @@
  * Pantalla apilada que se abre desde el servicio "Depósito de trabajos de grado" y desde
  * Catálogo → Repositorio.
  *
- * "Ir al depósito" primero comprueba que el repositorio responde (CA3) y, si responde, lo abre
+ * "Ir al repositorio" primero comprueba que el repositorio responde (CA3) y, si responde, lo abre
  * en el navegador integrado (CA2). Si no, muestra el aviso con Reintentar y no abre nada.
  * Patrón de datos: usePortalAutoarchivo() → obtenerPortalAutoarchivo() → mock.
  */
@@ -32,7 +32,7 @@ const TITULO = 'Orientación de autoarchivo';
 
 export default function Autoarchivo() {
   const portal = usePortalAutoarchivo();
-  const url = portal.data?.url;
+  const url = portal.isSuccess ? portal.data.url : null;
   const comprobar = useComprobarRepositorio();
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -77,7 +77,7 @@ export default function Autoarchivo() {
     const vacia = [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
 
     contenido = vacia ? (
-      <EstadoVacio mensaje="La biblioteca todavía no ha publicado la orientación de autoarchivo." />
+      <EstadoVacio mensaje={(!url && portal.data.mensaje) || 'La biblioteca todavía no ha publicado la orientación de autoarchivo.'} />
     ) : (
       <>
         <Text variant="bodySmall" style={estilos.secundario}>
@@ -155,7 +155,9 @@ export default function Autoarchivo() {
               Universidad. Al cerrarlo vuelves aquí.
             </Text>
           </View>
-        ) : null}
+        ) : (
+          <EstadoVacio mensaje={portal.data.mensaje || 'El repositorio todavía no tiene un enlace publicado.'} />
+        )}
       </>
     );
   }
