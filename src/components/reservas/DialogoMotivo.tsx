@@ -42,7 +42,7 @@ export function DialogoMotivo({ solicitud, ...props }: Props) {
 }
 
 type AccionMotivo = { id: string; titulo: string; detalle: string; boton: string };
-type PropsAccion = Omit<Props, 'solicitud'> & { accion: AccionMotivo | null };
+type PropsAccion = Omit<Props, 'solicitud'> & { accion: AccionMotivo | null; impedido?: boolean };
 
 export function DialogoMotivoAccion({ accion, ...props }: PropsAccion) {
   return (
@@ -55,6 +55,7 @@ export function DialogoMotivoAccion({ accion, ...props }: PropsAccion) {
 }
 function Contenido({
   accion,
+  impedido,
   guardando,
   mensajeError,
   onConfirmar,
@@ -114,7 +115,7 @@ function Contenido({
           mode="contained"
           onPress={() => handleSubmit(({ motivo }) => onConfirmar(motivo))()}
           loading={guardando}
-          disabled={guardando}
+          disabled={guardando || impedido}
           buttonColor={coloresEstado.rechazada.texto}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"

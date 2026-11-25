@@ -19,6 +19,8 @@ type Props = {
   onEditar: () => void;
   onCambiarEstado: () => void;
   onBloquear: () => void;
+  onEliminar?: () => void;
+  tieneReservasFuturas: boolean;
 };
 
 export function TarjetaEspacioAdmin({
@@ -27,6 +29,8 @@ export function TarjetaEspacioAdmin({
   onEditar,
   onCambiarEstado,
   onBloquear,
+  onEliminar,
+  tieneReservasFuturas,
 }: Props) {
   const { activo, nombre } = espacioActual;
   const acciones: AccionMenu[] = [
@@ -38,14 +42,15 @@ export function TarjetaEspacioAdmin({
       etiqueta: `${activo ? 'Desactivar' : 'Activar'} ${nombre}`,
     },
   ];
-  if (activo) {
-    acciones.push({
-      titulo: 'Bloquear',
-      icono: 'calendar-remove-outline',
-      onPress: onBloquear,
-      etiqueta: `Bloquear ${nombre} para un evento institucional`,
-    });
+  if (onEliminar) {
+    acciones.push({ titulo: 'Eliminar espacio', icono: 'delete-outline', onPress: onEliminar, etiqueta: `Eliminar ${nombre}` });
   }
+  acciones.push({
+    titulo: 'Gestionar bloqueos',
+    icono: 'calendar-remove-outline',
+    onPress: onBloquear,
+    etiqueta: `Gestionar bloqueos de ${nombre}`,
+  });
 
   return (
     <View style={estilos.tarjeta}>
@@ -85,6 +90,9 @@ export function TarjetaEspacioAdmin({
           />
         </View>
 
+        {tieneReservasFuturas && activo ? (
+          <Text variant="bodySmall" style={estilos.secundario}>Tiene reservas futuras. Usa Desactivar.</Text>
+        ) : null}
         <Text variant="bodyMedium" style={estilos.secundario} numberOfLines={2}>
           {espacioActual.descripcion}
         </Text>

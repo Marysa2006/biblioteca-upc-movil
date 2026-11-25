@@ -9,6 +9,7 @@
  * reservas» (src/api/reservas.ts), porque las reservas apuntan a los espacios. La administración
  * de espacios sigue con datos de prueba hasta la fase 4.
  */
+import { useSesion } from '@/store/sesion';
 import type {
   Bloqueo,
   DiaDisponibilidad,
@@ -48,6 +49,9 @@ import {
 import { horaDesdeBackend } from './backend/equivalencias';
 import { reservaPersonalDesdeBackend, type ReservaPersonalBackend } from './backend/reservas';
 import { obtenerBloqueos } from './bloqueos';
+import { registrarUso } from './estadisticas';
+import { registrarEvento } from './historial';
+import { crearNotificacion } from './notificaciones';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { ESPACIOS } from './mocks/espacios';
 import { obtenerParametros } from './parametros';
@@ -352,12 +356,18 @@ export function editarEspacio(id: string, datos: DatosEspacio, confirmar = false
 }
 
 /** El Backend rechaza la eliminación si el espacio tiene reservas o bloqueos. */
-export async function eliminarEspacio(id: string): Promise<void> {
+export async function eliminarEspacio(id: string, motivo: string): Promise<void> {
+  const reason = motivo.trim();
+  if (!reason) throw new ErrorApi(400, 'Indica el motivo de la eliminación.');
+  if ((await reservasFuturasDeEspacio(id)).length) {
+    throw new ErrorApi(400, 'El espacio tiene reservas futuras. Usa Desactivar.');
+  }
   if (usaApi('espacios')) {
     await peticion(`${RUTA_ESPACIOS_ADMIN}${encodeURIComponent(id)}/`, { method: 'DELETE' });
     return;
   }
-  if (!espacios.some((espacio) => espacio.id === id)) {
+  const espacio = espacios.find((actual) => actual.id === id);
+  if (!espacio) {
     throw new ErrorApi(404, 'El espacio no existe.');
   }
   const [reservas, bloqueos] = await Promise.all([obtenerSolicitudesReserva(), obtenerBloqueos(id)]);
@@ -365,6 +375,10 @@ export async function eliminarEspacio(id: string): Promise<void> {
     throw new ErrorApi(400, 'El espacio tiene reservas o bloqueos. Puedes desactivarlo.');
   }
   espacios = espacios.filter((espacio) => espacio.id !== id);
+  const usuario = useSesion.getState().usuario;
+  registrarEvento('espacio', id, 'cancelada', usuario?.nombre ?? 'Personal de la biblioteca', reason);
+  registrarUso({ id: `uso-espacio-${id}`, usuario, servicio: 'espacios', finalidad: reason, estado: 'cancelada' });
+  if (usuario) crearNotificacion({ usuarioId: usuario.id, solicitudId: '', titulo: 'Espacio eliminado', mensaje: `${espacio.nombre}. ${reason}` });
 }
 
 /** Reservas futuras que ocupan un espacio (HU-16, CA3). */
