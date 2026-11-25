@@ -23,6 +23,7 @@ import {
   obtenerConstancia,
   registrarDevolucion,
   registrarEntrega,
+  cancelarPrestamoPersonal,
   solicitarPrestamo,
   type AlternativaPrestamo,
   type DatosDevolucion,
@@ -152,6 +153,21 @@ export function usePrestamos(estado: EstadoPrestamo | 'todas' = 'todas') {
   return useQuery({
     queryKey: claves.prestamosPorEstado(estado),
     queryFn: () => obtenerPrestamos(estado),
+  });
+}
+
+export function useCancelarPrestamoPersonal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => cancelarPrestamoPersonal(id, motivo),
+    onSuccess: () => {
+      for (const queryKey of [
+        claves.prestamosTablet, claves.tablets, claves.solicitudesTodas,
+        claves.notificaciones, claves.estadisticasTodas,
+      ]) {
+        queryClient.invalidateQueries({ queryKey });
+      }
+    },
   });
 }
 

@@ -15,10 +15,11 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Icon, Text } from 'react-native-paper';
+import { Icon, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { EncabezadoSeccion } from '@/components/inventario/EncabezadoSeccion';
 import { TarjetaPrestamo } from '@/components/inventario/TarjetaPrestamo';
+import { DialogoMotivoAccion } from '@/components/reservas/DialogoMotivo';
 import {
   BotonFlotante,
   ChipsFiltro,
@@ -28,9 +29,11 @@ import {
   EstadoVacio,
   type OpcionFiltro,
 } from '@/components/ui';
-import { usePrestamos, useTablets } from '@/hooks/useTablets';
+import { useCancelarPrestamoPersonal, usePrestamos, useTablets } from '@/hooks/useTablets';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
-import { NOMBRE_GRUPO, prestamosDeGrupo, type GrupoPrestamos } from '@/utils/prestamos';
+import type { Prestamo } from '@/types';
+import { mensajeErrorGuardar } from '@/utils/errores';
+import { franjaDelPrestamo, NOMBRE_GRUPO, prestamosDeGrupo, type GrupoPrestamos } from '@/utils/prestamos';
 import { textoCantidadVencidos } from '@/utils/vencidos';
 
 const GRUPOS: GrupoPrestamos[] = ['entregar', 'recibir', 'vencidos', 'devueltos'];
@@ -45,6 +48,9 @@ const VACIO: Record<GrupoPrestamos, string> = {
 export function SeccionPrestamos() {
   const prestamos = usePrestamos('todas');
   const tablets = useTablets();
+  const cancelar = useCancelarPrestamoPersonal();
+  const [porCancelar, setPorCancelar] = useState<Prestamo | null>(null);
+  const [aviso, setAviso] = useState(false);
   const { grupo: grupoPedido, abrir: pedidoEn } = useLocalSearchParams<{
     grupo?: string;
     abrir?: string;
@@ -121,6 +127,10 @@ export function SeccionPrestamos() {
               tablet={tabletPorId.get(prestamo.tabletId)}
               onEntregar={() => abrir(prestamo.id, 'entrega')}
               onRecibir={() => abrir(prestamo.id, 'devolucion')}
+              onCancelar={() => {
+                cancelar.reset();
+                setPorCancelar(prestamo);
+              }}
               onVerConstancia={() =>
                 router.push({ pathname: '/administracion/constancia', params: { id: prestamo.id } })
               }
@@ -128,6 +138,26 @@ export function SeccionPrestamos() {
           )}
         </ListaPaginada>
       )}
+      <DialogoMotivoAccion
+        accion={porCancelar ? {
+          id: porCancelar.id, titulo: 'Cancelar préstamo', boton: 'Cancelar préstamo',
+          detalle: `${porCancelar.solicitante} · ${franjaDelPrestamo(porCancelar)}`,
+        } : null}
+        guardando={cancelar.isPending}
+        mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
+        onConfirmar={(motivo) => porCancelar && cancelar.mutate({ id: porCancelar.id, motivo }, {
+          onSuccess: () => {
+            setPorCancelar(null);
+            setAviso(true);
+          },
+        })}
+        onCerrar={() => setPorCancelar(null)}
+      />
+      <Portal>
+        <Snackbar visible={aviso} onDismiss={() => setAviso(false)} duration={4000}>
+          Préstamo cancelado. Se notificó a la persona.
+        </Snackbar>
+      </Portal>
     </View>
   );
 }

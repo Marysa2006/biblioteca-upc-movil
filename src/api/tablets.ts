@@ -130,6 +130,17 @@ export async function cancelarPrestamoPersonal(id: string, motivo: string): Prom
   if (prestamo.estado !== 'reservado') throw new ErrorApi(400, 'Solo se puede cancelar un préstamo reservado.');
   const cancelado: Prestamo = { ...prestamo, estado: 'cancelado' };
   prestamos = prestamos.map((actual) => actual.id === id ? cancelado : actual);
+  crearNotificacion({
+    usuarioId: prestamo.solicitanteId, solicitudId: id,
+    titulo: 'Préstamo de tablet cancelado', mensaje: reason,
+  });
+  registrarEvento('prestamo', id, estadoDePrestamo('cancelado'),
+    useSesion.getState().usuario?.nombre ?? 'Personal de la biblioteca', reason);
+  registrarUso({
+    id: `uso-prestamo-${id}`, servicio: 'tablets', finalidad: 'Préstamo de tablet',
+    fecha: prestamo.fecha, modalidad: 'presencial', estado: 'cancelada', respondida: true,
+    ...datosDeSolicitante(prestamo.solicitanteId),
+  });
   return simularRed(copiarPrestamo(cancelado));
 }
 
