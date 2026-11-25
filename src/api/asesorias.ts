@@ -1087,7 +1087,7 @@ async function agendaBackend(facilitadorId: string, desde: string, hasta: string
     const sesion = useSesion.getState().usuario;
     return ordenarPorFecha(lista.map((cita) => ({
       ...cita,
-      ...(sesion && (cita.facilitador === sesion.nombre || cita.facilitador === sesion.correo)
+      ...(!cita.facilitadorId && sesion && (cita.facilitador === sesion.nombre || cita.facilitador === sesion.correo)
         ? { facilitadorId: sesion.id } : {}),
     })));
   }

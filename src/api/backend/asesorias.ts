@@ -50,6 +50,7 @@ export type CitaBackend = {
   start_time: string | null;
   end_time: string | null;
   facilitator: string | null;
+  facilitator_id?: string | null;
   virtual_link: string;
   subject: string;
   group_size: number;
@@ -103,6 +104,7 @@ export function citaDesdeBackend(
     temaId: String(cita.topic_id),
     tema: cita.topic,
     ...(cita.facilitator ? { facilitador: cita.facilitator } : {}),
+    ...(cita.facilitator_id ? { facilitadorId: cita.facilitator_id } : {}),
     solicitanteId: solicitante.id,
     solicitante: solicitante.nombre,
     fecha,

@@ -336,6 +336,7 @@ export type DetalleSolicitudBackend = {
   id: number;
   status: EstadoBackend;
   details: Record<string, unknown>;
+  space_id?: number | string | null;
   history?: { reason: string; new_status: EstadoBackend }[];
 };
 
@@ -346,6 +347,7 @@ export function miReservaDesdeBackend(
   espacios: Espacio[],
 ): Reserva {
   const detalle = solicitud.details as {
+    space_id?: number | string | null;
     space: string;
     date: string;
     start_time: string;
@@ -353,6 +355,7 @@ export function miReservaDesdeBackend(
     purpose: string;
     estimated_attendees: number;
   };
+  const spaceId = detalle.space_id ?? solicitud.space_id;
   const estado = ESTADO_DESDE_BACKEND[solicitud.status];
   // El motivo de un rechazo o una cancelación es el del último cambio a ese estado.
   const ultimo = [...(solicitud.history ?? [])]
@@ -360,7 +363,8 @@ export function miReservaDesdeBackend(
     .find((cambio) => cambio.new_status === solicitud.status && cambio.reason);
   return {
     id: String(solicitud.id),
-    espacioId: espacios.find((espacio) => espacio.nombre === detalle.space)?.id ?? '',
+    espacioId: spaceId != null && spaceId !== '' ? String(spaceId) :
+      espacios.find((espacio) => espacio.nombre === detalle.space)?.id ?? '',
     solicitanteId: solicitante.id,
     solicitante: solicitante.nombre,
     fecha: detalle.date,
