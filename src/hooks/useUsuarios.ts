@@ -22,18 +22,23 @@ import { useSesion } from '@/store/sesion';
 import type { FirmaElectronica, Permiso, RolPersonal } from '@/types';
 import { tienePermiso, tieneRol } from '@/utils/roles';
 
-export function useUsuarios() {
+export function useUsuarios(habilitado = true) {
+  const autorizado = useSesion((estado) => tienePermiso(estado.usuario, 'roles'));
+  const consultar = habilitado && autorizado;
   return useQuery({
-    queryKey: claves.usuarios,
-    queryFn: () => obtenerUsuarios(),
+    queryKey: consultar ? claves.usuarios : [...claves.usuarios, 'sin-consulta'],
+    queryFn: () => consultar ? obtenerUsuarios() : [],
+    enabled: consultar,
   });
 }
 
 /** Solo el personal de la biblioteca, con sus permisos extra (versión 1.1, #256). */
 export function useEquipo() {
+  const autorizado = useSesion((estado) => tienePermiso(estado.usuario, 'roles'));
   return useQuery({
-    queryKey: claves.equipo,
-    queryFn: obtenerEquipo,
+    queryKey: autorizado ? claves.equipo : [...claves.equipo, 'sin-consulta'],
+    queryFn: () => autorizado ? obtenerEquipo() : [],
+    enabled: autorizado,
   });
 }
 
