@@ -293,7 +293,7 @@ capacitaciones:
 | `rechazada` | Negada, con motivo |
 | `nueva_fecha` | El personal propuso otro día y espera la respuesta de la persona |
 | `cancelada` | Anulada; libera el cupo |
-| `realizada` | Ya ocurrió (con `asistio: true/false` en las citas) |
+| `realizada` | Finalizada. Ya ocurrió (con `asistio: true/false` en las citas) |
 
 **El caso de las asesorías (#216, versión 1.1):** la cita ya no nace aprobada.
 

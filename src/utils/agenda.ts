@@ -144,7 +144,7 @@ export const ICONO_SIN_ASIGNAR = 'account-question-outline';
 const NOMBRE_ESTADO_AGENDA: Partial<Record<EstadoSolicitud, [string, string]>> = {
   pendiente: ['pendiente', 'pendientes'],
   aprobada: ['aprobada', 'aprobadas'],
-  realizada: ['realizada', 'realizadas'],
+  realizada: ['finalizada', 'finalizadas'],
 };
 
 /** "aprobada" o "aprobadas", según la cantidad. */

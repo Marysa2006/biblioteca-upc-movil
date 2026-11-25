@@ -240,7 +240,8 @@ const COLORES_TIPO = [
 
 /** Color de cada estado de la operación, el mismo de las solicitudes (`coloresEstado`). */
 const COLOR_ESTADO: Record<string, string> = {
-  [NOMBRE_ESTADO_USO.completada]: coloresEstado.aprobada.texto,
+  [NOMBRE_ESTADO_USO.completada]: coloresEstado.realizada.texto,
+  Finalizado: coloresEstado.realizada.texto,
   [NOMBRE_ESTADO_USO.pendiente]: coloresEstado.pendiente.texto,
   [NOMBRE_ESTADO_USO.cancelada]: coloresEstado.cancelada.texto,
 };

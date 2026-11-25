@@ -37,7 +37,7 @@ export const NOMBRE_TIPO_USUARIO: Record<string, string> = {
 
 /** Nombre que se muestra del estado de la operación. */
 export const NOMBRE_ESTADO_USO: Record<string, string> = {
-  completada: 'Completada',
+  completada: 'Finalizada',
   cancelada: 'Cancelada',
   pendiente: 'Pendiente',
 };
@@ -333,11 +333,11 @@ export function nombreArchivoCsv(hoy: string): string {
 
 export function indicadoresDeFinalizacion({ total, porEstado }: IndicadoresUso) {
   // StatisticsPage (web): suma las etiquetas Finalizada o Cancelada/Rechazada
-  // respectivamente y redondea 100 × suma / total. «Completada» es su equivalente en los mocks.
+  // respectivamente y redondea 100 × suma / total.
   const suma = (patron: RegExp) => porEstado.reduce((n, fila) =>
     patron.test(fila.etiqueta) ? n + fila.cantidad : n, 0);
   const porcentaje = (conteo: number) => total > 0 ? Math.round(100 * conteo / total) : 0;
-  const finalizadas = suma(/finalizad|completad/i);
+  const finalizadas = suma(/finalizad/i);
   const noPrestadas = suma(/cancelad|rechazad/i);
   return {
     finalizadas,

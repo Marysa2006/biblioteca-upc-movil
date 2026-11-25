@@ -838,7 +838,7 @@ export async function cerrarCapacitacion(
   const actualizada: SolicitudCapacitacion = { ...solicitud, estado: 'realizada', resultado: texto };
   const guardada = guardarSolicitud(
     actualizada,
-    'Capacitación realizada',
+    'Capacitación finalizada',
     `Tu capacitación de ${solicitud.linea} quedó cerrada. Resultado: ${texto}`,
   );
   registrarEvento('capacitacion', id, 'realizada', AUTOR_PERSONAL, texto);
@@ -930,7 +930,7 @@ export async function calificarCapacitacion(
     throw new ErrorApi(403, 'Solo quien pidió la capacitación puede calificarla.');
   }
   if (solicitud.estado !== 'realizada') {
-    throw new ErrorApi(400, 'Solo puedes calificar una capacitación realizada.');
+    throw new ErrorApi(400, 'Solo puedes calificar una capacitación finalizada.');
   }
   if (solicitud.calificacion) {
     throw new ErrorApi(400, 'Ya calificaste esta capacitación.');

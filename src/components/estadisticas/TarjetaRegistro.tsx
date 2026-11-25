@@ -17,9 +17,9 @@ const NOMBRE_MODALIDAD: Record<string, string> = {
   virtual: 'Virtual',
 };
 
-/** Colores de las etiquetas de solicitud: completada va en verde, como Aprobada. */
+/** Colores de las etiquetas de solicitud: las finalizadas conservan el morado. */
 const COLORES_ESTADO: Record<EstadoUso, { fondo: string; texto: string }> = {
-  completada: coloresEstado.aprobada,
+  completada: coloresEstado.realizada,
   pendiente: coloresEstado.pendiente,
   cancelada: coloresEstado.cancelada,
 };

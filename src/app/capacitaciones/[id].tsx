@@ -9,8 +9,8 @@
  * - CA2: rechazar exige el motivo.
  * - CA3: aprobada y sin responsable, cualquiera con `formacion` puede tomarla ("Asignarme") y la
  *   administración puede asignarla a quien elija; solo la administración cambia al responsable.
- *   Después de dictarla, la marca como realizada el responsable o la administración, con el
- *   resultado (en la API, cerrarCapacitacion). Queda Realizada y se notifica al usuario.
+ *   Después de dictarla, la marca como finalizada el responsable o la administración, con el
+ *   resultado (en la API, cerrarCapacitacion). Queda Finalizada y se notifica al usuario.
  *   Las reglas están en src/utils/capacitaciones.ts (puedeTomarCapacitacion y las demás).
  * - CA4: con nueva fecha, un aviso dice que espera la respuesta del usuario, que la acepta en
  *   Mis solicitudes.
@@ -473,7 +473,7 @@ function BarraAcciones({
               contentStyle={estilos.contenidoBoton}
               labelStyle={estilos.textoBoton}
               accessibilityRole="button"
-              accessibilityLabel="Marcar como realizada y registrar el resultado"
+              accessibilityLabel="Marcar como finalizada y registrar el resultado"
               accessibilityHint="Hazlo después de dictar la capacitación"
             >
               {NOMBRE_ACCION_CAPACITACION.cerrar}

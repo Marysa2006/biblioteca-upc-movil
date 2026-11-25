@@ -140,9 +140,9 @@ Si la fecha no es un día hábil, la aplicación lo dice y sugiere otra.
 
 ### Mis solicitudes y Mi calendario
 
-1. La pestaña **Mis solicitudes** muestra las reservas, asesorías, préstamos y capacitaciones con su estado: Pendiente, Aprobada, Rechazada, Nueva fecha propuesta, Cancelada o Realizada. Toca una para ver su detalle y su historial.
+1. La pestaña **Mis solicitudes** muestra las reservas, asesorías, préstamos y capacitaciones con su estado: Pendiente, Aprobada, Rechazada, Nueva fecha propuesta, Cancelada o Finalizada. Toca una para ver su detalle y su historial.
 2. Si la biblioteca propone otro día, la solicitud dice **Nueva fecha propuesta**. Ábrela y toca **Aceptar la nueva fecha**, o **No me sirve** para cancelar la solicitud.
-3. Las asesorías y capacitaciones realizadas que todavía no calificaste dicen **Por calificar**. Ábrela y, en **¿Cómo te pareció?**, elige de 1 a 5 estrellas (de Malo a Excelente), escribe un comentario si quieres y toca **Enviar**. Solo se califica una vez; después, el detalle muestra tu calificación.
+3. Las asesorías y capacitaciones finalizadas que todavía no calificaste dicen **Por calificar**. Ábrela y, en **¿Cómo te pareció?**, elige de 1 a 5 estrellas (de Malo a Excelente), escribe un comentario si quieres y toca **Enviar**. Solo se califica una vez; después, el detalle muestra tu calificación.
 4. En el menú de arriba a la derecha:
    - **Mi calendario** muestra por día las citas, las reservas y los préstamos, y envía recordatorios antes de cada uno.
    - **Notificaciones** muestra los avisos de cada cambio.
@@ -179,7 +179,7 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - Toca **Aprobar** para aceptar una.
    - Toca **Rechazar** para negarla; pide el motivo.
    - Toca **Otra fecha** para proponer otro día u hora.
-   - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como realizada**.
+   - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como finalizada**.
    - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
 2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** (eligiendo quién la atiende: la administración, que aparece primero, o un facilitador) o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Quien asiste también puede registrarse escaneando ese QR desde su aplicación.
 3. **Préstamos:** la entrega y la devolución de tablets. Si hay préstamos vencidos, la pestaña muestra cuántos con un aviso. Los chips separan los préstamos:
@@ -237,7 +237,7 @@ Arriba están las pestañas **Resumen**, **Servicios**, **Tablets**, **Calidad**
 Qué muestra cada pestaña:
 
 1. **Resumen:** el total de operaciones, el servicio más usado, quiénes usan más los servicios y el último mes frente al anterior; los **hallazgos clave** (frases cortas con lo más llamativo) y las operaciones en el tiempo, **por mes** o **por semestre**.
-2. **Servicios:** la demanda por servicio, cómo terminaron las solicitudes (completadas, canceladas y pendientes), presencial y virtual, los **temas de asesoría** y las **líneas de formación**, y quién usa los servicios: programa, tipo de usuario, facultad y sede.
+2. **Servicios:** la demanda por servicio, cómo terminaron las solicitudes (finalizadas, canceladas y pendientes), presencial y virtual, los **temas de asesoría** y las **líneas de formación**, y quién usa los servicios: programa, tipo de usuario, facultad y sede.
 3. **Tablets:** los préstamos, su duración promedio, cuántos duraron las horas de un préstamo normal (las de **Parámetros generales**) y cuántos se devolvieron sin la hora de entrega o de devolución; además, los préstamos por mes y por programa.
 4. **Calidad:** la calificación promedio, las operaciones sin programa registrado y el **tiempo de respuesta**: cuánto tarda el personal, en promedio, en aprobar o rechazar una solicitud de cada servicio.
 5. **Registros:** cada operación registrada, con quién la hizo, para qué, cuándo y cómo terminó, 10 por página. Lo que la persona no informó dice "No informado".

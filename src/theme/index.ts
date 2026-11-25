@@ -61,7 +61,7 @@ export const coloresEstado: Record<EstadoSolicitud, { fondo: string; texto: stri
   nueva_fecha: { fondo: '#E2F1FA', texto: '#1E648A', etiqueta: 'Nueva fecha propuesta' },
   cancelada: { fondo: '#ECEDF1', texto: '#5B6375', etiqueta: 'Cancelada' },
   // Morado y no verde: se distingue de Aprobada (7,7:1 sobre su fondo).
-  realizada: { fondo: '#ECE9F7', texto: '#4B3A8C', etiqueta: 'Realizada' },
+  realizada: { fondo: '#ECE9F7', texto: '#4B3A8C', etiqueta: 'Finalizada' },
 };
 
 export const espacio = { xs: 4, s: 8, m: 16, l: 24, xl: 32 } as const;

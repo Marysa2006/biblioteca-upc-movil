@@ -156,7 +156,8 @@ const pestana = (titulo: string, descripcion: string) =>
 
 /** Las barras de Por estado con los colores de los estados de la app. */
 const COLOR_ESTADO: Record<string, string> = {
-  Completada: coloresEstado.realizada.texto,
+  Finalizada: coloresEstado.realizada.texto,
+  Finalizado: coloresEstado.realizada.texto,
   Pendiente: coloresEstado.pendiente.texto,
   Cancelada: coloresEstado.cancelada.texto,
 };

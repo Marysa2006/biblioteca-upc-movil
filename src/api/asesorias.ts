@@ -1278,7 +1278,7 @@ export async function calificarCita(
     throw new ErrorApi(403, 'Solo quien pidió la asesoría puede calificarla.');
   }
   if (cita.estado !== 'realizada') {
-    throw new ErrorApi(400, 'Solo puedes calificar una asesoría realizada.');
+    throw new ErrorApi(400, 'Solo puedes calificar una asesoría finalizada.');
   }
   if (cita.asistio === false) {
     throw new ErrorApi(400, 'No puedes calificar una asesoría a la que no asististe.');
