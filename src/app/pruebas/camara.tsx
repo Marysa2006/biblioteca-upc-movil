@@ -1,7 +1,7 @@
 /**
  * Spike de cámara (iteración 2, chore/spike-camara): prueba en Expo Go la lectura de QR y
  * códigos de barras antes de necesitarla en HU-31 (tablets) y HU-32/HU-33 (asistencia con QR).
- * Solo existe en desarrollo (__DEV__): en el APK muestra un aviso y no abre la cámara.
+ * Solo existe en desarrollo (__DEV__): en el APK redirige a Inicio.
  *
  * Compara dos formas de leer:
  * - Cámara dentro de la app (CameraView + onBarcodeScanned), con nuestro diseño.
@@ -10,6 +10,7 @@
  * Los resultados se anotan en docs/spike-camara.md.
  */
 import { CameraView, type BarcodeType } from 'expo-camera';
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
@@ -37,6 +38,8 @@ function horaActual(): string {
 }
 
 export default function PruebaCamara() {
+  if (!__DEV__) return <Redirect href="/" />;
+
   return (
     <>
       <EncabezadoApilado titulo="Prueba de cámara" />
@@ -46,11 +49,7 @@ export default function PruebaCamara() {
         conEncabezado
         conTeclado
       >
-        {__DEV__ ? (
-          <Prueba />
-        ) : (
-          <EstadoVacio mensaje="Esta prueba solo está disponible en desarrollo." />
-        )}
+        <Prueba />
       </Pantalla>
     </>
   );
