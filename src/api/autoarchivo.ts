@@ -35,18 +35,23 @@ export async function obtenerPortalAutoarchivo() {
     : await simularRed<AutoarchivoBackend>(PORTAL_AUTOARCHIVO_PRUEBA);
   const guia = respuesta.guide;
   const bloques = typeof guia?.body === 'string' ? leerBloques(guia.body) : undefined;
-  const orientacion = bloques ? {
-    ...bloques,
-    titulo: guia?.title || ORIENTACION_AUTOARCHIVO.titulo,
-    actualizada: guia?.published_at?.slice(0, 10) || ORIENTACION_AUTOARCHIVO.actualizada,
-  } : ORIENTACION_AUTOARCHIVO;
+  const orientacion = bloques
+    ? {
+        ...bloques,
+        titulo: guia?.title || ORIENTACION_AUTOARCHIVO.titulo,
+        actualizada: guia?.published_at?.slice(0, 10) || ORIENTACION_AUTOARCHIVO.actualizada,
+      }
+    : ORIENTACION_AUTOARCHIVO;
 
   return { url: respuesta.repository_url ?? null, mensaje: respuesta.message, orientacion };
 }
 
 function leerBloques(body: string) {
   const bloques: Record<'procedimiento' | 'requisitos' | 'formatos' | 'metadatos', string[]> = {
-    procedimiento: [], requisitos: [], formatos: [], metadatos: [],
+    procedimiento: [],
+    requisitos: [],
+    formatos: [],
+    metadatos: [],
   };
   const titulos = new Map<string, keyof typeof bloques>([
     ['## Procedimiento', 'procedimiento'],

@@ -87,8 +87,16 @@ function Detalle({ servicio }: { servicio: NonNullable<ReturnType<typeof useServ
       <Card mode="contained" style={estilos.tarjeta}>
         <Card.Content style={estilos.secciones}>
           <Seccion icono="text-box-outline" titulo="Descripción" texto={servicio.descripcion} />
-          <Seccion icono="account-group-outline" titulo="Público objetivo" texto={servicio.publico} />
-          <Seccion icono="clipboard-text-outline" titulo="Forma de solicitud" texto={servicio.formaSolicitud} />
+          <Seccion
+            icono="account-group-outline"
+            titulo="Público objetivo"
+            texto={servicio.publico}
+          />
+          <Seccion
+            icono="clipboard-text-outline"
+            titulo="Forma de solicitud"
+            texto={servicio.formaSolicitud}
+          />
           <Seccion icono="clock-outline" titulo="Horarios" texto={servicio.horario} />
         </Card.Content>
       </Card>

@@ -59,29 +59,32 @@ export function useCatalogoKoha(opac: string | null) {
   // Evita el doble toque mientras se comprueba o el navegador está abierto.
   const abriendo = useRef(false);
 
-  const abrirCatalogo = useCallback(async (busqueda?: string) => {
-    if (!opac || abriendo.current) return;
-    abriendo.current = true;
-    setEstado('comprobando');
+  const abrirCatalogo = useCallback(
+    async (busqueda?: string) => {
+      if (!opac || abriendo.current) return;
+      abriendo.current = true;
+      setEstado('comprobando');
 
-    try {
-      const disponible = await comprobarDisponibilidadCatalogo(opac);
-      if (!disponible) {
+      try {
+        const disponible = await comprobarDisponibilidadCatalogo(opac);
+        if (!disponible) {
+          setEstado('no_disponible');
+          return;
+        }
+        setEstado('inactivo');
+        const texto = busqueda?.trim() ?? '';
+        const url = texto !== '' ? urlBusquedaCatalogo(opac, texto) : opac;
+        // En Android resuelve apenas se abre Custom Tabs, así que el bloqueo se libera de
+        // inmediato; en iOS resuelve al cerrar, pero el navegador es modal y tapa la app.
+        await abrirEnNavegador(url);
+      } catch {
         setEstado('no_disponible');
-        return;
+      } finally {
+        abriendo.current = false;
       }
-      setEstado('inactivo');
-      const texto = busqueda?.trim() ?? '';
-      const url = texto !== '' ? urlBusquedaCatalogo(opac, texto) : opac;
-      // En Android resuelve apenas se abre Custom Tabs, así que el bloqueo se libera de
-      // inmediato; en iOS resuelve al cerrar, pero el navegador es modal y tapa la app.
-      await abrirEnNavegador(url);
-    } catch {
-      setEstado('no_disponible');
-    } finally {
-      abriendo.current = false;
-    }
-  }, [opac]);
+    },
+    [opac],
+  );
 
   return { estado, abrirCatalogo };
 }

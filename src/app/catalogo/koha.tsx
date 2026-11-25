@@ -13,7 +13,14 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { CampoBusqueda } from '@/components/catalogo/CampoBusqueda';
 import { ResultadosBusqueda, type TextosFuente } from '@/components/catalogo/ResultadosBusqueda';
-import { AvisoError, EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import {
+  AvisoError,
+  EncabezadoApilado,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  Pantalla,
+} from '@/components/ui';
 import {
   type ResultadoBusqueda,
   useBusquedaCatalogo,
@@ -143,7 +150,9 @@ export default function CatalogoKoha() {
             )}
           </>
         ) : (
-          <EstadoVacio mensaje={enlaces.data?.mensaje || 'El catálogo todavía no tiene un enlace publicado.'} />
+          <EstadoVacio
+            mensaje={enlaces.data?.mensaje || 'El catálogo todavía no tiene un enlace publicado.'}
+          />
         )}
 
         <Portal>

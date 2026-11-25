@@ -63,7 +63,16 @@ export const NOMBRE_NIVEL_FORMACION: Record<NivelFormacion, string> = {
  * Hay estudiantes que pasan del X: hasta SEMESTRE_MAXIMO se eligen con «Otro» (#203).
  */
 export const SEMESTRES: readonly string[] = [
-  'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+  'I',
+  'II',
+  'III',
+  'IV',
+  'V',
+  'VI',
+  'VII',
+  'VIII',
+  'IX',
+  'X',
 ];
 
 /**

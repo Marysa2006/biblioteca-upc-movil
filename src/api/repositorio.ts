@@ -24,7 +24,11 @@ export function urlBusquedaRepositorio(url: string, texto: string): string {
  * `pagina` cuenta desde 0. Lanza un error si DSpace no responde, tarda demasiado o no
  * devuelve una búsqueda.
  */
-export async function buscarEnRepositorio(url: string, texto: string, pagina = 0): Promise<PaginaResultados> {
+export async function buscarEnRepositorio(
+  url: string,
+  texto: string,
+  pagina = 0,
+): Promise<PaginaResultados> {
   const parametros =
     `query=${encodeURIComponent(texto.trim())}&dsoType=ITEM` +
     `&page=${pagina}&size=${RESULTADOS_POR_PAGINA}`;

@@ -13,7 +13,13 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { CampoBusqueda } from '@/components/catalogo/CampoBusqueda';
 import { ResultadosBusqueda, type TextosFuente } from '@/components/catalogo/ResultadosBusqueda';
-import { EncabezadoApilado, EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import {
+  EncabezadoApilado,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  Pantalla,
+} from '@/components/ui';
 import { usePortalAutoarchivo } from '@/hooks/useAutoarchivo';
 import { abrirRepositorio, useBusquedaRepositorio } from '@/hooks/useRepositorio';
 import { colores, espacio } from '@/theme';
@@ -47,7 +53,8 @@ export default function Repositorio() {
   const conAviso = (abrir: Promise<unknown>) =>
     abrir.catch(() => setAviso('No se pudo abrir el repositorio. Intenta de nuevo.'));
 
-  const abrirResultado = (resultado: ResultadoBusqueda) => conAviso(abrirEnNavegador(resultado.url));
+  const abrirResultado = (resultado: ResultadoBusqueda) =>
+    conAviso(abrirEnNavegador(resultado.url));
 
   return (
     <>
@@ -112,7 +119,9 @@ export default function Repositorio() {
             )}
           </>
         ) : (
-          <EstadoVacio mensaje={portal.data?.mensaje || 'El repositorio todavía no tiene un enlace publicado.'} />
+          <EstadoVacio
+            mensaje={portal.data?.mensaje || 'El repositorio todavía no tiene un enlace publicado.'}
+          />
         )}
 
         {portal.isSuccess && (!url || textoBuscado === '') ? (

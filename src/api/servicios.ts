@@ -38,7 +38,10 @@ function categoriasDeGestion() {
 // La clasificación por slug sigue disponible cuando falla la consulta independiente de enlaces.
 async function urlRepositorioParaServicios() {
   if (!usaApi('autoarchivo')) return null;
-  return obtenerPortalAutoarchivo().then(({ url }) => url, () => null);
+  return obtenerPortalAutoarchivo().then(
+    ({ url }) => url,
+    () => null,
+  );
 }
 
 async function guardarServicioBackend(datos: DatosServicio, id?: string) {
@@ -52,15 +55,31 @@ async function guardarServicioBackend(datos: DatosServicio, id?: string) {
       ? obtenerPortalAutoarchivo().then(({ url }) => url)
       : urlRepositorioParaServicios(),
   ]);
-  const categoriaAnterior = anterior && servicioGestionDesdeBackend(anterior, categorias, repositorio).categoria;
-  const categoria = anterior && categoriaAnterior === datos.categoria
-    ? anterior.category : categoriaServicioHaciaBackend(datos.categoria, categorias);
+  const categoriaAnterior =
+    anterior && servicioGestionDesdeBackend(anterior, categorias, repositorio).categoria;
+  const categoria =
+    anterior && categoriaAnterior === datos.categoria
+      ? anterior.category
+      : categoriaServicioHaciaBackend(datos.categoria, categorias);
   if (categoria === undefined) throw new ErrorApi(400, 'Esa categoría no existe en el portal.');
-  const slug = id ?? normalizarTexto(datos.nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const slug =
+    id ??
+    normalizarTexto(datos.nombre)
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
   if (!slug) throw new ErrorApi(400, 'El nombre debe incluir letras o números.');
   const servicio = await peticion<ServicioGestionBackend>(ruta, {
     method: id ? 'PATCH' : 'POST',
-    body: JSON.stringify(servicioHaciaBackend(datos, categoria, slug, anterior, categoriaAnterior === datos.categoria, repositorio)),
+    body: JSON.stringify(
+      servicioHaciaBackend(
+        datos,
+        categoria,
+        slug,
+        anterior,
+        categoriaAnterior === datos.categoria,
+        repositorio,
+      ),
+    ),
   });
   return servicioGestionDesdeBackend(servicio, categorias, repositorio);
 }
@@ -99,10 +118,15 @@ export async function obtenerServicio(id: string): Promise<FichaServicio> {
 export function obtenerTodosLosServicios(): Promise<Servicio[]> {
   if (usaApi('servicios')) {
     return Promise.all([
-      peticionTodas<ServicioGestionBackend, ServicioGestionBackend>(RUTA_GESTION, (servicio) => servicio),
+      peticionTodas<ServicioGestionBackend, ServicioGestionBackend>(
+        RUTA_GESTION,
+        (servicio) => servicio,
+      ),
       categoriasDeGestion(),
       urlRepositorioParaServicios(),
-    ]).then(([lista, categorias, repositorio]) => lista.map((servicio) => servicioGestionDesdeBackend(servicio, categorias, repositorio)));
+    ]).then(([lista, categorias, repositorio]) =>
+      lista.map((servicio) => servicioGestionDesdeBackend(servicio, categorias, repositorio)),
+    );
   }
   return simularRed(servicios.map((servicio) => ({ ...servicio })));
 }
@@ -155,11 +179,14 @@ export function cambiarEstadoServicio(id: string, activo: boolean): Promise<Serv
   if (usaApi('servicios')) {
     return Promise.all([
       peticion<ServicioGestionBackend>(`${RUTA_GESTION}${encodeURIComponent(id)}/`, {
-        method: 'PATCH', body: JSON.stringify({ is_active: activo }),
+        method: 'PATCH',
+        body: JSON.stringify({ is_active: activo }),
       }),
       categoriasDeGestion(),
       urlRepositorioParaServicios(),
-    ]).then(([servicio, categorias, repositorio]) => servicioGestionDesdeBackend(servicio, categorias, repositorio));
+    ]).then(([servicio, categorias, repositorio]) =>
+      servicioGestionDesdeBackend(servicio, categorias, repositorio),
+    );
   }
   const indice = servicios.findIndex((servicio) => servicio.id === id);
   if (indice === -1) {

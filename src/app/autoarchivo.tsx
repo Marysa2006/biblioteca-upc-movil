@@ -77,7 +77,12 @@ export default function Autoarchivo() {
     const vacia = [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
 
     contenido = vacia ? (
-      <EstadoVacio mensaje={(!url && portal.data.mensaje) || 'La biblioteca todavía no ha publicado la orientación de autoarchivo.'} />
+      <EstadoVacio
+        mensaje={
+          (!url && portal.data.mensaje) ||
+          'La biblioteca todavía no ha publicado la orientación de autoarchivo.'
+        }
+      />
     ) : (
       <>
         <Text variant="bodySmall" style={estilos.secundario}>
@@ -156,7 +161,9 @@ export default function Autoarchivo() {
             </Text>
           </View>
         ) : (
-          <EstadoVacio mensaje={portal.data.mensaje || 'El repositorio todavía no tiene un enlace publicado.'} />
+          <EstadoVacio
+            mensaje={portal.data.mensaje || 'El repositorio todavía no tiene un enlace publicado.'}
+          />
         )}
       </>
     );

@@ -34,7 +34,9 @@ const TIEMPO_LIMITE_MS = 8000;
 
 /** URL de resultados de Koha para el texto dado. */
 export function urlBusquedaCatalogo(opac: string, texto: string): string {
-  return new URL(opac).origin + '/cgi-bin/koha/opac-search.pl?q=' + encodeURIComponent(texto.trim());
+  return (
+    new URL(opac).origin + '/cgi-bin/koha/opac-search.pl?q=' + encodeURIComponent(texto.trim())
+  );
 }
 
 /**
@@ -43,13 +45,20 @@ export function urlBusquedaCatalogo(opac: string, texto: string): string {
  * Lanza un error si Koha no responde, tarda demasiado o no devuelve el RSS.
  * En la web, el navegador la bloquea por CORS: la pantalla muestra el error con reintentar.
  */
-export async function buscarEnCatalogo(opac: string, texto: string, desde = 0): Promise<PaginaResultados> {
+export async function buscarEnCatalogo(
+  opac: string,
+  texto: string,
+  desde = 0,
+): Promise<PaginaResultados> {
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
   try {
-    const respuesta = await fetch(`${urlBusquedaCatalogo(opac, texto)}&format=rss&offset=${desde}`, {
-      signal: controlador.signal,
-    });
+    const respuesta = await fetch(
+      `${urlBusquedaCatalogo(opac, texto)}&format=rss&offset=${desde}`,
+      {
+        signal: controlador.signal,
+      },
+    );
     if (!respuesta.ok) {
       throw new Error(`Koha respondió ${respuesta.status}.`);
     }

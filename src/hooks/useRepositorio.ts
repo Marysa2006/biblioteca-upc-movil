@@ -48,7 +48,5 @@ export function useComprobarRepositorio() {
  */
 export function abrirRepositorio(url: string, texto = '') {
   const buscado = texto.trim();
-  return abrirEnNavegador(
-    buscado !== '' ? urlBusquedaRepositorio(url, buscado) : url,
-  );
+  return abrirEnNavegador(buscado !== '' ? urlBusquedaRepositorio(url, buscado) : url);
 }

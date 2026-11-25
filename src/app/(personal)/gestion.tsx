@@ -26,10 +26,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 
 import { SeccionAgenda } from '@/components/gestion/SeccionAgenda';
-import {
-  BotonEscanearTablet,
-  SeccionPrestamos,
-} from '@/components/inventario/SeccionPrestamos';
+import { BotonEscanearTablet, SeccionPrestamos } from '@/components/inventario/SeccionPrestamos';
 import { SeccionPortal } from '@/components/gestion/SeccionPortal';
 import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';

@@ -72,7 +72,9 @@ export function servicioGestionDesdeBackend(
 ): Servicio {
   const slug = categorias.find((categoria) => categoria.id === servicio.category)?.slug ?? '';
   const categoria =
-    categoriaDelAcceso(servicio.access_url, repositorio) ?? categoriasPorSlug.get(slug) ?? 'prestamo';
+    categoriaDelAcceso(servicio.access_url, repositorio) ??
+    categoriasPorSlug.get(slug) ??
+    'prestamo';
   return {
     id: servicio.slug,
     nombre: servicio.name,
@@ -110,8 +112,11 @@ export function servicioHaciaBackend(
     target_audience: servicio.publico,
     request_method: servicio.formaSolicitud,
     schedule: servicio.horario,
-    access_url: servicio.categoria === 'repositorio' ? repositorio ?? ''
-      : (conservarAcceso ? anterior?.access_url : undefined) ?? accesoPorCategoria[servicio.categoria],
+    access_url:
+      servicio.categoria === 'repositorio'
+        ? (repositorio ?? '')
+        : ((conservarAcceso ? anterior?.access_url : undefined) ??
+          accesoPorCategoria[servicio.categoria]),
     requires_authentication: servicio.requiereCuenta,
     is_active: servicio.activo,
     ...(anterior ? {} : { is_published: true }),
@@ -139,7 +144,10 @@ function resumenDesdePortal(servicio: ResumenPortal, categoria: CategoriaServici
   };
 }
 
-export function serviciosDesdePortal(respuesta: ServiciosPortal, repositorio: string | null): Servicio[] {
+export function serviciosDesdePortal(
+  respuesta: ServiciosPortal,
+  repositorio: string | null,
+): Servicio[] {
   return respuesta.categories.flatMap(({ slug, services }) =>
     services.flatMap((servicio) => {
       const categoria =
@@ -149,7 +157,10 @@ export function serviciosDesdePortal(respuesta: ServiciosPortal, repositorio: st
   );
 }
 
-export function fichaDesdePortal(servicio: FichaPortal, repositorio: string | null): FichaServicio | undefined {
+export function fichaDesdePortal(
+  servicio: FichaPortal,
+  repositorio: string | null,
+): FichaServicio | undefined {
   const acceso = categoriaDelAcceso(servicio.access_url, repositorio);
   const categoria = acceso ?? categoriasPorSlug.get(servicio.category.slug);
   if (!categoria || !servicio.is_available) return undefined;
