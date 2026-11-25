@@ -2,9 +2,9 @@
  * Orientación de autoarchivo (HU-11): procedimiento, requisitos, formatos y metadatos para
  * depositar un trabajo de grado en el Repositorio Institucional. Solo orienta: el depósito se
  * hace en el repositorio (ver ./repositorio).
- * La app conserva su orientación en cuatro bloques hasta acordar su estructura con el Backend.
+ * Si el portal no publica la guía con los cuatro bloques, se usa la orientación de prueba.
  */
-import { simularRed } from './cliente';
+import { ErrorApi, peticion, simularRed, usaApi } from './cliente';
 import { ORIENTACION_AUTOARCHIVO } from './mocks/autoarchivo';
 
 /**
@@ -23,7 +23,25 @@ export type OrientacionAutoarchivo = {
 };
 
 /** La orientación completa, con sus cuatro bloques (HU-11, CA1). */
-export function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoarchivo> {
+export async function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoarchivo> {
+  if (usaApi('autoarchivo')) {
+    try {
+      const respuesta = await peticion<{
+        guide: { body: string; title: string; published_at?: string | null } | null;
+      }>('/portal/self-archive/');
+      if (respuesta.guide) {
+        const { body, title, published_at } = respuesta.guide;
+        const bloques = typeof body === 'string' ? leerBloques(body) : undefined;
+        if (bloques) return {
+          ...bloques,
+          titulo: title || ORIENTACION_AUTOARCHIVO.titulo,
+          actualizada: published_at?.slice(0, 10) || ORIENTACION_AUTOARCHIVO.actualizada,
+        };
+      }
+    } catch (error) {
+      if (!(error instanceof ErrorApi) || error.estado !== 404) throw error;
+    }
+  }
   const orientacion = ORIENTACION_AUTOARCHIVO;
   return simularRed({
     ...orientacion,
@@ -32,4 +50,31 @@ export function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoarchivo>
     formatos: [...orientacion.formatos],
     metadatos: [...orientacion.metadatos],
   });
+}
+
+function leerBloques(body: string) {
+  const bloques: Record<'procedimiento' | 'requisitos' | 'formatos' | 'metadatos', string[]> = {
+    procedimiento: [], requisitos: [], formatos: [], metadatos: [],
+  };
+  const titulos = new Map<string, keyof typeof bloques>([
+    ['## Procedimiento', 'procedimiento'],
+    ['## Requisitos', 'requisitos'],
+    ['## Formatos', 'formatos'],
+    ['## Metadatos', 'metadatos'],
+  ]);
+  const vistos = new Set<keyof typeof bloques>();
+  let actual: string[] | undefined;
+  for (const linea of body.split(/\r?\n/).map((texto) => texto.trimEnd())) {
+    if (!linea.trim()) continue;
+    const titulo = titulos.get(linea);
+    if (titulo) {
+      if (vistos.has(titulo)) return;
+      vistos.add(titulo);
+      actual = bloques[titulo];
+    } else {
+      if (!actual || !linea.startsWith('- ') || !linea.slice(2).trim()) return;
+      actual.push(linea.slice(2).trim());
+    }
+  }
+  if (Object.values(bloques).every((items) => items.length > 0)) return bloques;
 }
