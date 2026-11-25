@@ -18,7 +18,7 @@ import { HISTORIAL_SOLICITUDES } from './mocks/historial';
 
 /** Un evento guardado con la solicitud a la que pertenece; al devolverlo se quitan esas claves. */
 export type EventoGuardado = EventoSolicitud & {
-  tipo: TipoSolicitud;
+  tipo: TipoSolicitud | 'bloqueo' | 'espacio';
   solicitudId: string;
 };
 
@@ -50,7 +50,7 @@ function aEvento({ id, fecha, estado, autor, nota }: EventoGuardado): EventoSoli
  * cambiar el estado, solo con mocks. `fecha` por defecto es ahora ('AAAA-MM-DD HH:MM').
  */
 export function registrarEvento(
-  tipo: TipoSolicitud,
+  tipo: EventoGuardado['tipo'],
   solicitudId: string,
   estado: EstadoSolicitud,
   autor: string,

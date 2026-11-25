@@ -7,6 +7,11 @@
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { Bloqueo, Reserva } from '@/types';
+import { useSesion } from '@/store/sesion';
+import { hoyISO } from '@/utils/fechas';
+import { registrarEvento } from './historial';
+import { registrarUso } from './estadisticas';
+import { crearNotificacion } from './notificaciones';
 
 import {
   bloqueoDesdeBackend,
@@ -165,6 +170,11 @@ export async function cancelarBloqueo(id: string, motivo: string): Promise<Bloqu
   }
   const bloqueo = bloqueos.find((elemento) => elemento.id === id);
   if (!bloqueo) throw new ErrorApi(404, 'El bloqueo no existe.');
+  if (bloqueo.hasta < hoyISO()) throw new ErrorApi(400, 'El bloqueo ya terminó.');
   bloqueos = bloqueos.filter((elemento) => elemento.id !== id);
+  const usuario = useSesion.getState().usuario;
+  registrarEvento('bloqueo', id, 'cancelada', usuario?.nombre ?? 'Personal de la biblioteca', reason);
+  registrarUso({ id: `uso-bloqueo-${id}`, usuario, servicio: 'espacios', finalidad: reason, estado: 'cancelada' });
+  if (usuario) crearNotificacion({ usuarioId: usuario.id, solicitudId: '', titulo: 'Bloqueo quitado', mensaje: reason });
   return simularRed({ ...bloqueo });
 }

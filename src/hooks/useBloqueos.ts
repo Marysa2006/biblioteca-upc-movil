@@ -5,7 +5,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { confirmarBloqueo, obtenerBloqueos, previsualizarBloqueo, type DatosBloqueo } from '@/api/bloqueos';
+import { cancelarBloqueo, confirmarBloqueo, obtenerBloqueos, previsualizarBloqueo, type DatosBloqueo } from '@/api/bloqueos';
 import { claves } from '@/api/claves';
 
 export function useBloqueos(espacioId?: string) {
@@ -42,5 +42,14 @@ function useRefrescarBloqueos() {
     queryClient.invalidateQueries({ queryKey: claves.notificaciones });
     queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
     queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
+    queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
   };
+}
+
+export function useCancelarBloqueo() {
+  const refrescar = useRefrescarBloqueos();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => cancelarBloqueo(id, motivo),
+    onSuccess: refrescar,
+  });
 }
