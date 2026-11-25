@@ -6,9 +6,6 @@ export const NOMBRE_APP = 'BiblioUPC';
 /** Dominio del correo institucional (HU-05). Confirmar con el ingeniero cuando se defina el login real. */
 export const DOMINIO_CORREO = 'unicesar.edu.co';
 
-/** Catálogo público (OPAC) de Koha. Confirmar la URL con el ingeniero de la biblioteca (HU-02). */
-export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
-
 /**
  * Programas de pregrado de cada facultad de la UPC, con la lista que entregó María (#251).
  * «Ciencias Básicas» y «Educación» van por separado. Los que solo se ofrecen en la seccional
