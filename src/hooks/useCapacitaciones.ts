@@ -18,6 +18,7 @@ import {
   solicitudesActivasDeLinea,
   aprobarCapacitacion,
   asignarResponsable,
+  cancelarCapacitacionPersonal,
   cerrarCapacitacion,
   obtenerMisCapacitaciones,
   obtenerSolicitudesCapacitacion,
@@ -183,6 +184,14 @@ export function useRechazarCapacitacion() {
   return useMutation({
     mutationFn: ({ id, motivo }: { id: string; motivo: string }) =>
       rechazarCapacitacion(id, motivo),
+    onSuccess: () => refrescarSolicitudes(queryClient),
+  });
+}
+
+export function useCancelarCapacitacionPersonal() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => cancelarCapacitacionPersonal(id, motivo),
     onSuccess: () => refrescarSolicitudes(queryClient),
   });
 }

@@ -666,12 +666,18 @@ async function modificarCapacitacion(id: string, accion: string, cuerpo: object)
 }
 
 export async function cancelarCapacitacionPersonal(id: string, motivo: string) {
-  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'cancel', { reason: motivo.trim() });
+  const reason = motivo.trim();
+  if (!reason) throw new ErrorApi(400, 'Indica el motivo de la cancelación.');
+  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'cancel', { reason });
   const solicitud = buscarSolicitud(id);
+  if (!ESTADOS_GESTIONABLES.includes(solicitud.estado) && solicitud.estado !== 'aprobada') {
+    throw new ErrorApi(400, 'Esta capacitación ya no se puede cancelar.');
+  }
+  registrarEvento('capacitacion', id, 'cancelada', useSesion.getState().usuario?.nombre ?? AUTOR_PERSONAL, reason);
   return simularRed(guardarSolicitud(
-    { ...solicitud, estado: 'cancelada', motivo: motivo.trim() },
+    { ...solicitud, estado: 'cancelada', motivo: reason },
     'Capacitación cancelada',
-    motivo.trim(),
+    reason,
   ));
 }
 

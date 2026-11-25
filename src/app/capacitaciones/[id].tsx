@@ -50,6 +50,7 @@ import {
   useAprobarCapacitacion,
   useAsignarResponsable,
   useCerrarCapacitacion,
+  useCancelarCapacitacionPersonal,
   useProponerFechaCapacitacion,
   useRechazarCapacitacion,
   useSolicitudCapacitacion,
@@ -287,6 +288,7 @@ function datosDe(solicitud: SolicitudCapacitacion) {
 }
 
 type Botones = {
+  cancelar: boolean;
   /** Pendiente (CA1). Con nueva fecha no: la confirma el usuario (CA4). */
   aprobar: boolean;
   /** Pendiente o con nueva fecha (CA1): otra fecha y rechazar. */
@@ -305,6 +307,7 @@ function botonesDe(solicitud: SolicitudCapacitacion, quien: Quien): Botones {
   const tomar = puedeTomarCapacitacion(solicitud);
   const acciones = ACCIONES_CAPACITACION[solicitud.estado];
   return {
+    cancelar: ['pendiente', 'nueva_fecha', 'aprobada'].includes(solicitud.estado),
     aprobar: acciones.includes('aprobar'),
     decidir: acciones.includes('nueva_fecha') || acciones.includes('rechazar'),
     asignarme: tomar && !quien.esAdministrador,
@@ -337,10 +340,11 @@ function BarraAcciones({
   const proponer = useProponerFechaCapacitacion();
   const asignar = useAsignarResponsable();
   const cerrar = useCerrarCapacitacion();
+  const cancelar = useCancelarCapacitacionPersonal();
 
   const [dialogo, setDialogo] = useState<Dialogo | null>(null);
 
-  const mutaciones = { rechazar, cerrar, fecha: proponer, responsable: asignar };
+  const mutaciones = { rechazar, cancelar, cerrar, fecha: proponer, responsable: asignar };
   const enDialogo = dialogo ? mutaciones[dialogo] : null;
   const errorDialogo = enDialogo?.error ? mensajeErrorGuardar(enDialogo.error) : null;
   const errorBarra = aprobar.error ?? (dialogo == null ? asignar.error : null);
@@ -495,16 +499,28 @@ function BarraAcciones({
         </View>
       ) : null}
 
+      {botones.cancelar ? (
+        <Button mode="outlined" disabled={ocupado || cancelar.isPending} onPress={() => {
+          cancelar.reset();
+          setDialogo('cancelar');
+        }}>
+          Cancelar capacitación
+        </Button>
+      ) : null}
       <DialogoTextoCapacitacion
-        tipo={dialogo === 'rechazar' || dialogo === 'cerrar' ? dialogo : null}
+        tipo={dialogo === 'rechazar' || dialogo === 'cerrar' || dialogo === 'cancelar' ? dialogo : null}
         solicitud={solicitud}
-        guardando={rechazar.isPending || cerrar.isPending}
+        guardando={rechazar.isPending || cerrar.isPending || cancelar.isPending}
         mensajeError={errorDialogo}
         onConfirmar={(texto, participantesReales) =>
           dialogo === 'rechazar'
             ? rechazar.mutate(
                 { id: solicitud.id, motivo: texto },
                 { onSuccess: listo(avisoCapacitacion('rechazar', solicitud)) },
+              )
+            : dialogo === 'cancelar' ? cancelar.mutate(
+                { id: solicitud.id, motivo: texto },
+                { onSuccess: listo('Cancelaste la capacitación. Le avisamos a la persona.') },
               )
             : cerrar.mutate(
                 { id: solicitud.id, resultado: texto, participantesReales },
