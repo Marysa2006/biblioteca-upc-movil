@@ -1122,12 +1122,30 @@ export type CitaAgenda = Cita & {
 };
 
 export async function cancelarCitaPersonal(id: string, motivo: string): Promise<Cita> {
+  const reason = motivo.trim();
+  if (!reason) throw new ErrorApi(400, 'Indica el motivo de la cancelación.');
   if (!usaApi('asesorias')) {
     const usuario = useSesion.getState().usuario;
     if (!usuario) throw new ErrorApi(401, 'Inicia sesión para cancelar la asesoría.');
-    return cancelarCita(usuario, id);
+    const cita = citas.find((actual) => actual.id === id);
+    if (!cita) throw new ErrorApi(404, 'La cita no existe.');
+    if (!puedeDecidirCita(usuario, cita)) throw new ErrorApi(403, 'No puedes cancelar esta cita.');
+    if (cita.estado !== 'pendiente' && cita.estado !== 'aprobada') {
+      throw new ErrorApi(400, 'Solo puedes cancelar una cita pendiente o aprobada.');
+    }
+    const cancelada: Cita = { ...cita, estado: 'cancelada', motivo: reason };
+    citas = citas.map((actual) => actual.id === id ? cancelada : actual);
+    ajustarCupo(cita.franjaId, 1);
+    crearNotificacion({ usuarioId: cita.solicitanteId, solicitudId: id, titulo: 'Asesoría cancelada', mensaje: reason });
+    registrarEvento('cita', id, 'cancelada', usuario.nombre, reason);
+    registrarUso({
+      id: `uso-cita-${id}`, servicio: 'asesorias', finalidad: cita.tema, tematica: cita.tema,
+      fecha: cita.fecha, modalidad: cita.modalidad, estado: 'cancelada', respondida: true,
+      ...datosDeSolicitante(cita.solicitanteId),
+    });
+    return simularRed({ ...cancelada });
   }
-  return decidirCitaBackend(await idGestion(id), 'cancel', { reason: motivo.trim() });
+  return { ...await decidirCitaBackend(await idGestion(id), 'cancel', { reason }), motivo: reason };
 }
 
 async function agendaBackend(facilitadorId: string, desde: string, hasta: string) {

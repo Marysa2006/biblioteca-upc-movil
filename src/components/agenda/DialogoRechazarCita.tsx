@@ -18,21 +18,23 @@ import { fechaCompleta } from '@/utils/calendario';
 type Props = {
   /** El diálogo se muestra mientras no sea null. */
   cita: Cita | null;
+  accion?: 'rechazar' | 'cancelar';
   guardando: boolean;
   mensajeError: string | null;
   onConfirmar: (motivo: string) => void;
   onCerrar: () => void;
 };
 
-export function DialogoRechazarCita({ cita, guardando, mensajeError, onConfirmar, onCerrar }: Props) {
+export function DialogoRechazarCita({ cita, accion = 'rechazar', guardando, mensajeError, onConfirmar, onCerrar }: Props) {
   return (
     <Portal>
-      <Dialog visible={cita != null} onDismiss={onCerrar} style={estilos.dialogo}>
+      <Dialog visible={cita != null} onDismiss={guardando ? undefined : onCerrar} style={estilos.dialogo}>
         {/* key: al abrir el diálogo para otra cita, el motivo vuelve a empezar. */}
         {cita ? (
           <Contenido
-            key={cita.id}
+            key={`${cita.id}-${accion}`}
             cita={cita}
+            accion={accion}
             guardando={guardando}
             mensajeError={mensajeError}
             onConfirmar={onConfirmar}
@@ -44,16 +46,18 @@ export function DialogoRechazarCita({ cita, guardando, mensajeError, onConfirmar
   );
 }
 
-function Contenido({ cita, guardando, mensajeError, onConfirmar, onCerrar }: Props & { cita: Cita }) {
+function Contenido({ cita, accion, guardando, mensajeError, onConfirmar, onCerrar }: Props & { cita: Cita }) {
   const { control, handleSubmit } = useForm<FormularioRechazoCita>({
     resolver: zodResolver(esquemaRechazoCita),
     defaultValues: { motivo: '' },
   });
 
+  const verbo = accion === 'cancelar' ? 'Cancelar' : 'Rechazar';
+
   // View y no Fragment: Dialog le pasa un style a su primer hijo, y un Fragment no lo acepta.
   return (
     <View>
-      <Dialog.Title style={estilos.titulo}>Rechazar la cita</Dialog.Title>
+      <Dialog.Title style={estilos.titulo}>{`${verbo} la cita`}</Dialog.Title>
       <Dialog.Content style={estilos.contenido}>
         <Text variant="bodyMedium" style={estilos.texto}>
           {`${cita.solicitante} · ${cita.tema} · ${fechaCompleta(cita.fecha)}, ${cita.horaInicio}`}
@@ -78,7 +82,7 @@ function Contenido({ cita, guardando, mensajeError, onConfirmar, onCerrar }: Pro
                 disabled={guardando}
                 multiline
                 maxLength={LARGO_MAXIMO_RECHAZO}
-                accessibilityLabel="Motivo para rechazar la cita"
+                accessibilityLabel={`Motivo para ${verbo.toLowerCase()} la cita`}
               />
               <HelperText type="error" visible={error != null}>
                 {error?.message}
@@ -96,7 +100,7 @@ function Contenido({ cita, guardando, mensajeError, onConfirmar, onCerrar }: Pro
           disabled={guardando}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"
-          accessibilityLabel="Volver sin rechazar"
+          accessibilityLabel="Volver sin guardar"
         >
           Volver
         </Button>
@@ -108,9 +112,9 @@ function Contenido({ cita, guardando, mensajeError, onConfirmar, onCerrar }: Pro
           buttonColor={coloresEstado.rechazada.texto}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"
-          accessibilityLabel={`Rechazar la cita de ${cita.solicitante}`}
+          accessibilityLabel={`${verbo} la cita de ${cita.solicitante}`}
         >
-          Rechazar
+          {verbo}
         </Button>
       </Dialog.Actions>
     </View>

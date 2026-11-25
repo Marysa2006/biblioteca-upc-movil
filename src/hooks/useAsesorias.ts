@@ -15,6 +15,7 @@ import {
   agendarCita,
   aprobarCitaConDatos,
   cancelarCita,
+  cancelarCitaPersonal,
   guardarJornada,
   guardarTema,
   obtenerAgenda,
@@ -234,6 +235,18 @@ export function useRechazarCita() {
       return rechazarCita(usuario, id, motivo);
     },
     onSuccess: refrescar,
+  });
+}
+
+export function useCancelarCitaPersonal() {
+  const refrescar = useRefrescarCitas();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => cancelarCitaPersonal(id, motivo),
+    onSuccess: () => {
+      refrescar();
+      queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
+    },
   });
 }
 

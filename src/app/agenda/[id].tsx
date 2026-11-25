@@ -37,6 +37,7 @@ import {
   useAgenda,
   useAprobarCita,
   useRechazarCita,
+  useCancelarCitaPersonal,
   useRegistrarInasistencia,
   useRegistrarResultado,
 } from '@/hooks/useAsesorias';
@@ -75,6 +76,8 @@ function Detalle() {
   const registrarInasistencia = useRegistrarInasistencia();
   const aprobar = useAprobarCita();
   const rechazar = useRechazarCita();
+  const cancelar = useCancelarCitaPersonal();
+  const [preguntarCancelacion, setPreguntarCancelacion] = useState(false);
   const [preguntarInasistencia, setPreguntarInasistencia] = useState(false);
   const [preguntarRechazo, setPreguntarRechazo] = useState(false);
   const [preguntarAprobacion, setPreguntarAprobacion] = useState(false);
@@ -92,7 +95,7 @@ function Detalle() {
   if (agenda.isError) {
     return <EstadoError mensaje="No pudimos cargar la cita." onReintentar={() => agenda.refetch()} />;
   }
-  const cita = agenda.data.find((actual) => actual.id === id);
+  const cita = cancelar.data?.id === id ? cancelar.data : agenda.data.find((actual) => actual.id === id);
   if (!cita) {
     return <EstadoVacio pose="buscando" mensaje="No encontramos esta cita en la agenda." />;
   }
@@ -175,6 +178,15 @@ function Detalle() {
       ) : null}
 
       <DetalleCitaAgenda cita={cita} />
+      {['pendiente', 'aprobada'].includes(cita.estado) &&
+        (esAdministrador || cita.facilitadorId === usuario?.id || cita.estado === 'pendiente') ? (
+          <Button mode="outlined" disabled={decidiendo || cancelar.isPending} onPress={() => {
+            cancelar.reset();
+            setPreguntarCancelacion(true);
+          }}>
+            Cancelar cita
+          </Button>
+        ) : null}
 
       {cita.estado === 'pendiente' ? (
         <View style={estilos.decision}>
@@ -259,6 +271,17 @@ function Detalle() {
         mensajeError={rechazar.error ? mensajeErrorGuardar(rechazar.error) : null}
         onConfirmar={confirmarRechazo}
         onCerrar={() => setPreguntarRechazo(false)}
+      />
+      <DialogoRechazarCita
+        accion="cancelar"
+        cita={preguntarCancelacion ? cita : null}
+        guardando={cancelar.isPending}
+        mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
+        onConfirmar={(motivo) => cancelar.mutate({ id: cita.id, motivo }, { onSuccess: () => {
+          setPreguntarCancelacion(false);
+          setAviso('Cancelaste la cita. Le avisamos a la persona.');
+        } })}
+        onCerrar={() => setPreguntarCancelacion(false)}
       />
 
       <DialogoInasistencia
