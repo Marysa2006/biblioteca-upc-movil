@@ -333,6 +333,18 @@ Los permisos de una persona son **la suma de los de sus roles** (`PERMISOS_POR_R
   cambia `VERSION_POLITICA_DATOS`. `aceptacionVigente()` (`src/utils/privacidad.ts`) lo decide; la
   sesión guarda además la que se acepte en el celular ante una política nueva.
 
+### Cancelación desde Mis solicitudes
+
+Las mutaciones se disparan en el detalle, que pasa estado y callbacks al diálogo de motivo.
+Reservas y capacitaciones aprobadas consultan `config/rules/`. Para tablets, la app resuelve
+el id del préstamo desde la lista personal y verifica que siga reservado. Las consultas de
+Mi calendario y los recordatorios reutilizan los prefijos de reservas y préstamos, que la
+mutación invalida junto a Mis solicitudes y el historial. Los mocks de cancelación registran
+notificación, historial y uso.
+
+La lectura masiva de notificaciones usa `notifications/me/read-all/`. Actualiza la caché
+del usuario y vuelve a consultar el servidor para reconciliar la campana y la lista.
+
 ### El rastro de cada cambio de estado
 
 En los mocks de reservas, asesorías, tablets y capacitaciones, **cada cambio de estado** crea:
@@ -385,6 +397,10 @@ del formulario, `esquemaGuia` (`src/utils/guias.ts`).
 
 ### Las estadísticas (HU-25, HU-26 y #307)
 
+Con la API, `by_status` y `attendees_by_service` alimentan las tasas y las barras del
+Resumen. El CSV agrega esos indicadores al detalle descargado y el PDF se arma en la app
+a partir del resumen. El ranking de personas no forma parte del contrato 2.2.0.
+
 Cada operación deja **un solo registro de uso** (`RegistroUso`, `src/types/estadisticas.ts`), que
 se actualiza en cada cambio de estado con el mismo id (`uso-reserva-<id>`, `uso-cita-<id>`…). Los
 indicadores (`IndicadoresUso`) se calculan en el celular con `calcularIndicadores()`
@@ -428,6 +444,11 @@ temáticas»):
 | Préstamo de tablets, firma y constancia (#253, #310) | Ver la sección siguiente | |
 
 ### El préstamo de tablets (HU-22 a HU-24, HU-31 y #310)
+
+Inventario → Incidencias, con permiso `tablets`, consulta la lista paginada
+`tablets/incidents/`. Los filtros de tipo y fechas van al servidor. La búsqueda de texto
+se aplica a los resultados obtenidos y los mocks se derivan de préstamos vencidos y
+devoluciones con novedades.
 
 Desde el #310 el préstamo funciona como en el Backend (`apps/tablets/services.py`):
 

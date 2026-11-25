@@ -7,7 +7,7 @@
 ## Qué se probó
 
 - **Paquete:** `expo-camera` ~57.0.6, instalado con `npx expo install`. Viene incluido en Expo Go ([documentación SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/camera/)).
-- **Pantalla de prueba:** `src/app/pruebas/camara.tsx`. Se abre con el botón **Prueba de cámara (desarrollo)** de la pestaña Inventario. Solo aparece en desarrollo (`__DEV__`), no en el APK.
+- **Pantalla de prueba:** `src/app/pruebas/camara.tsx`. Se abre en desarrollo por la ruta `/pruebas/camara`. En el APK, la ruta redirige a Inicio.
 - **Componente reutilizable:** `src/components/camara/EscanerCodigos.tsx`. Pide el permiso, muestra la cámara con un recuadro guía, pausa después de cada lectura y tiene linterna.
 
 La pantalla compara tres formas de leer un código:

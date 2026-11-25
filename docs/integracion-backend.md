@@ -429,3 +429,34 @@ identificador de la app, así que instalar uno puede reemplazar el otro.
 
 La primera petición puede tardar hasta un minuto si Render estaba dormido. La compilación
 del APK y el recorrido en Render quedan pendientes.
+
+## 8. Alineación con el portal web y Backend 2.2.0
+
+El contrato de referencia es [OpenAPI 2.2.0](https://github.com/LibniT/BackEnd-Biblioteca/blob/develop/docs/schema.yml). La tabla histórica de §2 corresponde al inventario anterior a la integración.
+
+| Método y ruta | Uso en la app |
+|---|---|
+| `GET /config/rules/` | Lee `cancel_min_hours` para reservas y capacitaciones aprobadas. Es público. |
+| `POST /spaces/reservations/{request_id}/cancel/` | Usa el id de Mis solicitudes. La reserva pendiente se puede cancelar antes del inicio y la aprobada hasta el plazo general. Envía `reason` si la persona lo indica. |
+| `POST /trainings/requests/{id}/cancel/` | La capacitación pendiente o con fecha propuesta admite cancelación en cualquier momento. La aprobada está sujeta al plazo general. El motivo es obligatorio. |
+| `POST /tablets/loans/{id}/cancel/` | Usa el id del préstamo de `GET /tablets/loans/`; se relaciona con Mis solicitudes mediante `request_id`. Solo admite préstamos reservados antes de empezar y el motivo es opcional. |
+| `GET /tablets/incidents/` | Inventario → Incidencias. Lista paginada, con filtros `type`, `from` y `to`. Requiere `tablets.manage_loans` en Django (permiso `tablets` en la app). |
+| `POST /notifications/me/read-all/` | Marca todos los avisos de la sesión como leídos y devuelve `{updated}`. La app actualiza la lista y el contador. |
+| `GET /statistics/summary/` | Añade tasa de finalización, cancelaciones y rechazos desde `by_status`, y asistentes desde `attendees_by_service`. Se conserva el desglose agregado por tipo de usuario. |
+
+El resumen no incluye un ranking de personas. Por eso, «Usuarios más frecuentes» se oculta
+con la API. El CSV conserva el detalle de `GET /statistics/export/?format=csv` y agrega los
+indicadores del resumen. El PDF se genera en la app con los mismos filtros y cifras que se
+muestran en pantalla.
+
+El texto del endpoint de reservas describe el motivo como opcional. El esquema compartido
+`ReservationAction` lo describe como obligatorio para cancelar. La implementación
+`cancel_own_reservation` del Backend 2.2.0 aplica un motivo por defecto para cancelación propia.
+La app sigue esa ruta específica. El plazo general no se aplica al préstamo de tablet, cuya
+regla propia exige cancelar antes del inicio de la franja. El contrato no define un historial
+de solicitudes ni un registro de uso para la lectura de notificaciones.
+
+Con el perfil de demostración, verifica la notificación, el historial y el registro de uso
+tras cancelar cada servicio, y que desaparezcan del calendario los eventos cancelados.
+En la API, verifica también una solicitud fuera de plazo, el contador de notificaciones y
+los dos archivos exportados con un rango que incluya asistentes.
