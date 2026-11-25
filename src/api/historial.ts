@@ -84,10 +84,14 @@ export async function obtenerHistorialSolicitud(
   }
   if (USAR_MOCKS) {
     // sort es estable: dos eventos del mismo minuto quedan en el orden en que se registraron.
-    const lista = eventos
-      .filter((evento) => evento.tipo === tipo && evento.solicitudId === id)
-      .sort((a, b) => a.fecha.localeCompare(b.fecha));
-    return simularRed(lista.map(aEvento));
+    return simularRed(historialDePrueba(tipo, id));
   }
   return peticion<EventoSolicitud[]>(`/solicitudes/${tipo}/${id}/historial/`);
+}
+
+export function historialDePrueba(tipo: TipoSolicitud, id: string): EventoSolicitud[] {
+  return eventos
+    .filter((evento) => evento.tipo === tipo && evento.solicitudId === id)
+    .sort((a, b) => a.fecha.localeCompare(b.fecha))
+    .map(aEvento);
 }

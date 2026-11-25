@@ -59,7 +59,6 @@ import {
 } from '@/hooks/useCapacitaciones';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
-import { useHistorialSolicitud } from '@/hooks/useSolicitudes';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { SolicitudCapacitacion } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
@@ -111,8 +110,8 @@ export default function DetalleCapacitacion() {
 function Detalle({ id }: { id: string }) {
   const { usuario, esAdministrador } = useRol();
   const solicitudes = useSolicitudCapacitacion(id);
-  const historial = useHistorialSolicitud('capacitacion', id);
-  const solicitud = solicitudes.data;
+  const solicitud = solicitudes.data?.solicitud;
+  const historial = solicitudes.data?.historial ?? [];
   // El aviso vive aquí y no en la barra: la barra se va cuando la solicitud queda resuelta.
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -125,7 +124,6 @@ function Detalle({ id }: { id: string }) {
 
   const recargar = () => {
     solicitudes.refetch();
-    historial.refetch();
   };
 
   const botones = solicitud
@@ -157,18 +155,11 @@ function Detalle({ id }: { id: string }) {
           <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">
             Historial
           </Text>
-          {historial.isPending ? (
-            <EstadoCarga mensaje="Cargando el historial…" />
-          ) : historial.isError ? (
-            <EstadoError
-              mensaje="No pudimos cargar el historial."
-              onReintentar={() => historial.refetch()}
-            />
-          ) : historial.data.length === 0 ? (
+          {historial.length === 0 ? (
             <EstadoVacio mensaje="Esta solicitud todavía no tiene cambios registrados." />
           ) : (
             <View style={estilos.tarjeta}>
-              <LineaTiempo eventos={historial.data} />
+              <LineaTiempo eventos={historial} />
             </View>
           )}
         </View>
@@ -183,7 +174,7 @@ function Detalle({ id }: { id: string }) {
         titulo={solicitud?.linea ?? TITULO}
         conEncabezado
         recarga={{
-          recargando: solicitudes.isRefetching || historial.isRefetching,
+          recargando: solicitudes.isRefetching,
           onRecargar: recargar,
         }}
         pie={

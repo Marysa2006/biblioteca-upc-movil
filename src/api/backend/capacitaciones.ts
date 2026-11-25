@@ -16,6 +16,7 @@ import type {
 } from '@/types';
 
 import { datosSolicitanteHaciaBackend } from './espacios';
+import type { CambioBackend } from './solicitudes';
 import {
   ESTADO_DESDE_BACKEND,
   horaDesdeBackend,
@@ -111,7 +112,7 @@ export type CapacitacionGestionBackend = CapacitacionBackend & {
   program?: string;
   responsible: ResponsableBackend | null;
   result?: string;
-  history?: { reason: string; new_status: EstadoBackend }[];
+  history?: CambioBackend[];
 };
 
 export function capacitacionGestionDesdeBackend(solicitud: CapacitacionGestionBackend) {

@@ -51,7 +51,8 @@ import {
 } from './backend/capacitaciones';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
-import { registrarEvento } from './historial';
+import { historialDePrueba, registrarEvento } from './historial';
+import { historialDesdeBackend } from './backend/solicitudes';
 import { crearNotificacion } from './notificaciones';
 import { LINEAS_FORMACION, SOLICITUDES_CAPACITACION } from './mocks/capacitaciones';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
@@ -640,13 +641,17 @@ export function obtenerSolicitudesCapacitacion(
 
 const RUTA_GESTION_CAPACITACIONES = '/trainings/requests/manage/';
 
-export async function obtenerSolicitudCapacitacion(id: string): Promise<SolicitudCapacitacion> {
+export async function obtenerSolicitudCapacitacion(id: string) {
   if (usaApi('capacitaciones')) {
-    return capacitacionGestionDesdeBackend(await peticion<CapacitacionGestionBackend>(
+    const detalle = await peticion<CapacitacionGestionBackend>(
       `${RUTA_GESTION_CAPACITACIONES}${encodeURIComponent(id)}/`,
-    ));
+    );
+    return {
+      solicitud: capacitacionGestionDesdeBackend(detalle),
+      historial: historialDesdeBackend(detalle.id, 'TRAINING', detalle.history ?? []),
+    };
   }
-  return copiarSolicitud(buscarSolicitud(id));
+  return { solicitud: copiarSolicitud(buscarSolicitud(id)), historial: historialDePrueba('capacitacion', id) };
 }
 
 export async function obtenerResponsablesCapacitacion() {
