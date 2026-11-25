@@ -7,6 +7,9 @@
  * Patrón de datos: usePerfil() / useActualizarPerfil() (src/hooks) → src/api/perfil.ts → mock o API.
  */
 import { router } from 'expo-router';
+import { File } from 'expo-file-system';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Portal, Snackbar, Text } from 'react-native-paper';
@@ -17,11 +20,11 @@ import { FirmaEnVentana } from '@/components/inventario/FirmaEnVentana';
 import { EnlacePoliticaDatos } from '@/components/privacidad/EnlacePoliticaDatos';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useCerrarSesion } from '@/hooks/useAutenticacion';
-import { CON_DIRECCION, useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
+import { CON_DIRECCION, useActualizarFotoPerfil, useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
 import { useGuardarMiFirma } from '@/hooks/useUsuarios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import type { DatosEditablesPerfil, Usuario } from '@/types';
+import type { DatosEditablesPerfil, Perfil as DatosPerfil, Usuario } from '@/types';
 import {
   CORREO_DATOS_PERSONALES,
   DIAS_HABILES_CONSULTA,
@@ -78,6 +81,11 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
   const cerrarSesion = useCerrarSesion();
   const { data: perfil, isPending, isError, refetch } = usePerfil();
   const { mutate, isPending: guardando, error, reset } = useActualizarPerfil();
+  const foto = useActualizarFotoPerfil();
+  const [eligiendoFoto, setEligiendoFoto] = useState(false);
+  const [errorGaleria, setErrorGaleria] = useState<string | null>(null);
+  const fotoActual = perfil ? perfil.foto : usuario.foto;
+  const conFotoOcupada = eligiendoFoto || foto.isPending || guardando;
   const aceptaciones = useSesion((estado) => estado.aceptaciones);
   const [editando, setEditando] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -104,6 +112,30 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
   const cancelar = () => {
     reset();
     setEditando(false);
+  };
+
+  const elegirFoto = async () => {
+    setErrorGaleria(null);
+    foto.reset();
+    setEligiendoFoto(true);
+    try {
+      const resultado = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'] });
+      if (resultado.canceled) return;
+      const imagen = resultado.assets[0];
+      const nombre = imagen.fileName ?? imagen.uri.split('/').at(-1) ?? '';
+      const extension = nombre.toLowerCase().split('.').at(-1) ?? '';
+      const tipos: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+      const tipo = imagen.file?.type || imagen.mimeType || tipos[extension] || '';
+      const peso = imagen.file?.size ?? imagen.fileSize ?? (Platform.OS === 'web' ? 0 : new File(imagen.uri).size);
+      const sufijo = tipo === 'image/jpeg' ? 'jpg' : tipo.split('/')[1];
+      foto.mutate({ uri: imagen.uri, archivo: imagen.file, nombre: `perfil.${sufijo}`, peso, tipo }, {
+        onSuccess: () => setGuardado(true),
+      });
+    } catch {
+      setErrorGaleria('No pudimos leer la foto de la galería.');
+    } finally {
+      setEligiendoFoto(false);
+    }
   };
 
   const salir = () => {
@@ -137,7 +169,10 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
   return (
     <Pantalla titulo="Perfil" conEncabezado conTeclado>
       <View style={estilos.cabecera}>
-        <View
+        {fotoActual ? (
+          <Image source={fotoActual} style={estilos.fotoPerfil} contentFit="cover"
+            accessibilityLabel={`Foto de perfil de ${usuario.nombre}`} accessible />
+        ) : <View
           style={estilos.avatar}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
@@ -145,18 +180,29 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
           <Text variant="headlineSmall" style={estilos.iniciales}>
             {iniciales(usuario.nombre)}
           </Text>
-        </View>
+        </View>}
         <Text variant="titleLarge" style={estilos.nombre}>
           {usuario.nombre}
         </Text>
         <Text variant="bodyMedium" style={estilos.rol}>
           {describirRoles(usuario)}
         </Text>
+        <Button onPress={elegirFoto} disabled={conFotoOcupada} loading={eligiendoFoto || foto.isPending}
+          accessibilityLabel="Cambiar foto de perfil">Cambiar foto</Button>
+        {fotoActual ? (
+          <Button disabled={conFotoOcupada} onPress={() => {
+            setErrorGaleria(null);
+            foto.mutate(null, { onSuccess: () => setGuardado(true) });
+          }} accessibilityLabel="Quitar foto de perfil">Quitar foto</Button>
+        ) : null}
+        {errorGaleria || foto.error ? (
+          <Text accessibilityLiveRegion="polite">{errorGaleria ?? (foto.error && mensajeErrorGuardar(foto.error))}</Text>
+        ) : null}
       </View>
 
       {contenido}
 
-      {esPersonal(usuario) ? <MiFirma usuario={usuario} /> : null}
+      {esPersonal(usuario) && perfil?.admiteFirma ? <MiFirma usuario={perfil} /> : null}
 
       <View style={estilos.tarjeta}>
         <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
@@ -197,8 +243,8 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
  * La firma del personal (revisión de la 1.1): se registra una vez y se pone sola en las
  * constancias de las tablets que entregue o reciba. Sin ella, firma con su sesión.
  */
-function MiFirma({ usuario }: { usuario: Usuario }) {
-  const guardar = useGuardarMiFirma();
+function MiFirma({ usuario }: { usuario: DatosPerfil }) {
+  const guardar = useGuardarMiFirma(usuario);
   return (
     <View style={estilos.tarjeta}>
       <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
@@ -219,6 +265,7 @@ function MiFirma({ usuario }: { usuario: Usuario }) {
 }
 
 const estilos = StyleSheet.create({
+  fotoPerfil: { width: espacio.xl * 2, height: espacio.xl * 2, borderRadius: espacio.xl },
   cabecera: { alignItems: 'center', gap: espacio.xs, paddingVertical: espacio.s },
   // minWidth y no width: con letra grande, las iniciales agrandan el círculo en vez de cortarse.
   avatar: {

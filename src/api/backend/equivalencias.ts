@@ -103,3 +103,9 @@ export function permisosExtraDesdeBackend(permisos: readonly string[]): Permiso[
     .map((permiso) => PERMISO_EXTRA_DESDE_BACKEND[permiso])
     .filter((permiso): permiso is Permiso => permiso != null);
 }
+
+export function permisosExtraHaciaBackend(permisos: readonly Permiso[]): string[] {
+  return Object.keys(PERMISO_EXTRA_DESDE_BACKEND).filter((codigo) =>
+    permisos.includes(PERMISO_EXTRA_DESDE_BACKEND[codigo]),
+  );
+}

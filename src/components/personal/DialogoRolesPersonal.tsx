@@ -41,7 +41,7 @@ type Props = {
 };
 
 /** Lo que se guarda al confirmar: los roles y los permisos adicionales (#257). */
-export type CambiosPersonal = { rolesPersonal: RolPersonal[]; permisosExtra: Permiso[] };
+export type CambiosPersonal = { rolesPersonal: RolPersonal[]; permisosExtra: Permiso[]; activo?: boolean };
 
 /** Cómo se llama cada permiso adicional en la ficha y qué permite. */
 const PERMISO_ADICIONAL: Partial<Record<Permiso, { etiqueta: string; ayuda: string }>> = {
@@ -95,6 +95,7 @@ function Contenido({
 }: Props & { usuario: Usuario }) {
   const [roles, setRoles] = useState<RolPersonal[]>(usuario.rolesPersonal);
   const [extra, setExtra] = useState<Permiso[]>(ordenarPermisos(usuario.permisosExtra ?? []));
+  const [activo, setActivo] = useState(usuario.activo ?? true);
   const opciones: RolPersonal[] = usuario.rolesPersonal.includes('administrador')
     ? ['administrador', ...ROLES_ASIGNABLES]
     : [...ROLES_ASIGNABLES];
@@ -104,7 +105,8 @@ function Contenido({
   const extraVigente = sinRoles ? [] : extra;
   const sinCambios =
     ordenar(roles).join() === ordenar(usuario.rolesPersonal).join() &&
-    extraVigente.join() === ordenarPermisos(usuario.permisosExtra ?? []).join();
+    extraVigente.join() === ordenarPermisos(usuario.permisosExtra ?? []).join() &&
+    activo === (usuario.activo ?? true);
   // Los permisos vigentes: los de los roles más los adicionales.
   const permisos = [...new Set([...permisosDeRoles(roles), ...extraVigente])];
 
@@ -124,6 +126,15 @@ function Contenido({
           <Text variant="bodyMedium" style={estilos.texto}>
             {`${usuario.nombre} · ${NOMBRE_TIPO[usuario.tipo]}`}
           </Text>
+          {usuario.activo !== undefined && !usuario.rolesPersonal.includes('administrador') ? (
+            <FilaInterruptor
+              etiqueta="Cuenta activa"
+              ayuda="Desactivar la cuenta impide que la persona inicie sesión."
+              valor={activo}
+              onCambiar={setActivo}
+              deshabilitado={guardando}
+            />
+          ) : null}
 
           {opciones.map((rol) => (
             <FilaInterruptor
@@ -132,7 +143,7 @@ function Contenido({
               ayuda={PERMISOS_POR_ROL[rol].map((permiso) => NOMBRE_PERMISO[permiso]).join(', ')}
               valor={roles.includes(rol)}
               onCambiar={(activo) => alternar(rol, activo)}
-              deshabilitado={guardando}
+              deshabilitado={guardando || (rol === 'administrador' && usuario.activo !== undefined)}
             />
           ))}
 
@@ -193,7 +204,11 @@ function Contenido({
         <Button
           mode="contained"
           onPress={() =>
-            onConfirmar({ rolesPersonal: ordenar(roles), permisosExtra: extraVigente })
+            onConfirmar({
+              rolesPersonal: ordenar(roles),
+              permisosExtra: extraVigente,
+              activo: usuario.activo === undefined ? undefined : activo,
+            })
           }
           loading={guardando}
           disabled={guardando || sinCambios}

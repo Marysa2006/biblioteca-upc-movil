@@ -115,9 +115,7 @@ export const esquemaParametros = z
     dias: z.array(
       z.object({
         dia: z.number(),
-        abierto: z.boolean(),
-        abre: z.string().trim(),
-        cierra: z.string().trim(),
+        franjas: z.array(z.object({ abre: z.string().trim(), cierra: z.string().trim() })),
       }),
     ),
     horasMinimasSolicitud: horas,
@@ -175,24 +173,17 @@ export const esquemaParametros = z
       }
     });
 
-    // Horarios: solo los días abiertos; formato y que cierre después de abrir.
-    datos.dias.forEach((dia, i) => {
-      if (!dia.abierto) return;
-      const abreValida = esHoraValida(dia.abre);
-      const cierraValida = esHoraValida(dia.cierra);
-      if (!abreValida) {
-        ctx.addIssue({ code: 'custom', message: MENSAJE_HORA, path: ['dias', i, 'abre'] });
-      }
-      if (!cierraValida) {
-        ctx.addIssue({ code: 'custom', message: MENSAJE_HORA, path: ['dias', i, 'cierra'] });
-      }
-      if (abreValida && cierraValida && dia.cierra <= dia.abre) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'Debe cerrar después de abrir.',
-          path: ['dias', i, 'cierra'],
-        });
-      }
+    datos.dias.forEach(({ franjas }, i) => {
+      franjas.forEach(({ abre, cierra }, j) => {
+        const error = (campo: 'abre' | 'cierra', message: string) =>
+          ctx.addIssue({ code: 'custom', message, path: ['dias', i, 'franjas', j, campo] });
+        if (!esHoraValida(abre)) error('abre', MENSAJE_HORA);
+        else if (!esHoraValida(cierra)) error('cierra', MENSAJE_HORA);
+        else if (cierra <= abre) error('cierra', 'Debe cerrar después de abrir.');
+        else if (franjas.slice(0, j).some((otra) => abre < otra.cierra && otra.abre < cierra)) {
+          error('abre', 'Esta franja se cruza con otra del mismo día.');
+        }
+      });
     });
   });
 
@@ -203,15 +194,10 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
   return {
     periodos: parametros.periodos.map((p) => ({ ...p })),
     festivos: parametros.festivos.map((f) => ({ ...f })),
-    dias: ORDEN_DIAS.map((dia) => {
-      const horario = parametros.horarios.find((h) => h.dia === dia);
-      return {
-        dia,
-        abierto: horario != null,
-        abre: horario?.abre ?? '08:00',
-        cierra: horario?.cierra ?? '17:00',
-      };
-    }),
+    dias: ORDEN_DIAS.map((dia) => ({
+      dia,
+      franjas: parametros.horarios.filter((h) => h.dia === dia).map(({ abre, cierra }) => ({ abre, cierra })),
+    })),
     horasMinimasSolicitud: String(parametros.horasMinimasSolicitud),
     horasMinimasCancelacion: String(parametros.horasMinimasCancelacion),
     textoRecordatorio: parametros.textoRecordatorio,
@@ -229,9 +215,8 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
 /** Valores del formulario ya validados → lo que guarda la API. */
 export function aParametros(datos: FormularioParametros): Parametros {
   const horarios: HorarioAtencion[] = datos.dias
-    .filter((d) => d.abierto)
-    .map((d) => ({ dia: d.dia, abre: d.abre.trim(), cierra: d.cierra.trim() }))
-    .sort((a, b) => a.dia - b.dia);
+    .flatMap(({ dia, franjas }) => franjas.map(({ abre, cierra }) => ({ dia, abre: abre.trim(), cierra: cierra.trim() })))
+    .sort((a, b) => a.dia - b.dia || a.abre.localeCompare(b.abre));
   return {
     periodos: datos.periodos.map((p) => ({
       id: p.id,
@@ -255,4 +240,9 @@ export function aParametros(datos: FormularioParametros): Parametros {
     maximoPersonasAsesoria: Number(datos.maximoPersonasAsesoria),
     horasVigenciaQr: Number(datos.horasVigenciaQr),
   };
+}
+export function horariosDeFecha(fecha: string, parametros: Parametros): HorarioAtencion[] {
+  const dia = new Date(`${fecha}T00:00:00`).getDay();
+  return parametros.horarios.filter((horario) => horario.dia === dia)
+    .sort((a, b) => a.abre.localeCompare(b.abre));
 }

@@ -31,6 +31,7 @@ import { useRol } from '@/hooks/useRol';
 import {
   useActualizarPermisosExtra,
   useActualizarRolesPersonal,
+  useCambiarAccesoUsuario,
   useUsuarios,
 } from '@/hooks/useUsuarios';
 import { colores, espacio, fuentes, radio } from '@/theme';
@@ -80,11 +81,13 @@ function GestionRoles() {
   const { data: usuarios, isPending, isError, isRefetching, refetch } = useUsuarios();
   const cambiarRoles = useActualizarRolesPersonal();
   const cambiarPermisos = useActualizarPermisosExtra();
-  const guardando = cambiarRoles.isPending || cambiarPermisos.isPending;
-  const error = cambiarRoles.error ?? cambiarPermisos.error;
+  const cambiarAcceso = useCambiarAccesoUsuario();
+  const guardando = cambiarRoles.isPending || cambiarPermisos.isPending || cambiarAcceso.isPending;
+  const error = cambiarRoles.error ?? cambiarPermisos.error ?? cambiarAcceso.error;
   const reset = () => {
     cambiarRoles.reset();
     cambiarPermisos.reset();
+    cambiarAcceso.reset();
   };
 
   const [seccion, setSeccion] = useState<Seccion>('personal');
@@ -113,7 +116,7 @@ function GestionRoles() {
 
   // Guarda solo lo que cambió: primero los roles y después los permisos adicionales (#257).
   // Si algo falla, el diálogo sigue abierto con el error.
-  const confirmar = async ({ rolesPersonal, permisosExtra }: CambiosPersonal) => {
+  const confirmar = async ({ rolesPersonal, permisosExtra, activo }: CambiosPersonal) => {
     if (!editando) return;
     const persona = editando;
     const rolesCambian = rolesPersonal.join() !== persona.rolesPersonal.join();
@@ -121,9 +124,16 @@ function GestionRoles() {
     const permisosCambian =
       permisosExtra.length !== anteriores.length || permisosExtra.some((p) => !anteriores.includes(p));
     try {
-      if (rolesCambian) await cambiarRoles.mutateAsync({ usuarioId: persona.id, rolesPersonal });
-      if (permisosCambian) {
+      const quitarAntes = persona.activo !== undefined && permisosCambian && rolesPersonal.length === 0;
+      if (quitarAntes) {
         await cambiarPermisos.mutateAsync({ usuarioId: persona.id, permisos: permisosExtra });
+      }
+      if (rolesCambian) await cambiarRoles.mutateAsync({ usuarioId: persona.id, rolesPersonal });
+      if (permisosCambian && !quitarAntes) {
+        await cambiarPermisos.mutateAsync({ usuarioId: persona.id, permisos: permisosExtra });
+      }
+      if (activo !== undefined && activo !== persona.activo) {
+        await cambiarAcceso.mutateAsync({ id: persona.id, activo });
       }
     } catch {
       return;
@@ -140,7 +150,9 @@ function GestionRoles() {
     } else if (anteriores.length > 0) {
       adicionales = ', y ya no tiene permisos adicionales.';
     }
-    setAviso(`${roles}${adicionales}`);
+    const acceso = activo !== undefined && activo !== persona.activo
+      ? ` Cuenta ${activo ? 'activada' : 'desactivada'}.` : '';
+    setAviso(`${roles}${adicionales}${acceso}`);
   };
 
   let filtros = null;

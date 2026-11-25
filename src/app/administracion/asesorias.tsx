@@ -30,7 +30,7 @@ import {
 } from '@/components/ui';
 import { useGuardarTema, useJornadas, useTemas } from '@/hooks/useAsesorias';
 import { useRol } from '@/hooks/useRol';
-import { useUsuarios } from '@/hooks/useUsuarios';
+import { useFacilitadores } from '@/hooks/useUsuarios';
 import { espacio } from '@/theme';
 import type { Jornada, TemaAsesoria } from '@/types';
 
@@ -68,8 +68,10 @@ function GestionAsesorias() {
 
   const temas = useTemas();
   const jornadas = useJornadas();
-  const usuarios = useUsuarios();
-  const recargando = temas.isRefetching || jornadas.isRefetching || usuarios.isRefetching;
+  const { tienePermiso } = useRol();
+  const consultarFacilitadores = seccion === 'jornadas' && tienePermiso('roles');
+  const usuarios = useFacilitadores(consultarFacilitadores);
+  const recargando = temas.isRefetching || jornadas.isRefetching || (consultarFacilitadores && usuarios.isRefetching);
 
   // El Snackbar ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
   useEffect(() => {
@@ -81,16 +83,16 @@ function GestionAsesorias() {
   const recargar = () => {
     temas.refetch();
     jornadas.refetch();
-    usuarios.refetch();
+    if (consultarFacilitadores) usuarios.refetch();
   };
 
   let contenido;
-  if (temas.isPending || jornadas.isPending || usuarios.isPending) {
+  if (temas.isPending || jornadas.isPending || (consultarFacilitadores && usuarios.isPending)) {
     contenido = <EstadoCarga mensaje="Cargando asesorías…" />;
-  } else if (temas.isError || jornadas.isError || usuarios.isError) {
+  } else if (temas.isError || jornadas.isError || (consultarFacilitadores && usuarios.isError)) {
     contenido = <EstadoError mensaje="No pudimos cargar los temas y las jornadas." onReintentar={recargar} />;
   } else if (seccion === 'jornadas') {
-    const nombreUsuario = new Map(usuarios.data.map((u) => [u.id, u.nombre]));
+    const nombreUsuario = new Map((consultarFacilitadores ? usuarios.data ?? [] : []).map((u) => [u.id, u.nombre]));
     contenido = (
       <SeccionJornadas
         jornadas={jornadas.data}

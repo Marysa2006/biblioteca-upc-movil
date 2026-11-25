@@ -303,9 +303,14 @@ export function horasPosibles(
   horaInicio: string,
   maximo: number,
 ): number {
-  const ultima = franjas[franjas.length - 1];
-  if (!ultima || !franjas.some((franja) => franja.horaInicio === horaInicio)) return 0;
-  const hastaElCierre = Math.floor((aMinutos(ultima.horaFin) - aMinutos(horaInicio)) / 60);
+  const indice = franjas.findIndex((franja) => franja.horaInicio === horaInicio);
+  if (indice < 0) return 0;
+  let cierre = franjas[indice].horaFin;
+  for (const franja of franjas.slice(indice + 1)) {
+    if (franja.horaInicio > cierre) break;
+    if (franja.horaFin > cierre) cierre = franja.horaFin;
+  }
+  const hastaElCierre = Math.floor((aMinutos(cierre) - aMinutos(horaInicio)) / 60);
   return Math.max(0, Math.min(maximo, hastaElCierre));
 }
 

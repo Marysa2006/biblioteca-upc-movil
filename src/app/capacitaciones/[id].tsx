@@ -24,6 +24,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Icon, Portal, Snackbar, Text } from 'react-native-paper';
+import { usaApi } from '@/api/cliente';
 
 import { DialogoFechaCapacitacion } from '@/components/capacitaciones/DialogoFechaCapacitacion';
 import {
@@ -50,14 +51,14 @@ import {
   useAprobarCapacitacion,
   useAsignarResponsable,
   useCerrarCapacitacion,
+  useCancelarCapacitacionPersonal,
   useProponerFechaCapacitacion,
   useRechazarCapacitacion,
-  useSolicitudesCapacitacion,
+  useSolicitudCapacitacion,
+  useResponsablesCapacitacion,
 } from '@/hooks/useCapacitaciones';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
-import { useHistorialSolicitud } from '@/hooks/useSolicitudes';
-import { useUsuarios } from '@/hooks/useUsuarios';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { SolicitudCapacitacion } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
@@ -75,7 +76,7 @@ import {
 } from '@/utils/capacitaciones';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { fechaLegible } from '@/utils/fechas';
-import { describirRoles, NOMBRE_TIPO, tienePermiso as usuarioTienePermiso } from '@/utils/roles';
+import { NOMBRE_TIPO } from '@/utils/roles';
 import { textoFechaEvento } from '@/utils/solicitudes';
 
 const TITULO = 'Solicitud de capacitación';
@@ -108,9 +109,9 @@ export default function DetalleCapacitacion() {
 /** Se monta solo con el permiso: así, sin él, no se consulta nada. */
 function Detalle({ id }: { id: string }) {
   const { usuario, esAdministrador } = useRol();
-  const solicitudes = useSolicitudesCapacitacion('todas');
-  const historial = useHistorialSolicitud('capacitacion', id);
-  const solicitud = solicitudes.data?.find((actual) => actual.id === id);
+  const solicitudes = useSolicitudCapacitacion(id);
+  const solicitud = solicitudes.data?.solicitud;
+  const historial = solicitudes.data?.historial ?? [];
   // El aviso vive aquí y no en la barra: la barra se va cuando la solicitud queda resuelta.
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -123,7 +124,6 @@ function Detalle({ id }: { id: string }) {
 
   const recargar = () => {
     solicitudes.refetch();
-    historial.refetch();
   };
 
   const botones = solicitud
@@ -144,23 +144,22 @@ function Detalle({ id }: { id: string }) {
         <Encabezado solicitud={solicitud} usuarioId={usuario?.id} />
         <AvisoNuevaFecha solicitud={solicitud} />
         <ListaDatos datos={datosDe(solicitud)} />
+        {usaApi('asistencia') && solicitud.estado === 'aprobada' ? (
+          <Button mode="contained-tonal" icon="qrcode"
+            onPress={() => router.push({ pathname: '/asistencia/[id]', params: { id: solicitud.id, tipo: 'capacitacion' } })}>
+            Tomar asistencia
+          </Button>
+        ) : null}
 
         <View style={estilos.seccion}>
           <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">
             Historial
           </Text>
-          {historial.isPending ? (
-            <EstadoCarga mensaje="Cargando el historial…" />
-          ) : historial.isError ? (
-            <EstadoError
-              mensaje="No pudimos cargar el historial."
-              onReintentar={() => historial.refetch()}
-            />
-          ) : historial.data.length === 0 ? (
+          {historial.length === 0 ? (
             <EstadoVacio mensaje="Esta solicitud todavía no tiene cambios registrados." />
           ) : (
             <View style={estilos.tarjeta}>
-              <LineaTiempo eventos={historial.data} />
+              <LineaTiempo eventos={historial} />
             </View>
           )}
         </View>
@@ -175,7 +174,7 @@ function Detalle({ id }: { id: string }) {
         titulo={solicitud?.linea ?? TITULO}
         conEncabezado
         recarga={{
-          recargando: solicitudes.isRefetching || historial.isRefetching,
+          recargando: solicitudes.isRefetching,
           onRecargar: recargar,
         }}
         pie={
@@ -287,6 +286,7 @@ function datosDe(solicitud: SolicitudCapacitacion) {
 }
 
 type Botones = {
+  cancelar: boolean;
   /** Pendiente (CA1). Con nueva fecha no: la confirma el usuario (CA4). */
   aprobar: boolean;
   /** Pendiente o con nueva fecha (CA1): otra fecha y rechazar. */
@@ -305,6 +305,7 @@ function botonesDe(solicitud: SolicitudCapacitacion, quien: Quien): Botones {
   const tomar = puedeTomarCapacitacion(solicitud);
   const acciones = ACCIONES_CAPACITACION[solicitud.estado];
   return {
+    cancelar: ['pendiente', 'nueva_fecha', 'aprobada'].includes(solicitud.estado),
     aprobar: acciones.includes('aprobar'),
     decidir: acciones.includes('nueva_fecha') || acciones.includes('rechazar'),
     asignarme: tomar && !quien.esAdministrador,
@@ -331,16 +332,17 @@ function BarraAcciones({
   onAviso: (aviso: string) => void;
 }) {
   const parametros = useParametros();
-  const usuarios = useUsuarios();
+  const usuarios = useResponsablesCapacitacion();
   const aprobar = useAprobarCapacitacion();
   const rechazar = useRechazarCapacitacion();
   const proponer = useProponerFechaCapacitacion();
   const asignar = useAsignarResponsable();
   const cerrar = useCerrarCapacitacion();
+  const cancelar = useCancelarCapacitacionPersonal();
 
   const [dialogo, setDialogo] = useState<Dialogo | null>(null);
 
-  const mutaciones = { rechazar, cerrar, fecha: proponer, responsable: asignar };
+  const mutaciones = { rechazar, cancelar, cerrar, fecha: proponer, responsable: asignar };
   const enDialogo = dialogo ? mutaciones[dialogo] : null;
   const errorDialogo = enDialogo?.error ? mensajeErrorGuardar(enDialogo.error) : null;
   const errorBarra = aprobar.error ?? (dialogo == null ? asignar.error : null);
@@ -373,15 +375,7 @@ function BarraAcciones({
   };
 
   // Personal con el permiso de capacitaciones, para elegir el responsable (CA3).
-  const opciones: OpcionResponsable[] | null = usuarios.data
-    ? usuarios.data
-        .filter((usuario) => usuarioTienePermiso(usuario, 'formacion'))
-        .map((usuario) => ({
-          id: usuario.id,
-          nombre: usuario.nombre,
-          roles: describirRoles(usuario),
-        }))
-    : null;
+  const opciones: OpcionResponsable[] | null = usuarios.data ?? null;
 
   const ocupado = aprobar.isPending || (asignar.isPending && dialogo == null);
   const persona = solicitud.solicitante.nombre;
@@ -503,19 +497,31 @@ function BarraAcciones({
         </View>
       ) : null}
 
+      {botones.cancelar ? (
+        <Button mode="outlined" disabled={ocupado || cancelar.isPending} onPress={() => {
+          cancelar.reset();
+          setDialogo('cancelar');
+        }}>
+          Cancelar capacitación
+        </Button>
+      ) : null}
       <DialogoTextoCapacitacion
-        tipo={dialogo === 'rechazar' || dialogo === 'cerrar' ? dialogo : null}
+        tipo={dialogo === 'rechazar' || dialogo === 'cerrar' || dialogo === 'cancelar' ? dialogo : null}
         solicitud={solicitud}
-        guardando={rechazar.isPending || cerrar.isPending}
+        guardando={rechazar.isPending || cerrar.isPending || cancelar.isPending}
         mensajeError={errorDialogo}
-        onConfirmar={(texto) =>
+        onConfirmar={(texto, participantesReales) =>
           dialogo === 'rechazar'
             ? rechazar.mutate(
                 { id: solicitud.id, motivo: texto },
                 { onSuccess: listo(avisoCapacitacion('rechazar', solicitud)) },
               )
+            : dialogo === 'cancelar' ? cancelar.mutate(
+                { id: solicitud.id, motivo: texto },
+                { onSuccess: listo('Cancelaste la capacitación. Le avisamos a la persona.') },
+              )
             : cerrar.mutate(
-                { id: solicitud.id, resultado: texto },
+                { id: solicitud.id, resultado: texto, participantesReales },
                 { onSuccess: listo(avisoCapacitacion('cerrar', solicitud)) },
               )
         }

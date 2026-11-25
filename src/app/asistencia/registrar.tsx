@@ -17,6 +17,7 @@ import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { EscanerCodigos, type LecturaCodigo } from '@/components/camara/EscanerCodigos';
+import { usaApi } from '@/api/cliente';
 import { InvitarSesion } from '@/components/reservas/InvitarSesion';
 import {
   AvisoError,
@@ -50,10 +51,10 @@ export default function RegistrarAsistencia() {
 
   return (
     <>
-      <EncabezadoApilado titulo="Asesorías" />
+      <EncabezadoApilado titulo="Registrar asistencia" />
       <Pantalla titulo="Registrar asistencia" conEncabezado>
         {usuario ? (
-          <Contenido />
+          usaApi('asistencia') ? <Escaneo /> : <Contenido />
         ) : (
           <InvitarSesion
             mensaje="Inicia sesión con tu cuenta institucional para registrar tu asistencia."
@@ -89,18 +90,17 @@ function Contenido() {
   return <Escaneo cita={cita} />;
 }
 
-function Escaneo({ cita }: { cita: Cita }) {
+function Escaneo({ cita }: { cita?: Cita }) {
   const usuario = useSesion((estado) => estado.usuario);
-  const asistencia = useAsistencia(cita.id);
+  const asistencia = useAsistencia(cita?.id ?? '');
   const registrar = useRegistrarAsistenciaQr();
   const [rechazo, setRechazo] = useState<string | null>(null);
   const [recienRegistrada, setRecienRegistrada] = useState(false);
 
-  const yaRegistrada =
+  const yaRegistrada = registrar.data?.yaRegistrada ??
     asistencia.data?.registros.some((registro) => registro.usuarioId === usuario?.id) ?? false;
-  const confirmacion = recienRegistrada
-    ? `Tu asistencia a la asesoría de ${cita.tema} quedó registrada. ¡Gracias por venir!`
-    : 'Ya registraste tu asistencia a esta asesoría.';
+  const confirmacion = yaRegistrada ? 'Tu asistencia a esta sesión ya estaba registrada.'
+    : 'Tu asistencia quedó registrada.';
 
   // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.
   const anuncio = yaRegistrada || recienRegistrada ? confirmacion : rechazo;
@@ -109,7 +109,15 @@ function Escaneo({ cita }: { cita: Cita }) {
   }, [anuncio]);
 
   const leido = ({ datos }: LecturaCodigo) => {
+    if (registrar.isPending || yaRegistrada || recienRegistrada) return;
     setRechazo(null);
+    if (!cita) {
+      registrar.mutate(datos, {
+        onSuccess: () => setRecienRegistrada(true),
+        onError: (error) => setRechazo(mensajeErrorGuardar(error)),
+      });
+      return;
+    }
     const qr = leerCodigoAsistencia(datos);
     if (!qr) {
       setRechazo(NO_ES_QR_ASISTENCIA);
@@ -128,8 +136,7 @@ function Escaneo({ cita }: { cita: Cita }) {
     });
   };
 
-  const cuando = `${fechaCompleta(cita.fecha)} · ${cita.horaInicio} – ${cita.horaFin}`;
-  const resumen = (
+  const resumen = cita ? (
     <View style={estilos.resumen}>
       <Text variant="labelMedium" style={estilos.etiqueta}>
         Asesoría
@@ -138,13 +145,13 @@ function Escaneo({ cita }: { cita: Cita }) {
         {cita.tema}
       </Text>
       <Text variant="bodyMedium" style={estilos.dato}>
-        {cuando}
+        {`${fechaCompleta(cita.fecha)} · ${cita.horaInicio} – ${cita.horaFin}`}
       </Text>
       <Text variant="bodyMedium" style={estilos.secundario}>
         {`Con ${cita.facilitador}`}
       </Text>
     </View>
-  );
+  ) : null;
 
   if (yaRegistrada || recienRegistrada) {
     return (
@@ -173,9 +180,9 @@ function Escaneo({ cita }: { cita: Cita }) {
     <View style={estilos.contenido}>
       {resumen}
       <Text variant="bodyMedium" style={estilos.instruccion}>
-        Escanea el código QR que te muestra el facilitador al empezar la asesoría.
+        Escanea el código QR que te muestra el facilitador de la sesión.
       </Text>
-      {asistencia.isPending ? (
+      {cita && asistencia.isPending ? (
         <EstadoCarga mensaje="Revisando tu asistencia…" />
       ) : (
         <EscanerCodigos tipos={['qr']} onLeido={leido} />

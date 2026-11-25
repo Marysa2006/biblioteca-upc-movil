@@ -1,13 +1,15 @@
+import { firmaDesdeBackend, firmaHaciaBackend } from './backend/firmas';
 /**
  * Usuarios y permisos del personal (HU-07).
  * Lista el directorio, actualiza los roles del personal de uno y le da o le quita los
  * permisos que van aparte de los roles (versión 1.1).
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { AceptacionPolitica, FirmaElectronica, Permiso, RolPersonal, Usuario } from '@/types';
 import { NOMBRE_PERMISO, PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { permisosExtraDesdeBackend, permisosExtraHaciaBackend } from './backend/equivalencias';
+import { usuarioDirectorioDesdeBackend, type UsuarioBackend } from './backend/usuarios';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { crearNotificacion } from './notificaciones';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
@@ -20,11 +22,12 @@ const copiar = (usuario: Usuario): Usuario => ({
 /** Copia mutable: con mocks, los cambios de roles se ven durante la sesión de la app. */
 let directorio: Usuario[] = USUARIOS_DIRECTORIO.map(copiar);
 
-export function obtenerUsuarios(): Promise<Usuario[]> {
-  if (USAR_MOCKS) {
-    return simularRed(directorio.map(copiar));
+export function obtenerUsuarios(rol?: RolPersonal): Promise<Usuario[]> {
+  if (usaApi('usuarios')) {
+    const consulta = rol ? `?role=${encodeURIComponent(rol)}` : '';
+    return peticionTodas(`/users/${consulta}`, usuarioDirectorioDesdeBackend);
   }
-  return peticion<Usuario[]>('/usuarios/');
+  return simularRed(directorio.filter((usuario) => !rol || usuario.rolesPersonal.includes(rol)).map(copiar));
 }
 
 /**
@@ -32,10 +35,62 @@ export function obtenerUsuarios(): Promise<Usuario[]> {
  * Es el que usa la pantalla de permisos, y trae los `permisosExtra` de cada persona.
  */
 export function obtenerEquipo(): Promise<Usuario[]> {
-  if (USAR_MOCKS) {
-    return simularRed(directorio.filter((usuario) => usuario.rolesPersonal.length > 0).map(copiar));
+  if (usaApi('usuarios')) {
+    return obtenerUsuarios().then((usuarios) => usuarios.filter((u) => u.rolesPersonal.length > 0));
   }
-  return peticion<Usuario[]>('/usuarios/?personal=1');
+  return simularRed(directorio.filter((usuario) => usuario.rolesPersonal.length > 0).map(copiar));
+}
+
+async function obtenerUsuarioDirectorio(id: string) {
+  const usuarios = await obtenerUsuarios();
+  const usuario = usuarios.find((actual) => actual.id === id);
+  if (!usuario) throw new ErrorApi(404, 'El usuario no existe.');
+  return usuario;
+}
+
+export async function cambiarAccesoUsuario(id: string, activo: boolean): Promise<Usuario> {
+  if (!usaApi('usuarios')) {
+    const usuario = await obtenerUsuarioDirectorio(id);
+    const siguiente = { ...usuario, activo };
+    directorio = directorio.map((actual) => actual.id === id ? siguiente : actual);
+    return siguiente;
+  }
+  return usuarioDirectorioDesdeBackend(await peticion<UsuarioBackend>(
+    `/users/${encodeURIComponent(id)}/`,
+    { method: 'PATCH', body: JSON.stringify({ is_active: activo }) },
+  ));
+}
+
+type RolBackend = { id: number; code: string; is_active: boolean };
+type RolAsignadoBackend = { role: Pick<RolBackend, 'id' | 'code'> };
+
+async function actualizarRolesBackend(usuarioId: string, roles: RolPersonal[]) {
+  const ruta = `/users/${encodeURIComponent(usuarioId)}/roles/`;
+  const actuales = await peticion<RolAsignadoBackend[]>(ruta);
+  const codigos = new Set(actuales.map(({ role }) => role.code));
+  const deseaAdmin = roles.includes('administrador');
+  if (codigos.has('administrador') !== deseaAdmin) {
+    throw new ErrorApi(400, 'La administración de la biblioteca se cambia desde el Backend.');
+  }
+  const solicitados = new Set<string>(roles);
+  const faltantes = [...solicitados].filter((codigo) => !codigos.has(codigo));
+  if (faltantes.length) {
+    const catalogo = await peticionTodas<RolBackend, RolBackend>('/roles/', (rol) => rol);
+    const nuevos = faltantes.map((codigo) => {
+      const rol = catalogo.find((actual) => actual.code === codigo && actual.is_active);
+      if (!rol) throw new ErrorApi(400, `El rol ${codigo} no está disponible.`);
+      return rol;
+    });
+    for (const rol of nuevos) {
+      await peticion(ruta, { method: 'POST', body: JSON.stringify({ role: rol.id }) });
+    }
+  }
+  for (const { role } of actuales) {
+    if ((role.code === 'facilitador' || role.code === 'gestor_espacios') && !solicitados.has(role.code)) {
+      await peticion(`${ruta}${role.id}/`, { method: 'DELETE' });
+    }
+  }
+  return obtenerUsuarioDirectorio(usuarioId);
 }
 
 /**
@@ -67,24 +122,26 @@ export function agregarAlDirectorio(usuario: Usuario): void {
   directorio = [...directorio, copiar(usuario)];
 }
 
-/**
- * Guarda la firma de una persona del personal, o la quita con null (revisión de la 1.1). Con la API
- * real iría en su perfil; la ruta es provisional y está en el documento para el Backend.
- */
+/** Guarda la firma del perfil o del directorio de prueba. */
 export async function guardarFirmaPersonal(
   usuarioId: string,
   firma: FirmaElectronica | null,
-): Promise<void> {
-  if (USAR_MOCKS) {
+  admiteFirma?: boolean,
+): Promise<FirmaElectronica | undefined> {
+  if (!usaApi('sesion')) {
     directorio = directorio.map((usuario) => {
       if (usuario.id !== usuarioId) return usuario;
       const { firma: _anterior, ...resto } = usuario;
       return firma ? { ...resto, firma: { ...firma } } : resto;
     });
-    await simularRed(null);
-    return;
+    return simularRed(firma ?? undefined);
   }
-  await peticion<unknown>('/me/firma/', { method: 'PUT', body: JSON.stringify({ firma }) });
+  if (!admiteFirma) throw new ErrorApi(400, 'El perfil conectado no admite firmas.');
+  const perfil = await peticion<Pick<import('./backend/usuarios').PerfilBackend, 'signature'>>('/me/', {
+    method: 'PATCH',
+    body: JSON.stringify({ signature: firmaHaciaBackend(firma) }),
+  });
+  return firmaDesdeBackend(perfil.signature);
 }
 
 /** La firma registrada de una persona del directorio de prueba, para las constancias. */
@@ -130,46 +187,54 @@ export function actualizarPermisosExtra(
     );
   }
 
-  if (USAR_MOCKS) {
-    const indice = directorio.findIndex((actual) => actual.id === usuarioId);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
-    }
-    const anterior = directorio[indice];
-    if (permisos.length > 0 && anterior.rolesPersonal.length === 0) {
-      return Promise.reject(
-        new ErrorApi(
-          400,
-          'Primero asígnale un rol del personal: sin él, los permisos adicionales no le sirven.',
-        ),
-      );
-    }
-    const siguiente: Usuario = {
-      ...anterior,
-      permisosExtra: permisos.length > 0 ? [...permisos] : undefined,
-    };
-    directorio = directorio.map((actual, i) => (i === indice ? siguiente : actual));
-
-    // Solo se avisa de los que son nuevos para la persona.
-    const nuevos = permisos.filter((permiso) => !anterior.permisosExtra?.includes(permiso));
-    if (nuevos.length > 0) {
-      crearNotificacion({
-        usuarioId,
-        // No nace de una solicitud: es el aviso de un permiso nuevo. El campo es obligatorio
-        // en el tipo, así que va vacío y la pantalla lo ignora.
-        solicitudId: '',
-        titulo: 'Nuevos permisos',
-        mensaje: `Ahora tienes ${nuevos.length === 1 ? 'el permiso' : 'los permisos'}: ${nuevos
-          .map((permiso) => NOMBRE_PERMISO[permiso])
-          .join(', ')}.`,
+  if (usaApi('usuarios')) {
+    const ruta = `/users/${encodeURIComponent(usuarioId)}/permissions/`;
+    return obtenerUsuarioDirectorio(usuarioId).then(async (persona) => {
+      const respuesta = await peticion<{ permissions?: string[]; extra_permissions?: string[] }>(ruta, {
+        method: 'PUT',
+        body: JSON.stringify({ permissions: permisosExtraHaciaBackend(permisos) }),
       });
-    }
-    return simularRed(copiar(siguiente));
+      return {
+        ...persona,
+        permisosExtra: permisosExtraDesdeBackend(respuesta.permissions ?? respuesta.extra_permissions ?? []),
+      };
+    });
   }
-  return peticion<Usuario>(`/usuarios/${usuarioId}/permisos/`, {
-    method: 'PUT',
-    body: JSON.stringify({ permisosExtra: permisos }),
-  });
+
+  const indice = directorio.findIndex((actual) => actual.id === usuarioId);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
+  }
+  const anterior = directorio[indice];
+  if (permisos.length > 0 && anterior.rolesPersonal.length === 0) {
+    return Promise.reject(
+      new ErrorApi(
+        400,
+        'Primero asígnale un rol del personal: sin él, los permisos adicionales no le sirven.',
+      ),
+    );
+  }
+  const siguiente: Usuario = {
+    ...anterior,
+    permisosExtra: permisos.length > 0 ? [...permisos] : undefined,
+  };
+  directorio = directorio.map((actual, i) => (i === indice ? siguiente : actual));
+
+  // Solo se avisa de los que son nuevos para la persona.
+  const nuevos = permisos.filter((permiso) => !anterior.permisosExtra?.includes(permiso));
+  if (nuevos.length > 0) {
+    crearNotificacion({
+      usuarioId,
+      // No nace de una solicitud: es el aviso de un permiso nuevo. El campo es obligatorio
+      // en el tipo, así que va vacío y la pantalla lo ignora.
+      solicitudId: '',
+      titulo: 'Nuevos permisos',
+      mensaje: `Ahora tienes ${nuevos.length === 1 ? 'el permiso' : 'los permisos'}: ${nuevos
+        .map((permiso) => NOMBRE_PERMISO[permiso])
+        .join(', ')}.`,
+    });
+  }
+  return simularRed(copiar(siguiente));
 }
 
 /**
@@ -180,18 +245,13 @@ export function actualizarRolesPersonal(
   usuarioId: string,
   rolesPersonal: RolPersonal[],
 ): Promise<Usuario> {
-  if (USAR_MOCKS) {
-    const indice = directorio.findIndex((usuario) => usuario.id === usuarioId);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
-    }
-    directorio = directorio.map((usuario, i) =>
-      i === indice ? { ...usuario, rolesPersonal: [...rolesPersonal] } : usuario,
-    );
-    return simularRed(copiar(directorio[indice]));
+  if (usaApi('usuarios')) return actualizarRolesBackend(usuarioId, rolesPersonal);
+  const indice = directorio.findIndex((usuario) => usuario.id === usuarioId);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
   }
-  return peticion<Usuario>(`/usuarios/${usuarioId}/roles/`, {
-    method: 'PUT',
-    body: JSON.stringify({ rolesPersonal }),
-  });
+  directorio = directorio.map((usuario, i) =>
+    i === indice ? { ...usuario, rolesPersonal: [...rolesPersonal] } : usuario,
+  );
+  return simularRed(copiar(directorio[indice]));
 }

@@ -24,7 +24,7 @@ import type { DatosCalificacion } from '@/utils/calificacion';
 import { calificarCita, obtenerMisCitas } from './asesorias';
 import { resumenDesdeBackend, type ResumenBackend } from './backend/solicitudes';
 import { calificarCapacitacion, obtenerMisCapacitaciones } from './capacitaciones';
-import { ErrorApi, peticion, peticionTodas, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticionTodas, usaApi } from './cliente';
 import { obtenerEspacios } from './espacios';
 import { estadoDePrestamo } from './historial';
 import { obtenerMisReservas } from './reservas';
@@ -102,10 +102,6 @@ export async function obtenerMisSolicitudes(
       resumenDesdeBackend,
     );
     return ordenar(estado === 'todas' ? todas : todas.filter((s) => s.estado === estado));
-  }
-  if (!USAR_MOCKS) {
-    const consulta = estado === 'todas' ? '' : `?estado=${estado}`;
-    return peticion<ResumenSolicitud[]>(`/solicitudes/mias/${consulta}`);
   }
 
   const [reservas, citas, prestamos, capacitaciones, espacios] = await Promise.all([

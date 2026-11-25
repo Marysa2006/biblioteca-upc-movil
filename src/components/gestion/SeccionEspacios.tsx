@@ -20,11 +20,14 @@ import { Portal, Snackbar } from 'react-native-paper';
 
 import { DialogoDesactivarEspacio } from '@/components/espacios/DialogoDesactivarEspacio';
 import { TarjetaEspacioAdmin } from '@/components/espacios/TarjetaEspacioAdmin';
+import { DialogoMotivoAccion } from '@/components/reservas/DialogoMotivo';
 import { BotonFlotante, EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
 import {
   useCambiarEstadoEspacio,
   useEspaciosAdministracion,
+  useEliminarEspacio,
   useReservasFuturas,
+  useReservasFuturasPorEspacio,
 } from '@/hooks/useEspacios';
 import { espacio } from '@/theme';
 import type { Espacio } from '@/types';
@@ -43,6 +46,13 @@ function ordenarEspacios(lista: Espacio[]): Espacio[] {
 export function SeccionEspacios() {
   const { data, isPending, isError, refetch } = useEspaciosAdministracion();
   const cambiarEstado = useCambiarEstadoEspacio();
+  const eliminar = useEliminarEspacio();
+  const futurasPorEspacio = useReservasFuturasPorEspacio(data?.map((actual) => actual.id) ?? []);
+  const [porEliminar, setPorEliminar] = useState<Espacio | null>(null);
+  const reservasParaEliminar = useReservasFuturas(porEliminar?.id ?? '');
+  const bloqueaEliminacion = porEliminar && (
+    reservasParaEliminar.isFetching || !reservasParaEliminar.data || reservasParaEliminar.data.length > 0
+  );
   const [porDesactivar, setPorDesactivar] = useState<Espacio | null>(null);
   // Se pide aquí y no en el diálogo: el Portal queda fuera del QueryClientProvider.
   const reservasFuturas = useReservasFuturas(porDesactivar?.id ?? '');
@@ -74,7 +84,7 @@ export function SeccionEspacios() {
     if (!porDesactivar) return;
     const actual = porDesactivar;
     cambiarEstado.mutate(
-      { id: actual.id, activo: false },
+      { id: actual.id, activo: false, confirmar: true },
       {
         onSuccess: () => {
           setPorDesactivar(null);
@@ -101,6 +111,12 @@ export function SeccionEspacios() {
           router.push({ pathname: '/administracion/espacio', params: { id: actual.id } })
         }
         onCambiarEstado={() => (actual.activo ? abrirDesactivar(actual) : activar(actual))}
+        tieneReservasFuturas={Boolean(futurasPorEspacio.get(actual.id)?.data?.length)}
+        onEliminar={futurasPorEspacio.get(actual.id)?.isSuccess &&
+          futurasPorEspacio.get(actual.id)?.data?.length === 0 ? () => {
+          eliminar.reset();
+          setPorEliminar(actual);
+        } : undefined}
         onBloquear={() =>
           router.push({ pathname: '/administracion/bloqueo', params: { espacioId: actual.id } })
         }
@@ -111,6 +127,26 @@ export function SeccionEspacios() {
   return (
     <View style={estilos.seccion}>
       {lista}
+      <DialogoMotivoAccion
+        accion={porEliminar ? {
+          id: porEliminar.id, titulo: 'Eliminar espacio', boton: 'Eliminar espacio',
+          detalle: `Se eliminará ${porEliminar.nombre} del catálogo.`,
+        } : null}
+        impedido={Boolean(bloqueaEliminacion)}
+        guardando={eliminar.isPending}
+        mensajeError={
+          eliminar.error ? mensajeErrorGuardar(eliminar.error) :
+          reservasParaEliminar.isError ? 'No pudimos verificar las reservas futuras. Vuelve a abrir el diálogo.' :
+          reservasParaEliminar.data?.length ? 'El espacio tiene reservas futuras. Usa Desactivar.' : null
+        }
+        onConfirmar={(motivo) => porEliminar && eliminar.mutate({ id: porEliminar.id, motivo }, {
+          onSuccess: () => {
+            setAviso(`${porEliminar.nombre} se eliminó del catálogo.`);
+            setPorEliminar(null);
+          },
+        })}
+        onCerrar={() => setPorEliminar(null)}
+      />
 
       <DialogoDesactivarEspacio
         espacioActual={porDesactivar}

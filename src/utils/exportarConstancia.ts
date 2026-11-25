@@ -70,6 +70,7 @@ function recuadroFirma(firma: FirmaConstancia): string {
 export function htmlDeConstancia(constancia: ConstanciaPrestamo): string {
   const firmas = firmasDeConstancia(constancia).map(recuadroFirma).join('');
   const notas = constancia.notasLegales.map((nota) => `<li>${escaparHtml(nota)}</li>`).join('');
+  const codigo = codigoVerificacion(constancia);
   const aparte = (texto: string) => `<p class="aparte">${texto}</p>`;
 
   return `<!DOCTYPE html>
@@ -114,7 +115,7 @@ export function htmlDeConstancia(constancia: ConstanciaPrestamo): string {
     <table class="firmas"><tbody><tr>${firmas}</tr></tbody></table>
   </div>
   <ol class="notas">${notas}</ol>
-  <p class="verificacion">Código de verificación: <b>${codigoVerificacion(constancia)}</b>. Si algún dato cambia, el código no coincide con el de la app.</p>
+  ${codigo ? `<p class="verificacion">Código de verificación: <b>${escaparHtml(codigo)}</b>.</p>` : ''}
 </body></html>`;
 }
 

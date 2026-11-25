@@ -12,10 +12,11 @@
  * cerrar sesión están en el menú de usuario (arriba).
  */
 import { useQueryClient } from '@tanstack/react-query';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Text } from 'react-native-paper';
+import { Button, Text } from 'react-native-paper';
+import { usaApi } from '@/api/cliente';
 
 import { ActividadReciente } from '@/components/panel/ActividadReciente';
 import { AfluenciaSemanal } from '@/components/panel/AfluenciaSemanal';
@@ -29,7 +30,6 @@ import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes } from '@/theme';
 import { fechaCompleta } from '@/utils/calendario';
 import {
-  afluenciaSemanal,
   cifrasDelDia,
   pendientesPorAtender,
   resumenPorArea,
@@ -119,7 +119,7 @@ export default function Panel() {
       );
     } else {
       afluencia = (
-        <AfluenciaSemanal afluencia={afluenciaSemanal(panel.registros.lista, panel.hoy)} />
+        <AfluenciaSemanal afluencia={panel.registros.lista} />
       );
     }
   }
@@ -130,6 +130,11 @@ export default function Panel() {
       subtitulo={usuario ? describirRoles(usuario) : undefined}
       recarga={{ recargando, onRecargar: () => void recargar() }}
     >
+      {usuario && usaApi('asistencia') ? (
+        <Button mode="contained-tonal" icon="qrcode-scan" onPress={() => router.push('/asistencia/registrar')}>
+          Registrar asistencia con QR
+        </Button>
+      ) : null}
       {!panel.conSolicitudes && !panel.registros.activa ? (
         <EstadoVacio mensaje="Tus permisos todavía no tienen solicitudes ni préstamos que atender. Cuando la administración te dé uno, lo verás aquí." />
       ) : (

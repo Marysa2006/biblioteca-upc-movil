@@ -17,15 +17,17 @@ import { Button, Icon, Text } from 'react-native-paper';
 import { FilaReserva } from '@/components/espacios/FilaReserva';
 import { FormularioBloqueo } from '@/components/espacios/FormularioBloqueo';
 import { SinPermiso } from '@/components/personal/SinPermiso';
+import { DialogoMotivoAccion } from '@/components/reservas/DialogoMotivo';
 import {
   AvisoError,
   EncabezadoApilado,
   EstadoCarga,
   EstadoError,
   EstadoVacio,
+  MenuAcciones,
   Pantalla,
 } from '@/components/ui';
-import { useBloqueos, useConfirmarBloqueo, usePrevisualizarBloqueo } from '@/hooks/useBloqueos';
+import { useBloqueos, useCancelarBloqueo, useConfirmarBloqueo, usePrevisualizarBloqueo } from '@/hooks/useBloqueos';
 import { useEspaciosAdministracion } from '@/hooks/useEspacios';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
@@ -33,6 +35,7 @@ import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Bloqueo, Reserva } from '@/types';
 import { aDatosBloqueo, periodoLegible, type DatosFormularioBloqueo } from '@/utils/bloqueos';
 import { mensajeErrorGuardar } from '@/utils/errores';
+import { hoyISO } from '@/utils/fechas';
 
 type DatosBloqueo = Omit<Bloqueo, 'id'>;
 
@@ -68,6 +71,8 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
   const parametros = useParametros();
   const previsualizar = usePrevisualizarBloqueo();
   const confirmar = useConfirmarBloqueo();
+  const cancelar = useCancelarBloqueo();
+  const [porQuitar, setPorQuitar] = useState<Bloqueo | null>(null);
   const [revision, setRevision] = useState<Revision | null>(null);
   const [resultado, setResultado] = useState<Resultado | null>(null);
   /** Cambia para montar un formulario vacío después de aplicar un bloqueo. */
@@ -101,7 +106,19 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
   const revisar = (formulario: DatosFormularioBloqueo) => {
     const datos = aDatosBloqueo(espacioId, formulario);
     confirmar.reset();
-    previsualizar.mutate(datos, { onSuccess: (afectadas) => setRevision({ datos, afectadas }) });
+    previsualizar.mutate(datos, {
+      onSuccess: (respuesta) => {
+        if ('aplicado' in respuesta) {
+          setRevision(null);
+          setResultado({
+            bloqueo: respuesta.aplicado.bloqueo,
+            canceladas: respuesta.aplicado.canceladas.length,
+          });
+        } else {
+          setRevision({ datos, afectadas: respuesta.afectadas });
+        }
+      },
+    });
   };
 
   const aplicar = () => {
@@ -178,7 +195,7 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
             </Button>
           </View>
         </View>
-      ) : (
+      ) : actual.activo ? (
         <>
           <FormularioBloqueo
             key={intento}
@@ -199,7 +216,7 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
             />
           ) : null}
         </>
-      )}
+      ) : null}
 
       <View style={estilos.grupo}>
         <Text variant="titleSmall" style={estilos.nombre}>
@@ -218,10 +235,28 @@ function GestionBloqueo({ espacioId }: { espacioId: string }) {
                 <Text variant="bodyMedium" style={estilos.secundario}>
                   {bloqueo.motivo}
                 </Text>
+                {bloqueo.hasta >= hoyISO() ? <MenuAcciones
+                  descripcion="Acciones del bloqueo"
+                  acciones={[{ titulo: 'Quitar bloqueo', icono: 'calendar-remove-outline', onPress: () => {
+                    cancelar.reset();
+                    setPorQuitar(bloqueo);
+                  } }]}
+                /> : null}
               </View>
             ))
         )}
       </View>
+      <DialogoMotivoAccion
+        accion={porQuitar ? { id: porQuitar.id, titulo: 'Quitar bloqueo', detalle: periodoLegible(porQuitar), boton: 'Quitar bloqueo' } : null}
+        guardando={cancelar.isPending}
+        mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
+        onConfirmar={(motivo) => porQuitar && cancelar.mutate({ id: porQuitar.id, motivo }, { onSuccess: () => {
+          setPorQuitar(null);
+          setResultado(null);
+          descartarRevision();
+        } })}
+        onCerrar={() => setPorQuitar(null)}
+      />
     </View>
   );
 }

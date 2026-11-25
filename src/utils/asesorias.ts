@@ -20,7 +20,7 @@ import type {
 import { LARGO_MAXIMO_ASIGNATURA, LARGO_MAXIMO_NOVEDADES } from '@/utils/capacitaciones';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos } from '@/utils/franjas';
-import { motivoNoDisponible } from '@/utils/parametros';
+import { horariosDeFecha, motivoNoDisponible } from '@/utils/parametros';
 import { inicioReserva } from '@/utils/recordatorios';
 import {
   aDatosSolicitante,
@@ -139,7 +139,7 @@ export function motivoDiaNoElegibleCita(
   if (fecha < hoyISO()) return 'Ya pasó';
   const motivo = motivoNoDisponible(fecha, parametros);
   if (motivo) return `No disponible: ${motivo}`;
-  const horario = horarioDelDia(fecha, parametros);
+  const horario = horariosDeFecha(fecha, parametros).at(-1);
   if (horario) {
     const ultimaHora = aHora(aMinutos(horario.cierra) - parametros.duracionAsesoriaMinutos);
     if (!cumpleAnticipacionCita(fecha, ultimaHora, parametros, ahora)) {
@@ -147,11 +147,6 @@ export function motivoDiaNoElegibleCita(
     }
   }
   return null;
-}
-
-function horarioDelDia(fecha: string, parametros: Parametros) {
-  const dia = new Date(`${fecha}T00:00:00`).getDay();
-  return parametros.horarios.find((horario) => horario.dia === dia);
 }
 
 function cumpleAnticipacionCita(
@@ -172,11 +167,13 @@ export function horasInicioCita(
   fecha: string,
   parametros: Parametros,
 ): { desde: string; hasta: string } | null {
-  const horario = horarioDelDia(fecha, parametros);
-  if (!horario) return null;
-  const hasta = aMinutos(horario.cierra) - parametros.duracionAsesoriaMinutos;
-  if (hasta < aMinutos(horario.abre)) return null;
-  return { desde: horario.abre, hasta: aHora(hasta) };
+  const rangos = horariosDeFecha(fecha, parametros)
+    .filter(({ abre, cierra }) => aMinutos(cierra) - aMinutos(abre) >= parametros.duracionAsesoriaMinutos);
+  const primero = rangos[0];
+  const ultimo = rangos.at(-1);
+  return primero && ultimo
+    ? { desde: primero.abre, hasta: aHora(aMinutos(ultimo.cierra) - parametros.duracionAsesoriaMinutos) }
+    : null;
 }
 
 /**
@@ -196,10 +193,10 @@ export function problemaFechaHoraCita(
   const horas = horasInicioCita(fecha, parametros);
   if (!horas) return { campo: 'fecha', mensaje: 'Ese día la biblioteca no atiende.' };
   if (!esHoraValida(hora)) return { campo: 'hora', mensaje: 'Elige la hora.' };
-  if (hora < horas.desde || hora > horas.hasta) {
+  if (!horariosDeFecha(fecha, parametros).some((h) => hora >= h.abre && aMinutos(hora) + parametros.duracionAsesoriaMinutos <= aMinutos(h.cierra))) {
     return {
       campo: 'hora',
-      mensaje: `Elige una hora entre las ${horas.desde} y las ${horas.hasta}: la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
+      mensaje: `Elige una hora dentro de una franja de atención: la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
     };
   }
   if (!cumpleAnticipacionCita(fecha, hora, parametros, ahora)) {

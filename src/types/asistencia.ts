@@ -20,6 +20,8 @@ export type CodigoAsistencia = {
   codigo: string;
   /** Cuándo deja de servir, 'AAAA-MM-DD HH:MM'. */
   vence: string;
+  /** Inicio de la vigencia, como instante ISO del servidor. */
+  desde?: string;
   /** Si la asistencia ya se cerró, el código no acepta más registros (CA4). */
   cerrada: boolean;
 };
@@ -35,6 +37,7 @@ export type RegistroAsistencia = {
   nombre: string;
   tipoUsuario?: string;
   programa?: string;
+  semestre?: string;
   /** 'AAAA-MM-DD HH:MM'. */
   fechaHora: string;
   medio: MedioAsistencia;

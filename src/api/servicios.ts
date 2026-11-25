@@ -6,15 +6,21 @@
  * El portal público usa rutas de Django. Las rutas de administración siguen siendo provisionales.
  */
 import type { Servicio } from '@/types';
+import { normalizarTexto } from '@/utils/texto';
 
 import {
+  categoriaServicioHaciaBackend,
   fichaDesdePortal,
+  servicioGestionDesdeBackend,
+  servicioHaciaBackend,
   serviciosDesdePortal,
+  type CategoriaServicioBackend,
   type FichaPortal,
   type FichaServicio,
+  type ServicioGestionBackend,
   type ServiciosPortal,
 } from './backend/servicios';
-import { ErrorApi, peticion, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { SERVICIOS } from './mocks/servicios';
 
 /** Copia mutable: con mocks, lo que crea o edita la administración se ve durante la sesión de la app. */
@@ -22,6 +28,32 @@ let servicios: Servicio[] = SERVICIOS.map((servicio) => ({ ...servicio }));
 
 /** Datos que envía el formulario de la administración; el id lo asigna el sistema (HU-04). */
 export type DatosServicio = Omit<Servicio, 'id'>;
+const RUTA_GESTION = '/portal/manage/services/';
+
+function categoriasDeGestion() {
+  return peticion<CategoriaServicioBackend[]>('/portal/manage/service-categories/');
+}
+
+async function guardarServicioBackend(datos: DatosServicio, id?: string) {
+  const error = errorDeValidacion(datos);
+  if (error) throw error;
+  const ruta = id ? `${RUTA_GESTION}${encodeURIComponent(id)}/` : RUTA_GESTION;
+  const [categorias, anterior] = await Promise.all([
+    categoriasDeGestion(),
+    id ? peticion<ServicioGestionBackend>(ruta) : undefined,
+  ]);
+  const categoriaAnterior = anterior && servicioGestionDesdeBackend(anterior, categorias).categoria;
+  const categoria = anterior && categoriaAnterior === datos.categoria
+    ? anterior.category : categoriaServicioHaciaBackend(datos.categoria, categorias);
+  if (categoria === undefined) throw new ErrorApi(400, 'Esa categoría no existe en el portal.');
+  const slug = id ?? normalizarTexto(datos.nombre).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (!slug) throw new ErrorApi(400, 'El nombre debe incluir letras o números.');
+  const servicio = await peticion<ServicioGestionBackend>(ruta, {
+    method: id ? 'PATCH' : 'POST',
+    body: JSON.stringify(servicioHaciaBackend(datos, categoria, slug, anterior, categoriaAnterior === datos.categoria)),
+  });
+  return servicioGestionDesdeBackend(servicio, categorias);
+}
 
 /** Servicios activos, para la comunidad (HU-01). */
 export async function obtenerServicios(): Promise<Servicio[]> {
@@ -49,10 +81,13 @@ export async function obtenerServicio(id: string): Promise<FichaServicio> {
 
 /** Todos los servicios, también los inactivos, para la administración (HU-04). */
 export function obtenerTodosLosServicios(): Promise<Servicio[]> {
-  if (USAR_MOCKS) {
-    return simularRed(servicios.map((servicio) => ({ ...servicio })));
+  if (usaApi('servicios')) {
+    return Promise.all([
+      peticionTodas<ServicioGestionBackend, ServicioGestionBackend>(RUTA_GESTION, (servicio) => servicio),
+      categoriasDeGestion(),
+    ]).then(([lista, categorias]) => lista.map((servicio) => servicioGestionDesdeBackend(servicio, categorias)));
   }
-  return peticion<Servicio[]>('/servicios/?todos=1');
+  return simularRed(servicios.map((servicio) => ({ ...servicio })));
 }
 
 /** Validación de la HU-04 (CA3): los campos de texto son obligatorios. */
@@ -74,46 +109,44 @@ function errorDeValidacion(datos: DatosServicio): ErrorApi | null {
 }
 
 export function crearServicio(datos: DatosServicio): Promise<Servicio> {
-  if (USAR_MOCKS) {
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    const nuevo: Servicio = { ...datos, id: `servicio-${Date.now()}` };
-    servicios = [...servicios, nuevo];
-    return simularRed({ ...nuevo });
+  if (usaApi('servicios')) return guardarServicioBackend(datos);
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
   }
-  return peticion<Servicio>('/servicios/', { method: 'POST', body: JSON.stringify(datos) });
+  const nuevo: Servicio = { ...datos, id: `servicio-${Date.now()}` };
+  servicios = [...servicios, nuevo];
+  return simularRed({ ...nuevo });
 }
 
 export function editarServicio(id: string, datos: DatosServicio): Promise<Servicio> {
-  if (USAR_MOCKS) {
-    const indice = servicios.findIndex((servicio) => servicio.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
-    }
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    servicios = servicios.map((servicio, i) => (i === indice ? { ...datos, id } : servicio));
-    return simularRed({ ...servicios[indice] });
+  if (usaApi('servicios')) return guardarServicioBackend(datos, id);
+  const indice = servicios.findIndex((servicio) => servicio.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
   }
-  return peticion<Servicio>(`/servicios/${id}/`, { method: 'PUT', body: JSON.stringify(datos) });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
+  }
+  servicios = servicios.map((servicio, i) => (i === indice ? { ...datos, id } : servicio));
+  return simularRed({ ...servicios[indice] });
 }
 
 /** Activa o desactiva un servicio (HU-04, CA2): un servicio inactivo no se muestra a la comunidad. */
 export function cambiarEstadoServicio(id: string, activo: boolean): Promise<Servicio> {
-  if (USAR_MOCKS) {
-    const indice = servicios.findIndex((servicio) => servicio.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
-    }
-    servicios = servicios.map((servicio, i) => (i === indice ? { ...servicio, activo } : servicio));
-    return simularRed({ ...servicios[indice] });
+  if (usaApi('servicios')) {
+    return Promise.all([
+      peticion<ServicioGestionBackend>(`${RUTA_GESTION}${encodeURIComponent(id)}/`, {
+        method: 'PATCH', body: JSON.stringify({ is_active: activo }),
+      }),
+      categoriasDeGestion(),
+    ]).then(([servicio, categorias]) => servicioGestionDesdeBackend(servicio, categorias));
   }
-  return peticion<Servicio>(`/servicios/${id}/estado/`, {
-    method: 'PATCH',
-    body: JSON.stringify({ activo }),
-  });
+  const indice = servicios.findIndex((servicio) => servicio.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
+  }
+  servicios = servicios.map((servicio, i) => (i === indice ? { ...servicio, activo } : servicio));
+  return simularRed({ ...servicios[indice] });
 }

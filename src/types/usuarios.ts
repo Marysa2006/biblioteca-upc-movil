@@ -36,10 +36,12 @@ export type AceptacionPolitica = {
 };
 
 export type Usuario = {
+  foto?: string;
   id: string;
   nombre: string;
   correo: string;
   tipo: TipoUsuario;
+  activo?: boolean;
   /** Vacío para la comunidad. */
   rolesPersonal: RolPersonal[];
   programa?: string;

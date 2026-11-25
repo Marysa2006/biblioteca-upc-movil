@@ -31,6 +31,7 @@ import {
   PestanasFiltro,
 } from '@/components/ui';
 import { useActualizarParametros, useParametros } from '@/hooks/useParametros';
+import { usaApi } from '@/api/cliente';
 import { useRol } from '@/hooks/useRol';
 import { espacio } from '@/theme';
 import type { Parametros } from '@/types';
@@ -99,6 +100,7 @@ export default function ParametrosGenerales() {
 }
 
 function Formulario({ guardados }: { guardados: Parametros }) {
+  const editarTextos = !usaApi('parametros');
   const { mutate, isPending: guardando, error, reset } = useActualizarParametros();
   const [hayErrores, setHayErrores] = useState(false);
   const [guardado, setGuardado] = useState(false);
@@ -140,7 +142,7 @@ function Formulario({ guardados }: { guardados: Parametros }) {
       <PestanasFiltro
         opciones={PESTANAS.map(({ valor, etiqueta, campos }) => ({
           valor,
-          etiqueta,
+          etiqueta: valor === 'plazos' && !editarTextos ? 'Plazos' : etiqueta,
           alerta: conErrores(campos),
         }))}
         valor={pestana}
@@ -151,7 +153,7 @@ function Formulario({ guardados }: { guardados: Parametros }) {
       {pestana === 'periodos' ? <SeccionPeriodos deshabilitado={guardando} /> : null}
       {pestana === 'festivos' ? <SeccionFestivos deshabilitado={guardando} /> : null}
       {pestana === 'horarios' ? <SeccionHorarios deshabilitado={guardando} /> : null}
-      {pestana === 'plazos' ? <SeccionPlazos deshabilitado={guardando} /> : null}
+      {pestana === 'plazos' ? <SeccionPlazos deshabilitado={guardando} editarTextos={editarTextos} /> : null}
 
       {hayErrores ? (
         <AvisoError mensaje="Revisa los campos marcados en rojo; las pestañas con el ícono de aviso tienen errores." />

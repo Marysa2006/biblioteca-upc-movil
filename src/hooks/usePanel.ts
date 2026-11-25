@@ -17,13 +17,14 @@ import { obtenerAgenda } from '@/api/asesorias';
 import { obtenerSolicitudesCapacitacion } from '@/api/capacitaciones';
 import { claves } from '@/api/claves';
 import { obtenerEspacios } from '@/api/espacios';
-import { obtenerRegistrosUso } from '@/api/estadisticas';
+import { obtenerRegistrosUso, obtenerResumenEstadistico } from '@/api/estadisticas';
+import { usaApi } from '@/api/cliente';
 import { obtenerSolicitudesReserva } from '@/api/reservas';
 import { obtenerPrestamos } from '@/api/tablets';
 import { sumarDias } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
 import type { DatosPanel } from '@/utils/panel';
-import { SEMANAS_AFLUENCIA } from '@/utils/panel';
+import { afluenciaDesdeTotales, afluenciaSemanal, SEMANAS_AFLUENCIA } from '@/utils/panel';
 
 import { useRol } from './useRol';
 
@@ -71,8 +72,14 @@ export function usePanel() {
     enabled: conReservas,
   });
   const registros = useQuery({
-    queryKey: claves.registrosUso({ desde: desdeAfluencia }),
-    queryFn: () => obtenerRegistrosUso({ desde: desdeAfluencia }),
+    queryKey: [...claves.estadisticasTodas, 'afluencia', desdeAfluencia, hoy],
+    queryFn: async () => {
+      if (usaApi('estadisticas')) {
+        const datos = await obtenerResumenEstadistico({ desde: desdeAfluencia, hasta: hoy });
+        return afluenciaDesdeTotales(Array.from({ length: 7 }, (_, i) => datos.porDiaSemana?.[i]?.cantidad ?? 0));
+      }
+      return afluenciaSemanal(await obtenerRegistrosUso({ desde: desdeAfluencia }), hoy);
+    },
     enabled: conEstadisticas,
   });
 

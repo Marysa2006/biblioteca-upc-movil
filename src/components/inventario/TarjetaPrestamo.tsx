@@ -10,6 +10,7 @@
  */
 import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
+import { MenuAcciones } from '@/components/ui';
 
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { EstadoPrestamo, EstadoSolicitud, Prestamo, Tablet } from '@/types';
@@ -37,6 +38,7 @@ type Props = {
   onRecibir: () => void;
   /** Abre la constancia (#253); solo cuando la tablet ya se entregó. */
   onVerConstancia?: () => void;
+  onCancelar?: () => void;
 };
 
 /** "Bueno · con cargador y funda" o "Bueno · sin accesorios". */
@@ -55,6 +57,7 @@ export function TarjetaPrestamo({
   onEntregar,
   onRecibir,
   onVerConstancia,
+  onCancelar,
 }: Props) {
   const estado = ESTADO[prestamo.estado];
   const { fondo, texto } = coloresEstado[estado.color];
@@ -89,6 +92,12 @@ export function TarjetaPrestamo({
             {estado.etiqueta}
           </Text>
         </View>
+        {prestamo.estado === 'reservado' && onCancelar ? (
+          <MenuAcciones
+            descripcion={`Acciones del préstamo de ${prestamo.solicitante}`}
+            acciones={[{ titulo: 'Cancelar préstamo', icono: 'cancel', onPress: onCancelar }]}
+          />
+        ) : null}
       </View>
 
       <View style={estilos.franja}>

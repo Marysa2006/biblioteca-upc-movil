@@ -5,7 +5,7 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { confirmarBloqueo, obtenerBloqueos, previsualizarBloqueo, type DatosBloqueo } from '@/api/bloqueos';
+import { cancelarBloqueo, confirmarBloqueo, obtenerBloqueos, previsualizarBloqueo, type DatosBloqueo } from '@/api/bloqueos';
 import { claves } from '@/api/claves';
 
 export function useBloqueos(espacioId?: string) {
@@ -17,22 +17,39 @@ export function useBloqueos(espacioId?: string) {
 
 /** Reservas afectadas por el bloqueo que se está armando (CA1). */
 export function usePrevisualizarBloqueo() {
+  const refrescar = useRefrescarBloqueos();
   return useMutation({
     mutationFn: (datos: DatosBloqueo) => previsualizarBloqueo(datos),
+    onSuccess: (resultado) => {
+      if ('aplicado' in resultado) refrescar();
+    },
   });
 }
 
 export function useConfirmarBloqueo() {
-  const queryClient = useQueryClient();
+  const refrescar = useRefrescarBloqueos();
   return useMutation({
     mutationFn: (datos: DatosBloqueo) => confirmarBloqueo(datos),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: claves.bloqueos });
-      queryClient.invalidateQueries({ queryKey: claves.reservas });
-      queryClient.invalidateQueries({ queryKey: claves.notificaciones });
-      queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
-      // Cancela reservas: también cambian «Mis solicitudes» y su historial (HU-08).
-      queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
-    },
+    onSuccess: refrescar,
+  });
+}
+
+function useRefrescarBloqueos() {
+  const queryClient = useQueryClient();
+  return () => {
+    queryClient.invalidateQueries({ queryKey: claves.bloqueos });
+    queryClient.invalidateQueries({ queryKey: claves.reservas });
+    queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+    queryClient.invalidateQueries({ queryKey: claves.disponibilidadTodas });
+    queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
+    queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
+  };
+}
+
+export function useCancelarBloqueo() {
+  const refrescar = useRefrescarBloqueos();
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => cancelarBloqueo(id, motivo),
+    onSuccess: refrescar,
   });
 }

@@ -24,6 +24,7 @@ import { DialogoAprobarCita } from '@/components/agenda/DialogoAprobarCita';
 import { DetalleCitaAgenda } from '@/components/agenda/DetalleCitaAgenda';
 import { DialogoInasistencia } from '@/components/agenda/DialogoInasistencia';
 import { DialogoRechazarCita } from '@/components/agenda/DialogoRechazarCita';
+import { usaApi } from '@/api/cliente';
 import { FormularioResultado } from '@/components/agenda/FormularioResultado';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import {
@@ -37,12 +38,13 @@ import {
   useAgenda,
   useAprobarCita,
   useRechazarCita,
+  useCancelarCitaPersonal,
   useRegistrarInasistencia,
   useRegistrarResultado,
 } from '@/hooks/useAsesorias';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
-import { useEquipo } from '@/hooks/useUsuarios';
+import { useFacilitadores } from '@/hooks/useUsuarios';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import { puedeRegistrarResultado, type FormularioAprobacionCita } from '@/utils/agenda';
 import { fechaCompleta } from '@/utils/calendario';
@@ -69,17 +71,20 @@ export default function DetalleCita() {
 
 function Detalle() {
   const { id, desde, hasta } = useLocalSearchParams<Parametros>();
-  const { esAdministrador, usuario } = useRol();
+  const { esAdministrador, usuario, tienePermiso } = useRol();
   const agenda = useAgenda(desde ?? '', hasta ?? '', esAdministrador ? 'todas' : undefined);
   const registrarResultado = useRegistrarResultado();
   const registrarInasistencia = useRegistrarInasistencia();
   const aprobar = useAprobarCita();
   const rechazar = useRechazarCita();
+  const cancelar = useCancelarCitaPersonal();
+  const [preguntarCancelacion, setPreguntarCancelacion] = useState(false);
   const [preguntarInasistencia, setPreguntarInasistencia] = useState(false);
   const [preguntarRechazo, setPreguntarRechazo] = useState(false);
   const [preguntarAprobacion, setPreguntarAprobacion] = useState(false);
   // Para el diálogo de aprobar (#250): quién puede atenderla y qué días hay atención.
-  const equipo = useEquipo();
+  const eligeFacilitador = esAdministrador && tienePermiso('roles');
+  const equipo = useFacilitadores(preguntarAprobacion && eligeFacilitador);
   const { data: parametros } = useParametros();
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -92,7 +97,7 @@ function Detalle() {
   if (agenda.isError) {
     return <EstadoError mensaje="No pudimos cargar la cita." onReintentar={() => agenda.refetch()} />;
   }
-  const cita = agenda.data.find((actual) => actual.id === id);
+  const cita = cancelar.data?.id === id ? cancelar.data : agenda.data.find((actual) => actual.id === id);
   if (!cita) {
     return <EstadoVacio pose="buscando" mensaje="No encontramos esta cita en la agenda." />;
   }
@@ -175,6 +180,15 @@ function Detalle() {
       ) : null}
 
       <DetalleCitaAgenda cita={cita} />
+      {['pendiente', 'aprobada'].includes(cita.estado) &&
+        (esAdministrador || cita.facilitadorId === usuario?.id || cita.estado === 'pendiente') ? (
+          <Button mode="outlined" disabled={decidiendo || cancelar.isPending} onPress={() => {
+            cancelar.reset();
+            setPreguntarCancelacion(true);
+          }}>
+            Cancelar cita
+          </Button>
+        ) : null}
 
       {cita.estado === 'pendiente' ? (
         <View style={estilos.decision}>
@@ -214,7 +228,7 @@ function Detalle() {
         </View>
       ) : null}
 
-      {puedeTomarAsistencia(cita) ? (
+      {(usaApi('asistencia') ? cita.estado === 'aprobada' : puedeTomarAsistencia(cita)) ? (
         <Button
           mode="contained"
           icon="qrcode"
@@ -241,7 +255,7 @@ function Detalle() {
 
       <DialogoAprobarCita
         cita={preguntarAprobacion ? cita : null}
-        eligeFacilitador={esAdministrador}
+        eligeFacilitador={eligeFacilitador}
         yo={{ id: usuario?.id ?? '', nombre: usuario?.nombre ?? '' }}
         facilitadores={equipo.isError ? null : (facilitadores ?? null)}
         cargandoFacilitadores={equipo.isPending}
@@ -259,6 +273,17 @@ function Detalle() {
         mensajeError={rechazar.error ? mensajeErrorGuardar(rechazar.error) : null}
         onConfirmar={confirmarRechazo}
         onCerrar={() => setPreguntarRechazo(false)}
+      />
+      <DialogoRechazarCita
+        accion="cancelar"
+        cita={preguntarCancelacion ? cita : null}
+        guardando={cancelar.isPending}
+        mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
+        onConfirmar={(motivo) => cancelar.mutate({ id: cita.id, motivo }, { onSuccess: () => {
+          setPreguntarCancelacion(false);
+          setAviso('Cancelaste la cita. Le avisamos a la persona.');
+        } })}
+        onCerrar={() => setPreguntarCancelacion(false)}
       />
 
       <DialogoInasistencia

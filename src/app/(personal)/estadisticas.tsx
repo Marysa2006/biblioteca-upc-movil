@@ -21,6 +21,7 @@ import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import { Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
+import { usaApi } from '@/api/cliente';
 import type { FiltrosEstadisticas } from '@/types';
 
 type ValorSeccion = PestanaIndicadores | 'registros';
@@ -76,7 +77,7 @@ export default function Estadisticas() {
       recarga={{ recargando, onRecargar: () => void recargar() }}
     >
       <SelectorSeccion
-        opciones={SECCIONES}
+        opciones={usaApi('estadisticas') ? SECCIONES.filter(({ valor }) => valor !== 'registros') : SECCIONES}
         valor={elegida}
         onCambiar={setElegida}
         etiqueta="Secciones de Estadísticas"

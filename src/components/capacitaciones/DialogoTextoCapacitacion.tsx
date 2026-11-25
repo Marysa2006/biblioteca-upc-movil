@@ -19,7 +19,7 @@ import { esquemaResultado, LARGO_MAXIMO_RESULTADO } from '@/utils/capacitaciones
 import { fechaLegible } from '@/utils/fechas';
 import { esquemaMotivo } from '@/utils/reservas';
 
-export type TipoTextoCapacitacion = 'rechazar' | 'cerrar';
+export type TipoTextoCapacitacion = 'rechazar' | 'cancelar' | 'cerrar';
 
 type Props = {
   /** El diálogo se muestra mientras no sea null. */
@@ -27,7 +27,7 @@ type Props = {
   solicitud: SolicitudCapacitacion;
   guardando: boolean;
   mensajeError: string | null;
-  onConfirmar: (texto: string) => void;
+  onConfirmar: (texto: string, participantesReales?: number) => void;
   onCerrar: () => void;
 };
 
@@ -40,6 +40,12 @@ const TEXTOS: Record<
     etiqueta: 'Motivo',
     placeholder: 'Por ejemplo: no hay facilitador disponible esa semana',
     boton: 'Rechazar',
+  },
+  cancelar: {
+    titulo: 'Cancelar capacitación',
+    etiqueta: 'Motivo',
+    placeholder: 'Explica por qué se cancela la capacitación',
+    boton: 'Cancelar capacitación',
   },
   cerrar: {
     titulo: 'Registrar el resultado',
@@ -54,7 +60,7 @@ const TEXTOS: Record<
 export function DialogoTextoCapacitacion({ tipo, ...props }: Props) {
   return (
     <Portal>
-      <Dialog visible={tipo != null} onDismiss={props.onCerrar} style={estilos.dialogo}>
+      <Dialog visible={tipo != null} onDismiss={props.guardando ? undefined : props.onCerrar} style={estilos.dialogo}>
         {tipo ? (
           // key: al abrirlo para otra acción, el texto vuelve a empezar.
           <Contenido key={tipo} tipo={tipo} {...props} />
@@ -64,7 +70,7 @@ export function DialogoTextoCapacitacion({ tipo, ...props }: Props) {
   );
 }
 
-type Valores = { texto: string };
+type Valores = { texto: string; participantes: string };
 
 function Contenido({
   tipo,
@@ -74,16 +80,20 @@ function Contenido({
   onConfirmar,
   onCerrar,
 }: Omit<Props, 'tipo'> & { tipo: TipoTextoCapacitacion }) {
-  const rechazar = tipo === 'rechazar';
+  const pideMotivo = tipo !== 'cerrar';
   const textos = TEXTOS[tipo];
   const { control, handleSubmit } = useForm<Valores>({
     // Cada acción usa la regla de su esquema (motivo o resultado) sobre el mismo campo.
     resolver: zodResolver(
       z.object({
-        texto: rechazar ? esquemaMotivo.shape.motivo : esquemaResultado.shape.resultado,
+        texto: pideMotivo ? esquemaMotivo.shape.motivo : esquemaResultado.shape.resultado,
+        participantes: pideMotivo
+          ? z.string()
+          : z.string().regex(/^\d+$/, 'Indica cuántas personas asistieron.')
+              .refine((valor) => Number(valor) <= 32767, 'El número de asistentes es demasiado alto.'),
       }),
     ),
-    defaultValues: { texto: '' },
+    defaultValues: { texto: '', participantes: '' },
   });
 
   return (
@@ -98,7 +108,28 @@ function Contenido({
             {textos.explicacion}
           </Text>
         ) : null}
-        {!rechazar && solicitud.responsable ? (
+        {!pideMotivo ? (
+          <Controller
+            control={control}
+            name="participantes"
+            render={({ field, fieldState: { error } }) => (
+              <View>
+                <TextInput
+                  mode="outlined"
+                  label="Asistentes reales"
+                  keyboardType="number-pad"
+                  value={field.value}
+                  onChangeText={field.onChange}
+                  onBlur={field.onBlur}
+                  disabled={guardando}
+                  error={Boolean(error)}
+                />
+                {error ? <HelperText type="error">{error.message}</HelperText> : null}
+              </View>
+            )}
+          />
+        ) : null}
+        {!pideMotivo && solicitud.responsable ? (
           <Text variant="bodyMedium" style={estilos.texto}>
             {`Responsable: ${solicitud.responsable}`}
           </Text>
@@ -120,7 +151,7 @@ function Contenido({
                 disabled={guardando}
                 multiline
                 accessibilityLabel={
-                  rechazar ? 'Motivo del rechazo' : 'Resultado de la capacitación'
+                  pideMotivo ? textos.etiqueta : 'Resultado de la capacitación'
                 }
               />
               <HelperText type="error" visible={error != null}>
@@ -145,10 +176,12 @@ function Contenido({
         </Button>
         <Button
           mode="contained"
-          onPress={() => handleSubmit(({ texto }) => onConfirmar(texto.trim()))()}
+          onPress={() => handleSubmit(({ texto, participantes }) =>
+            onConfirmar(texto.trim(), pideMotivo ? undefined : Number(participantes)),
+          )()}
           loading={guardando}
           disabled={guardando}
-          buttonColor={rechazar ? coloresEstado.rechazada.texto : undefined}
+          buttonColor={pideMotivo ? coloresEstado.rechazada.texto : undefined}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"
           accessibilityLabel={`${textos.boton}: solicitud de ${solicitud.solicitante.nombre}`}

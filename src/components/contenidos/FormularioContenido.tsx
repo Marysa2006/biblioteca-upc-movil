@@ -21,6 +21,7 @@ import {
   type TipoEditable,
 } from '@/utils/contenidos';
 import { hoyISO } from '@/utils/fechas';
+import { usaApi } from '@/api/cliente';
 
 type DatosContenido = Omit<Contenido, 'id' | 'orden'>;
 
@@ -53,11 +54,12 @@ export function FormularioContenido({ contenido, guardando, mensajeError, onGuar
   });
   // useWatch y no watch(): watch no es compatible con el React Compiler del proyecto.
   const esAviso = useWatch({ control, name: 'tipo' }) === 'aviso';
+  const permiteVigencia = !usaApi('contenidos');
   const inicio = useWatch({ control, name: 'fechaInicio' });
   const [hoy] = useState(hoyISO);
 
   const guardar = handleSubmit((datos) => {
-    const conFechas = datos.tipo === 'aviso';
+    const conFechas = permiteVigencia && datos.tipo === 'aviso';
     onGuardar({
       tipo: datos.tipo,
       titulo: datos.titulo,
@@ -143,7 +145,7 @@ export function FormularioContenido({ contenido, guardando, mensajeError, onGuar
         )}
       />
 
-      {esAviso ? (
+      {esAviso && permiteVigencia ? (
         <View style={estilos.grupo}>
           <Text variant="labelLarge" style={estilos.etiquetaGrupo}>
             Vigencia (opcional)

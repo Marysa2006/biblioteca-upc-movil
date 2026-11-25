@@ -5,7 +5,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
-import { actualizarPerfil, obtenerPerfil, PERFIL_CON_DIRECCION } from '@/api/perfil';
+import { actualizarFotoPerfil, actualizarPerfil, obtenerPerfil, PERFIL_CON_DIRECCION, type FotoPerfil } from '@/api/perfil';
 import { useSesion } from '@/store/sesion';
 import type { DatosEditablesPerfil } from '@/types';
 
@@ -38,6 +38,22 @@ export function useActualizarPerfil() {
     },
     onSuccess: (perfil) => {
       queryClient.setQueryData(claves.perfil(usuario?.id), perfil);
+    },
+  });
+}
+
+export function useActualizarFotoPerfil() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (foto: FotoPerfil | null) => {
+      const usuario = useSesion.getState().usuario;
+      if (!usuario) throw new Error('No hay sesión');
+      return actualizarFotoPerfil(usuario, foto);
+    },
+    onSuccess: (perfil) => {
+      queryClient.setQueryData(claves.perfil(perfil.id), perfil);
+      useSesion.setState(({ usuario }) => usuario?.id === perfil.id
+        ? { usuario: { ...usuario, foto: perfil.foto } } : {});
     },
   });
 }

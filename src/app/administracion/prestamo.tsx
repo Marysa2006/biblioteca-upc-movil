@@ -22,6 +22,7 @@ import {
   type Modo,
 } from '@/components/inventario/FormularioRegistroPrestamo';
 import { SinPermiso } from '@/components/personal/SinPermiso';
+import { DialogoMotivoAccion } from '@/components/reservas/DialogoMotivo';
 import {
   AvisoError,
   EncabezadoApilado,
@@ -35,6 +36,7 @@ import { BotonCompartirConstancia } from '@/components/inventario/BotonCompartir
 import { VistaConstancia } from '@/components/inventario/VistaConstancia';
 import { useRol } from '@/hooks/useRol';
 import {
+  useCancelarPrestamoPersonal,
   useConstancia,
   usePrestamos,
   useRegistrarDevolucion,
@@ -45,7 +47,7 @@ import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Prestamo } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { fechaLegible, hoyISO } from '@/utils/fechas';
-import { duracionLegible, fechaHoraLegible, NOMBRE_CONDICION } from '@/utils/prestamos';
+import { duracionLegible, fechaHoraLegible, franjaDelPrestamo, NOMBRE_CONDICION } from '@/utils/prestamos';
 import { tabletsParaEntregar } from '@/utils/tablets';
 
 export default function RegistroPrestamo() {
@@ -97,6 +99,8 @@ function Registro({
   const tablets = useTablets();
   const entregar = useRegistrarEntrega();
   const recibir = useRegistrarDevolucion();
+  const cancelar = useCancelarPrestamoPersonal();
+  const [preguntarCancelacion, setPreguntarCancelacion] = useState(false);
   const [registrado, setRegistrado] = useState<Prestamo | null>(null);
   // #310: la tablet que se entrega. Sin elegir, la escaneada al venir de "Escanear tablet" o,
   // si no, la provisional; cualquiera de las dos solo si sirve en este préstamo.
@@ -104,6 +108,9 @@ function Registro({
   const mutacion = modo === 'entrega' ? entregar : recibir;
 
   if (registrado) return <Resultado prestamo={registrado} modo={modo} />;
+  if (cancelar.data?.id === id) {
+    return <EstadoVacio mensaje="Préstamo cancelado. Se notificó a la persona." />;
+  }
 
   if (prestamos.isPending || tablets.isPending) return <EstadoCarga mensaje="Cargando el préstamo…" />;
   if (prestamos.isError || tablets.isError) {
@@ -120,6 +127,26 @@ function Registro({
 
   const prestamo = prestamos.data.find((p) => p.id === id);
   if (!prestamo) return <EstadoVacio pose="buscando" mensaje="Este préstamo ya no existe." />;
+  const accionCancelar = prestamo.estado === 'reservado' && modo === 'entrega' ? (
+    <>
+      <Button mode="outlined" disabled={mutacion.isPending || cancelar.isPending} onPress={() => {
+        cancelar.reset();
+        setPreguntarCancelacion(true);
+      }}>
+        Cancelar préstamo
+      </Button>
+      <DialogoMotivoAccion
+        accion={preguntarCancelacion ? {
+          id, titulo: 'Cancelar préstamo', boton: 'Cancelar préstamo',
+          detalle: `${prestamo.solicitante} · ${franjaDelPrestamo(prestamo)}`,
+        } : null}
+        guardando={cancelar.isPending}
+        mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
+        onConfirmar={(motivo) => cancelar.mutate({ id, motivo })}
+        onCerrar={() => setPreguntarCancelacion(false)}
+      />
+    </>
+  ) : null;
   // En la devolución, la tablet que se entregó; en la entrega, la que se elija (#310).
   const paraEntregar =
     modo === 'entrega' ? tabletsParaEntregar(tablets.data, prestamos.data, prestamo) : [];
@@ -148,11 +175,19 @@ function Registro({
     return <EstadoVacio mensaje="Este préstamo no tiene una tablet por recibir." />;
   }
   if (modo === 'entrega' && prestamo.fecha > hoyISO()) {
-    return <AvisoError mensaje={`Este préstamo es para el ${fechaLegible(prestamo.fecha)}: la tablet se entrega ese día.`} />;
+    return (
+      <View style={estilos.contenedor}>
+        <AvisoError mensaje={`Este préstamo es para el ${fechaLegible(prestamo.fecha)}: la tablet se entrega ese día.`} />
+        {accionCancelar}
+      </View>
+    );
   }
   if (modo === 'entrega' && paraEntregar.length === 0) {
     return (
-      <AvisoError mensaje="No hay tablets libres en las horas de este préstamo. Revisa la sección Tablets." />
+      <View style={estilos.contenedor}>
+        <AvisoError mensaje="No hay tablets libres en las horas de este préstamo. Revisa la sección Tablets." />
+        {accionCancelar}
+      </View>
     );
   }
 
@@ -215,6 +250,7 @@ function Registro({
           onGuardar={guardar}
         />
       ) : null}
+      {accionCancelar}
     </View>
   );
 }

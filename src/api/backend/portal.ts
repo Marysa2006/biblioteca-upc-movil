@@ -19,6 +19,30 @@ export function fotoInicioDesdeBackend(foto: FotoInicioBackend): FotoInicio {
   };
 }
 
+export async function cuerpoFotoInicio(
+  datos: Pick<FotoInicio, 'imagen' | 'descripcion' | 'publicada'>,
+  anterior?: string,
+) {
+  const campos = { description: datos.descripcion.trim(), is_published: datos.publicada };
+  if (datos.imagen === anterior) return JSON.stringify(campos);
+  const cuerpo = new FormData();
+  cuerpo.append('description', campos.description);
+  cuerpo.append('is_published', String(campos.is_published));
+  if (/^(https?|blob|data):/.test(datos.imagen)) {
+    const respuesta = await fetch(datos.imagen);
+    if (!respuesta.ok) throw new Error('No se pudo leer la imagen.');
+    const archivo = await respuesta.blob();
+    const extension = archivo.type.split('/')[1] || 'jpg';
+    cuerpo.append('image', archivo, `inicio.${extension}`);
+  } else {
+    const extension = /\.(png|webp)(?:$|\?)/i.exec(datos.imagen)?.[1].toLowerCase() ?? 'jpeg';
+    cuerpo.append('image', {
+      uri: datos.imagen, name: `inicio.${extension}`, type: `image/${extension}`,
+    } as unknown as Blob);
+  }
+  return cuerpo;
+}
+
 export type RecursosPortal = {
   categories: {
     resources: {
@@ -64,5 +88,35 @@ export function contenidoDesdePortal(contenido: ContenidoPortal): Contenido {
     publicado: true,
     // El listado público ya viene ordenado y no expone el campo order.
     orden: 0,
+  };
+}
+
+export type ContenidoGestionBackend = ContenidoPortal & {
+  id: number;
+  status?: 'DRAFT' | 'PUBLISHED' | 'HIDDEN';
+  order?: number;
+};
+
+export function contenidoGestionDesdeBackend(contenido: ContenidoGestionBackend): Contenido {
+  const base = contenidoDesdePortal(contenido);
+  return {
+    ...base,
+    tipo: contenido.content_type === 'PAGE' ? 'servicio' : base.tipo,
+    publicado: contenido.status === 'PUBLISHED',
+    orden: contenido.order ?? 0,
+  };
+}
+
+export function contenidoHaciaBackend(
+  datos: Omit<Contenido, 'id' | 'orden'> & { orden?: number },
+  anterior?: ContenidoGestionBackend,
+) {
+  const tipos = { aviso: 'NOTICE', informativo: 'NEWS', servicio: 'PAGE' };
+  return {
+    content_type: tipos[datos.tipo],
+    title: datos.titulo.trim(),
+    body: datos.descripcion.trim(),
+    status: datos.publicado ? 'PUBLISHED' : anterior?.status === 'PUBLISHED' ? 'HIDDEN' : anterior?.status ?? 'DRAFT',
+    order: datos.orden,
   };
 }

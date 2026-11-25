@@ -3,9 +3,9 @@
  * Las pantallas no importan de src/api: se lee el código del error (ErrorApi.estado) sin la clase.
  */
 
-/** El mensaje de la API si es de validación (400) o "no existe" (404); si no, uno general. */
+/** El mensaje de la API para validación, recurso inexistente o conflicto. */
 export function mensajeErrorGuardar(error: Error): string {
-  if ('estado' in error && (error.estado === 400 || error.estado === 404)) {
+  if ('estado' in error && (error.estado === 400 || error.estado === 404 || error.estado === 409)) {
     return error.message;
   }
   return 'No pudimos guardar los cambios. Revisa tu conexión e inténtalo de nuevo.';

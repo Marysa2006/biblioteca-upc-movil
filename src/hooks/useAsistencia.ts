@@ -17,10 +17,14 @@ import {
   cerrarAsistencia,
   marcarAsistenciaManual,
   obtenerAsistentes,
+  obtenerCodigoAsistencia,
   registrarAsistencia,
+  type DatosAsistenciaManual,
 } from '@/api/asistencia';
 import { claves } from '@/api/claves';
+import { usaApi } from '@/api/cliente';
 import { useSesion } from '@/store/sesion';
+import { tienePermiso } from '@/utils/roles';
 
 /**
  * Asistencia de la sesión: código vigente, registros y total (CA2).
@@ -45,12 +49,27 @@ export function useAbrirAsistencia() {
   });
 }
 
+export function useCodigoAsistencia(sesionId: string) {
+  return useQuery({
+    queryKey: [...claves.asistenciaSesion(sesionId), 'qr'],
+    queryFn: () => obtenerCodigoAsistencia(sesionId),
+    enabled: usaApi('asistencia') && sesionId !== '',
+  });
+}
+
 export function useMarcarAsistenciaManual() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ sesionId, usuarioId }: { sesionId: string; usuarioId: string }) =>
-      marcarAsistenciaManual(sesionId, usuarioId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: claves.asistenciasTodas }),
+    mutationFn: ({ sesionId, ...datos }: { sesionId: string } & DatosAsistenciaManual) => {
+      if ('usuarioId' in datos && !tienePermiso(useSesion.getState().usuario, 'roles')) {
+        throw new Error('Registra la asistencia con el nombre de la persona.');
+      }
+      return marcarAsistenciaManual(sesionId, datos);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: claves.asistenciasTodas });
+      queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
+    },
   });
 }
 
@@ -68,7 +87,7 @@ export function useRegistrarAsistenciaQr() {
       return registrarAsistencia(codigo, usuario);
     },
     onSuccess: (asistencia) => {
-      queryClient.setQueryData(claves.asistenciaSesion(asistencia.sesionId), asistencia);
+      if (!usaApi('asistencia')) queryClient.setQueryData(claves.asistenciaSesion(asistencia.sesionId), asistencia);
       queryClient.invalidateQueries({ queryKey: claves.asistenciasTodas });
       // El registro de uso (HU-25 y HU-26).
       queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });

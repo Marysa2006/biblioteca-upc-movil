@@ -20,10 +20,21 @@ import { leerCodigoAsistencia } from '@/utils/asistencia';
 import { hoyISO } from '@/utils/fechas';
 import { ahoraFechaHora } from '@/utils/tablets';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionRespuesta, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import {
+  asistenciaDesdeBackend, asistenciaManualHaciaBackend, codigoDesdeBackend, listaAsistenciaDesdeBackend,
+  type DatosAsistenciaManual, type QrAsistenciaBackend, type RegistroAsistenciaBackend,
+} from './backend/asistencia';
 import { registrarUso } from './estadisticas';
 import { obtenerParametros } from './parametros';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+
+export type { DatosAsistenciaManual } from './backend/asistencia';
+
+export async function obtenerCodigoAsistencia(sesionId: string) {
+  const respuesta = await peticion<QrAsistenciaBackend>(`/attendance/${encodeURIComponent(sesionId)}/qr/`);
+  return codigoDesdeBackend(respuesta);
+}
 
 /**
  * Cuántos minutos sirve el código de una sesión (CA1: tiempo limitado).
@@ -130,32 +141,29 @@ export async function abrirAsistencia(sesionId: string): Promise<AsistenciaSesio
   if (!sesionId?.trim()) {
     throw new ErrorApi(400, 'Falta la sesión.');
   }
-  if (USAR_MOCKS) {
-    const estado = estadoDe(sesionId);
-    if (estado.cerrada) {
-      throw new ErrorApi(400, 'Esta asistencia ya se cerró.');
-    }
-    const ahora = ahoraFechaHora();
-    const vigente = estado.codigo !== null && estado.vence !== null && estado.vence > ahora;
-    if (!vigente) {
-      // #278: la vigencia la fija `Parametros.horasVigenciaQr` (`attendance-qr-hours`).
-      const parametros = await obtenerParametros();
-      estado.codigo = codigoTemporal(sesionId);
-      estado.vence = sumarMinutos(ahora, parametros.horasVigenciaQr * 60);
-    }
-    return simularRed(aAsistencia(sesionId));
+  if (usaApi('asistencia')) throw new ErrorApi(400, 'El QR está disponible automáticamente.');
+  const estado = estadoDe(sesionId);
+  if (estado.cerrada) {
+    throw new ErrorApi(400, 'Esta asistencia ya se cerró.');
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/abrir/`, {
-    method: 'POST',
-  });
+  const ahora = ahoraFechaHora();
+  const vigente = estado.codigo !== null && estado.vence !== null && estado.vence > ahora;
+  if (!vigente) {
+    // #278: la vigencia la fija `Parametros.horasVigenciaQr` (`attendance-qr-hours`).
+    const parametros = await obtenerParametros();
+    estado.codigo = codigoTemporal(sesionId);
+    estado.vence = sumarMinutos(ahora, parametros.horasVigenciaQr * 60);
+  }
+  return simularRed(aAsistencia(sesionId));
 }
 
 /** Asistentes de la sesión, del primero al último que se registró (CA2). */
 export function obtenerAsistentes(sesionId: string): Promise<AsistenciaSesion> {
-  if (USAR_MOCKS) {
-    return simularRed(aAsistencia(sesionId));
+  if (usaApi('asistencia')) {
+    return peticion<RegistroAsistenciaBackend[]>(`/attendance/${encodeURIComponent(sesionId)}/`)
+      .then((lista) => listaAsistenciaDesdeBackend(sesionId, lista));
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/`);
+  return simularRed(aAsistencia(sesionId));
 }
 
 /**
@@ -163,7 +171,7 @@ export function obtenerAsistentes(sesionId: string): Promise<AsistenciaSesion> {
  * de la sesión, si ya venció o si la asistencia está cerrada (CA4), y si la persona ya se
  * registró (no se cuenta dos veces).
  */
-export function registrarAsistenciaQr(
+function registrarAsistenciaQr(
   sesionId: string,
   codigo: string,
   usuarioId: string,
@@ -185,10 +193,7 @@ export function registrarAsistenciaQr(
     agregarRegistro(sesionId, usuarioId, 'qr');
     return simularRed(aAsistencia(sesionId));
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/qr/`, {
-    method: 'POST',
-    body: JSON.stringify({ codigo, usuarioId }),
-  });
+  return Promise.reject(new ErrorApi(400, 'Escanea el QR de la sesión para registrar la asistencia.'));
 }
 
 /**
@@ -200,7 +205,19 @@ export function registrarAsistenciaQr(
 export async function registrarAsistencia(
   codigo: string,
   usuario: Usuario,
-): Promise<AsistenciaSesion> {
+): Promise<AsistenciaSesion & { yaRegistrada?: boolean }> {
+  if (usaApi('asistencia')) {
+    const token = codigo.trim();
+    if (!token) throw new ErrorApi(400, 'Escanea el código QR de la sesión.');
+    const respuesta = await peticionRespuesta('/attendance/', {
+      method: 'POST', body: JSON.stringify({ token }),
+    });
+    const registro = asistenciaDesdeBackend(await respuesta.json() as RegistroAsistenciaBackend);
+    return {
+      sesionId: registro.sesionId, codigo: null, registros: [registro],
+      total: 1, cerrada: false, yaRegistrada: respuesta.status === 200,
+    };
+  }
   const datos = leerCodigoAsistencia(codigo);
   if (!datos) {
     throw new ErrorApi(400, 'Ese código no es de una asistencia.');
@@ -247,26 +264,51 @@ function agregarRegistro(sesionId: string, usuarioId: string, medio: MedioAsiste
  */
 export function marcarAsistenciaManual(
   sesionId: string,
-  usuarioId: string,
-): Promise<AsistenciaSesion> {
-  if (USAR_MOCKS) {
-    const estado = estadoDe(sesionId);
-    if (estado.cerrada) {
-      return Promise.reject(new ErrorApi(400, 'La asistencia de esta sesión ya cerró.'));
+  entrada: string | DatosAsistenciaManual,
+): Promise<AsistenciaSesion | RegistroAsistencia> {
+  const datos = typeof entrada === 'string' ? { usuarioId: entrada } : entrada;
+  if (usaApi('asistencia')) {
+    if (!('usuarioId' in datos ? datos.usuarioId.trim() : datos.nombre.trim())) {
+      return Promise.reject(new ErrorApi(400, 'Indica la persona que asistió.'));
     }
-    if (!usuarioId?.trim()) {
-      return Promise.reject(new ErrorApi(400, 'Elige a la persona que asistió.'));
+    return peticion<RegistroAsistenciaBackend>(`/attendance/${encodeURIComponent(sesionId)}/manual/`, {
+      method: 'POST', body: JSON.stringify(asistenciaManualHaciaBackend(datos)),
+    }).then(asistenciaDesdeBackend);
+  }
+  const usuarioId = 'usuarioId' in datos ? datos.usuarioId : '';
+  const estado = estadoDe(sesionId);
+  if (estado.cerrada) {
+    return Promise.reject(new ErrorApi(400, 'La asistencia de esta sesión ya cerró.'));
+  }
+  if ('nombre' in datos) {
+    const nombre = datos.nombre.trim();
+    if (!nombre) return Promise.reject(new ErrorApi(400, 'Indica el nombre de la persona.'));
+    const id = `asi-manual-${sesionId}-${nombre.toLocaleLowerCase()}`;
+    if (!estado.registros.some((registro) => registro.id === id)) {
+      estado.registros = [...estado.registros, {
+        id, sesionId, usuarioId: '', nombre, programa: datos.programa?.trim(),
+        semestre: datos.semestre?.trim(), tipoUsuario: datos.tipo,
+        fechaHora: ahoraFechaHora(), medio: 'manual',
+      }];
+      registrarUso({ id: `uso-${id}`, servicio: 'asesorias', finalidad: 'Asistencia manual',
+        fecha: hoyISO(), estado: 'completada' });
     }
-    if (!USUARIOS_DIRECTORIO.some((usuario) => usuario.id === usuarioId)) {
-      return Promise.reject(new ErrorApi(404, 'Esa persona no existe.'));
-    }
-    agregarRegistro(sesionId, usuarioId, 'manual');
     return simularRed(aAsistencia(sesionId));
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/manual/`, {
-    method: 'POST',
-    body: JSON.stringify({ usuarioId }),
-  });
+  if (!usuarioId?.trim()) {
+    return Promise.reject(new ErrorApi(400, 'Elige a la persona que asistió.'));
+  }
+  if (!USUARIOS_DIRECTORIO.some((usuario) => usuario.id === usuarioId)) {
+    return Promise.reject(new ErrorApi(404, 'Esa persona no existe.'));
+  }
+  if (estado.registros.some((registro) => registro.usuarioId === usuarioId)) {
+    return simularRed(aAsistencia(sesionId));
+  }
+  agregarRegistro(sesionId, usuarioId, 'manual');
+  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
+  registrarUso({ id: `uso-asistencia-${sesionId}-${usuarioId}`, usuario,
+    servicio: 'asesorias', finalidad: 'Asistencia manual', fecha: hoyISO(), estado: 'completada' });
+  return simularRed(aAsistencia(sesionId));
 }
 
 /**
@@ -274,17 +316,13 @@ export function marcarAsistenciaManual(
  * de asistentes para la vista del facilitador.
  */
 export function cerrarAsistencia(sesionId: string): Promise<AsistenciaSesion> {
-  if (USAR_MOCKS) {
-    const estado = estadoDe(sesionId);
-    if (estado.cerrada) {
-      return Promise.reject(new ErrorApi(400, 'Esta asistencia ya estaba cerrada.'));
-    }
-    estado.cerrada = true;
-    return simularRed(aAsistencia(sesionId));
+  if (usaApi('asistencia')) return Promise.reject(new ErrorApi(400, 'El QR vence automáticamente.'));
+  const estado = estadoDe(sesionId);
+  if (estado.cerrada) {
+    return Promise.reject(new ErrorApi(400, 'Esta asistencia ya estaba cerrada.'));
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/cerrar/`, {
-    method: 'POST',
-  });
+  estado.cerrada = true;
+  return simularRed(aAsistencia(sesionId));
 }
 
 /** @internal Reinicia la asistencia de las pruebas (solo para los tests). */

@@ -14,7 +14,8 @@ resuelve casi todo lo que faltaba: ver §2.1 y §3.
 **Servidor de pruebas:** `https://backend-biblioteca-njx5.onrender.com/api/v1` (Swagger en
 `/api/docs/`), con la 2.1.0 y HTTPS. Lo que se encontró al probarlo está en §5.
 
-**La conexión ya empezó** (§4): la fase 1, la sesión, está en `chore/integracion-api-sesion`.
+**La integración llega a las pruebas del APK.** Las fases 1 a 5 están integradas en
+`chore/integracion-api-estadisticas`. El recorrido de aceptación está en §7.
 
 ---
 
@@ -173,7 +174,7 @@ campos pendientes y archivos»**; aquí queda el resumen para no tener que abrir
 
 | Tema | Qué pasa | Quién |
 |---|---|---|
-| **Firma del personal** | La app la guarda en el Perfil (`PUT /me/firma/`, provisional). Se pidió `signature` en `GET`/`PATCH /me/` y que el `GET` del préstamo devuelva las firmas de entrega y de devolución | Backend |
+| **Firma del personal** | El perfil conectado detecta el campo `signature` y la constancia consume las firmas del personal cuando el Backend las publica. Ver §7. | Backend |
 | **Cuenta desactivada** | `/token/` responde 401 igual que con una contraseña incorrecta, así que la app no puede decir «tu cuenta está inactiva» (HU-05, CA3). Se sugirió 403 | Backend (no bloquea) |
 | **Dirección en el perfil** | El Backend no la tiene: con la API, la app la oculta | — |
 | **Egresados** | El Backend no tiene ese tipo de usuario | Para después |
@@ -217,57 +218,55 @@ nombres de los participantes de la capacitación y la asignatura aparte del grup
 
 ---
 
-## 4. Plan para apagar los mocks, por fases
+## 4. Estado por fases
 
-No se puede apagar `USAR_MOCKS` de golpe: cada función tiene su rama sin mocks escrita con rutas
-provisionales en español. Se conecta **un módulo a la vez**, con su PR y su prueba contra Render:
+El perfil `integracion` activa los módulos conectados de las fases 1 a 5. La auditoría de
+`USAR_MOCKS=false` y las excepciones están en §7.
 
 - **`usaApi(modulo)`** (`src/api/cliente.ts`) decide en cada función. Es `true` si
   `EXPO_PUBLIC_USAR_MOCKS=false`, o si el módulo está en `EXPO_PUBLIC_API_MODULOS` (por ejemplo
   `sesion`). Así el APK de demostración sigue con datos de prueba mientras se conecta lo demás.
 - **Cada módulo** cambia `USAR_MOCKS` por `usaApi('…')` en sus funciones y escribe su adaptador en
-  `src/api/backend/`. Las pantallas y los hooks no cambian.
+  `src/api/backend/`. Las pantallas y los hooks se adaptan cuando el contrato cambia la interacción.
 - **Mientras se mezclan:** al entrar con una cuenta real, los módulos que siguen con datos de prueba
   están guardados con los ids de los usuarios de prueba, así que, por ejemplo, Mis solicitudes sale
   vacía hasta la fase 3.
 
-| Fase | Qué | Módulos |
+| Fase | Qué | Módulos y estado |
 |---|---|---|
-| 0 | Probar Render: rutas públicas, login, `/me/`, errores y paginación | — ✅ |
-| 1 | El cliente (errores, renovación del token, paginación, servidor lento) y la sesión: login, `/me/`, `/me/access/` (el superusuario cuenta como `administrador`), registro, política y perfil | `sesion` |
-| 2 | Lectura pública: servicios, avisos de Inicio, recursos, guías, notificaciones, fotos de Inicio, y periodos, festivos, horarios y plazos (los días hábiles de todos los calendarios) | `servicios`, `contenidos`, `recursos`, `guias`, `notificaciones`, `fotosInicio`, `parametros` |
-| 3 | Solicitudes de la comunidad, **cada una con su catálogo**: espacios (con disponibilidad) y reservas, temas y asesorías (sin jornadas ni franjas), líneas y capacitaciones, tablets, y Mis solicitudes con historial. La foto de perfil no tiene pantalla en la app: queda para cuando la tenga | `espacios`, `asesorias`, `capacitaciones`, `tablets`, `solicitudes` |
-| 4 | Personal: bandejas, entrega y devolución con firma y `receipt_code`, y la administración | `bloqueos`, `usuarios` y la parte del personal de los anteriores |
-| 5 | Estadísticas y asistencia (#231) | `estadisticas`, `asistencia` |
-| 6 | APK contra el servidor con HTTPS y pruebas de aceptación | todos |
+| 0 | Probar Render: rutas públicas, login, `/me/`, errores y paginación | Verificación inicial realizada, hallazgos en §5 |
+| 1 | El cliente (errores, renovación del token, paginación, servidor lento) y la sesión: login, `/me/`, `/me/access/` (el superusuario cuenta como `administrador`), registro, política y perfil | `sesion` integrado |
+| 2 | Lectura pública: servicios, avisos de Inicio, recursos, guías, notificaciones, fotos de Inicio, y periodos, festivos, horarios y plazos (los días hábiles de todos los calendarios) | `servicios`, `contenidos`, `recursos`, `guias`, `notificaciones`, `fotosInicio`, `parametros` integrados |
+| 3 | Solicitudes de la comunidad, **cada una con su catálogo**: espacios (con disponibilidad) y reservas, temas y asesorías (sin jornadas ni franjas), líneas y capacitaciones, tablets, y Mis solicitudes con historial. La foto de perfil se completó en la fase 6 | `espacios`, `asesorias`, `capacitaciones`, `tablets`, `solicitudes` integrados |
+| 4 | Personal: bandejas, entrega y devolución con firma y `receipt_code`, y la administración | `reservas`, `bloqueos`, `usuarios` y la parte del personal de los anteriores, integrados (incluidas las cinco acciones de la fase 4b) |
+| 5 | Estadísticas y asistencia (#231) | `estadisticas`, `asistencia` integrados |
+| 6 | Cierre y prueba con APK contra Render (HTTPS) | Configuración y auditoría listas. Compilación y validación en vivo pendientes (§7) |
 
-En la fase 2 ya se pueden habilitar las lecturas públicas de avisos y recursos con `EXPO_PUBLIC_API_MODULOS=sesion,contenidos,recursos` y `EXPO_PUBLIC_USAR_MOCKS=true`. `contenidos` activa la lectura de Inicio, solo avisos y noticias: las páginas (`PAGE`, como `autoarchivo`) no son novedades. La administración de contenidos conserva su flujo mock. Para abrir recursos protegidos se requiere una sesión real, ya que Render entrega su URL después del login. Render puede devolver una lista vacía cuando no hay avisos publicados.
+En la fase 2 ya se pueden habilitar las lecturas públicas de avisos y recursos con `EXPO_PUBLIC_API_MODULOS=sesion,contenidos,recursos` y `EXPO_PUBLIC_USAR_MOCKS=true`. `contenidos` activa la lectura de Inicio, solo avisos y noticias: las páginas (`PAGE`, como `autoarchivo`) no son novedades. La administración de contenidos se conectó en la fase 4. Para abrir recursos protegidos se requiere una sesión real, ya que Render entrega su URL después del login. Render puede devolver una lista vacía cuando no hay avisos publicados.
 
-Agrega `servicios` a `EXPO_PUBLIC_API_MODULOS` para leer el catálogo y las fichas de Render. La administración sigue usando los mocks con `EXPO_PUBLIC_USAR_MOCKS=true`. Virtualteca abre la solicitud de tablet y Hemeroteca conserva su ficha informativa. La app muestra los servicios activos que puede clasificar en sus categorías existentes.
+Agrega `servicios` a `EXPO_PUBLIC_API_MODULOS` para leer el catálogo y las fichas de Render. La fase 4 conectó también la administración del catálogo. Virtualteca abre la solicitud de tablet y Hemeroteca conserva su ficha informativa. La app muestra los servicios activos que puede clasificar en sus categorías existentes.
 
 `guias` activa el listado, el detalle y la gestión de guías (requiere `sesion` para gestionar). `notificaciones` activa la bandeja y el marcado como leída de la cuenta real. En modo mixto, las solicitudes simuladas solo generan notificaciones simuladas.
 
-`parametros` lee periodos, festivos y horarios de `config/` (públicos) y traduce el día de la semana (`0` = lunes en el Backend, `0` = domingo en la app). Con eso, todos los calendarios de la app, también los de las solicitudes que siguen con datos de prueba, usan los días hábiles del servidor. Los plazos (`config/parameters/`) solo los puede leer quien administra los parámetros; los demás usan los de siempre, que son los mismos del Backend. **Guardar con la API llega en la fase 4:** con el módulo activo, Parámetros generales avisa que no guarda. `fotosInicio` lee las fotos publicadas; sin ninguna, el carrusel usa las de la app, y la administración sigue con datos de prueba.
+`parametros` lee periodos, festivos y horarios de `config/` (públicos) y traduce el día de la semana (`0` = lunes en el Backend, `0` = domingo en la app). Con eso, todos los calendarios de la app, también los de las solicitudes que siguen con datos de prueba, usan los días hábiles del servidor. Los plazos (`config/parameters/`) solo los puede leer quien administra los parámetros; los demás usan los de siempre, que son los mismos del Backend. La fase 4 conectó la escritura de plazos, periodos, festivos y horarios. Los textos automáticos son plantillas del servidor. `fotosInicio` lee las fotos publicadas; sin ninguna, el carrusel usa las de la app, y la administración se conectó en la fase 4.
 
 **Por qué los catálogos van en la fase 3 con sus solicitudes:** las citas, capacitaciones y reservas de prueba apuntan a los ids de los temas, líneas y espacios de prueba. Si el catálogo viniera de Render y la solicitud siguiera simulada, pedir un servicio fallaría porque el tema, la línea o el espacio «no existe».
 
-**Fase 3 · `espacios`:** el catálogo (`/spaces/`, con el horario de cada espacio como texto), la disponibilidad, la solicitud de reserva y «Mis reservas» de la comunidad. La disponibilidad se pide por mes (`?view=month`) y el Backend la entrega en tramos de largo variable; la app arma franjas de una hora desde la apertura, y una hora queda reservada o bloqueada si cualquier parte de ella lo está. La anticipación mínima la marca la app («Faltan menos de 72 h…»), como en sus datos de prueba. Un conflicto (409 `SCHEDULE_CONFLICT`) trae tramos libres del mismo día, que la app ofrece con la duración pedida. «Mis reservas» sale de `/me/requests/?service=SPACE_RESERVATION` más el detalle de cada una: el detalle trae el **nombre** del espacio y no su id, así que se busca en el catálogo (pedido al Backend: `space_id` en el detalle). La bandeja del personal y la administración de espacios siguen con datos de prueba (fase 4).
+**Fase 3 · `espacios`:** el catálogo (`/spaces/`, con el horario de cada espacio como texto), la disponibilidad, la solicitud de reserva y «Mis reservas» de la comunidad. La disponibilidad se pide por mes (`?view=month`) y el Backend la entrega en tramos de largo variable; la app arma franjas de una hora desde la apertura, y una hora queda reservada o bloqueada si cualquier parte de ella lo está. La anticipación mínima la marca la app («Faltan menos de 72 h…»), como en sus datos de prueba. Un conflicto (409 `SCHEDULE_CONFLICT`) trae tramos libres del mismo día, que la app ofrece con la duración pedida. «Mis reservas» sale de `/me/requests/?service=SPACE_RESERVATION` más el detalle de cada una: el detalle trae el **nombre** del espacio y no su id, así que se busca en el catálogo (pedido al Backend: `space_id` en el detalle). La bandeja del personal y la administración de espacios se conectaron en la fase 4.
 
-**Fase 3 · `asesorias`:** los temas (los activos de `/advisories/topics/` para la comunidad; todos, de `/advisories/manage/topics/`, para quien administra asesorías, que también los crea y edita), pedir la asesoría con fecha y hora deseadas y «Tus datos», mis citas, cancelar (con motivo), reprogramar (el Backend cancela la cita y crea otra pendiente) y calificar. En la app, el id de la cita es su `request_id`, el de «Mis solicitudes»; para cancelar, reprogramar y calificar se usa el `id` de la cita, que la app recuerda al leerlas. Mientras la cita no se aprueba, la hora de fin sale de `advisory-duration-minutes`. La agenda del facilitador y la bandeja de aprobación siguen con datos de prueba (fase 4).
+**Fase 3 · `asesorias`:** los temas (los activos de `/advisories/topics/` para la comunidad; todos, de `/advisories/manage/topics/`, para quien administra asesorías, que también los crea y edita), pedir la asesoría con fecha y hora deseadas y «Tus datos», mis citas, cancelar (con motivo), reprogramar (el Backend cancela la cita y crea otra pendiente) y calificar. En la app, el id de la cita es su `request_id`, el de «Mis solicitudes»; para cancelar, reprogramar y calificar se usa el `id` de la cita, que la app recuerda al leerlas. Mientras la cita no se aprueba, la hora de fin sale de `advisory-duration-minutes`. La agenda del facilitador y la bandeja de aprobación se conectaron en la fase 4.
 
-**Fase 3 · `capacitaciones`:** las líneas (las activas de `/trainings/lines/` para la comunidad; todas, de `/trainings/lines/manage/`, para quien administra la formación, que también las crea, edita y activa o desactiva, con el aviso de las solicitudes activas de la bandeja), pedir la capacitación con «Tus datos», mis capacitaciones, aceptar o rechazar la nueva fecha (`accept-date` y `decline-date`) y calificar. El id de la solicitud es el de «Mis solicitudes». El Backend no guarda los nombres de los participantes ni la asignatura aparte: la asignatura va con el grupo en `group_or_subject` («Sistemas 7 · Investigación»). Su modalidad `HYBRID` se muestra como presencial. La bandeja de formación del personal sigue con datos de prueba (fase 4).
+**Fase 3 · `capacitaciones`:** las líneas (las activas de `/trainings/lines/` para la comunidad; todas, de `/trainings/lines/manage/`, para quien administra la formación, que también las crea, edita y activa o desactiva, con el aviso de las solicitudes activas de la bandeja), pedir la capacitación con «Tus datos», mis capacitaciones, aceptar o rechazar la nueva fecha (`accept-date` y `decline-date`) y calificar. El id de la solicitud es el de «Mis solicitudes». El Backend no guarda los nombres de los participantes ni la asignatura aparte: la asignatura va con el grupo en `group_or_subject` («Sistemas 7 · Investigación»). Su modalidad `HYBRID` se muestra como presencial. La bandeja de formación del personal se conectó en la fase 4.
 
-**Fase 3 · `tablets`:** la disponibilidad (`/tablets/availability/?hours=1`, pide sesión): cada 30 minutos, cuántas tablets quedan libres para una hora; con eso la app arma sus franjas y calcula cuántas horas seguidas se pueden pedir. El Backend no dice el total del inventario: la app usa el mayor número libre del día. Pedir la tablet (`/tablets/loans/`, con «Tus datos»; las condiciones y la responsabilidad van en un solo `accept_terms`); sin tablet libre (409), la app ofrece los `next_slots`. Mis préstamos: reservado, entregado (`IN_PROGRESS`), vencido (`OVERDUE`), devuelto o cancelado. Las condiciones salen de la página `condiciones-tablets` del portal; mientras siga en borrador (404), las de siempre. El inventario, la entrega, la devolución y la constancia siguen con datos de prueba (fase 4).
+**Fase 3 · `tablets`:** la disponibilidad (`/tablets/availability/?hours=1`, pide sesión): cada 30 minutos, cuántas tablets quedan libres para una hora; con eso la app arma sus franjas y calcula cuántas horas seguidas se pueden pedir. El Backend no dice el total del inventario: la app usa el mayor número libre del día. Pedir la tablet (`/tablets/loans/`, con «Tus datos»; las condiciones y la responsabilidad van en un solo `accept_terms`); sin tablet libre (409), la app ofrece los `next_slots`. Mis préstamos: reservado, entregado (`IN_PROGRESS`), vencido (`OVERDUE`), devuelto o cancelado. Las condiciones salen de la página `condiciones-tablets` del portal; mientras siga en borrador (404), las de siempre. El inventario, la entrega, la devolución y la constancia se conectaron en la fase 4.
 
 **Fase 3 · `solicitudes`:** «Mis solicitudes» desde `GET /me/requests/` y el historial de cada una desde `GET /me/requests/{id}/`. Se filtra por estado en la app, con el estado ya traducido (por ejemplo, aprobada junta aprobada y en curso). El préstamo de tablet pasa por su propio estado, como en los datos de prueba. **Se activa junto con `espacios`, `asesorias`, `capacitaciones` y `tablets`:** el id de las cuatro es el de la solicitud general (`request_id`), y el detalle de cada una lo busca en su servicio por ese id.
 
-**Para probar toda la comunidad contra Render:** `EXPO_PUBLIC_API_MODULOS=sesion,servicios,contenidos,recursos,guias,notificaciones,parametros,fotosInicio,espacios,asesorias,capacitaciones,tablets,solicitudes`. Lo del personal (bandejas, agenda, inventario, entrega y devolución, administración) sigue con datos de prueba hasta la fase 4.
-
-**APK conectado:** el perfil `integracion` de `eas.json` compila con esa misma lista de módulos y la dirección de Render (`npx eas-cli@latest build -p android --profile integracion`). Las variables `EXPO_PUBLIC_*` quedan fijas al compilar: para cambiar los módulos hay que compilar otra vez. El perfil `preview` sigue con todos los datos de prueba: es el del APK de las entregas. Los dos son la misma app, así que uno se instala encima del otro.
+**Para probar la integración contra Render**, usa el perfil y el recorrido de §7.
 
 **Pendiente de pedir al Backend (no bloquea):** `space_id` en el detalle de `/me/requests/{id}/` de una reserva, para no buscar el espacio por su nombre.
 
-**Autoarchivo no encaja todavía:** la app muestra cuatro listas (procedimiento, requisitos, formatos y metadatos) y el Backend entrega un texto libre (`guide.body` de `portal/self-archive/`). Sigue con datos de prueba hasta acordar con el Backend cómo se separan los bloques. **Koha** sigue con `URL_CATALOGO_KOHA`, porque `portal/koha-opac/` aún no tiene dirección en Render (`KOHA_OPAC_URL`); el ingreso del personal (`staff_url`) es del #311.
+Autoarchivo y Koha se integraron con sus endpoints del portal y valores de respaldo. Ver §7 para los campos y el formato que debe publicar el Backend.
 
 **Catálogo y repositorio** van aparte: no pasan por el Backend.
 
@@ -303,3 +302,130 @@ Los tres documentos de la entrega de la 1.1 son:
 - **«App móvil y Backend: campos pendientes y archivos»**, con los 13 temas campo por campo y las
   preguntas para el equipo del servidor;
 - la **guía técnica** (`docs/guia-tecnica.md`), que explica cómo está hecha la app.
+
+---
+
+## 6. Implementación de las fases 4 y 5
+
+**Rama:** `chore/integracion-api-personal`, que sale de la del #321. Un solo PR al final, con un commit por servicio, como la fase 3.
+
+**Reglas, las mismas de las fases 1 a 3:**
+- Cada función elige con `usaApi('<modulo>')` y traduce en `src/api/backend/<modulo>.ts`. Las pantallas y los hooks se adaptan cuando el contrato cambia la interacción.
+- Se reusan `equivalencias.ts` (estados, días, sede), `datosSolicitanteHaciaBackend()` y las funciones de lectura de cada servicio.
+- El id de toda solicitud en la app es el `request_id`. Si una acción del Backend pide otro id, se guarda la correspondencia, como `idsCita` en `src/api/asesorias.ts`.
+- Antes de escribir cada adaptador, se compara con el contrato: `docs/schema.yml` 2.1.0 de `LibniT/BackEnd-Biblioteca`, o `/api/schema/` de Render. Hay que revisar campos, nulos, `enum`, la forma de la lista (paginada, objeto o arreglo) y los errores.
+- Se prueba con Node, compilando el adaptador con TypeScript y las respuestas reales guardadas. El typecheck se corre **sin** `expo-env.d.ts`, porque ese archivo no se sube al repositorio.
+
+**Orden implementado.** La prueba en vivo de estos flujos con la cuenta de administración queda pendiente:
+
+| # | Módulo | Rutas del Backend | Notas |
+|---|---|---|---|
+| 1 | `reservas` (bandeja de HU-19) | `GET /spaces/manage/reservations/` (filtros `status`, `space`, `date_from`, `date_to`), `GET`/`PATCH …/{id}/`, `POST …/{id}/approve\|reject\|cancel/` (`reason`, obligatorio para rechazar o cancelar) y `POST /spaces/manage/reservations/` para terceros (`requester_email`) | Comprobar si el `id` de la bandeja es el `request_id`. Un 409 trae `alternative_slots`, igual que la comunidad |
+| 2 | `bloqueos` (HU-20) | `GET`/`POST /spaces/blocks/` (con `confirm: true`; un 409 trae las reservas afectadas) y `POST /spaces/blocks/{id}/cancel/` (`reason`) | |
+| 3 | `espacios`, administración (HU-16) | `/spaces/manage/` (CRUD; la foto va en `photo` por `multipart`), `POST …/{id}/status/` y `/spaces/manage/{space_pk}/schedules/` | El horario del espacio es por día (`0` = lunes) |
+| 4 | `asesorias`, personal (HU-15) | `GET /advisories/manage/appointments/`, `POST …/{id}/approve/` (`scheduled_date`, `start_time`, `facilitator`, `virtual_link`), `…/reject/` (`reason`) y `…/cancel/`; agenda con `GET /advisories/agenda/` y `POST /advisories/agenda/appointments/{id}/record/` (`attended`, notas); facilitadores con `GET /users/?role=facilitador` | 400 si el facilitador ya tiene otra asesoría aprobada a esa hora |
+| 5 | `capacitaciones`, bandeja (HU-12) | `/trainings/requests/manage/` (filtros `line`, `status`, `responsible`, `from`, `to`), `…/{id}/approve\|reject\|propose-date\|assign\|close\|cancel/` y `…/manage/responsibles/` | El id ya es el de la solicitud |
+| 6 | `tablets`, personal (HU-21, 23 y 24) | Inventario `/tablets/manage/` (`?search=`; `brand`, `asset_value`, `device_type`). Préstamos `/tablets/manage/loans/` (`status` con comas, `search`, `has_incident`). `…/{id}/deliver/` (`tablet` con el código interno, `format_condition` `NEW\|OPTIMAL\|OTHER`, `observations`, `signature` `{path, width, height, signed_at}`). `…/{id}/return/` y `…/{id}/cancel/` | La constancia sale del detalle e imprime el `receipt_code` del Backend en lugar del código que calcula la app. Los vencidos son `status=OVERDUE`. La firma del personal espera a que el Backend la agregue a `/me/` |
+| 7 | `usuarios` (HU-07) | `GET /users/` (`?role=`), `POST`/`DELETE /users/{id}/roles/` (el rol `administrador` no se asigna por la API), `PUT /users/{id}/permissions/` (lista completa) y `PATCH /users/{id}/` (`is_active`) | Los permisos adicionales se traducen con `equivalencias.ts` |
+| 8 | `servicios`, `contenidos` y `fotosInicio`, administración (HU-04 y #290) | `/portal/manage/services/{slug}/` y `service-categories/`; `/portal/manage/contents/{slug}/` con `publish/`, `hide/` y `reorder/`; `/portal/manage/home-photos/` (`image` por `multipart`, máximo 5 publicadas, `reorder/`) | Hoy la comunidad ya lee los tres desde el Backend |
+| 9 | `parametros`, guardar (HU-28) | `PATCH /config/parameters/{code}/` por cada plazo que cambie, y el CRUD de `periods/`, `holidays/` y `schedules/` comparando con lo que ya había | Quitar el aviso «todavía no se guardan» de `actualizarParametros()` |
+
+**Fase 5 · Estadísticas:** Estadísticas y la afluencia del Dashboard leen `statistics/summary/`.
+El CSV y PDF se descargan de `statistics/export/` con los filtros activos. El Backend no ofrece
+un listado JSON de registros individuales, así que la pestaña Registros solo aparece con datos
+de prueba. El CSV del servidor sí contiene el detalle. El conteo de asistentes del resumen
+incluye las marcaciones con QR y a mano.
+
+**Fase 5 · Asistencia (#231):** el QR usa el token de `attendance/{request_id}/qr/` y vence
+automáticamente según `valid_until` (normalmente cuatro horas desde el inicio). La API no
+ofrece acciones para abrir, cerrar o regenerar la asistencia. El escáner de Inicio y del Dashboard
+acepta el QR con cualquier cuenta iniciada. La lista del personal muestra los registros con su
+medio. Para marcar a mano con cuenta, la API pide su UUID. Para una persona sin cuenta, pide
+el nombre y admite tipo, programa y semestre.
+
+La prueba en vivo de las fases 1 a 5 se agrupó en la fase 6.
+
+## 7. Fase 6 · Auditoría y prueba con APK
+
+### Rutas provisionales
+
+Se revisaron las llamadas HTTP de `src/api` y la condición que las precede. Con
+`EXPO_PUBLIC_USAR_MOCKS=false`, `usaApi(modulo)` es verdadero para todos los módulos. No quedan
+llamadas alcanzables a rutas provisionales en español con ese ajuste.
+
+Se eliminaron las ramas inalcanzables de asesorías, asistencia, bloqueos y los demás módulos
+con rutas provisionales. Los datos de prueba siguen disponibles con el interruptor por módulo.
+
+### Ajustes del cierre
+
+| Área | Comportamiento de la app | Pendiente del Backend |
+|---|---|---|
+| Parámetros | Horarios permite agregar, editar y quitar franjas de un día. Valida cruces antes de reconciliar las franjas con `/config/schedules/`. La disponibilidad con datos de prueba respeta los descansos entre franjas. | Confirmar en Render que los calendarios de espacios, asesoría y tablets respeten la jornada partida y los horarios propios de cada servicio. |
+| Perfil | Lee `photo` desde `GET /me/`. Envía JPG, PNG o WEBP de hasta 5 MB con `PATCH /me/` multipart y quita la foto con `{"photo":null}`. Actualiza el perfil y la sesión, y usa iniciales cuando no hay foto. | Verificar en Render que las direcciones de las fotos devueltas sean públicas y que la eliminación persista. |
+| Identificadores | Mis reservas prefiere `space_id` del detalle (incluido en `details` o en la raíz) y conserva la búsqueda por nombre. Asesorías prefiere `facilitator_id` en la gestión, con el criterio anterior de nombre o correo si falta. | Publicar y documentar los identificadores estables en esas respuestas. |
+| Koha | Lee `url` y `staff_url` de `GET /portal/koha-opac/`. Usa `URL_CATALOGO_KOHA` si `url` es nula. En Gestión aparece «Ingresar a Koha» solo si hay `staff_url`. El OPAC y Koha del personal se abren sin el token de la app. | Configurar `KOHA_OPAC_URL` en Render y publicar `staff_url` (#311). |
+| Firma | Mi firma aparece en perfiles del personal si `GET /me/` incluye `signature`, incluso si vale `null`. Guarda o quita la firma con `PATCH /me/`. La constancia lee `delivery.responsible_signature` y `return_record.responsible_signature` si están presentes y conserva «firmado con su cuenta» si no hay firma. | Confirmar y publicar esos campos. Formato propuesto para cada firma: `{path, width, height, signed_at}` o `null`. El Backend debe conservar la firma que tenía el responsable en cada operación. |
+| Autoarchivo | Lee `guide.body` en `GET /portal/self-archive/`. Si la guía es nula o el texto no cumple el formato, muestra la orientación de prueba. | Publicar la guía usando el formato propuesto abajo. |
+| Cuenta inactiva | Un 403 de `POST /token/` muestra «Tu cuenta está inactiva. Contacta a la biblioteca para más información.» Un 401 conserva el mensaje de credenciales incorrectas. | Confirmar en Render el 403 para una cuenta inactiva con credenciales correctas. En la prueba anterior el servidor respondió 401. |
+| Jornadas de asesoría | El flujo vigente usa `/advisories/appointments/` por fecha y hora. | Las antiguas jornadas y franjas administrativas fueron retiradas del Backend. |
+| Estadísticas y asistencia | El detalle individual sale en el CSV. El QR vence automáticamente. | El contrato no ofrece listado JSON de registros ni acciones para abrir, cerrar o regenerar el QR. |
+
+### Formato propuesto para `guide.body`
+
+Cada título ocupa una línea y aparece una vez. Cada bloque lleva uno o más elementos en
+líneas que empiezan por `- `. Se admiten líneas en blanco entre elementos o títulos.
+
+```markdown
+## Procedimiento
+- Envía el trabajo de grado al repositorio.
+## Requisitos
+- Incluye la autorización de publicación.
+## Formatos
+- Entrega el documento en PDF.
+## Metadatos
+- Indica el título y el nombre de cada autor.
+```
+
+Los hallazgos de la primera prueba en Render están en §5. Quedan por verificar también los
+datos de biblioteca, los servicios publicados y los tipos de usuario aceptados al registrarse (§3.1).
+
+### Preparar e instalar el APK
+
+María ejecuta desde `chore/integracion-api-estadisticas`:
+
+```bash
+npx eas-cli@latest build -p android --profile integracion
+```
+
+El perfil usa HTTPS en Render y los mismos módulos que `.env.example`, incluidos
+`estadisticas`, `asistencia` y `autoarchivo`. Las variables `EXPO_PUBLIC_*` quedan incorporadas al APK.
+Cuando EAS termine, instala el APK desde el enlace de la compilación en un Android con cámara.
+El perfil `preview` sigue siendo el APK de demostración con mocks. Ambos comparten el
+identificador de la app, así que instalar uno puede reemplazar el otro.
+
+### Pruebas con el APK por rol
+
+- **Comunidad.** Abrir Inicio sin sesión y revisar servicios, fotos, guías, Koha y autoarchivo.
+  Entrar con una cuenta vigente y probar también el acceso con una inactiva. Cambiar la foto,
+  volver a entrar y quitarla. Verificar el rechazo de un formato incompatible y de un archivo
+  de más de 5 MB. Enviar una reserva, una asesoría, una capacitación y un préstamo de tablet.
+  Revisar Mis solicitudes, historial y notificaciones. Escanear dos veces el QR de la misma
+  sesión y comprobar con el facilitador que solo hay un registro.
+- **Administración.** Guardar y volver a abrir un día con 07:00–12:00 y 14:00–21:00. Editar una
+  franja, quitar otra y comprobar el rechazo de un cruce. Revisar el catálogo de espacios,
+  bloques y contenidos del portal. Probar altas y permisos de personal, los filtros del Dashboard
+  y la exportación de CSV y PDF. Entregar y devolver una tablet de prueba, compartir la constancia
+  con su código y verificar la firma del responsable si el Backend ya la devuelve. Confirmar
+  que Mi firma solo aparece si el perfil admite el campo. Comprobar el enlace de personal a Koha
+  con y sin `staff_url`.
+- **Facilitador.** Abrir una asesoría asignada en Agenda y una capacitación desde la bandeja.
+  Revisar su historial y el horario entre las dos franjas. Mostrar el QR y comprobar que vence
+  sin intervención. Revisar la lista de asistentes y registrar a mano a una persona sin cuenta.
+  Comprobar que aparece como MANUAL y que el rol sin permiso `roles` no necesita el directorio.
+- **Gestor de espacios.** Consultar la jornada partida y comprobar que no ofrece el intervalo
+  de 12:00 a 14:00. Reservar para un tercero mediante correo institucional con una cuenta sin
+  permiso `roles`. Aprobar y cancelar desde Gestión. Crear y quitar un bloqueo de prueba,
+  comprobar que libera la franja y que un espacio con reservas futuras sugiere «Desactivar».
+
+La primera petición puede tardar hasta un minuto si Render estaba dormido. La compilación
+del APK y el recorrido en Render quedan pendientes.

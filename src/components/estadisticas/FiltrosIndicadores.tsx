@@ -44,9 +44,10 @@ type Props = {
   filtros: FiltrosEstadisticas;
   onCambiar: (filtros: FiltrosEstadisticas) => void;
   opciones: OpcionesFiltros;
+  campos?: typeof CAMPOS_FILTRO;
 };
 
-export function FiltrosIndicadores({ filtros, onCambiar, opciones }: Props) {
+export function FiltrosIndicadores({ filtros, onCambiar, opciones, campos = CAMPOS_FILTRO }: Props) {
   const hoy = hoyISO();
   const atajo = periodoRapidoDe(filtros, hoy);
   const cambiar = (cambio: Partial<FiltrosEstadisticas>) => onCambiar({ ...filtros, ...cambio });
@@ -138,7 +139,7 @@ export function FiltrosIndicadores({ filtros, onCambiar, opciones }: Props) {
         </View>
       </View>
 
-      {CAMPOS_FILTRO.map((campo) => {
+      {campos.map((campo) => {
         const lista = opciones[campo];
         const etiquetas = new Map(
           lista.map((opcion) => [opcion.valor, `${opcion.etiqueta} (${opcion.cantidad})`]),

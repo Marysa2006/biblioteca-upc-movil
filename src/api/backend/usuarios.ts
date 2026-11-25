@@ -5,6 +5,8 @@
  * - `GET /me/` trae los datos de la persona (`PerfilBackend`).
  * - `GET /me/access/` trae sus roles y permisos (`AccesoBackend`).
  */
+import { firmaDesdeBackend, type FirmaBackend } from './firmas';
+
 import type { Perfil, Usuario } from '@/types';
 import { VERSION_POLITICA_DATOS } from '@/utils/constantes';
 
@@ -33,6 +35,7 @@ export type PerfilBackend = {
   faculty: string;
   position: string;
   photo: string | null;
+  signature?: FirmaBackend | null;
   is_active: boolean;
   privacy_accepted_at: string | null;
   privacy_version: string;
@@ -63,6 +66,8 @@ export function datosPersonalesDesdeBackend(
     id: perfil.id,
     nombre: `${perfil.first_name} ${perfil.last_name}`.trim() || perfil.email,
     correo: perfil.email,
+    foto: opcional(perfil.photo),
+    firma: firmaDesdeBackend(perfil.signature),
     tipo: TIPO_DESDE_BACKEND[perfil.user_type],
     identificacion: opcional(perfil.institutional_id),
     programa: opcional(perfil.program),
@@ -104,5 +109,31 @@ export function perfilDesdeBackend(usuario: Usuario, perfil: PerfilBackend): Per
     ...usuario,
     ...datosPersonalesDesdeBackend(perfil),
     telefono: opcional(perfil.phone),
+    admiteFirma: 'signature' in perfil,
+  };
+}
+
+export type UsuarioBackend = {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  institutional_id: string;
+  user_type: TipoUsuarioBackend;
+  is_active?: boolean;
+  roles: string[];
+  extra_permissions: string[];
+};
+
+export function usuarioDirectorioDesdeBackend(usuario: UsuarioBackend): Usuario {
+  return {
+    id: usuario.id,
+    nombre: [usuario.first_name, usuario.last_name].filter(Boolean).join(' ') || usuario.email,
+    correo: usuario.email,
+    identificacion: usuario.institutional_id || undefined,
+    tipo: TIPO_DESDE_BACKEND[usuario.user_type],
+    rolesPersonal: rolesDesdeBackend(usuario.roles),
+    permisosExtra: permisosExtraDesdeBackend(usuario.extra_permissions),
+    activo: usuario.is_active ?? true,
   };
 }

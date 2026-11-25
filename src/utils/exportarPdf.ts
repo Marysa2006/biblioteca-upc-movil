@@ -162,9 +162,9 @@ const COLOR_ESTADO: Record<string, string> = {
 
 /** El tiempo de respuesta de todas las solicitudes respondidas, ponderado por servicio. */
 function respuestaPromedio(tiempos: TiempoRespuesta[]): { horas: number; cantidad: number } | null {
-  const cantidad = tiempos.reduce((suma, tiempo) => suma + tiempo.cantidad, 0);
+  const cantidad = tiempos.reduce((suma, tiempo) => suma + (tiempo.cantidad ?? 0), 0);
   if (cantidad === 0) return null;
-  const horas = tiempos.reduce((suma, tiempo) => suma + tiempo.horasPromedio * tiempo.cantidad, 0);
+  const horas = tiempos.reduce((suma, tiempo) => suma + tiempo.horasPromedio * (tiempo.cantidad ?? 0), 0);
   return { horas: Math.round((horas / cantidad) * 10) / 10, cantidad };
 }
 

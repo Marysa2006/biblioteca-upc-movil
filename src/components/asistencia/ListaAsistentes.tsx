@@ -45,7 +45,7 @@ export function ListaAsistentes({ registros, total }: Props) {
                   {registro.nombre}
                 </Text>
                 <Text variant="bodySmall" style={estilos.secundario}>
-                  {`A las ${hora}`}
+                  {[`A las ${hora}`, registro.programa, registro.semestre ? `Semestre ${registro.semestre}` : undefined].filter(Boolean).join(' · ')}
                 </Text>
               </View>
               <View style={estilos.medio}>

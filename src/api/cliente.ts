@@ -212,7 +212,7 @@ async function llamar(ruta: string, opciones: OpcionesPeticion): Promise<Respons
  * URL completa (el `next` de una lista paginada).
  * Con un 401, renueva el token una vez y reintenta; si no se puede, cierra la sesión.
  */
-export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {}): Promise<T> {
+export async function peticionRespuesta(ruta: string, opciones: OpcionesPeticion = {}): Promise<Response> {
   let respuesta = await llamar(ruta, opciones);
 
   // Un 401 solo toca la sesión si es real: la de datos de prueba no depende del Backend.
@@ -231,6 +231,11 @@ export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {})
     error.cuerpo = cuerpo;
     throw error;
   }
+  return respuesta;
+}
+
+export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {}): Promise<T> {
+  const respuesta = await peticionRespuesta(ruta, opciones);
   if (respuesta.status === 204) {
     return undefined as T;
   }

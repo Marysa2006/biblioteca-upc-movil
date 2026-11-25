@@ -12,7 +12,13 @@ import type { Cita, NuevaSolicitudCita, TemaAsesoria } from '@/types';
 import { aHora, aMinutos } from '@/utils/franjas';
 
 import { datosSolicitanteHaciaBackend } from './espacios';
-import { ESTADO_DESDE_BACKEND, horaDesdeBackend, type EstadoBackend } from './equivalencias';
+import {
+  ESTADO_DESDE_BACKEND,
+  horaDesdeBackend,
+  TIPO_DESDE_BACKEND,
+  type EstadoBackend,
+  type TipoUsuarioBackend,
+} from './equivalencias';
 
 export type TemaBackend = { id: number; name: string; description: string; is_active?: boolean };
 
@@ -44,6 +50,7 @@ export type CitaBackend = {
   start_time: string | null;
   end_time: string | null;
   facilitator: string | null;
+  facilitator_id?: string | null;
   virtual_link: string;
   subject: string;
   group_size: number;
@@ -97,6 +104,7 @@ export function citaDesdeBackend(
     temaId: String(cita.topic_id),
     tema: cita.topic,
     ...(cita.facilitator ? { facilitador: cita.facilitator } : {}),
+    ...(cita.facilitator_id ? { facilitadorId: cita.facilitator_id } : {}),
     solicitanteId: solicitante.id,
     solicitante: solicitante.nombre,
     fecha,
@@ -122,5 +130,57 @@ export function citaDesdeBackend(
           },
         }
       : {}),
+  };
+}
+
+export type CitaGestionBackend = CitaBackend & {
+  requester: { name: string; email: string; user_type: TipoUsuarioBackend };
+  program: string;
+  result: string;
+};
+
+export type DetalleAgendaBackend = Pick<CitaBackend,
+  'id' | 'request_id' | 'status' | 'topic' | 'start_time' | 'end_time' | 'modality' |
+  'virtual_link' | 'group_size' | 'subject' | 'members' | 'need_description' |
+  'attended' | 'quality_rating' | 'quality_comment'
+> & {
+  date: string;
+  requester: string;
+  requester_email: string;
+  program?: string;
+  result?: string;
+};
+
+export function citaGestionDesdeBackend(cita: CitaGestionBackend, duracion: number) {
+  return {
+    ...citaDesdeBackend(cita, { id: cita.requester.email, nombre: cita.requester.name }, duracion),
+    solicitanteTipo: TIPO_DESDE_BACKEND[cita.requester.user_type],
+    solicitantePrograma: cita.program || undefined,
+    resultado: cita.result || undefined,
+  };
+}
+
+export function citaAgendaDesdeBackend(cita: DetalleAgendaBackend, duracion: number) {
+  const horaInicio = cita.start_time ? horaDesdeBackend(cita.start_time) : '';
+  return {
+    id: String(cita.request_id),
+    temaId: '',
+    tema: cita.topic,
+    solicitanteId: cita.requester_email,
+    solicitante: cita.requester,
+    fecha: cita.date,
+    horaInicio,
+    horaFin: cita.end_time ? horaDesdeBackend(cita.end_time) :
+      horaInicio ? aHora(aMinutos(horaInicio) + duracion) : '',
+    necesidad: cita.need_description,
+    modalidad: cita.modality === 'VIRTUAL' ? 'virtual' as const : 'presencial' as const,
+    estado: ESTADO_DESDE_BACKEND[cita.status],
+    personas: cita.group_size,
+    participantes: cita.members ?? [],
+    asignatura: cita.subject || undefined,
+    enlaceVirtual: cita.virtual_link || undefined,
+    asistio: cita.attended ?? undefined,
+    solicitantePrograma: cita.program || undefined,
+    resultado: cita.result || undefined,
   };
 }

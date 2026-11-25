@@ -75,11 +75,15 @@ export function BandejaReservas() {
     mutate(
       { id: reserva.id, decision: accion, ...datos },
       {
-        onSuccess: () => {
+        onSuccess: (actualizada) => {
           setMotivo(null);
           setOtraFecha(null);
           setAprobando(null);
-          setAviso(avisoDecision(accion, reserva.solicitante));
+          setAviso(
+            accion === 'nueva_fecha' && actualizada.estado !== 'nueva_fecha'
+              ? `Reserva actualizada. Se notificó a ${reserva.solicitante}.`
+              : avisoDecision(accion, reserva.solicitante),
+          );
         },
         onError: (falla) => {
           // Al aprobar no hay diálogo: el error (CA3) va en la tarjeta.

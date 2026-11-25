@@ -4,7 +4,6 @@
  * Lista y guarda temas y jornadas; al guardar una jornada genera sus franjas (CA1).
  * La comunidad consulta las franjas libres y agenda, cancela o reprograma sus citas.
  * El facilitador consulta su agenda y registra el resultado o la inasistencia.
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type {
   Cita,
@@ -26,20 +25,25 @@ import {
 } from '@/utils/calificacion';
 import { esFechaValida, esHoraValida, fechaLegible, hoyISO } from '@/utils/fechas';
 import { aHora, aMinutos, conservarFranjas, generarFranjas } from '@/utils/franjas';
-import { motivoNoDisponible } from '@/utils/parametros';
+import { horariosDeFecha, motivoNoDisponible } from '@/utils/parametros';
 import { problemaHorario } from '@/utils/reservas';
 import { tienePermiso } from '@/utils/roles';
 
 import { useSesion } from '@/store/sesion';
 
 import {
+  citaAgendaDesdeBackend,
   citaDesdeBackend,
+  citaGestionDesdeBackend,
   citaHaciaBackend,
   temaDesdeBackend,
   temaHaciaBackend,
   type CitaBackend,
+  type CitaGestionBackend,
+  type DetalleAgendaBackend,
   type TemaBackend,
 } from './backend/asesorias';
+import { usuarioDirectorioDesdeBackend, type UsuarioBackend } from './backend/usuarios';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import {
   CITAS_ASESORIA,
@@ -75,6 +79,47 @@ export type ResultadoJornada = {
 
 /** request_id de la app → id de la cita en el Backend, para cancelar, reprogramar y calificar. */
 const idsCita = new Map<string, number>();
+const RUTA_GESTION = '/advisories/manage/appointments/';
+const RUTA_AGENDA = '/advisories/agenda/';
+
+async function consultarGestion(consulta = '') {
+  const [lista, parametros] = await Promise.all([
+    peticionTodas<CitaGestionBackend, CitaGestionBackend>(`${RUTA_GESTION}${consulta}`, (cita) => cita),
+    obtenerParametros(),
+  ]);
+  return lista.map((cita) => {
+    idsCita.set(String(cita.request_id), cita.id);
+    return citaGestionDesdeBackend(cita, parametros.duracionAsesoriaMinutos);
+  });
+}
+
+export async function obtenerFacilitadores(): Promise<Usuario[]> {
+  if (!usaApi('asesorias')) return USUARIOS_DIRECTORIO.filter((u) => tienePermiso(u, 'asesorias'));
+  const lista = await peticionTodas<UsuarioBackend, UsuarioBackend>(
+    '/users/?role=facilitador', (usuario) => usuario,
+  );
+  const facilitadores = lista.filter((usuario) => usuario.is_active !== false).map(usuarioDirectorioDesdeBackend);
+  const sesion = useSesion.getState().usuario;
+  if (sesion && tienePermiso(sesion, 'asesorias') && !facilitadores.some((u) => u.id === sesion.id)) {
+    facilitadores.unshift(sesion);
+  }
+  return facilitadores;
+}
+
+async function idGestion(id: string) {
+  if (!idsCita.has(id)) await consultarGestion();
+  const encontrado = idsCita.get(id);
+  if (encontrado === undefined) throw new ErrorApi(404, 'La asesoría no existe.');
+  return encontrado;
+}
+
+async function decidirCitaBackend(idBackend: number, accion: string, datos: object) {
+  const { duracionAsesoriaMinutos } = await obtenerParametros();
+  const cita = await peticion<CitaGestionBackend>(`${RUTA_GESTION}${idBackend}/${accion}/`, {
+    method: 'POST', body: JSON.stringify(datos),
+  });
+  return citaGestionDesdeBackend(cita, duracionAsesoriaMinutos);
+}
 
 /** Quien pide, para armar la cita: el usuario de la sesión. */
 function solicitanteDeSesion() {
@@ -129,10 +174,7 @@ async function temasBackend(): Promise<TemaAsesoria[]> {
 /** Todos los temas, también los inactivos, para la administración (HU-13). */
 export function obtenerTemas(): Promise<TemaAsesoria[]> {
   if (usaApi('asesorias')) return temasBackend();
-  if (USAR_MOCKS) {
-    return simularRed(temas.map((tema) => ({ ...tema })));
-  }
-  return peticion<TemaAsesoria[]>('/asesorias/temas/');
+  return simularRed(temas.map((tema) => ({ ...tema })));
 }
 
 export async function guardarTema(datos: DatosTema): Promise<TemaAsesoria> {
@@ -147,32 +189,21 @@ export async function guardarTema(datos: DatosTema): Promise<TemaAsesoria> {
       }),
     );
   }
-  if (USAR_MOCKS) {
-    if (!datos.nombre?.trim()) {
-      return Promise.reject(new ErrorApi(400, 'El nombre del tema es obligatorio.'));
-    }
-    if (datos.id) {
-      const indice = temas.findIndex((tema) => tema.id === datos.id);
-      if (indice === -1) {
-        return Promise.reject(new ErrorApi(404, 'El tema no existe.'));
-      }
-      const actualizado: TemaAsesoria = { ...datos, id: datos.id };
-      temas = temas.map((tema, i) => (i === indice ? actualizado : tema));
-      return simularRed({ ...actualizado });
-    }
-    const nuevo: TemaAsesoria = { ...datos, id: `tema-${Date.now()}` };
-    temas = [...temas, nuevo];
-    return simularRed({ ...nuevo });
+  if (!datos.nombre?.trim()) {
+    return Promise.reject(new ErrorApi(400, 'El nombre del tema es obligatorio.'));
   }
-  return datos.id
-    ? peticion<TemaAsesoria>(`/asesorias/temas/${datos.id}/`, {
-        method: 'PUT',
-        body: JSON.stringify(datos),
-      })
-    : peticion<TemaAsesoria>('/asesorias/temas/', {
-        method: 'POST',
-        body: JSON.stringify(datos),
-      });
+  if (datos.id) {
+    const indice = temas.findIndex((tema) => tema.id === datos.id);
+    if (indice === -1) {
+      return Promise.reject(new ErrorApi(404, 'El tema no existe.'));
+    }
+    const actualizado: TemaAsesoria = { ...datos, id: datos.id };
+    temas = temas.map((tema, i) => (i === indice ? actualizado : tema));
+    return simularRed({ ...actualizado });
+  }
+  const nuevo: TemaAsesoria = { ...datos, id: `tema-${Date.now()}` };
+  temas = [...temas, nuevo];
+  return simularRed({ ...nuevo });
 }
 
 /** Todas las jornadas, para la administración (HU-13). */
@@ -180,7 +211,8 @@ export function obtenerJornadas(): Promise<Jornada[]> {
   if (USAR_MOCKS) {
     return simularRed(jornadas.map((jornada) => ({ ...jornada })));
   }
-  return peticion<Jornada[]>('/asesorias/jornadas/');
+  // La administración de temas también consulta jornadas, aunque ya no formen parte de la API.
+  return Promise.resolve([]);
 }
 
 /** Validación de la jornada: datos coherentes y sin traslape con otra del facilitador (CA2). */
@@ -275,15 +307,7 @@ export async function guardarJornada(datos: DatosJornada): Promise<ResultadoJorn
 
     return simularRed({ jornada: { ...jornada }, franjasGeneradas: nuevas.length });
   }
-  return datos.id
-    ? peticion<ResultadoJornada>(`/asesorias/jornadas/${datos.id}/`, {
-        method: 'PUT',
-        body: JSON.stringify(datos),
-      })
-    : peticion<ResultadoJornada>('/asesorias/jornadas/', {
-        method: 'POST',
-        body: JSON.stringify(datos),
-      });
+  throw new ErrorApi(400, 'Las asesorías conectadas se solicitan por fecha y hora, sin jornadas.');
 }
 
 // ── HU-14: agendar, cancelar y reprogramar citas ───────────────
@@ -433,9 +457,7 @@ export async function obtenerFranjas(
     );
     return simularRed(ordenarPorFecha(disponibles).map((franja) => ({ ...franja })));
   }
-  return peticion<FranjaAsesoria[]>(
-    `/asesorias/temas/${temaId}/franjas/?desde=${desde}&hasta=${hasta}`,
-  );
+  return [];
 }
 
 /**
@@ -486,10 +508,7 @@ export async function agendarCita(
     });
     return simularRed({ ...cita });
   }
-  return peticion<Cita>('/asesorias/citas/', {
-    method: 'POST',
-    body: JSON.stringify({ franjaId, necesidad }),
-  });
+  throw new ErrorApi(400, 'Solicita la asesoría indicando fecha y hora.');
 }
 
 // ── Versión 1.1: asesorías sin jornadas (#248) ────────────────
@@ -511,9 +530,6 @@ export async function solicitarCita(
     });
     return (await citasDesdeBackend([creada]))[0];
   }
-  if (!USAR_MOCKS) {
-    return peticion<Cita>('/asesorias/citas/', { method: 'POST', body: JSON.stringify(nueva) });
-  }
 
   const tema = temas.find((t) => t.id === nueva.temaId);
   if (!tema?.activo) {
@@ -531,17 +547,9 @@ export async function solicitarCita(
 
   const inicio = aMinutos(nueva.hora);
   const fin = inicio + parametros.duracionAsesoriaMinutos;
-  const abre = parametros.horarios.find((h) => h.dia === new Date(`${nueva.fecha}T00:00:00`).getDay());
-  if (!abre) {
-    throw new ErrorApi(400, 'Ese día la biblioteca no atiende.');
+  if (!horariosDeFecha(nueva.fecha, parametros).some((h) => inicio >= aMinutos(h.abre) && fin <= aMinutos(h.cierra))) {
+    throw new ErrorApi(400, 'Elige una hora que permita completar la asesoría dentro de una franja de atención.');
   }
-  if (inicio < aMinutos(abre.abre) || fin > aMinutos(abre.cierra)) {
-    throw new ErrorApi(
-      400,
-      `Elige una hora del horario de atención (${abre.abre} a ${abre.cierra}); la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
-    );
-  }
-
   if (!cumpleAnticipacion(nueva.fecha, nueva.hora, parametros.horasMinimasSolicitud)) {
     throw new ErrorApi(
       400,
@@ -657,10 +665,15 @@ export async function aprobarCitaConDatos(
   id: string,
   aprobacion: AprobacionCita,
 ): Promise<Cita> {
-  if (!USAR_MOCKS) {
-    return peticion<Cita>(`/asesorias/citas/${id}/aprobar/`, {
-      method: 'POST',
-      body: JSON.stringify(aprobacion),
+  if (usaApi('asesorias')) {
+    const idBackend = await idGestion(id);
+    const cita = aprobacion.fecha && aprobacion.hora ? undefined :
+      await peticion<CitaGestionBackend>(`${RUTA_GESTION}${idBackend}/`);
+    return decidirCitaBackend(idBackend, 'approve', {
+      scheduled_date: aprobacion.fecha ?? cita?.desired_date,
+      start_time: aprobacion.hora ?? cita?.desired_time,
+      facilitator: aprobacion.facilitadorId || undefined,
+      virtual_link: aprobacion.enlaceVirtual?.trim(),
     });
   }
 
@@ -788,12 +801,6 @@ export async function reprogramarSolicitud(
     );
     return (await citasDesdeBackend([nuevaCita]))[0];
   }
-  if (!USAR_MOCKS) {
-    return peticion<Cita>(`/asesorias/citas/${id}/reprogramar/`, {
-      method: 'POST',
-      body: JSON.stringify(nueva),
-    });
-  }
 
   const parametros = await obtenerParametros();
   const anterior = citaModificable(usuario.id, id, parametros, 'reprogramar');
@@ -832,11 +839,8 @@ export async function reprogramarSolicitud(
 /** Citas del usuario de la sesión, por fecha (HU-14 y HU-15). */
 export async function obtenerMisCitas(usuarioId: string): Promise<Cita[]> {
   if (usaApi('asesorias')) return ordenarPorFecha(await misCitasBackend());
-  if (USAR_MOCKS) {
-    const mias = citas.filter((cita) => cita.solicitanteId === usuarioId);
-    return simularRed(ordenarPorFecha(mias).map((cita) => ({ ...cita })));
-  }
-  return peticion<Cita[]>('/asesorias/citas/mias/');
+  const mias = citas.filter((cita) => cita.solicitanteId === usuarioId);
+  return simularRed(ordenarPorFecha(mias).map((cita) => ({ ...cita })));
 }
 
 /** Cancela una cita dentro del plazo y libera el cupo (CA3). */
@@ -849,33 +853,30 @@ export async function cancelarCita(usuario: Usuario, id: string): Promise<Cita> 
     );
     return { ...(await citasDesdeBackend([cancelada]))[0], motivo: 'Cancelada por el usuario.' };
   }
-  if (USAR_MOCKS) {
-    const parametros = await obtenerParametros();
-    const cita = citaModificable(usuario.id, id, parametros, 'cancelar');
-    const cancelada: Cita = { ...cita, estado: 'cancelada', motivo: 'Cancelada por el usuario.' };
-    citas = citas.map((c) => (c.id === id ? cancelada : c));
-    ajustarCupo(cita.franjaId, 1);
-    crearNotificacion({
-      usuarioId: usuario.id,
-      solicitudId: cita.id,
-      titulo: 'Asesoría cancelada',
-      mensaje: `Tu asesoría de ${cita.tema} del ${cita.fecha} a las ${cita.horaInicio} fue cancelada.`,
-    });
-    registrarEvento('cita', cita.id, 'cancelada', usuario.nombre, cancelada.motivo);
-    // HU-25: cancelar también deja rastro.
-    registrarUso({
-      id: `uso-cita-${cita.id}`,
-      servicio: 'asesorias',
-      finalidad: cita.tema,
-      tematica: cita.tema,
-      fecha: cita.fecha,
-      modalidad: cita.modalidad,
-      estado: 'cancelada',
-      ...datosDeSolicitante(cita.solicitanteId),
-    });
-    return simularRed({ ...cancelada });
-  }
-  return peticion<Cita>(`/asesorias/citas/${id}/cancelar/`, { method: 'POST' });
+  const parametros = await obtenerParametros();
+  const cita = citaModificable(usuario.id, id, parametros, 'cancelar');
+  const cancelada: Cita = { ...cita, estado: 'cancelada', motivo: 'Cancelada por el usuario.' };
+  citas = citas.map((c) => (c.id === id ? cancelada : c));
+  ajustarCupo(cita.franjaId, 1);
+  crearNotificacion({
+    usuarioId: usuario.id,
+    solicitudId: cita.id,
+    titulo: 'Asesoría cancelada',
+    mensaje: `Tu asesoría de ${cita.tema} del ${cita.fecha} a las ${cita.horaInicio} fue cancelada.`,
+  });
+  registrarEvento('cita', cita.id, 'cancelada', usuario.nombre, cancelada.motivo);
+  // HU-25: cancelar también deja rastro.
+  registrarUso({
+    id: `uso-cita-${cita.id}`,
+    servicio: 'asesorias',
+    finalidad: cita.tema,
+    tematica: cita.tema,
+    fecha: cita.fecha,
+    modalidad: cita.modalidad,
+    estado: 'cancelada',
+    ...datosDeSolicitante(cita.solicitanteId),
+  });
+  return simularRed({ ...cancelada });
 }
 
 /**
@@ -930,10 +931,7 @@ export async function reprogramarCita(
     });
     return simularRed({ ...actualizada });
   }
-  return peticion<Cita>(`/asesorias/citas/${id}/reprogramar/`, {
-    method: 'POST',
-    body: JSON.stringify({ nuevaFranjaId }),
-  });
+  throw new ErrorApi(400, 'Reprograma la asesoría indicando la nueva fecha y hora.');
 }
 
 // ── HU-14 (1.1): aprobar o rechazar una cita pendiente ────────
@@ -976,32 +974,30 @@ function citaDecidible(usuario: Usuario, id: string): Cita {
  * notificación, evento del historial y registro de uso.
  */
 export async function aprobarCita(usuario: Usuario, id: string): Promise<Cita> {
-  if (USAR_MOCKS) {
-    const cita = citaDecidible(usuario, id);
-    const aprobada: Cita = { ...cita, estado: 'aprobada', motivo: undefined };
-    citas = citas.map((actual) => (actual.id === id ? aprobada : actual));
-    crearNotificacion({
-      usuarioId: cita.solicitanteId,
-      solicitudId: cita.id,
-      titulo: 'Asesoría aprobada',
-      mensaje: `Tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)} a las ${cita.horaInicio} quedó aprobada.`,
-    });
-    registrarEvento('cita', cita.id, 'aprobada', usuario.nombre, 'Asesoría aprobada.');
-    registrarUso({
-      id: `uso-cita-${cita.id}`,
-      servicio: 'asesorias',
-      finalidad: cita.tema,
-      tematica: cita.tema,
-      // #307: la primera respuesta del personal cuenta para el tiempo de respuesta.
-      respondida: true,
-      fecha: cita.fecha,
-      modalidad: cita.modalidad,
-      estado: 'pendiente',
-      ...datosDeSolicitante(cita.solicitanteId),
-    });
-    return simularRed({ ...aprobada });
-  }
-  return peticion<Cita>(`/asesorias/citas/${id}/aprobar/`, { method: 'POST' });
+  if (usaApi('asesorias')) return aprobarCitaConDatos(usuario, id, { facilitadorId: usuario.id });
+  const cita = citaDecidible(usuario, id);
+  const aprobada: Cita = { ...cita, estado: 'aprobada', motivo: undefined };
+  citas = citas.map((actual) => (actual.id === id ? aprobada : actual));
+  crearNotificacion({
+    usuarioId: cita.solicitanteId,
+    solicitudId: cita.id,
+    titulo: 'Asesoría aprobada',
+    mensaje: `Tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)} a las ${cita.horaInicio} quedó aprobada.`,
+  });
+  registrarEvento('cita', cita.id, 'aprobada', usuario.nombre, 'Asesoría aprobada.');
+  registrarUso({
+    id: `uso-cita-${cita.id}`,
+    servicio: 'asesorias',
+    finalidad: cita.tema,
+    tematica: cita.tema,
+    // #307: la primera respuesta del personal cuenta para el tiempo de respuesta.
+    respondida: true,
+    fecha: cita.fecha,
+    modalidad: cita.modalidad,
+    estado: 'pendiente',
+    ...datosDeSolicitante(cita.solicitanteId),
+  });
+  return simularRed({ ...aprobada });
 }
 
 /**
@@ -1009,45 +1005,42 @@ export async function aprobarCita(usuario: Usuario, id: string): Promise<Cita> {
  * y la persona ve el motivo en el detalle.
  */
 export async function rechazarCita(usuario: Usuario, id: string, motivo: string): Promise<Cita> {
-  if (USAR_MOCKS) {
-    // Primero quién puede decidir y si sigue pendiente: un rechazo sin permiso es 403 aunque
-    // el motivo falte, para no revelar el estado de una cita ajena.
-    const cita = citaDecidible(usuario, id);
-    const texto = motivo?.trim() ?? '';
-    if (!texto) {
-      throw new ErrorApi(400, 'El motivo del rechazo es obligatorio.');
-    }
-    if (texto.length > 200) {
-      throw new ErrorApi(400, 'Máximo 200 caracteres.');
-    }
-    const rechazada: Cita = { ...cita, estado: 'rechazada', motivo: texto };
-    citas = citas.map((actual) => (actual.id === id ? rechazada : actual));
-    ajustarCupo(cita.franjaId, 1);
-    crearNotificacion({
-      usuarioId: cita.solicitanteId,
-      solicitudId: cita.id,
-      titulo: 'Asesoría rechazada',
-      mensaje: `Tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)} a las ${cita.horaInicio} no se pudo agendar: ${texto}`,
-    });
-    registrarEvento('cita', cita.id, 'rechazada', usuario.nombre, texto);
-    registrarUso({
-      id: `uso-cita-${cita.id}`,
-      servicio: 'asesorias',
-      finalidad: cita.tema,
-      tematica: cita.tema,
-      // #307: la primera respuesta del personal cuenta para el tiempo de respuesta.
-      respondida: true,
-      fecha: cita.fecha,
-      modalidad: cita.modalidad,
-      estado: 'cancelada',
-      ...datosDeSolicitante(cita.solicitanteId),
-    });
-    return simularRed({ ...rechazada });
+  if (usaApi('asesorias')) {
+    return decidirCitaBackend(await idGestion(id), 'reject', { reason: motivo.trim() });
   }
-  return peticion<Cita>(`/asesorias/citas/${id}/rechazar/`, {
-    method: 'POST',
-    body: JSON.stringify({ motivo }),
+  // Primero quién puede decidir y si sigue pendiente: un rechazo sin permiso es 403 aunque
+  // el motivo falte, para no revelar el estado de una cita ajena.
+  const cita = citaDecidible(usuario, id);
+  const texto = motivo?.trim() ?? '';
+  if (!texto) {
+    throw new ErrorApi(400, 'El motivo del rechazo es obligatorio.');
+  }
+  if (texto.length > 200) {
+    throw new ErrorApi(400, 'Máximo 200 caracteres.');
+  }
+  const rechazada: Cita = { ...cita, estado: 'rechazada', motivo: texto };
+  citas = citas.map((actual) => (actual.id === id ? rechazada : actual));
+  ajustarCupo(cita.franjaId, 1);
+  crearNotificacion({
+    usuarioId: cita.solicitanteId,
+    solicitudId: cita.id,
+    titulo: 'Asesoría rechazada',
+    mensaje: `Tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)} a las ${cita.horaInicio} no se pudo agendar: ${texto}`,
   });
+  registrarEvento('cita', cita.id, 'rechazada', usuario.nombre, texto);
+  registrarUso({
+    id: `uso-cita-${cita.id}`,
+    servicio: 'asesorias',
+    finalidad: cita.tema,
+    tematica: cita.tema,
+    // #307: la primera respuesta del personal cuenta para el tiempo de respuesta.
+    respondida: true,
+    fecha: cita.fecha,
+    modalidad: cita.modalidad,
+    estado: 'cancelada',
+    ...datosDeSolicitante(cita.solicitanteId),
+  });
+  return simularRed({ ...rechazada });
 }
 
 // ── HU-15: agenda del facilitador ──────────────────────────────
@@ -1059,6 +1052,81 @@ export type CitaAgenda = Cita & {
   /** Programa o dependencia del solicitante (CA2); vacío si no está informado. */
   solicitantePrograma?: string;
 };
+
+export async function cancelarCitaPersonal(id: string, motivo: string): Promise<Cita> {
+  const reason = motivo.trim();
+  if (!reason) throw new ErrorApi(400, 'Indica el motivo de la cancelación.');
+  if (!usaApi('asesorias')) {
+    const usuario = useSesion.getState().usuario;
+    if (!usuario) throw new ErrorApi(401, 'Inicia sesión para cancelar la asesoría.');
+    const cita = citas.find((actual) => actual.id === id);
+    if (!cita) throw new ErrorApi(404, 'La cita no existe.');
+    if (!puedeDecidirCita(usuario, cita)) throw new ErrorApi(403, 'No puedes cancelar esta cita.');
+    if (cita.estado !== 'pendiente' && cita.estado !== 'aprobada') {
+      throw new ErrorApi(400, 'Solo puedes cancelar una cita pendiente o aprobada.');
+    }
+    const cancelada: Cita = { ...cita, estado: 'cancelada', motivo: reason };
+    citas = citas.map((actual) => actual.id === id ? cancelada : actual);
+    ajustarCupo(cita.franjaId, 1);
+    crearNotificacion({ usuarioId: cita.solicitanteId, solicitudId: id, titulo: 'Asesoría cancelada', mensaje: reason });
+    registrarEvento('cita', id, 'cancelada', usuario.nombre, reason);
+    registrarUso({
+      id: `uso-cita-${id}`, servicio: 'asesorias', finalidad: cita.tema, tematica: cita.tema,
+      fecha: cita.fecha, modalidad: cita.modalidad, estado: 'cancelada', respondida: true,
+      ...datosDeSolicitante(cita.solicitanteId),
+    });
+    return simularRed({ ...cancelada });
+  }
+  return { ...await decidirCitaBackend(await idGestion(id), 'cancel', { reason }), motivo: reason };
+}
+
+async function agendaBackend(facilitadorId: string, desde: string, hasta: string) {
+  const rango = `from=${desde}&to=${hasta}`;
+  if (facilitadorId === 'todas') {
+    const lista = await consultarGestion(`?${rango}`);
+    const sesion = useSesion.getState().usuario;
+    return ordenarPorFecha(lista.map((cita) => ({
+      ...cita,
+      ...(!cita.facilitadorId && sesion && (cita.facilitador === sesion.nombre || cita.facilitador === sesion.correo)
+        ? { facilitadorId: sesion.id } : {}),
+    })));
+  }
+
+  const fechas: string[] = [];
+  const fecha = new Date(`${desde}T00:00:00Z`);
+  while (fecha.toISOString().slice(0, 10) <= hasta) {
+    fechas.push(fecha.toISOString().slice(0, 10));
+    fecha.setUTCDate(fecha.getUTCDate() + (fecha.getUTCDay() === 0 ? 1 : 8 - fecha.getUTCDay()));
+  }
+  const [paginas, pendientes, parametros] = await Promise.all([
+    Promise.all(fechas.map((date) => peticion<{ appointments: { id: number; date: string }[] }>(
+      `${RUTA_AGENDA}?view=week&date=${date}`,
+    ))),
+    consultarGestion(`?${rango}&status=PENDING`),
+    obtenerParametros(),
+  ]);
+  const resumenes = paginas.flatMap(({ appointments }) => appointments)
+    .filter((cita) => cita.date >= desde && cita.date <= hasta);
+  const citas = await Promise.all(resumenes.map(async ({ id }) => {
+    const detalle = await peticion<DetalleAgendaBackend>(`${RUTA_AGENDA}appointments/${id}/`);
+    idsCita.set(String(detalle.request_id), detalle.id);
+    return {
+      ...citaAgendaDesdeBackend(detalle, parametros.duracionAsesoriaMinutos),
+      facilitadorId,
+    };
+  }));
+  return ordenarPorFecha([...pendientes, ...citas]);
+}
+
+async function registrarAgendaBackend(citaId: string, facilitadorId: string, attended: boolean, result?: string) {
+  const id = await idGestion(citaId);
+  const { duracionAsesoriaMinutos } = await obtenerParametros();
+  const detalle = await peticion<DetalleAgendaBackend>(`${RUTA_AGENDA}appointments/${id}/record/`, {
+    method: 'POST',
+    body: JSON.stringify({ attended, result }),
+  });
+  return { ...citaAgendaDesdeBackend(detalle, duracionAsesoriaMinutos), facilitadorId };
+}
 
 /** Copia de la cita con el tipo y el programa del solicitante, si está en el directorio. */
 function aCitaAgenda(cita: Cita): CitaAgenda {
@@ -1102,20 +1170,17 @@ export function obtenerAgenda(
   if (!esFechaValida(desde) || !esFechaValida(hasta)) {
     return Promise.reject(new ErrorApi(400, 'Revisa el rango de fechas.'));
   }
-  if (USAR_MOCKS) {
-    const lista = citas.filter(
-      (cita) =>
-        cita.fecha >= desde &&
-        cita.fecha <= hasta &&
-        (facilitadorId === 'todas' ||
-          cita.facilitadorId === facilitadorId ||
-          // Las pendientes sin asignar las ve todo el personal: alguien tiene que aprobarlas.
-          (cita.facilitadorId == null && cita.estado === 'pendiente')),
-    );
-    return simularRed(ordenarPorFecha(lista).map(aCitaAgenda));
-  }
-  const filtro = facilitadorId === 'todas' ? '' : `&facilitador=${facilitadorId}`;
-  return peticion<CitaAgenda[]>(`/asesorias/agenda/?desde=${desde}&hasta=${hasta}${filtro}`);
+  if (usaApi('asesorias')) return agendaBackend(facilitadorId, desde, hasta);
+  const lista = citas.filter(
+    (cita) =>
+      cita.fecha >= desde &&
+      cita.fecha <= hasta &&
+      (facilitadorId === 'todas' ||
+        cita.facilitadorId === facilitadorId ||
+        // Las pendientes sin asignar las ve todo el personal: alguien tiene que aprobarlas.
+        (cita.facilitadorId == null && cita.estado === 'pendiente')),
+  );
+  return simularRed(ordenarPorFecha(lista).map(aCitaAgenda));
 }
 
 /** Registra el resultado de una cita que ya terminó: queda realizada y con asistencia. */
@@ -1124,42 +1189,37 @@ export async function registrarResultado(
   citaId: string,
   resultado: string,
 ): Promise<CitaAgenda> {
-  if (USAR_MOCKS) {
-    const cita = citaAtendible(usuario.id, citaId, 'el resultado');
-    const texto = resultado?.trim() ?? '';
-    if (!texto) {
-      throw new ErrorApi(400, 'Escribe el resultado de la asesoría.');
-    }
-    if (texto.length > 300) {
-      throw new ErrorApi(400, 'Máximo 300 caracteres.');
-    }
-    const actualizada: Cita = { ...cita, estado: 'realizada', asistio: true, resultado: texto };
-    citas = citas.map((c) => (c.id === citaId ? actualizada : c));
-    registrarEvento('cita', actualizada.id, 'realizada', usuario.nombre, texto);
-    // HU-25: la asesoría realizada deja su registro de uso.
-    registrarUso({
-      id: `uso-cita-${actualizada.id}`,
-      servicio: 'asesorias',
-      finalidad: actualizada.tema,
-      fecha: actualizada.fecha,
-      modalidad: actualizada.modalidad,
-      estado: 'completada',
-      ...datosDeSolicitante(actualizada.solicitanteId),
-    });
-    // #254: invita a calificar. Solo aquí: una inasistencia no se califica. citaAtendible()
-    // exige una cita aprobada, así que una ya realizada no vuelve a invitar.
-    crearNotificacion({
-      usuarioId: actualizada.solicitanteId,
-      solicitudId: actualizada.id,
-      titulo: '¿Cómo te pareció tu asesoría?',
-      mensaje: MENSAJE_INVITACION_CALIFICAR,
-    });
-    return simularRed(aCitaAgenda(actualizada));
+  if (usaApi('asesorias')) return registrarAgendaBackend(citaId, usuario.id, true, resultado.trim());
+  const cita = citaAtendible(usuario.id, citaId, 'el resultado');
+  const texto = resultado?.trim() ?? '';
+  if (!texto) {
+    throw new ErrorApi(400, 'Escribe el resultado de la asesoría.');
   }
-  return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/resultado/`, {
-    method: 'POST',
-    body: JSON.stringify({ resultado }),
+  if (texto.length > 300) {
+    throw new ErrorApi(400, 'Máximo 300 caracteres.');
+  }
+  const actualizada: Cita = { ...cita, estado: 'realizada', asistio: true, resultado: texto };
+  citas = citas.map((c) => (c.id === citaId ? actualizada : c));
+  registrarEvento('cita', actualizada.id, 'realizada', usuario.nombre, texto);
+  // HU-25: la asesoría realizada deja su registro de uso.
+  registrarUso({
+    id: `uso-cita-${actualizada.id}`,
+    servicio: 'asesorias',
+    finalidad: actualizada.tema,
+    fecha: actualizada.fecha,
+    modalidad: actualizada.modalidad,
+    estado: 'completada',
+    ...datosDeSolicitante(actualizada.solicitanteId),
   });
+  // #254: invita a calificar. Solo aquí: una inasistencia no se califica. citaAtendible()
+  // exige una cita aprobada, así que una ya realizada no vuelve a invitar.
+  crearNotificacion({
+    usuarioId: actualizada.solicitanteId,
+    solicitudId: actualizada.id,
+    titulo: '¿Cómo te pareció tu asesoría?',
+    mensaje: MENSAJE_INVITACION_CALIFICAR,
+  });
+  return simularRed(aCitaAgenda(actualizada));
 }
 
 /**
@@ -1167,24 +1227,22 @@ export async function registrarResultado(
  * `asistio: false`, y la pantalla muestra "No asistió".
  */
 export async function registrarInasistencia(usuario: Usuario, citaId: string): Promise<CitaAgenda> {
-  if (USAR_MOCKS) {
-    const cita = citaAtendible(usuario.id, citaId, 'la inasistencia');
-    const actualizada: Cita = { ...cita, estado: 'realizada', asistio: false, resultado: undefined };
-    citas = citas.map((c) => (c.id === citaId ? actualizada : c));
-    registrarEvento('cita', actualizada.id, 'realizada', usuario.nombre, 'No asistió.');
-    // HU-25: la inasistencia cierra el registro de la cita como cancelada.
-    registrarUso({
-      id: `uso-cita-${actualizada.id}`,
-      servicio: 'asesorias',
-      finalidad: actualizada.tema,
-      fecha: actualizada.fecha,
-      modalidad: actualizada.modalidad,
-      estado: 'cancelada',
-      ...datosDeSolicitante(actualizada.solicitanteId),
-    });
-    return simularRed(aCitaAgenda(actualizada));
-  }
-  return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/inasistencia/`, { method: 'POST' });
+  if (usaApi('asesorias')) return registrarAgendaBackend(citaId, usuario.id, false);
+  const cita = citaAtendible(usuario.id, citaId, 'la inasistencia');
+  const actualizada: Cita = { ...cita, estado: 'realizada', asistio: false, resultado: undefined };
+  citas = citas.map((c) => (c.id === citaId ? actualizada : c));
+  registrarEvento('cita', actualizada.id, 'realizada', usuario.nombre, 'No asistió.');
+  // HU-25: la inasistencia cierra el registro de la cita como cancelada.
+  registrarUso({
+    id: `uso-cita-${actualizada.id}`,
+    servicio: 'asesorias',
+    finalidad: actualizada.tema,
+    fecha: actualizada.fecha,
+    modalidad: actualizada.modalidad,
+    estado: 'cancelada',
+    ...datosDeSolicitante(actualizada.solicitanteId),
+  });
+  return simularRed(aCitaAgenda(actualizada));
 }
 
 // ── Versión 1.1: calificación del servicio (#254) ─────────────────────────
@@ -1210,12 +1268,6 @@ export async function calificarCita(
       },
     );
     return (await citasDesdeBackend([calificada]))[0];
-  }
-  if (!USAR_MOCKS) {
-    return peticion<Cita>(`/solicitudes/cita/${id}/calificacion/`, {
-      method: 'POST',
-      body: JSON.stringify(datos),
-    });
   }
 
   const cita = citas.find((actual) => actual.id === id);

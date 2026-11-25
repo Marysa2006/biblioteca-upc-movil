@@ -11,15 +11,17 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
 
 import { useAsistencia } from '@/hooks/useAsistencia';
+import { usaApi } from '@/api/cliente';
 import { useSesion } from '@/store/sesion';
 import { coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Cita } from '@/types';
 import { puedeTomarAsistencia } from '@/utils/asistencia';
 
 export function BotonRegistrarAsistencia({ cita }: { cita: Cita }) {
-  const enCurso = puedeTomarAsistencia(cita);
+  const conApi = usaApi('asistencia');
+  const enCurso = conApi ? cita.estado === 'aprobada' : puedeTomarAsistencia(cita);
   // Solo se consulta la asistencia de las citas de hoy que la admiten.
-  const asistencia = useAsistencia(enCurso ? cita.id : '');
+  const asistencia = useAsistencia(enCurso && !conApi ? cita.id : '');
   const usuario = useSesion((estado) => estado.usuario);
 
   if (!enCurso || !usuario) return null;

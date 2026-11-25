@@ -25,46 +25,53 @@ type Props = {
   onCerrar: () => void;
 };
 
-export function DialogoMotivo({ solicitud, guardando, mensajeError, onConfirmar, onCerrar }: Props) {
+export function DialogoMotivo({ solicitud, ...props }: Props) {
+  const reserva = solicitud?.reserva;
+  const verbo = solicitud?.accion === 'rechazar' ? 'Rechazar' : 'Cancelar';
+  return (
+    <DialogoMotivoAccion
+      {...props}
+      accion={reserva ? {
+        id: reserva.id,
+        titulo: `${verbo} la reserva`,
+        detalle: `${reserva.solicitante} · ${fechaLegible(reserva.fecha)}, ${reserva.horaInicio} – ${reserva.horaFin}`,
+        boton: verbo,
+      } : null}
+    />
+  );
+}
+
+type AccionMotivo = { id: string; titulo: string; detalle: string; boton: string };
+type PropsAccion = Omit<Props, 'solicitud'> & { accion: AccionMotivo | null; impedido?: boolean };
+
+export function DialogoMotivoAccion({ accion, ...props }: PropsAccion) {
   return (
     <Portal>
-      <Dialog visible={solicitud != null} onDismiss={onCerrar} style={estilos.dialogo}>
-        {solicitud ? (
-          // key: al abrir el diálogo para otra reserva, el motivo vuelve a empezar.
-          <Contenido
-            key={`${solicitud.reserva.id}-${solicitud.accion}`}
-            solicitud={solicitud}
-            guardando={guardando}
-            mensajeError={mensajeError}
-            onConfirmar={onConfirmar}
-            onCerrar={onCerrar}
-          />
-        ) : null}
+      <Dialog visible={accion != null} onDismiss={props.guardando ? undefined : props.onCerrar} style={estilos.dialogo}>
+        {accion ? <Contenido key={`${accion.id}-${accion.titulo}`} accion={accion} {...props} /> : null}
       </Dialog>
     </Portal>
   );
 }
-
 function Contenido({
-  solicitud: { reserva, accion },
+  accion,
+  impedido,
   guardando,
   mensajeError,
   onConfirmar,
   onCerrar,
-}: Props & { solicitud: SolicitudMotivo }) {
+}: PropsAccion & { accion: AccionMotivo }) {
   const { control, handleSubmit } = useForm<FormularioMotivo>({
     resolver: zodResolver(esquemaMotivo),
     defaultValues: { motivo: '' },
   });
-  const rechazar = accion === 'rechazar';
-  const verbo = rechazar ? 'Rechazar' : 'Cancelar';
 
   return (
     <>
-      <Dialog.Title style={estilos.titulo}>{`${verbo} la reserva`}</Dialog.Title>
+      <Dialog.Title style={estilos.titulo}>{accion.titulo}</Dialog.Title>
       <Dialog.Content style={estilos.contenido}>
         <Text variant="bodyMedium" style={estilos.texto}>
-          {`${reserva.solicitante} · ${fechaLegible(reserva.fecha)}, ${reserva.horaInicio} – ${reserva.horaFin}`}
+          {accion.detalle}
         </Text>
         <Controller
           control={control}
@@ -75,14 +82,14 @@ function Contenido({
                 ref={ref}
                 mode="outlined"
                 label="Motivo"
-                placeholder={rechazar ? 'Por ejemplo: el espacio está en mantenimiento' : undefined}
+
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
                 error={error != null}
                 disabled={guardando}
                 multiline
-                accessibilityLabel={`Motivo para ${verbo.toLowerCase()} la reserva`}
+                accessibilityLabel="Motivo"
               />
               <HelperText type="error" visible={error != null}>
                 {error?.message}
@@ -108,13 +115,13 @@ function Contenido({
           mode="contained"
           onPress={() => handleSubmit(({ motivo }) => onConfirmar(motivo))()}
           loading={guardando}
-          disabled={guardando}
+          disabled={guardando || impedido}
           buttonColor={coloresEstado.rechazada.texto}
           contentStyle={estilos.contenidoBoton}
           accessibilityRole="button"
-          accessibilityLabel={`${verbo} la reserva de ${reserva.solicitante}`}
+          accessibilityLabel={accion.titulo}
         >
-          {verbo}
+          {accion.boton}
         </Button>
       </Dialog.Actions>
     </>

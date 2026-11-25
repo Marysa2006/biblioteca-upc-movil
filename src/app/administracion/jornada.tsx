@@ -25,7 +25,7 @@ import {
 import { useGuardarJornada, useJornadas, useTemas } from '@/hooks/useAsesorias';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
-import { useUsuarios } from '@/hooks/useUsuarios';
+import { useFacilitadores } from '@/hooks/useUsuarios';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { tieneRol } from '@/utils/roles';
@@ -39,7 +39,7 @@ export default function EditarJornada() {
     <>
       <EncabezadoApilado titulo={titulo} />
       <Pantalla titulo={titulo} conEncabezado conTeclado>
-        {tienePermiso('asesorias') ? <Formulario id={id} /> : <SinPermiso />}
+        {tienePermiso('asesorias') && tienePermiso('roles') ? <Formulario id={id} /> : <SinPermiso />}
       </Pantalla>
     </>
   );
@@ -49,7 +49,7 @@ function Formulario({ id }: { id?: string }) {
   const parametros = useParametros();
   const temas = useTemas();
   const jornadas = useJornadas();
-  const usuarios = useUsuarios();
+  const usuarios = useFacilitadores(true);
   const guardar = useGuardarJornada();
   const [franjasGeneradas, setFranjasGeneradas] = useState<number | null>(null);
 

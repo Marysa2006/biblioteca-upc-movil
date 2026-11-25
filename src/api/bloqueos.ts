@@ -4,11 +4,22 @@
  * afectadas (CA1) y, al confirmar, se cancelan y se avisa a los afectados (CA2). Sin reservas
  * afectadas, el bloqueo se aplica directo (CA3). Los bloqueos aparecen como "bloqueado" en la
  * disponibilidad de HU-17.
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { Bloqueo, Reserva } from '@/types';
+import { useSesion } from '@/store/sesion';
+import { hoyISO } from '@/utils/fechas';
+import { registrarEvento } from './historial';
+import { registrarUso } from './estadisticas';
+import { crearNotificacion } from './notificaciones';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import {
+  bloqueoDesdeBackend,
+  bloqueoHaciaBackend,
+  reservaAfectadaDesdeBackend,
+  type BloqueoBackend,
+  type ReservaAfectadaBackend,
+} from './backend/bloqueos';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { BLOQUEOS } from './mocks/reservas';
 import { cancelarReservas, reservasAfectadasPorBloqueo } from './reservas';
 
@@ -24,6 +35,23 @@ export type ResultadoBloqueo = {
   /** Reservas canceladas por el bloqueo; vacío si no había ninguna (CA3). */
   canceladas: Reserva[];
 };
+
+type RevisionBloqueo = { afectadas: Reserva[] } | { aplicado: ResultadoBloqueo };
+
+const RUTA_BLOQUEOS = '/spaces/blocks/';
+
+async function enviarBloqueo(datos: DatosBloqueo, confirmar: boolean): Promise<ResultadoBloqueo> {
+  const respuesta = await peticion<BloqueoBackend>(RUTA_BLOQUEOS, {
+    method: 'POST',
+    body: JSON.stringify(bloqueoHaciaBackend(datos, confirmar)),
+  });
+  return {
+    bloqueo: bloqueoDesdeBackend(respuesta),
+    canceladas: respuesta.cancelled_reservations.map((r) =>
+      reservaAfectadaDesdeBackend(r, datos.espacioId),
+    ),
+  };
+}
 
 /** Validación del rango y la franja, sin exigir el motivo (sirve para la previsualización). */
 function errorDeRango(datos: DatosBloqueo): ErrorApi | null {
@@ -53,24 +81,39 @@ function errorDeValidacion(datos: DatosBloqueo): ErrorApi | null {
 
 /** Bloqueos registrados; si se pasa un espacio, solo los suyos (los consulta HU-17). */
 export function obtenerBloqueos(espacioId?: string): Promise<Bloqueo[]> {
-  if (USAR_MOCKS) {
-    const lista = espacioId ? bloqueos.filter((b) => b.espacioId === espacioId) : bloqueos;
-    return simularRed(lista.map((bloqueo) => ({ ...bloqueo })));
+  if (usaApi('bloqueos')) {
+    const consulta = espacioId ? `?space=${encodeURIComponent(espacioId)}` : '';
+    return peticionTodas(`${RUTA_BLOQUEOS}${consulta}`, bloqueoDesdeBackend);
   }
-  const consulta = espacioId ? `?espacio=${espacioId}` : '';
-  return peticion<Bloqueo[]>(`/bloqueos/${consulta}`);
+  const lista = espacioId ? bloqueos.filter((b) => b.espacioId === espacioId) : bloqueos;
+  return simularRed(lista.map((bloqueo) => ({ ...bloqueo })));
 }
 
 /** Reservas que quedarían afectadas por el bloqueo, antes de confirmarlo (CA1). */
-export async function previsualizarBloqueo(datos: DatosBloqueo): Promise<Reserva[]> {
-  if (USAR_MOCKS) {
-    const error = errorDeRango(datos);
-    if (error) {
-      throw error;
+export async function previsualizarBloqueo(datos: DatosBloqueo): Promise<RevisionBloqueo> {
+  if (usaApi('bloqueos')) {
+    const error = errorDeValidacion(datos);
+    if (error) throw error;
+    try {
+      return { aplicado: await enviarBloqueo(datos, false) };
+    } catch (error) {
+      if (!(error instanceof ErrorApi) || error.estado !== 409) throw error;
+      const cuerpo = error.cuerpo as { affected_reservations?: ReservaAfectadaBackend[] } | null;
+      if (!Array.isArray(cuerpo?.affected_reservations)) throw error;
+      return {
+        afectadas: cuerpo.affected_reservations.map((r) =>
+          reservaAfectadaDesdeBackend(r, datos.espacioId),
+        ),
+      };
     }
-    return simularRed(reservasAfectadasPorBloqueo(datos).map((reserva) => ({ ...reserva })));
   }
-  return peticion<Reserva[]>('/bloqueos/afectadas/', { method: 'POST', body: JSON.stringify(datos) });
+  const error = errorDeRango(datos);
+  if (error) {
+    throw error;
+  }
+  return simularRed({
+    afectadas: reservasAfectadasPorBloqueo(datos).map((reserva) => ({ ...reserva })),
+  });
 }
 
 /**
@@ -78,25 +121,47 @@ export async function previsualizarBloqueo(datos: DatosBloqueo): Promise<Reserva
  * Si no hay reservas afectadas, el bloqueo se aplica directo (CA3).
  */
 export async function confirmarBloqueo(datos: DatosBloqueo): Promise<ResultadoBloqueo> {
-  if (USAR_MOCKS) {
+  if (usaApi('bloqueos')) {
     const error = errorDeValidacion(datos);
-    if (error) {
-      throw error;
-    }
-
-    const afectadas = reservasAfectadasPorBloqueo(datos);
-    const bloqueo: Bloqueo = { ...datos, id: `blo-${Date.now()}` };
-    bloqueos = [...bloqueos, bloqueo];
-
-    const canceladas = cancelarReservas(
-      afectadas.map((reserva) => reserva.id),
-      `Bloqueo institucional: ${datos.motivo.trim()}`,
-    );
-
-    return simularRed({
-      bloqueo: { ...bloqueo },
-      canceladas: canceladas.map((reserva) => ({ ...reserva })),
-    });
+    if (error) throw error;
+    return enviarBloqueo(datos, true);
   }
-  return peticion<ResultadoBloqueo>('/bloqueos/', { method: 'POST', body: JSON.stringify(datos) });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    throw error;
+  }
+
+  const afectadas = reservasAfectadasPorBloqueo(datos);
+  const bloqueo: Bloqueo = { ...datos, id: `blo-${Date.now()}` };
+  bloqueos = [...bloqueos, bloqueo];
+
+  const canceladas = cancelarReservas(
+    afectadas.map((reserva) => reserva.id),
+    `Bloqueo institucional: ${datos.motivo.trim()}`,
+  );
+
+  return simularRed({
+    bloqueo: { ...bloqueo },
+    canceladas: canceladas.map((reserva) => ({ ...reserva })),
+  });
+}
+
+export async function cancelarBloqueo(id: string, motivo: string): Promise<Bloqueo> {
+  const reason = motivo.trim();
+  if (!reason) throw new ErrorApi(400, 'El motivo de la cancelación es obligatorio.');
+  if (usaApi('bloqueos')) {
+    return bloqueoDesdeBackend(await peticion<BloqueoBackend>(
+      `${RUTA_BLOQUEOS}${encodeURIComponent(id)}/cancel/`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
+    ));
+  }
+  const bloqueo = bloqueos.find((elemento) => elemento.id === id);
+  if (!bloqueo) throw new ErrorApi(404, 'El bloqueo no existe.');
+  if (bloqueo.hasta < hoyISO()) throw new ErrorApi(400, 'El bloqueo ya terminó.');
+  bloqueos = bloqueos.filter((elemento) => elemento.id !== id);
+  const usuario = useSesion.getState().usuario;
+  registrarEvento('bloqueo', id, 'cancelada', usuario?.nombre ?? 'Personal de la biblioteca', reason);
+  registrarUso({ id: `uso-bloqueo-${id}`, usuario, servicio: 'espacios', finalidad: reason, estado: 'cancelada' });
+  if (usuario) crearNotificacion({ usuarioId: usuario.id, solicitudId: '', titulo: 'Bloqueo quitado', mensaje: reason });
+  return simularRed({ ...bloqueo });
 }

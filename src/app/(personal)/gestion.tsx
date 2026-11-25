@@ -20,6 +20,8 @@
  * Dashboard manda también `abrir` (la hora del toque): así, tocar dos veces la misma tarjeta vuelve
  * a abrir esa sección aunque la persona se haya movido a otra.
  */
+import { Button, Snackbar } from 'react-native-paper';
+
 import { useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 
@@ -33,6 +35,8 @@ import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { BotonReservaTercero } from '@/components/reservas/BotonReservaTercero';
 import { EstadoVacio, Pantalla } from '@/components/ui';
+import { useEnlacesKoha } from '@/hooks/useCatalogoKoha';
+import { abrirEnNavegador } from '@/utils/navegador';
 import { useRol } from '@/hooks/useRol';
 import { usePrestamosVencidos } from '@/hooks/useTablets';
 import {
@@ -66,6 +70,8 @@ const SECCIONES: Seccion[] = SECCIONES_GESTION.map((info) => ({
 }));
 
 export default function Gestion() {
+  const kohaPersonal = useEnlacesKoha().data?.personal;
+  const [errorKoha, setErrorKoha] = useState(false);
   const { tienePermiso } = useRol();
   const { seccion, abrir } = useLocalSearchParams<{ seccion?: string; abrir?: string }>();
   const pedida = SECCIONES.find((opcion) => opcion.valor === seccion)?.valor;
@@ -102,6 +108,15 @@ export default function Gestion() {
       subtitulo="Solicitudes, préstamos y administración del portal"
       flotante={Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null}
     >
+      {kohaPersonal ? (
+        <Button onPress={() => void abrirEnNavegador(kohaPersonal).catch(() => setErrorKoha(true))}>
+          Ingresar a Koha
+        </Button>
+      ) : null}
+      <Snackbar visible={errorKoha} onDismiss={() => setErrorKoha(false)}>
+        No se pudo abrir Koha.
+      </Snackbar>
+
       {activa && visibles.length > 1 ? (
         <SelectorSeccion opciones={visibles} valor={activa.valor} onCambiar={setElegida} />
       ) : null}

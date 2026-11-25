@@ -128,6 +128,12 @@ function PestanaResumen({
   return (
     <>
       <View style={estilos.cuadricula}>
+        {indicadores.usuariosUnicos != null ? <TarjetaIndicador
+          icono="account-group-outline" titulo="Usuarios únicos" valor={String(indicadores.usuariosUnicos)} detalle="Personas distintas"
+        /> : null}
+        {indicadores.asistentes != null ? <TarjetaIndicador
+          icono="account-check-outline" titulo="Asistencias registradas" valor={String(indicadores.asistentes)} detalle="Con QR y a mano"
+        /> : null}
         <TarjetaIndicador
           icono="chart-box-outline"
           titulo="Operaciones"
@@ -289,6 +295,9 @@ function PestanaServicios({ indicadores }: { indicadores: IndicadoresUso }) {
         datos={modalidades}
         total={total}
       />
+      {indicadores.porTematica?.length ? <GraficoBarras titulo="Por temática"
+        descripcion="Temas de asesoría y líneas de formación"
+        datos={indicadores.porTematica} total={sumar(indicadores.porTematica)} /> : null}
       {indicadores.porTemaAsesoria.length > 0 ? (
         <GraficoBarras
           titulo="Temas de asesoría"
@@ -375,12 +384,15 @@ function PestanaTablets({ indicadores }: { indicadores: IndicadoresUso }) {
           }
           detalle={`${tablets.dentroDeReferencia} de ${tablets.conDuracion} duraron ${tablets.horasReferencia} h o menos`}
         />
-        <TarjetaIndicador
+        {tablets.sinHoraCompleta != null ? <TarjetaIndicador
           icono="clock-alert-outline"
           titulo="Sin hora completa"
           valor={String(tablets.sinHoraCompleta)}
           detalle="Devueltos sin hora de entrega o de devolución"
-        />
+        /> : null}
+        {tablets.menosDeUnaHora != null ? <TarjetaIndicador
+          icono="clock-fast" titulo="Menos de una hora" valor={String(tablets.menosDeUnaHora)} detalle="Préstamos devueltos"
+        /> : null}
       </View>
       <ColumnasMes
         titulo="Préstamos por mes"
