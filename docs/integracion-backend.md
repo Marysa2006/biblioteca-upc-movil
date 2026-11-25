@@ -174,7 +174,7 @@ campos pendientes y archivos»**; aquí queda el resumen para no tener que abrir
 
 | Tema | Qué pasa | Quién |
 |---|---|---|
-| **Firma del personal** | Disponible en el perfil de prueba. El perfil conectado muestra un aviso y no envía un guardado. Se pidió `signature` en `GET`/`PATCH /me/` y que el `GET` del préstamo devuelva las firmas de entrega y de devolución | Backend |
+| **Firma del personal** | El perfil conectado detecta el campo `signature` y la constancia consume las firmas del personal cuando el Backend las publica. Ver §7. | Backend |
 | **Cuenta desactivada** | `/token/` responde 401 igual que con una contraseña incorrecta, así que la app no puede decir «tu cuenta está inactiva» (HU-05, CA3). Se sugirió 403 | Backend (no bloquea) |
 | **Dirección en el perfil** | El Backend no la tiene: con la API, la app la oculta | — |
 | **Egresados** | El Backend no tiene ese tipo de usuario | Para después |
@@ -237,7 +237,7 @@ El perfil `integracion` activa los módulos conectados de las fases 1 a 5. La au
 | 0 | Probar Render: rutas públicas, login, `/me/`, errores y paginación | Verificación inicial realizada, hallazgos en §5 |
 | 1 | El cliente (errores, renovación del token, paginación, servidor lento) y la sesión: login, `/me/`, `/me/access/` (el superusuario cuenta como `administrador`), registro, política y perfil | `sesion` integrado |
 | 2 | Lectura pública: servicios, avisos de Inicio, recursos, guías, notificaciones, fotos de Inicio, y periodos, festivos, horarios y plazos (los días hábiles de todos los calendarios) | `servicios`, `contenidos`, `recursos`, `guias`, `notificaciones`, `fotosInicio`, `parametros` integrados |
-| 3 | Solicitudes de la comunidad, **cada una con su catálogo**: espacios (con disponibilidad) y reservas, temas y asesorías (sin jornadas ni franjas), líneas y capacitaciones, tablets, y Mis solicitudes con historial. La foto de perfil no tiene pantalla en la app: queda para cuando la tenga | `espacios`, `asesorias`, `capacitaciones`, `tablets`, `solicitudes` integrados |
+| 3 | Solicitudes de la comunidad, **cada una con su catálogo**: espacios (con disponibilidad) y reservas, temas y asesorías (sin jornadas ni franjas), líneas y capacitaciones, tablets, y Mis solicitudes con historial. La foto de perfil se completó en la fase 6 | `espacios`, `asesorias`, `capacitaciones`, `tablets`, `solicitudes` integrados |
 | 4 | Personal: bandejas, entrega y devolución con firma y `receipt_code`, y la administración | `reservas`, `bloqueos`, `usuarios` y la parte del personal de los anteriores, integrados (incluidas las cinco acciones de la fase 4b) |
 | 5 | Estadísticas y asistencia (#231) | `estadisticas`, `asistencia` integrados |
 | 6 | Cierre y prueba con APK contra Render (HTTPS) | Configuración y auditoría listas. Compilación y validación en vivo pendientes (§7) |
@@ -266,7 +266,7 @@ Agrega `servicios` a `EXPO_PUBLIC_API_MODULOS` para leer el catálogo y las fich
 
 **Pendiente de pedir al Backend (no bloquea):** `space_id` en el detalle de `/me/requests/{id}/` de una reserva, para no buscar el espacio por su nombre.
 
-**Autoarchivo no encaja todavía:** la app muestra cuatro listas (procedimiento, requisitos, formatos y metadatos) y el Backend entrega un texto libre (`guide.body` de `portal/self-archive/`). Sigue con datos de prueba hasta acordar con el Backend cómo se separan los bloques. **Koha** sigue con `URL_CATALOGO_KOHA`, porque `portal/koha-opac/` aún no tiene dirección en Render (`KOHA_OPAC_URL`); el ingreso del personal (`staff_url`) es del #311.
+Autoarchivo y Koha se integraron con sus endpoints del portal y valores de respaldo. Ver §7 para los campos y el formato que debe publicar el Backend.
 
 **Catálogo y repositorio** van aparte: no pasan por el Backend.
 
@@ -353,26 +353,41 @@ Se revisaron las llamadas HTTP de `src/api` y la condición que las precede. Con
 `EXPO_PUBLIC_USAR_MOCKS=false`, `usaApi(modulo)` es verdadero para todos los módulos. No quedan
 llamadas alcanzables a rutas provisionales en español con ese ajuste.
 
-Los literales antiguos que aún aparecen en el código son ramas inalcanzables de los módulos
-integrados. Corresponden a `/asesorias/`, `/bloqueos/`, `/capacitaciones/`, `/contenidos/`,
-`/espacios/`, `/estadisticas/registros/`, `/portal/fotos-inicio/`, `/prestamos/`, `/reservas/`,
-`/servicios/`, `/solicitudes/`, `/tablets/` y `/usuarios/`. En esos puntos, la rama de API
-sale por el endpoint real o la rama de datos de prueba devuelve un resultado antes de llegar
-al literal antiguo.
+Se eliminaron las ramas inalcanzables de asesorías, asistencia, bloqueos y los demás módulos
+con rutas provisionales. Los datos de prueba siguen disponibles con el interruptor por módulo.
 
-| Excepción | Comportamiento del APK conectado | Pendiente |
+### Ajustes del cierre
+
+| Área | Comportamiento de la app | Pendiente del Backend |
 |---|---|---|
-| Autoarchivo | Conserva la orientación local en cuatro bloques. Se retiró la llamada a `/autoarchivo/`. | Acordar cómo estructurar los bloques que hoy llegan en `guide.body` de `/portal/self-archive/`. |
-| Jornadas y franjas de asesoría | Las consultas antiguas quedan vacías en modo API global. Las escrituras antiguas devuelven un mensaje que remite al flujo por fecha y hora. | Son funciones retiradas del Backend. El flujo vigente usa `/advisories/appointments/`. |
-| Firma del personal | El guardado en el perfil conectado muestra un aviso. Se retiró `PUT /me/firma/`. La firma del usuario en la entrega de una tablet y el `receipt_code` tienen su propio contrato. | Incorporar `signature` en el perfil y las firmas del personal en el detalle del préstamo. |
-| Koha y repositorio | Usan su integración directa, sin el token del Backend de la biblioteca. Koha usa `URL_CATALOGO_KOHA`. | Configurar `KOHA_OPAC_URL` en Render para consumir el enlace del portal. |
+| Parámetros | Horarios permite agregar, editar y quitar franjas de un día. Valida cruces antes de reconciliar las franjas con `/config/schedules/`. La disponibilidad con datos de prueba respeta los descansos entre franjas. | Confirmar en Render que los calendarios de espacios, asesoría y tablets respeten la jornada partida y los horarios propios de cada servicio. |
+| Perfil | Lee `photo` desde `GET /me/`. Envía JPG, PNG o WEBP de hasta 5 MB con `PATCH /me/` multipart y quita la foto con `{"photo":null}`. Actualiza el perfil y la sesión, y usa iniciales cuando no hay foto. | Verificar en Render que las direcciones de las fotos devueltas sean públicas y que la eliminación persista. |
+| Identificadores | Mis reservas prefiere `space_id` del detalle (incluido en `details` o en la raíz) y conserva la búsqueda por nombre. Asesorías prefiere `facilitator_id` en la gestión, con el criterio anterior de nombre o correo si falta. | Publicar y documentar los identificadores estables en esas respuestas. |
+| Koha | Lee `url` y `staff_url` de `GET /portal/koha-opac/`. Usa `URL_CATALOGO_KOHA` si `url` es nula. En Gestión aparece «Ingresar a Koha» solo si hay `staff_url`. El OPAC y Koha del personal se abren sin el token de la app. | Configurar `KOHA_OPAC_URL` en Render y publicar `staff_url` (#311). |
+| Firma | Mi firma aparece en perfiles del personal si `GET /me/` incluye `signature`, incluso si vale `null`. Guarda o quita la firma con `PATCH /me/`. La constancia lee `delivery.responsible_signature` y `return_record.responsible_signature` si están presentes y conserva «firmado con su cuenta» si no hay firma. | Confirmar y publicar esos campos. Formato propuesto para cada firma: `{path, width, height, signed_at}` o `null`. El Backend debe conservar la firma que tenía el responsable en cada operación. |
+| Autoarchivo | Lee `guide.body` en `GET /portal/self-archive/`. Si la guía es nula o el texto no cumple el formato, muestra la orientación de prueba. | Publicar la guía usando el formato propuesto abajo. |
+| Cuenta inactiva | Un 403 de `POST /token/` muestra «Tu cuenta está inactiva. Contacta a la biblioteca para más información.» Un 401 conserva el mensaje de credenciales incorrectas. | Confirmar en Render el 403 para una cuenta inactiva con credenciales correctas. En la prueba anterior el servidor respondió 401. |
+| Jornadas de asesoría | El flujo vigente usa `/advisories/appointments/` por fecha y hora. | Las antiguas jornadas y franjas administrativas fueron retiradas del Backend. |
 | Estadísticas y asistencia | El detalle individual sale en el CSV. El QR vence automáticamente. | El contrato no ofrece listado JSON de registros ni acciones para abrir, cerrar o regenerar el QR. |
 
-También quedan por verificar en Render los datos de biblioteca y el horario de atención, la
-URL pública de las fotos y los servicios publicados. En §5 están los hallazgos de la primera
-prueba. El `space_id` en el detalle de la reserva evitaría la búsqueda por nombre. El login
-sigue dependiendo de la respuesta del servidor para distinguir una cuenta inactiva y el
-registro mantiene los tipos de usuario admitidos por el Backend (§3.1).
+### Formato propuesto para `guide.body`
+
+Cada título ocupa una línea y aparece una vez. Cada bloque lleva uno o más elementos en
+líneas que empiezan por `- `. Se admiten líneas en blanco entre elementos o títulos.
+
+```markdown
+## Procedimiento
+- Envía el trabajo de grado al repositorio.
+## Requisitos
+- Incluye la autorización de publicación.
+## Formatos
+- Entrega el documento en PDF.
+## Metadatos
+- Indica el título y el nombre de cada autor.
+```
+
+Los hallazgos de la primera prueba en Render están en §5. Quedan por verificar también los
+datos de biblioteca, los servicios publicados y los tipos de usuario aceptados al registrarse (§3.1).
 
 ### Preparar e instalar el APK
 
@@ -383,32 +398,34 @@ npx eas-cli@latest build -p android --profile integracion
 ```
 
 El perfil usa HTTPS en Render y los mismos módulos que `.env.example`, incluidos
-`estadisticas` y `asistencia`. Las variables `EXPO_PUBLIC_*` quedan incorporadas al APK.
+`estadisticas`, `asistencia` y `autoarchivo`. Las variables `EXPO_PUBLIC_*` quedan incorporadas al APK.
 Cuando EAS termine, instala el APK desde el enlace de la compilación en un Android con cámara.
 El perfil `preview` sigue siendo el APK de demostración con mocks. Ambos comparten el
 identificador de la app, así que instalar uno puede reemplazar el otro.
 
-### Recorrido de aceptación en Render
+### Pruebas con el APK por rol
 
-1. **Sesión y portal.** Abrir Inicio sin sesión, revisar servicios, fotos, avisos y guías.
-   Entrar con una cuenta de comunidad y una de personal. Revisar perfil, acceso según rol y
-   notificaciones. La primera petición puede tardar hasta un minuto si Render estaba dormido.
-2. **Comunidad.** Con cuentas habilitadas para cada servicio, enviar una reserva, una asesoría,
-   una capacitación y un préstamo de tablet. Confirmar que aparecen en Mis solicitudes con su
-   detalle e historial. Revisar que el calendario ofrece días hábiles y que un conflicto muestra
-   las alternativas cuando el servidor las devuelve.
-3. **Personal.** Desde Gestión, aprobar o cancelar solicitudes de prueba, confirmar un bloqueo
-   con reservas afectadas, y probar las configuraciones de espacios, portal y parámetros. Verificar
-   que quitar un bloqueo libera su franja, que un espacio con reservas futuras sugiere
-   «Desactivar», y que un préstamo reservado admite cancelación. Entregar y devolver otro
-   préstamo de prueba, y compartir su constancia con el código del Backend.
-4. **Estadísticas.** Aplicar un rango con operaciones y filtros de facultad, sede y servicio.
-   Verificar que los indicadores y la afluencia del Dashboard reflejan sus rangos. Abrir y
-   compartir el CSV y el PDF con los filtros aplicados.
-5. **Asistencia.** Con una asesoría o capacitación aprobada, mostrar el QR al inicio de la
-   sesión. Escanear desde otra cuenta, repetir para verificar que no duplica el registro y
-   confirmar el medio en la lista del personal. Registrar a mano una persona con cuenta (UUID)
-   y otra sin cuenta. Después del vencimiento, comprobar que el QR ya no registra y que el
-   registro manual sigue disponible.
+- **Comunidad.** Abrir Inicio sin sesión y revisar servicios, fotos, guías, Koha y autoarchivo.
+  Entrar con una cuenta vigente y probar también el acceso con una inactiva. Cambiar la foto,
+  volver a entrar y quitarla. Verificar el rechazo de un formato incompatible y de un archivo
+  de más de 5 MB. Enviar una reserva, una asesoría, una capacitación y un préstamo de tablet.
+  Revisar Mis solicitudes, historial y notificaciones. Escanear dos veces el QR de la misma
+  sesión y comprobar con el facilitador que solo hay un registro.
+- **Administración.** Guardar y volver a abrir un día con 07:00–12:00 y 14:00–21:00. Editar una
+  franja, quitar otra y comprobar el rechazo de un cruce. Revisar el catálogo de espacios,
+  bloques y contenidos del portal. Probar altas y permisos de personal, los filtros del Dashboard
+  y la exportación de CSV y PDF. Entregar y devolver una tablet de prueba, compartir la constancia
+  con su código y verificar la firma del responsable si el Backend ya la devuelve. Confirmar
+  que Mi firma solo aparece si el perfil admite el campo. Comprobar el enlace de personal a Koha
+  con y sin `staff_url`.
+- **Facilitador.** Abrir una asesoría asignada en Agenda y una capacitación desde la bandeja.
+  Revisar su historial y el horario entre las dos franjas. Mostrar el QR y comprobar que vence
+  sin intervención. Revisar la lista de asistentes y registrar a mano a una persona sin cuenta.
+  Comprobar que aparece como MANUAL y que el rol sin permiso `roles` no necesita el directorio.
+- **Gestor de espacios.** Consultar la jornada partida y comprobar que no ofrece el intervalo
+  de 12:00 a 14:00. Reservar para un tercero mediante correo institucional con una cuenta sin
+  permiso `roles`. Aprobar y cancelar desde Gestión. Crear y quitar un bloqueo de prueba,
+  comprobar que libera la franja y que un espacio con reservas futuras sugiere «Desactivar».
 
-La compilación del APK y este recorrido quedan pendientes.
+La primera petición puede tardar hasta un minuto si Render estaba dormido. La compilación
+del APK y el recorrido en Render quedan pendientes.
