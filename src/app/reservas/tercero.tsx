@@ -13,16 +13,18 @@ import { useEspacios } from '@/hooks/useEspacios';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
 import { useUsuarios } from '@/hooks/useUsuarios';
+import { usaApi } from '@/api/cliente';
 
 const TITULO = 'Reservar para un tercero';
 
 export default function ReservaTercero() {
   const { tienePermiso } = useRol();
-  const usuarios = useUsuarios();
+  const conDirectorio = tienePermiso('reservas') && tienePermiso('roles');
+  const usuarios = useUsuarios(conDirectorio);
   const espacios = useEspacios();
   const parametros = useParametros();
 
-  const consultas = [usuarios, espacios, parametros];
+  const consultas = conDirectorio ? [usuarios, espacios, parametros] : [espacios, parametros];
   const reintentar = () => consultas.filter((c) => c.isError).forEach((c) => c.refetch());
 
   let contenido;
@@ -30,14 +32,14 @@ export default function ReservaTercero() {
     contenido = <SinPermiso />;
   } else if (consultas.some((c) => c.isPending)) {
     contenido = <EstadoCarga mensaje="Cargando personas y espacios…" />;
-  } else if (!usuarios.data || !espacios.data || !parametros.data) {
+  } else if ((conDirectorio && !usuarios.data) || !espacios.data || !parametros.data) {
     contenido = (
       <EstadoError mensaje="No pudimos cargar lo necesario para reservar." onReintentar={reintentar} />
     );
   } else {
     contenido = (
       <FormularioReservaTercero
-        usuarios={usuarios.data}
+        usuarios={conDirectorio ? usuarios.data : undefined}
         espacios={espacios.data}
         parametros={parametros.data}
       />
@@ -49,7 +51,7 @@ export default function ReservaTercero() {
       <EncabezadoApilado titulo={TITULO} />
       <Pantalla
         titulo={TITULO}
-        subtitulo="La reserva queda aprobada y se notifica a la persona."
+        subtitulo={usaApi('reservas') ? 'La solicitud queda pendiente y se notifica a la persona.' : 'La reserva queda aprobada y se notifica a la persona.'}
         conEncabezado
         conTeclado
       >

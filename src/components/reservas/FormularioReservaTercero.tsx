@@ -39,6 +39,7 @@ const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
 
 const VACIO: Formulario = {
   solicitanteId: '',
+  correoSolicitante: '',
   espacioId: '',
   fecha: '',
   horaInicio: '',
@@ -49,7 +50,7 @@ const VACIO: Formulario = {
 };
 
 type Props = {
-  usuarios: Usuario[];
+  usuarios?: Usuario[];
   /** Espacios activos: solo en ellos se puede reservar. */
   espacios: Espacio[];
   parametros: Parametros;
@@ -61,7 +62,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
   const [creadaPara, setCreadaPara] = useState<string | null>(null);
 
   const { control, handleSubmit, setValue, reset } = useForm<Formulario>({
-    resolver: zodResolver(esquemaReservaTercero({ parametros, espacios, hoy })),
+    resolver: zodResolver(esquemaReservaTercero({ parametros, espacios, hoy }, !usuarios)),
     defaultValues: VACIO,
   });
   // El máximo de asistentes es la capacidad del espacio elegido (useWatch: React Compiler).
@@ -77,14 +78,15 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
   }, [aviso]);
 
   const enviar = (datos: Formulario) => {
-    const persona = usuarios.find((u) => u.id === datos.solicitanteId);
-    if (!persona) return;
+    const persona = usuarios?.find((u) => u.id === datos.solicitanteId);
+    const correo = persona?.correo ?? datos.correoSolicitante.trim().toLowerCase();
+    if (!correo || (usuarios && !persona)) return;
     mutate(
       {
         espacioId: datos.espacioId,
-        solicitanteId: persona.id,
-        solicitante: persona.nombre,
-        correoSolicitante: persona.correo,
+        solicitanteId: persona?.id ?? '',
+        solicitante: persona?.nombre ?? correo,
+        correoSolicitante: correo,
         fecha: datos.fecha.trim(),
         horaInicio: datos.horaInicio.trim(),
         horaFin: datos.horaFin.trim(),
@@ -92,7 +94,7 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
         asistentes: Number(datos.asistentes),
         requerimientos: datos.requerimientos.trim() || undefined,
       },
-      { onSuccess: () => setCreadaPara(persona.nombre) },
+      { onSuccess: (reserva) => setCreadaPara(reserva.solicitante || correo) },
     );
   };
 
@@ -136,13 +138,25 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
   return (
     <View style={estilos.formulario}>
       <Seccion titulo="Persona">
-        <ElegirPersona
+        {usuarios ? <ElegirPersona
           usuarios={usuarios}
           control={control}
           // Al elegir se valida (quita el error); al "Cambiar" no, para no mostrar un error antes de buscar.
           onElegir={(id) => setValue('solicitanteId', id, { shouldValidate: id !== '' })}
           deshabilitado={guardando}
-        />
+        /> : <Controller
+          control={control}
+          name="correoSolicitante"
+          render={({ field, fieldState }) => (
+            <View>
+              <TextInput label="Correo institucional" mode="outlined" keyboardType="email-address"
+                autoCapitalize="none" autoCorrect={false} value={field.value}
+                onChangeText={field.onChange} onBlur={field.onBlur} disabled={guardando}
+                error={Boolean(fieldState.error)} />
+              {fieldState.error ? <HelperText type="error">{fieldState.error.message}</HelperText> : null}
+            </View>
+          )}
+        />}
         {/* #225, CA3: aquí se usan los datos de otra persona, así que se dice para qué. */}
         <NotaDatosPersonales mensaje="De la persona para la que reservas usamos su nombre y su cuenta institucional, solo para la reserva y sus notificaciones." />
       </Seccion>

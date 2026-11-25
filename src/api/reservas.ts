@@ -35,6 +35,7 @@ import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
 import { obtenerParametros } from './parametros';
+import { buscarEnDirectorio } from './usuarios';
 
 /** Copia mutable: con mocks, las decisiones se ven durante la sesión de la app. */
 let reservas: Reserva[] = RESERVAS.map((reserva) => ({ ...reserva }));
@@ -316,6 +317,13 @@ export async function crearReservaTercero({
     if (!datos.proposito?.trim()) {
       throw new ErrorApi(400, 'El propósito es obligatorio.');
     }
+    const persona = !datos.solicitanteId && correoSolicitante ? buscarEnDirectorio(correoSolicitante) : undefined;
+    if (!datos.solicitanteId && (!persona || persona.activo === false)) {
+      throw new ErrorApi(400, 'No encontramos una cuenta activa con ese correo institucional.');
+    }
+    if (persona && persona.tipo !== 'docente' && persona.tipo !== 'administrativo') {
+      throw new ErrorApi(400, 'La cuenta debe pertenecer a un docente o administrativo.');
+    }
     const parametros = await obtenerParametros();
     if (!esDiaHabil(datos.fecha, parametros)) {
       throw new ErrorApi(400, 'La fecha no es un día hábil de la biblioteca.');
@@ -326,6 +334,7 @@ export async function crearReservaTercero({
 
     const nueva: Reserva = {
       ...datos,
+      ...(persona ? { solicitanteId: persona.id, solicitante: persona.nombre } : {}),
       id: `res-${Date.now()}`,
       estado: 'aprobada',
     };
@@ -344,6 +353,11 @@ export async function crearReservaTercero({
       'Personal de la biblioteca',
       'Creada por el personal.',
     );
+    registrarUso({
+      id: `uso-reserva-${nueva.id}`, servicio: 'espacios', finalidad: nueva.proposito,
+      fecha: nueva.fecha, modalidad: 'presencial', estado: 'pendiente', respondida: true,
+      ...datosDeSolicitante(nueva.solicitanteId),
+    });
 
     return simularRed({ ...nueva });
   }
