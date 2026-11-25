@@ -12,13 +12,14 @@ import { router } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 import { Button } from 'react-native-paper';
 
+import { SeccionIncidencias } from '@/components/inventario/SeccionIncidencias';
 import { BotonRegistrarTablet, SeccionTablets } from '@/components/inventario/SeccionTablets';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 import type { Permiso } from '@/types';
 
-type ValorSeccion = 'tablets';
+type ValorSeccion = 'tablets' | 'incidencias';
 
 type Seccion = {
   valor: ValorSeccion;
@@ -38,6 +39,7 @@ const SECCIONES: Seccion[] = [
     Flotante: BotonRegistrarTablet,
     permisos: ['tablets'],
   },
+  { valor: 'incidencias', etiqueta: 'Incidencias', Componente: SeccionIncidencias, permisos: ['tablets'] },
 ];
 
 export default function Inventario() {

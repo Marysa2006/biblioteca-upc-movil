@@ -312,3 +312,41 @@ export function alternativasTabletDesdeBackend(
     horaLimite: horaDesdeBackend(tramo.end),
   }));
 }
+
+export const TIPOS_INCIDENCIA_TABLET = {
+  OVERDUE: 'Préstamo vencido',
+  LATE_RETURN: 'Devolución tardía',
+  DAMAGE: 'Daño',
+  MISSING_ACCESSORY: 'Accesorio faltante',
+  LOSS: 'Pérdida',
+  OTHER: 'Otra',
+} as const;
+
+export type TipoIncidenciaTablet = keyof typeof TIPOS_INCIDENCIA_TABLET;
+export type IncidenciaTabletBackend = {
+  id: number;
+  loan_id: number;
+  request_id: number;
+  tablet: string | null;
+  requester: string;
+  incident_type: TipoIncidenciaTablet;
+  incident_type_display: string;
+  description: string;
+  reported_by: string | null;
+  created_at: string;
+};
+
+export function incidenciaTabletDesdeBackend(incidencia: IncidenciaTabletBackend) {
+  return {
+    id: String(incidencia.id),
+    prestamoId: String(incidencia.loan_id),
+    solicitudId: String(incidencia.request_id),
+    tablet: incidencia.tablet,
+    solicitante: incidencia.requester,
+    tipo: incidencia.incident_type,
+    etiqueta: incidencia.incident_type_display,
+    descripcion: incidencia.description,
+    reporto: incidencia.reported_by,
+    fechaHora: fechaHoraLocal(incidencia.created_at),
+  };
+}

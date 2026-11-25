@@ -17,6 +17,8 @@ import {
   obtenerCondicionesTablet,
   obtenerDisponibilidadTablets,
   obtenerMisPrestamos,
+  obtenerIncidenciasTablets,
+  type FiltrosIncidenciasTablet,
   obtenerPrestamos,
   obtenerPrestamosVencidos,
   obtenerTablets,
@@ -31,6 +33,8 @@ import {
   type DatosTablet,
   type FormularioPrestamo,
 } from '@/api/tablets';
+import { useRol } from './useRol';
+
 import { useSesion } from '@/store/sesion';
 import { compartirConstanciaPdf } from '@/utils/exportarConstancia';
 import type { EstadoPrestamo, EstadoTablet } from '@/types';
@@ -266,5 +270,16 @@ export function useRegistrarDevolucion() {
 export function useBuscarTabletPorCodigo() {
   return useMutation({
     mutationFn: (codigo: string) => buscarTabletPorCodigo(codigo),
+  });
+}
+
+export { TIPOS_INCIDENCIA_TABLET, type FiltrosIncidenciasTablet } from '@/api/tablets';
+
+export function useIncidenciasTablets(filtros: FiltrosIncidenciasTablet) {
+  const { tienePermiso } = useRol();
+  return useQuery({
+    queryKey: claves.incidenciasTablets(filtros),
+    queryFn: () => obtenerIncidenciasTablets(filtros),
+    enabled: tienePermiso('tablets'),
   });
 }

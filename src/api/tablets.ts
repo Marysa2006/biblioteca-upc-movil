@@ -59,6 +59,10 @@ import {
   ESTADO_PRESTAMO,
   franjasTabletsDesdeBackend,
   prestamoDesdeBackend,
+  incidenciaTabletDesdeBackend,
+  TIPOS_INCIDENCIA_TABLET,
+  type IncidenciaTabletBackend,
+  type TipoIncidenciaTablet,
   prestamoHaciaBackend,
   prestamoPersonalDesdeBackend,
   registroTabletHaciaBackend,
@@ -1230,4 +1234,46 @@ export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
   const vencidos = prestamos.filter((prestamo) => prestamo.estado === 'vencido');
   vencidos.forEach(avisarVencido);
   return simularRed(ordenarVencidos(vencidos).map(copiarPrestamo));
+}
+
+export type FiltrosIncidenciasTablet = { tipo?: TipoIncidenciaTablet; desde?: string; hasta?: string };
+export type IncidenciaTablet = ReturnType<typeof incidenciaTabletDesdeBackend>;
+export { TIPOS_INCIDENCIA_TABLET };
+
+export async function obtenerIncidenciasTablets(filtros: FiltrosIncidenciasTablet): Promise<IncidenciaTablet[]> {
+  if (usaApi('tablets')) {
+    const consulta = new URLSearchParams();
+    if (filtros.tipo) consulta.set('type', filtros.tipo);
+    if (filtros.desde) consulta.set('from', filtros.desde);
+    if (filtros.hasta) consulta.set('to', filtros.hasta);
+    return peticionTodas<IncidenciaTabletBackend, IncidenciaTablet>(
+      '/tablets/incidents/?' + consulta, incidenciaTabletDesdeBackend,
+    );
+  }
+  const lista = await obtenerPrestamos('todas');
+  return lista.flatMap((prestamo) => {
+    const devolucion = prestamo.devolucion;
+    const datos = {
+      prestamoId: prestamo.id,
+      solicitudId: prestamo.id,
+      tablet: tablets.find((tablet) => tablet.id === prestamo.tabletId)?.codigo ?? null,
+      solicitante: prestamo.solicitante,
+    };
+    const incidencia = (tipo: TipoIncidenciaTablet, fechaHora: string, descripcion = '') => ({
+      ...datos, id: prestamo.id + ':' + tipo, tipo, fechaHora, descripcion,
+      etiqueta: TIPOS_INCIDENCIA_TABLET[tipo], reporto: devolucion?.responsable?.nombre ?? null,
+    });
+    const filas: IncidenciaTablet[] = [];
+    if (prestamo.estado === 'vencido') filas.push(incidencia('OVERDUE', prestamo.fecha + ' ' + prestamo.horaLimite));
+    if (devolucion?.tardia) filas.push(incidencia('LATE_RETURN', devolucion.fechaHora));
+    if (devolucion?.novedades) {
+      filas.push(incidencia(devolucion.condicion === 'danado' ? 'DAMAGE' : 'OTHER',
+        devolucion.fechaHora, devolucion.novedades));
+    }
+    return filas;
+  }).filter(({ tipo, fechaHora }) =>
+    (!filtros.tipo || tipo === filtros.tipo) &&
+    (!filtros.desde || fechaHora.slice(0, 10) >= filtros.desde) &&
+    (!filtros.hasta || fechaHora.slice(0, 10) <= filtros.hasta),
+  ).sort((a, b) => b.fechaHora.localeCompare(a.fechaHora));
 }
