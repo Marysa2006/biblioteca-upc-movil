@@ -17,6 +17,23 @@ export const TIPO_DESDE_BACKEND: Record<TipoUsuarioBackend, TipoUsuario> = {
   ADMINISTRATIVE: 'administrativo',
 };
 
+/**
+ * Día de la semana. El Backend (`DayOfWeek`) cuenta desde el lunes: `0` = lunes … `6` = domingo.
+ * La app, como `Date.getDay()`: `0` = domingo … `6` = sábado.
+ */
+export function diaDesdeBackend(dia: number): number {
+  return (dia + 1) % 7;
+}
+
+export function diaHaciaBackend(dia: number): number {
+  return (dia + 6) % 7;
+}
+
+/** Hora del Backend (`'07:00:00'`) como la usa la app (`'07:00'`). */
+export function horaDesdeBackend(hora: string): string {
+  return hora.slice(0, 5);
+}
+
 /** Sedes del Backend (`Campus`); la app usa los nombres de `SEDES`. */
 export type SedeBackend = 'VALLEDUPAR' | 'AGUACHICA';
 

@@ -3,11 +3,18 @@
  * Copien esta forma para cada HU de datos.
  *
  * Servicios de la biblioteca: lectura para la comunidad (HU-01) y administración (HU-04).
- * La ruta '/servicios/' es provisional: confírmenla con el equipo de Backend.
+ * El portal público usa rutas de Django. Las rutas de administración siguen siendo provisionales.
  */
 import type { Servicio } from '@/types';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import {
+  fichaDesdePortal,
+  serviciosDesdePortal,
+  type FichaPortal,
+  type FichaServicio,
+  type ServiciosPortal,
+} from './backend/servicios';
+import { ErrorApi, peticion, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { SERVICIOS } from './mocks/servicios';
 
 /** Copia mutable: con mocks, lo que crea o edita la administración se ve durante la sesión de la app. */
@@ -17,23 +24,27 @@ let servicios: Servicio[] = SERVICIOS.map((servicio) => ({ ...servicio }));
 export type DatosServicio = Omit<Servicio, 'id'>;
 
 /** Servicios activos, para la comunidad (HU-01). */
-export function obtenerServicios(): Promise<Servicio[]> {
-  if (USAR_MOCKS) {
+export async function obtenerServicios(): Promise<Servicio[]> {
+  if (!usaApi('servicios')) {
     return simularRed(servicios.filter((servicio) => servicio.activo).map((s) => ({ ...s })));
   }
-  return peticion<Servicio[]>('/servicios/');
+  return serviciosDesdePortal(await peticion<ServiciosPortal>('/portal/services/'));
 }
 
 /** Detalle de un servicio (HU-01). Falla con ErrorApi 404 si no existe o está inactivo. */
-export function obtenerServicio(id: string): Promise<Servicio> {
-  if (USAR_MOCKS) {
+export async function obtenerServicio(id: string): Promise<FichaServicio> {
+  if (!usaApi('servicios')) {
     const servicio = servicios.find((s) => s.id === id && s.activo);
     if (!servicio) {
       return Promise.reject(new ErrorApi(404, `No existe el servicio ${id}`));
     }
     return simularRed({ ...servicio });
   }
-  return peticion<Servicio>(`/servicios/${id}/`);
+  const ficha = fichaDesdePortal(
+    await peticion<FichaPortal>(`/portal/services/${encodeURIComponent(id)}/`),
+  );
+  if (!ficha) throw new ErrorApi(404, `No existe el servicio ${id}`);
+  return ficha;
 }
 
 /** Todos los servicios, también los inactivos, para la administración (HU-04). */

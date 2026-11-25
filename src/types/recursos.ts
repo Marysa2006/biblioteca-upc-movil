@@ -8,6 +8,6 @@ export type Recurso = {
   id: string;
   nombre: string;
   descripcion: string;
-  url: string;
+  url: string | null;
   requiereCuenta: boolean;
 };

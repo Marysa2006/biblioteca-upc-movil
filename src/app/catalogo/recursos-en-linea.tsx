@@ -84,6 +84,10 @@ export default function RecursosEnLinea() {
 
   // CA2: se abre el recurso externo.
   const abrirEnNavegadorConAviso = useCallback((recurso: Recurso) => {
+    if (!recurso.url) {
+      setAviso(`No se pudo abrir ${recurso.nombre}. Intenta de nuevo.`);
+      return;
+    }
     abrirEnNavegador(recurso.url).catch(() =>
       setAviso(`No se pudo abrir ${recurso.nombre}. Intenta de nuevo.`),
     );
@@ -108,10 +112,17 @@ export default function RecursosEnLinea() {
   useFocusEffect(
     useCallback(() => {
       const recurso = recursoTrasLogin.current;
-      if (!recurso) return;
+      if (!recurso || (usuario && (isPending || isRefetching))) return;
       recursoTrasLogin.current = null;
-      if (usuario) abrirEnNavegadorConAviso(recurso);
-    }, [usuario, abrirEnNavegadorConAviso]),
+      if (!usuario) return;
+
+      const actualizado = isError ? undefined : recursos?.find(({ id }) => id === recurso.id);
+      if (actualizado) {
+        abrirEnNavegadorConAviso(actualizado);
+      } else {
+        setAviso(`No se pudo abrir ${recurso.nombre}. Intenta de nuevo.`);
+      }
+    }, [usuario, recursos, isPending, isRefetching, isError, abrirEnNavegadorConAviso]),
   );
 
   let lista;

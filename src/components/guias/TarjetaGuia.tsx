@@ -79,7 +79,7 @@ export function TarjetaGuia({ guia, estado, onAbrir }: Props) {
               </Text>
             ) : null}
             <Text variant="bodySmall" style={estilos.descripcion}>
-              {`Actualizada el ${fechaLegible(guia.actualizada)}`}
+              {`Actualizada el ${fechaLegible(guia.actualizada.slice(0, 10))}`}
             </Text>
           </View>
         </View>

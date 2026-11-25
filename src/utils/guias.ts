@@ -19,7 +19,9 @@ export type EstadoGuia = 'guardada' | 'desactualizada' | 'sin_guardar';
 export function estadoGuia(guia: Guia, guardadas: GuiaGuardada[]): EstadoGuia {
   const guardada = guardadas.find((g) => g.guia.id === guia.id);
   if (!guardada) return 'sin_guardar';
-  return guardada.guia.actualizada < guia.actualizada ? 'desactualizada' : 'guardada';
+  return Date.parse(guardada.guia.actualizada) < Date.parse(guia.actualizada)
+    ? 'desactualizada'
+    : 'guardada';
 }
 
 /** Guías publicadas con una versión más nueva que la guardada en el celular (CA3). */

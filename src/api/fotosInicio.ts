@@ -5,8 +5,9 @@
  *   crear, editar, publicar u ocultar y cambiar el orden.
  * - Se publican máximo MAXIMO_FOTOS_INICIO (400 si se pasa) y la descripción es obligatoria.
  *
- * El recurso del Backend todavía no existe: las rutas son provisionales y la subida de la
- * imagen (multipart o un endpoint aparte) está por acordar, como la foto de los espacios.
+ * Con la API (módulo `fotosInicio` de `usaApi()`), la comunidad lee `GET /portal/home-photos/`.
+ * La administración (`/portal/manage/home-photos/`, la imagen en `image` por multipart) sigue con
+ * datos de prueba hasta la fase 4 de la integración.
  */
 import type { FotoInicio, Usuario } from '@/types';
 import {
@@ -17,7 +18,8 @@ import {
 } from '@/utils/inicio';
 import { tienePermiso } from '@/utils/roles';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { fotoInicioDesdeBackend, type FotoInicioBackend } from './backend/portal';
+import { ErrorApi, peticion, simularRed, usaApi, USAR_MOCKS } from './cliente';
 import { FOTOS_INICIO } from './mocks/fotosInicio';
 
 /** Copia mutable: con mocks, los cambios se ven durante la sesión de la app. */
@@ -64,11 +66,13 @@ function errorDeValidacion(datos: DatosFotoInicio): ErrorApi | null {
 }
 
 /** Las fotos publicadas, en su orden: lo que ve la comunidad en Inicio (CA1). */
-export function obtenerFotosInicio(): Promise<FotoInicio[]> {
-  if (USAR_MOCKS) {
+export async function obtenerFotosInicio(): Promise<FotoInicio[]> {
+  if (!usaApi('fotosInicio')) {
     return simularRed(copia(fotosPublicadas(fotos)));
   }
-  return peticion<FotoInicio[]>(RUTA);
+  // Sin fotos publicadas, el carrusel usa las que trae la app (#290).
+  const publicadas = await peticion<FotoInicioBackend[]>('/portal/home-photos/');
+  return publicadas.map(fotoInicioDesdeBackend);
 }
 
 /** Todas las fotos, también las ocultas, para Gestión → Portal → Fotos de Inicio. */

@@ -21,6 +21,8 @@ export const claves = {
    */
   equipo: ['usuarios', 'equipo'] as const,
   recursos: ['recursos'] as const,
+  recursosPorUsuario: (usuarioId: string) => ['recursos', usuarioId] as const,
+  contenidosPublicos: ['contenidos', 'publicos'] as const,
   /** Resultados de Koha para un texto (HU-02); las páginas van dentro de la misma clave. */
   busquedaCatalogo: (texto: string) => ['catalogo', 'busqueda', texto] as const,
   /** Resultados del repositorio DSpace para un texto (HU-11), con sus páginas. */

@@ -235,11 +235,23 @@ provisionales en español. Se conecta **un módulo a la vez**, con su PR y su pr
 |---|---|---|
 | 0 | Probar Render: rutas públicas, login, `/me/`, errores y paginación | — ✅ |
 | 1 | El cliente (errores, renovación del token, paginación, servidor lento) y la sesión: login, `/me/`, `/me/access/` (el superusuario cuenta como `administrador`), registro, política y perfil | `sesion` |
-| 2 | Lectura pública: servicios, contenidos, recursos, guías, fotos de Inicio, Koha, autoarchivo, horarios, festivos, espacios con disponibilidad, temas y líneas | `servicios`, `contenidos`, `recursos`, `guias`, `fotosInicio`, `autoarchivo`, `parametros`, `espacios` |
-| 3 | Solicitudes de la comunidad: reservas, asesorías (sin jornadas ni franjas), tablets, capacitaciones, Mis solicitudes con historial, notificaciones y foto de perfil | `reservas`, `asesorias`, `tablets`, `capacitaciones`, `solicitudes`, `notificaciones` |
+| 2 | Lectura pública: servicios, avisos de Inicio, recursos, guías, notificaciones, fotos de Inicio, y periodos, festivos, horarios y plazos (los días hábiles de todos los calendarios) | `servicios`, `contenidos`, `recursos`, `guias`, `notificaciones`, `fotosInicio`, `parametros` |
+| 3 | Solicitudes de la comunidad, **cada una con su catálogo**: espacios (con disponibilidad) y reservas, temas y asesorías (sin jornadas ni franjas), líneas y capacitaciones, tablets, Mis solicitudes con historial y foto de perfil | `espacios`, `reservas`, `asesorias`, `capacitaciones`, `tablets`, `solicitudes` |
 | 4 | Personal: bandejas, entrega y devolución con firma y `receipt_code`, y la administración | `bloqueos`, `usuarios` y la parte del personal de los anteriores |
 | 5 | Estadísticas y asistencia (#231) | `estadisticas`, `asistencia` |
 | 6 | APK contra el servidor con HTTPS y pruebas de aceptación | todos |
+
+En la fase 2 ya se pueden habilitar las lecturas públicas de avisos y recursos con `EXPO_PUBLIC_API_MODULOS=sesion,contenidos,recursos` y `EXPO_PUBLIC_USAR_MOCKS=true`. `contenidos` activa la lectura de Inicio, solo avisos y noticias: las páginas (`PAGE`, como `autoarchivo`) no son novedades. La administración de contenidos conserva su flujo mock. Para abrir recursos protegidos se requiere una sesión real, ya que Render entrega su URL después del login. Render puede devolver una lista vacía cuando no hay avisos publicados.
+
+Agrega `servicios` a `EXPO_PUBLIC_API_MODULOS` para leer el catálogo y las fichas de Render. La administración sigue usando los mocks con `EXPO_PUBLIC_USAR_MOCKS=true`. Virtualteca abre la solicitud de tablet y Hemeroteca conserva su ficha informativa. La app muestra los servicios activos que puede clasificar en sus categorías existentes.
+
+`guias` activa el listado, el detalle y la gestión de guías (requiere `sesion` para gestionar). `notificaciones` activa la bandeja y el marcado como leída de la cuenta real. En modo mixto, las solicitudes simuladas solo generan notificaciones simuladas.
+
+`parametros` lee periodos, festivos y horarios de `config/` (públicos) y traduce el día de la semana (`0` = lunes en el Backend, `0` = domingo en la app). Con eso, todos los calendarios de la app, también los de las solicitudes que siguen con datos de prueba, usan los días hábiles del servidor. Los plazos (`config/parameters/`) solo los puede leer quien administra los parámetros; los demás usan los de siempre, que son los mismos del Backend. **Guardar con la API llega en la fase 4:** con el módulo activo, Parámetros generales avisa que no guarda. `fotosInicio` lee las fotos publicadas; sin ninguna, el carrusel usa las de la app, y la administración sigue con datos de prueba.
+
+**Por qué los catálogos van en la fase 3 con sus solicitudes:** las citas, capacitaciones y reservas de prueba apuntan a los ids de los temas, líneas y espacios de prueba. Si el catálogo viniera de Render y la solicitud siguiera simulada, pedir un servicio fallaría porque el tema, la línea o el espacio «no existe».
+
+**Autoarchivo no encaja todavía:** la app muestra cuatro listas (procedimiento, requisitos, formatos y metadatos) y el Backend entrega un texto libre (`guide.body` de `portal/self-archive/`). Sigue con datos de prueba hasta acordar con el Backend cómo se separan los bloques. **Koha** sigue con `URL_CATALOGO_KOHA`, porque `portal/koha-opac/` aún no tiene dirección en Render (`KOHA_OPAC_URL`); el ingreso del personal (`staff_url`) es del #311.
 
 **Catálogo y repositorio** van aparte: no pasan por el Backend.
 
