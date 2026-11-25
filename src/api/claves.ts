@@ -26,7 +26,7 @@ export const claves = {
   /** Resultados de Koha para un texto (HU-02); las páginas van dentro de la misma clave. */
   busquedaCatalogo: (texto: string) => ['catalogo', 'busqueda', texto] as const,
   /** Resultados del repositorio DSpace para un texto (HU-11), con sus páginas. */
-  busquedaRepositorio: (texto: string) => ['repositorio', 'busqueda', texto] as const,
+  busquedaRepositorio: (url: string | null, texto: string) => ['repositorio', 'busqueda', url, texto] as const,
   /** El id va dentro de la clave: la caché es por usuario. */
   perfil: (usuarioId?: string) => ['perfil', usuarioId] as const,
 
@@ -110,7 +110,7 @@ export const claves = {
 
   // ── Iteración 4: autoarchivo (HU-11) ─────────────────────────
   /** Contenido de orientación de autoarchivo (HU-11). */
-  orientacionAutoarchivo: ['autoarchivo', 'orientacion'] as const,
+  portalAutoarchivo: ['portal', 'self-archive'] as const,
 
   // ── Iteración 4: capacitaciones (HU-09, HU-10 y HU-12) ───────
   /** Todas las líneas de formación, también las inactivas (HU-09). */

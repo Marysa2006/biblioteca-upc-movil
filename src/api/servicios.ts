@@ -20,6 +20,7 @@ import {
   type ServicioGestionBackend,
   type ServiciosPortal,
 } from './backend/servicios';
+import { obtenerPortalAutoarchivo } from './autoarchivo';
 import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { SERVICIOS } from './mocks/servicios';
 
@@ -34,15 +35,24 @@ function categoriasDeGestion() {
   return peticion<CategoriaServicioBackend[]>('/portal/manage/service-categories/');
 }
 
+// La clasificación por slug sigue disponible cuando falla la consulta independiente de enlaces.
+async function urlRepositorioParaServicios() {
+  if (!usaApi('autoarchivo')) return null;
+  return obtenerPortalAutoarchivo().then(({ url }) => url, () => null);
+}
+
 async function guardarServicioBackend(datos: DatosServicio, id?: string) {
   const error = errorDeValidacion(datos);
   if (error) throw error;
   const ruta = id ? `${RUTA_GESTION}${encodeURIComponent(id)}/` : RUTA_GESTION;
-  const [categorias, anterior] = await Promise.all([
+  const [categorias, anterior, repositorio] = await Promise.all([
     categoriasDeGestion(),
     id ? peticion<ServicioGestionBackend>(ruta) : undefined,
+    datos.categoria === 'repositorio' && usaApi('autoarchivo')
+      ? obtenerPortalAutoarchivo().then(({ url }) => url)
+      : urlRepositorioParaServicios(),
   ]);
-  const categoriaAnterior = anterior && servicioGestionDesdeBackend(anterior, categorias).categoria;
+  const categoriaAnterior = anterior && servicioGestionDesdeBackend(anterior, categorias, repositorio).categoria;
   const categoria = anterior && categoriaAnterior === datos.categoria
     ? anterior.category : categoriaServicioHaciaBackend(datos.categoria, categorias);
   if (categoria === undefined) throw new ErrorApi(400, 'Esa categoría no existe en el portal.');
@@ -50,9 +60,9 @@ async function guardarServicioBackend(datos: DatosServicio, id?: string) {
   if (!slug) throw new ErrorApi(400, 'El nombre debe incluir letras o números.');
   const servicio = await peticion<ServicioGestionBackend>(ruta, {
     method: id ? 'PATCH' : 'POST',
-    body: JSON.stringify(servicioHaciaBackend(datos, categoria, slug, anterior, categoriaAnterior === datos.categoria)),
+    body: JSON.stringify(servicioHaciaBackend(datos, categoria, slug, anterior, categoriaAnterior === datos.categoria, repositorio)),
   });
-  return servicioGestionDesdeBackend(servicio, categorias);
+  return servicioGestionDesdeBackend(servicio, categorias, repositorio);
 }
 
 /** Servicios activos, para la comunidad (HU-01). */
@@ -60,7 +70,11 @@ export async function obtenerServicios(): Promise<Servicio[]> {
   if (!usaApi('servicios')) {
     return simularRed(servicios.filter((servicio) => servicio.activo).map((s) => ({ ...s })));
   }
-  return serviciosDesdePortal(await peticion<ServiciosPortal>('/portal/services/'));
+  const [lista, repositorio] = await Promise.all([
+    peticion<ServiciosPortal>('/portal/services/'),
+    urlRepositorioParaServicios(),
+  ]);
+  return serviciosDesdePortal(lista, repositorio);
 }
 
 /** Detalle de un servicio (HU-01). Falla con ErrorApi 404 si no existe o está inactivo. */
@@ -72,9 +86,11 @@ export async function obtenerServicio(id: string): Promise<FichaServicio> {
     }
     return simularRed({ ...servicio });
   }
-  const ficha = fichaDesdePortal(
-    await peticion<FichaPortal>(`/portal/services/${encodeURIComponent(id)}/`),
-  );
+  const [fichaPortal, repositorio] = await Promise.all([
+    peticion<FichaPortal>(`/portal/services/${encodeURIComponent(id)}/`),
+    urlRepositorioParaServicios(),
+  ]);
+  const ficha = fichaDesdePortal(fichaPortal, repositorio);
   if (!ficha) throw new ErrorApi(404, `No existe el servicio ${id}`);
   return ficha;
 }
@@ -85,7 +101,8 @@ export function obtenerTodosLosServicios(): Promise<Servicio[]> {
     return Promise.all([
       peticionTodas<ServicioGestionBackend, ServicioGestionBackend>(RUTA_GESTION, (servicio) => servicio),
       categoriasDeGestion(),
-    ]).then(([lista, categorias]) => lista.map((servicio) => servicioGestionDesdeBackend(servicio, categorias)));
+      urlRepositorioParaServicios(),
+    ]).then(([lista, categorias, repositorio]) => lista.map((servicio) => servicioGestionDesdeBackend(servicio, categorias, repositorio)));
   }
   return simularRed(servicios.map((servicio) => ({ ...servicio })));
 }
@@ -141,7 +158,8 @@ export function cambiarEstadoServicio(id: string, activo: boolean): Promise<Serv
         method: 'PATCH', body: JSON.stringify({ is_active: activo }),
       }),
       categoriasDeGestion(),
-    ]).then(([servicio, categorias]) => servicioGestionDesdeBackend(servicio, categorias));
+      urlRepositorioParaServicios(),
+    ]).then(([servicio, categorias, repositorio]) => servicioGestionDesdeBackend(servicio, categorias, repositorio));
   }
   const indice = servicios.findIndex((servicio) => servicio.id === id);
   if (indice === -1) {

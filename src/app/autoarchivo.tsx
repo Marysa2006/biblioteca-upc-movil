@@ -6,7 +6,7 @@
  *
  * "Ir al depósito" primero comprueba que el repositorio responde (CA3) y, si responde, lo abre
  * en el navegador integrado (CA2). Si no, muestra el aviso con Reintentar y no abre nada.
- * Patrón de datos: useOrientacionAutoarchivo() → obtenerOrientacionAutoarchivo() → mock.
+ * Patrón de datos: usePortalAutoarchivo() → obtenerPortalAutoarchivo() → mock.
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
@@ -23,7 +23,7 @@ import {
   EstadoVacio,
   Pantalla,
 } from '@/components/ui';
-import { useOrientacionAutoarchivo } from '@/hooks/useAutoarchivo';
+import { usePortalAutoarchivo } from '@/hooks/useAutoarchivo';
 import { abrirRepositorio, useComprobarRepositorio } from '@/hooks/useRepositorio';
 import { colores, espacio, fuentes } from '@/theme';
 import { fechaLegible } from '@/utils/fechas';
@@ -31,7 +31,8 @@ import { fechaLegible } from '@/utils/fechas';
 const TITULO = 'Orientación de autoarchivo';
 
 export default function Autoarchivo() {
-  const orientacion = useOrientacionAutoarchivo();
+  const portal = usePortalAutoarchivo();
+  const url = portal.data?.url;
   const comprobar = useComprobarRepositorio();
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -41,9 +42,10 @@ export default function Autoarchivo() {
   }, [aviso]);
 
   async function irAlDeposito() {
+    if (!url) return;
     setAviso(null);
     try {
-      await comprobar.mutateAsync();
+      await comprobar.mutateAsync(url);
     } catch (error) {
       // CA3: el 503 trae un mensaje listo para la persona; se lee el código sin importar la clase.
       setAviso(
@@ -54,24 +56,24 @@ export default function Autoarchivo() {
       return;
     }
     try {
-      await abrirRepositorio();
+      await abrirRepositorio(url);
     } catch {
       setAviso('No se pudo abrir el repositorio. Intenta de nuevo.');
     }
   }
 
   let contenido;
-  if (orientacion.isPending) {
+  if (portal.isPending) {
     contenido = <EstadoCarga mensaje="Cargando la orientación…" />;
-  } else if (orientacion.isError) {
+  } else if (portal.isError) {
     contenido = (
       <EstadoError
         mensaje="No pudimos cargar la orientación de autoarchivo."
-        onReintentar={() => orientacion.refetch()}
+        onReintentar={() => portal.refetch()}
       />
     );
   } else {
-    const { actualizada, procedimiento, requisitos, formatos, metadatos } = orientacion.data;
+    const { actualizada, procedimiento, requisitos, formatos, metadatos } = portal.data.orientacion;
     const vacia = [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
 
     contenido = vacia ? (
@@ -119,39 +121,41 @@ export default function Autoarchivo() {
           </BloqueOrientacion>
         ) : null}
 
-        <View style={estilos.deposito}>
-          {aviso ? (
-            <AvisoError mensaje={aviso}>
-              <Button
-                mode="outlined"
-                onPress={() => irAlDeposito()}
-                disabled={comprobar.isPending}
-                style={estilos.reintentar}
-                accessibilityRole="button"
-                accessibilityLabel="Reintentar abrir el Repositorio Institucional"
-              >
-                Reintentar
-              </Button>
-            </AvisoError>
-          ) : null}
+        {url ? (
+          <View style={estilos.deposito}>
+            {aviso ? (
+              <AvisoError mensaje={aviso}>
+                <Button
+                  mode="outlined"
+                  onPress={() => irAlDeposito()}
+                  disabled={comprobar.isPending}
+                  style={estilos.reintentar}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reintentar abrir el Repositorio Institucional"
+                >
+                  Reintentar
+                </Button>
+              </AvisoError>
+            ) : null}
 
-          <Button
-            mode="contained"
-            icon="open-in-new"
-            onPress={() => irAlDeposito()}
-            loading={comprobar.isPending}
-            disabled={comprobar.isPending}
-            contentStyle={estilos.contenidoBoton}
-            accessibilityRole="link"
-            accessibilityLabel="Abrir el Repositorio Institucional para depositar tu trabajo"
-          >
-            Ir al depósito
-          </Button>
-          <Text variant="bodySmall" style={estilos.secundario}>
-            El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la
-            Universidad. Al cerrarlo vuelves aquí.
-          </Text>
-        </View>
+            <Button
+              mode="contained"
+              icon="open-in-new"
+              onPress={() => irAlDeposito()}
+              loading={comprobar.isPending}
+              disabled={comprobar.isPending}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="link"
+              accessibilityLabel="Abrir el Repositorio Institucional para depositar tu trabajo"
+            >
+              Ir al depósito
+            </Button>
+            <Text variant="bodySmall" style={estilos.secundario}>
+              El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la
+              Universidad. Al cerrarlo vuelves aquí.
+            </Text>
+          </View>
+        ) : null}
       </>
     );
   }
@@ -161,9 +165,9 @@ export default function Autoarchivo() {
       <EncabezadoApilado titulo={TITULO} />
       <Pantalla
         titulo={TITULO}
-        subtitulo={orientacion.data?.titulo}
+        subtitulo={portal.data?.orientacion.titulo}
         conEncabezado
-        recarga={{ recargando: orientacion.isRefetching, onRecargar: () => orientacion.refetch() }}
+        recarga={{ recargando: portal.isRefetching, onRecargar: () => portal.refetch() }}
       >
         {contenido}
       </Pantalla>

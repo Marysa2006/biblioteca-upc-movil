@@ -1,13 +1,9 @@
 /**
  * Hooks del repositorio institucional, DSpace (HU-11).
  *
- *   const { data } = useBusquedaRepositorio(texto);
  *   data.pages.flatMap((pagina) => pagina.resultados); // todos los cargados
- *   abrirRepositorio(texto);                         // la búsqueda en el navegador; sin texto, el inicio
  *
  *   const comprobar = useComprobarRepositorio();     // HU-11: comprobar antes de abrir (CA3)
- *   await comprobar.mutateAsync();
- *   await abrirRepositorio();
  */
 import { useInfiniteQuery, useMutation } from '@tanstack/react-query';
 
@@ -16,7 +12,6 @@ import {
   buscarEnRepositorio,
   comprobarRepositorio,
   urlBusquedaRepositorio,
-  urlRepositorioPrincipal,
 } from '@/api/repositorio';
 import { abrirEnNavegador } from '@/utils/navegador';
 
@@ -24,14 +19,17 @@ import { abrirEnNavegador } from '@/utils/navegador';
 const VIGENCIA_BUSQUEDA_MS = 5 * 60 * 1000;
 
 /** Trabajos del repositorio, de 20 en 20. Sin texto no consulta. */
-export function useBusquedaRepositorio(texto: string) {
+export function useBusquedaRepositorio(url: string | null, texto: string) {
   const buscado = texto.trim();
   return useInfiniteQuery({
-    queryKey: claves.busquedaRepositorio(buscado),
-    queryFn: ({ pageParam }) => buscarEnRepositorio(buscado, pageParam),
+    queryKey: claves.busquedaRepositorio(url, buscado),
+    queryFn: ({ pageParam }) => {
+      if (!url) throw new Error('El repositorio no tiene un enlace configurado.');
+      return buscarEnRepositorio(url, buscado, pageParam);
+    },
     initialPageParam: 0,
     getNextPageParam: (ultima) => ultima.siguiente ?? undefined,
-    enabled: buscado !== '',
+    enabled: !!url && buscado !== '',
     staleTime: VIGENCIA_BUSQUEDA_MS,
   });
 }
@@ -48,9 +46,9 @@ export function useComprobarRepositorio() {
  * Abre el repositorio en el navegador integrado: la búsqueda del texto, con sus filtros, o
  * la página principal. Devuelve la promesa: quien la llame atrapa el error.
  */
-export function abrirRepositorio(texto = '') {
+export function abrirRepositorio(url: string, texto = '') {
   const buscado = texto.trim();
   return abrirEnNavegador(
-    buscado !== '' ? urlBusquedaRepositorio(buscado) : urlRepositorioPrincipal(),
+    buscado !== '' ? urlBusquedaRepositorio(url, buscado) : url,
   );
 }

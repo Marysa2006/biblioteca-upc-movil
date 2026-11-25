@@ -4,7 +4,7 @@
  * hace en el repositorio (ver ./repositorio).
  * Si el portal no publica la guía con los cuatro bloques, se usa la orientación de prueba.
  */
-import { ErrorApi, peticion, simularRed, usaApi } from './cliente';
+import { peticion, simularRed, usaApi } from './cliente';
 import { ORIENTACION_AUTOARCHIVO } from './mocks/autoarchivo';
 
 /**
@@ -22,34 +22,29 @@ export type OrientacionAutoarchivo = {
   metadatos: string[];
 };
 
-/** La orientación completa, con sus cuatro bloques (HU-11, CA1). */
-export async function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoarchivo> {
-  if (usaApi('autoarchivo')) {
-    try {
-      const respuesta = await peticion<{
-        guide: { body: string; title: string; published_at?: string | null } | null;
-      }>('/portal/self-archive/');
-      if (respuesta.guide) {
-        const { body, title, published_at } = respuesta.guide;
-        const bloques = typeof body === 'string' ? leerBloques(body) : undefined;
-        if (bloques) return {
-          ...bloques,
-          titulo: title || ORIENTACION_AUTOARCHIVO.titulo,
-          actualizada: published_at?.slice(0, 10) || ORIENTACION_AUTOARCHIVO.actualizada,
-        };
-      }
-    } catch (error) {
-      if (!(error instanceof ErrorApi) || error.estado !== 404) throw error;
-    }
-  }
-  const orientacion = ORIENTACION_AUTOARCHIVO;
-  return simularRed({
-    ...orientacion,
-    procedimiento: [...orientacion.procedimiento],
-    requisitos: [...orientacion.requisitos],
-    formatos: [...orientacion.formatos],
-    metadatos: [...orientacion.metadatos],
-  });
+type AutoarchivoBackend = {
+  repository_url: string | null;
+  message?: string | null;
+  guide: { body: string; title: string; published_at?: string | null } | null;
+};
+
+export async function obtenerPortalAutoarchivo() {
+  const respuesta = usaApi('autoarchivo')
+    ? await peticion<AutoarchivoBackend>('/portal/self-archive/')
+    : await simularRed<AutoarchivoBackend>({
+        repository_url: 'https://repositorio.unicesar.edu.co',
+        message: null,
+        guide: null,
+      });
+  const guia = respuesta.guide;
+  const bloques = typeof guia?.body === 'string' ? leerBloques(guia.body) : undefined;
+  const orientacion = bloques ? {
+    ...bloques,
+    titulo: guia?.title || ORIENTACION_AUTOARCHIVO.titulo,
+    actualizada: guia?.published_at?.slice(0, 10) || ORIENTACION_AUTOARCHIVO.actualizada,
+  } : ORIENTACION_AUTOARCHIVO;
+
+  return { url: respuesta.repository_url ?? null, mensaje: respuesta.message, orientacion };
 }
 
 function leerBloques(body: string) {

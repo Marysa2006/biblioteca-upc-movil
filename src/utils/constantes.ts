@@ -10,13 +10,6 @@ export const DOMINIO_CORREO = 'unicesar.edu.co';
 export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
 
 /**
- * Repositorio Institucional (DSpace 7.5, HU-11). Por https desde noviembre de 2026 (#165): la
- * Universidad lo activó con certificado de DigiCert y el http redirige aquí. Por eso el APK ya no
- * necesita usesCleartextTraffic.
- */
-export const URL_REPOSITORIO: string = 'https://repositorio.unicesar.edu.co';
-
-/**
  * Programas de pregrado de cada facultad de la UPC, con la lista que entregó María (#251).
  * «Ciencias Básicas» y «Educación» van por separado. Los que solo se ofrecen en la seccional
  * llevan «(Aguachica)» en el nombre. Quien no está en la lista (posgrado, otra dependencia) elige

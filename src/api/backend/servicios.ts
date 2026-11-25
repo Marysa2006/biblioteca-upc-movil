@@ -1,5 +1,4 @@
 import type { CategoriaServicio, Servicio } from '@/types';
-import { URL_REPOSITORIO } from '@/utils/constantes';
 
 type ResumenPortal = {
   slug: string;
@@ -7,7 +6,7 @@ type ResumenPortal = {
   summary: string;
   is_available: boolean;
   requires_authentication?: boolean;
-  access_url?: string;
+  access_url?: string | null;
 };
 
 export type ServiciosPortal = {
@@ -29,7 +28,6 @@ const categoriasPorAcceso = new Map<string, CategoriaServicio>([
   ['/espacios', 'espacios'],
   ['/asesorias', 'asesorias'],
   ['/capacitaciones', 'capacitaciones'],
-  [URL_REPOSITORIO, 'repositorio'],
 ]);
 
 const categoriasPorSlug = new Map<string, CategoriaServicio>([
@@ -47,7 +45,7 @@ const accesoPorCategoria: Record<CategoriaServicio, string> = {
   capacitaciones: '/capacitaciones',
   espacios: '/espacios',
   tablets: '/tablets',
-  repositorio: URL_REPOSITORIO,
+  repositorio: '',
   prestamo: '',
 };
 
@@ -61,7 +59,7 @@ export type ServicioGestionBackend = {
   target_audience: string;
   request_method: string;
   schedule: string;
-  access_url?: string;
+  access_url?: string | null;
   requires_authentication?: boolean;
   is_active?: boolean;
 };
@@ -69,9 +67,10 @@ export type ServicioGestionBackend = {
 export function servicioGestionDesdeBackend(
   servicio: ServicioGestionBackend,
   categorias: CategoriaServicioBackend[],
+  repositorio: string | null,
 ): Servicio {
   const slug = categorias.find((categoria) => categoria.id === servicio.category)?.slug ?? '';
-  const categoria = categoriaDelAcceso(servicio.access_url) ?? categoriasPorSlug.get(slug) ?? 'prestamo';
+  const categoria = categoriaDelAcceso(servicio.access_url, repositorio) ?? (servicio.slug === 'repositorio' ? 'repositorio' : categoriasPorSlug.get(slug)) ?? 'prestamo';
   return {
     id: servicio.slug,
     nombre: servicio.name,
@@ -98,6 +97,7 @@ export function servicioHaciaBackend(
   slug: string,
   anterior?: ServicioGestionBackend,
   conservarAcceso = true,
+  repositorio: string | null = null,
 ) {
   return {
     category: categoria,
@@ -108,15 +108,19 @@ export function servicioHaciaBackend(
     target_audience: servicio.publico,
     request_method: servicio.formaSolicitud,
     schedule: servicio.horario,
-    access_url: (conservarAcceso ? anterior?.access_url : undefined) ?? accesoPorCategoria[servicio.categoria],
+    access_url: servicio.categoria === 'repositorio' ? repositorio ?? ''
+      : (conservarAcceso ? anterior?.access_url : undefined) ?? accesoPorCategoria[servicio.categoria],
     requires_authentication: servicio.requiereCuenta,
     is_active: servicio.activo,
     ...(anterior ? {} : { is_published: true }),
   };
 }
 
-function categoriaDelAcceso(url = '') {
-  return categoriasPorAcceso.get(url.replace(/\/$/, ''));
+function categoriaDelAcceso(url: string | null | undefined, repositorio: string | null) {
+  const acceso = url?.replace(/\/+$/, '');
+  if (!acceso) return undefined;
+  if (acceso === repositorio?.replace(/\/+$/, '')) return 'repositorio';
+  return categoriasPorAcceso.get(acceso);
 }
 
 function resumenDesdePortal(servicio: ResumenPortal, categoria: CategoriaServicio): Servicio {
@@ -133,18 +137,18 @@ function resumenDesdePortal(servicio: ResumenPortal, categoria: CategoriaServici
   };
 }
 
-export function serviciosDesdePortal(respuesta: ServiciosPortal): Servicio[] {
+export function serviciosDesdePortal(respuesta: ServiciosPortal, repositorio: string | null): Servicio[] {
   return respuesta.categories.flatMap(({ slug, services }) =>
     services.flatMap((servicio) => {
-      const categoria = categoriaDelAcceso(servicio.access_url) ?? categoriasPorSlug.get(slug);
+      const categoria = categoriaDelAcceso(servicio.access_url, repositorio) ?? (servicio.slug === 'repositorio' ? 'repositorio' : categoriasPorSlug.get(slug));
       return categoria && servicio.is_available ? [resumenDesdePortal(servicio, categoria)] : [];
     }),
   );
 }
 
-export function fichaDesdePortal(servicio: FichaPortal): FichaServicio | undefined {
-  const acceso = categoriaDelAcceso(servicio.access_url);
-  const categoria = acceso ?? categoriasPorSlug.get(servicio.category.slug);
+export function fichaDesdePortal(servicio: FichaPortal, repositorio: string | null): FichaServicio | undefined {
+  const acceso = categoriaDelAcceso(servicio.access_url, repositorio);
+  const categoria = acceso ?? (servicio.slug === 'repositorio' ? 'repositorio' : categoriasPorSlug.get(servicio.category.slug));
   if (!categoria || !servicio.is_available) return undefined;
 
   return {
@@ -153,6 +157,6 @@ export function fichaDesdePortal(servicio: FichaPortal): FichaServicio | undefin
     publico: servicio.target_audience,
     formaSolicitud: servicio.request_method,
     horario: servicio.schedule,
-    soloInformativo: !acceso,
+    soloInformativo: !acceso && servicio.slug !== 'repositorio',
   };
 }
