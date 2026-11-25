@@ -88,7 +88,7 @@ export function TarjetaCita({ cita, horasCancelacion, onCancelar, onReprogramar 
       ) : null}
 
       <BotonEnlaceCita cita={cita} />
-      <BotonRegistrarAsistencia cita={cita} />
+      <BotonRegistrarAsistencia sesion={cita} tipo="cita" />
 
       {fueraDePlazo ? (
         <Text variant="bodySmall" style={estilos.secundario}>

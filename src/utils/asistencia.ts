@@ -1,3 +1,6 @@
+import type { ResumenSolicitud } from '@/types';
+import { hoyISO } from '@/utils/fechas';
+
 /**
  * Contenido del QR de asistencia (HU-32 y HU-33). Funciones puras: el facilitador arma el
  * texto del QR y la app de quien escanea lo lee. El QR lleva la sesión y el código, así un
@@ -80,4 +83,15 @@ export function textoVencimiento(minutos: number): string {
   const horas = Math.floor(minutos / 60);
   const resto = minutos % 60;
   return resto === 0 ? `Vence en ${horas} h` : `Vence en ${horas} h ${resto} min`;
+}
+
+/** Solo las sesiones aprobadas de hoy ofrecen el acceso al escáner. */
+export function esSesionAprobadaDeHoy(sesion: { fecha: string; estado: string }, hoy = hoyISO()): boolean {
+  return sesion.fecha === hoy && sesion.estado === 'aprobada';
+}
+
+/** Una solicitud sin hora programada puede tener como fecha la de creación. */
+export function esSolicitudConAsistenciaHoy(solicitud: ResumenSolicitud): boolean {
+  return (solicitud.tipo === 'cita' || solicitud.tipo === 'capacitacion') &&
+    !!solicitud.hora && esSesionAprobadaDeHoy(solicitud);
 }
