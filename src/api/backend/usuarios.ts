@@ -63,6 +63,7 @@ export function datosPersonalesDesdeBackend(
     id: perfil.id,
     nombre: `${perfil.first_name} ${perfil.last_name}`.trim() || perfil.email,
     correo: perfil.email,
+    foto: opcional(perfil.photo),
     tipo: TIPO_DESDE_BACKEND[perfil.user_type],
     identificacion: opcional(perfil.institutional_id),
     programa: opcional(perfil.program),

@@ -18,6 +18,26 @@ import { EDITABLES_PRUEBA } from './mocks/perfil';
  * mientras la app está abierta y se pierden al recargar (solo datos de prueba).
  */
 const editablesPorUsuario: Record<string, DatosEditablesPerfil> = { ...EDITABLES_PRUEBA };
+const fotosPorUsuario = new Map<string, string | undefined>();
+
+export type FotoPerfil = { uri: string; nombre: string; tipo: string; peso: number; archivo?: Blob };
+
+export function validarFotoPerfil(foto: FotoPerfil): void {
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(foto.tipo)) {
+    throw new ErrorApi(400, 'Elige una foto JPG, PNG o WEBP.');
+  }
+  if (!Number.isFinite(foto.peso) || foto.peso <= 0) {
+    throw new ErrorApi(400, 'No pudimos comprobar el tamaño de la foto.');
+  }
+  if (foto.peso > 5 * 1024 * 1024) {
+    throw new ErrorApi(400, 'La foto debe pesar como máximo 5 MB.');
+  }
+}
+
+function perfilDePrueba(usuario: Usuario): Perfil {
+  const foto = fotosPorUsuario.has(usuario.id) ? fotosPorUsuario.get(usuario.id) : usuario.foto;
+  return { ...usuario, ...editablesPorUsuario[usuario.id], foto };
+}
 
 /** ¿El perfil tiene dirección? Solo con datos de prueba: el Backend no la tiene. */
 export const PERFIL_CON_DIRECCION = !usaApi('sesion');
@@ -25,7 +45,7 @@ export const PERFIL_CON_DIRECCION = !usaApi('sesion');
 /** Combina los datos institucionales de la sesión con los editables guardados. */
 export async function obtenerPerfil(usuario: Usuario): Promise<Perfil> {
   if (!usaApi('sesion')) {
-    return simularRed({ ...usuario, ...editablesPorUsuario[usuario.id] });
+    return simularRed(perfilDePrueba(usuario));
   }
   return perfilDesdeBackend(usuario, await peticion<PerfilBackend>('/me/'));
 }
@@ -59,7 +79,7 @@ export async function actualizarPerfil(
       guardados.direccion = datos.direccion;
     }
     editablesPorUsuario[usuario.id] = guardados;
-    return simularRed({ ...usuario, ...guardados });
+    return simularRed(perfilDePrueba(usuario));
   }
 
   // Vacío borra el teléfono. Los demás campos que el Backend deja editar (programa, sede…) no
@@ -69,4 +89,20 @@ export async function actualizarPerfil(
     body: JSON.stringify({ phone: datos.telefono ?? '' }),
   });
   return perfilDesdeBackend(usuario, perfil);
+}
+
+export async function actualizarFotoPerfil(usuario: Usuario, foto: FotoPerfil | null): Promise<Perfil> {
+  if (foto) validarFotoPerfil(foto);
+  if (!usaApi('sesion')) {
+    fotosPorUsuario.set(usuario.id, foto?.uri);
+    return simularRed(perfilDePrueba(usuario));
+  }
+  let body: FormData | string = JSON.stringify({ photo: null });
+  if (foto) {
+    const datos = new FormData();
+    if (foto.archivo) datos.append('photo', foto.archivo, foto.nombre);
+    else datos.append('photo', { uri: foto.uri, name: foto.nombre, type: foto.tipo } as unknown as Blob);
+    body = datos;
+  }
+  return perfilDesdeBackend(usuario, await peticion<PerfilBackend>('/me/', { method: 'PATCH', body }));
 }

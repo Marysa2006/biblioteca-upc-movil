@@ -36,6 +36,7 @@ export type AceptacionPolitica = {
 };
 
 export type Usuario = {
+  foto?: string;
   id: string;
   nombre: string;
   correo: string;
