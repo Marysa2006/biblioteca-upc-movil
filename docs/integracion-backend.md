@@ -6,34 +6,33 @@ deja por escrito el **#228**. La versión de la 1.1, con lo que falta campo por 
 **«App móvil y Backend: campos pendientes y archivos»**, que se le entrega al Backend: este archivo
 sigue siendo el inventario de endpoints de la app y el plan para apagarlos.
 
-**Estado de esta comparación:** `biblioteca-upc-movil` @ `develop` (`48b91d8`, 23 de noviembre de
-2026) contra `LibniT/BackEnd-Biblioteca` @ `develop` `53d1350` (23 de noviembre), `docs/schema.yml`
-versión **2.0.1** con **111 rutas**.
+**Estado de esta comparación:** el inventario de §2 se midió con `biblioteca-upc-movil` @ `develop`
+(`48b91d8`, 23 de noviembre de 2026) contra el Backend **2.0.1** (`53d1350`, 111 rutas). El 24 de
+noviembre el Backend publicó la **2.1.0** (`e8555ba`, en `main` y en `develop`, **125 rutas**), que
+resuelve casi todo lo que faltaba: ver §2.1 y §3.
 
-> El Backend tiene `main` en `ad3b76c` (5 de noviembre), **sin** la migración `core.0004` de los
-> roles. Todo lo de roles de este documento es de `develop`, no de `main`.
+**Servidor de pruebas:** `https://backend-biblioteca-njx5.onrender.com/api/v1` (Swagger en
+`/api/docs/`), con la 2.1.0 y HTTPS. Lo que se encontró al probarlo está en §5.
 
-> **El `develop` del Backend se mueve.** Entre el `ca50fff` (10 de noviembre, 105 rutas) y el
-> `53d1350` (23 de noviembre, 111 rutas) hubo dos versiones de esquema. Entraron la asistencia por
-> QR, aprobar y rechazar asesoría, el registro de cuentas y la aceptación de la política; salieron
-> los horarios de asesoría y las franjas de un tema. Vuelve a medirse antes de empezar el plan.
+**La conexión ya empezó** (§4): la fase 1, la sesión, está en `chore/integracion-api-sesion`.
 
 ---
 
 ## 1. Lo que hay que resolver antes de apagar los mocks
 
-Estos seis puntos afectan a **todos** los módulos: mientras no estén, apagar `USAR_MOCKS` deja la
-app vacía o rota.
+Estos puntos afectan a **todos** los módulos: mientras no estén, apagar `USAR_MOCKS` deja la app
+vacía o rota.
 
-| # | Qué pasa | Qué hace falta |
-|---|---|---|
-| 1 | **Ninguna ruta coincide.** El móvil usa español y sin prefijo (`/asesorias/citas/`), el Backend inglés con `/api/v1/` (`/api/v1/advisories/appointments/`) | Una capa de traducción en `src/api/cliente.ts` |
-| 2 | **Los días de la semana están invertidos.** Móvil: `0 = domingo` (como `Date.getDay()`). Backend: `DayOfWeekEnum` con `0 = lunes` y `6 = domingo` | Que uno de los dos cambie, o traducir en el cliente |
-| 3 | **JWT distinto.** Backend devuelve `{ access, refresh }`; el móvil espera `{ usuario, token }` y **no renueva** el token | Guardar el `refresh` y renovarlo; `/me/` para el usuario |
-| 4 | **Paginación.** El Backend devuelve `{ count, next, previous, results }` en **27 GET**; el móvil espera arrays planos | Desenvolver `results` en el cliente |
-| 5 | **El login no habla el mismo idioma.** Backend pide `{ email, password }`; el móvil manda `{ correo, contrasena }` | Traducir el cuerpo, o alinear los nombres |
-| 6 | **Estados y tipos.** Estados: **6** en el móvil contra **8** en el Backend (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `RESCHEDULE_PROPOSED`, `IN_PROGRESS`, `OVERDUE`, `COMPLETED`). Tipos de usuario: **5** en el móvil contra **3** (`STUDENT`, `TEACHER`, `ADMINISTRATIVE`) | Tabla de equivalencias para los dos |
-| 7 | **El APK solo habla por HTTPS.** Desde el #299 el APK ya no permite tráfico HTTP (`usesCleartextTraffic` quitado); un Django local por `http://` solo sirve en Expo Go | El servidor de producción, con HTTPS |
+| # | Qué pasa | Qué hace falta | Estado |
+|---|---|---|---|
+| 1 | **Ninguna ruta coincide.** El móvil usa español y sin prefijo (`/asesorias/citas/`), el Backend inglés con `/api/v1/` (`/api/v1/advisories/appointments/`) | Reescribir la rama sin mocks de cada función con la ruta del Backend y un adaptador en `src/api/backend/` | Por módulo (§4); el prefijo va en `EXPO_PUBLIC_API_URL` |
+| 2 | **Los días de la semana están invertidos.** Móvil: `0 = domingo` (como `Date.getDay()`). Backend: `DayOfWeekEnum` con `0 = lunes` y `6 = domingo` | Traducir en `src/api/backend/equivalencias.ts` | Fase 2 |
+| 3 | **JWT distinto.** Backend devuelve `{ access, refresh }` (30 min y 7 días, y el `refresh` cambia en cada renovación); el móvil esperaba `{ usuario, token }` y **no renovaba** el token | Guardar el `refresh` y renovarlo; `/me/` y `/me/access/` para el usuario | ✅ Fase 1 |
+| 4 | **Paginación.** El Backend devuelve `{ count, next, previous, results }`; el móvil espera arrays planos. Hay tres formas de lista: paginada, objeto con la lista adentro (`{message, spaces}`) y arreglo simple | `peticionPagina()` y `peticionTodas()` en `src/api/cliente.ts`; cada adaptador sabe qué forma le toca | ✅ Fase 1 (las funciones) |
+| 5 | **El login no habla el mismo idioma.** Backend pide `{ email, password }`; el móvil manda `{ correo, contrasena }` | Traducir el cuerpo | ✅ Fase 1 |
+| 6 | **Estados y tipos.** Estados: **6** en el móvil contra **8** en el Backend (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `RESCHEDULE_PROPOSED`, `IN_PROGRESS`, `OVERDUE`, `COMPLETED`). Tipos de usuario: **5** en el móvil contra **3** (`STUDENT`, `TEACHER`, `ADMINISTRATIVE`) | Tabla de equivalencias para los dos | Tipos ✅ fase 1 (sin egresados, para después); estados en la fase 3 |
+| 7 | **El APK solo habla por HTTPS.** Desde el #299 el APK ya no permite tráfico HTTP (`usesCleartextTraffic` quitado); un Django local por `http://` solo sirve en Expo Go | El servidor de producción, con HTTPS | ✅ Render tiene HTTPS |
+| 8 | **Errores.** `peticion()` descartaba el cuerpo del error, así que la pantalla veía «La API respondió 400 en …» | Leer `{detail}`, `{detail, error_code}` y `{campo: [...]}` en `ErrorApi` (`codigo` y `campos`) | ✅ Fase 1 |
 
 **Los roles ya coinciden.** `administrador`, `facilitador` y `gestor_espacios`, por **código** y no
 por nombre (`Role.code`, migración `core.0004`). Ese bloqueante desapareció.
@@ -130,6 +129,26 @@ administración, y las tres funciones de asesoría que comparten ruta con su ver
 
 **Resumen:** **55 ✅ · 20 ⚠️ · 28 ❌ = 103** endpoints. Con contraparte (✅+⚠️) **75**; sin ella, **28**.
 
+### 2.1 Lo que cambió con la 2.1.0
+
+La tabla de arriba es contra la 2.0.1. La 2.1.0 agrega rutas para casi todos los ❌; cada uno se
+confirma al conectar su módulo:
+
+| Módulo | Ruta nueva en la 2.1.0 |
+|---|---|
+| **Asistencia** | `POST /attendance/{id}/manual/` (registro a mano, con o sin cuenta). No hay «abrir» ni «cerrar»: el QR vale 4 h desde el inicio de la sesión y cualquiera con cuenta puede escanear |
+| **Fotos de Inicio** | `GET /portal/home-photos/` (sin sesión) y `/portal/manage/home-photos/` con `reorder/`; la imagen va en `image` |
+| **Guías** | `GET /portal/guides/` (sin sesión) y `/portal/manage/guides/`; el PDF va en `file` y `updated_at` trae hora |
+| **Servicios** | `/portal/manage/services/` y `/portal/manage/service-categories/` |
+| **Capacitaciones** | `POST /trainings/requests/{id}/rate/` |
+| **Tablets** | `GET /tablets/manage/?search=` y la página `condiciones-tablets` del portal |
+| **Usuarios** | `GET`/`PUT /users/{id}/permissions/` (`extra_permissions`) y `GET /users/?role=` |
+| **Solicitudes** | `GET /me/requests/` y `/me/requests/{id}/`, con el historial |
+
+Las jornadas y las franjas de asesoría ya no existen: esas funciones se borran al conectar Asesorías.
+Los archivos se suben en `multipart/form-data` (foto del espacio en `photo`, fotos de Inicio en
+`image`, PDF de las guías en `file` y foto de perfil en `photo`).
+
 ---
 
 ## 3. Lo que falta campo por campo
@@ -137,6 +156,27 @@ administración, y las tres funciones de asesoría que comparten ruta con su ver
 Esto ya no va por endpoint sino por **dato**: es lo que la app ya pide y el Backend no recibe. Lo
 desarrolla, con las preguntas para el equipo del servidor, el documento **«App móvil y Backend:
 campos pendientes y archivos»**; aquí queda el resumen para no tener que abrirlo.
+
+> **Con la 2.1.0 está todo resuelto**, con estos nombres: `campus` (`VALLEDUPAR` o `AGUACHICA`),
+> `faculty` y `position` en el registro y el perfil; `contact_phone`, `campus`, `education_level`,
+> `faculty`, `program` y `semester` en las cuatro solicitudes; `notes` y `accept_terms` en la
+> capacitación (máximo 25 participantes); `support_resources` y `accept_terms` en la reserva;
+> `brand`, `asset_value` y `device_type` en la tablet; `format_condition`, `signature` y
+> `receipt_code` en la entrega y la constancia; y en `statistics/summary/`, `by_campus`, `by_topic`,
+> `by_weekday`, `response_hours`, `tablet_loans`, `average_rating` y `attendees`. Las tablas de abajo
+> quedan como registro de lo que se pidió. Lo que sigue pendiente está en §3.1.
+>
+> El Backend no exige la sede al pedir una tablet ni en la capacitación, para no bloquear a la web;
+> la app la sigue exigiendo en su formulario.
+
+### 3.1 Lo que sigue pendiente (24 de noviembre)
+
+| Tema | Qué pasa | Quién |
+|---|---|---|
+| **Firma del personal** | La app la guarda en el Perfil (`PUT /me/firma/`, provisional). Se pidió `signature` en `GET`/`PATCH /me/` y que el `GET` del préstamo devuelva las firmas de entrega y de devolución | Backend |
+| **Cuenta desactivada** | `/token/` responde 401 igual que con una contraseña incorrecta, así que la app no puede decir «tu cuenta está inactiva» (HU-05, CA3). Se sugirió 403 | Backend (no bloquea) |
+| **Dirección en el perfil** | El Backend no la tiene: con la API, la app la oculta | — |
+| **Egresados** | El Backend no tiene ese tipo de usuario | Para después |
 
 ### Prioridad alta: la app lo pide y el Backend no lo recibe
 
@@ -166,44 +206,68 @@ campos pendientes y archivos»**; aquí queda el resumen para no tener que abrir
 | **Calificar la capacitación** | `POST /trainings/requests/{id}/rate/`, igual que el de asesorías |
 | **Koha para el personal** | La dirección de `KOHA_STAFF_URL`: la app la usa en el #311 |
 
-### Lo que la app ya resuelve por su cuenta
+### Lo que la app resuelve por su cuenta
 
-Para no pedirle cambios de forma al Backend, la app se adapta en `src/api/cliente.ts`: las rutas al
-inglés con `/api/v1/`, el login a `{email,password}` con `refresh`, `results` de las paginadas, los
-días de la semana (`0 = lunes`), los nombres de los campos, los estados y los tipos de usuario.
+Para no pedirle cambios de forma al Backend, la app se adapta: `src/api/cliente.ts` hace lo común
+(prefijo, token y su renovación, errores, paginación) y `src/api/backend/` traduce lo de cada módulo
+(rutas, nombres de los campos, días de la semana, estados y tipos de usuario).
 
 Y **deja de enviar** lo que el Backend no necesita: la sede de la reserva, la identificación, los
 nombres de los participantes de la capacitación y la asignatura aparte del grupo.
 
 ---
 
-## 4. Plan para apagar los mocks
+## 4. Plan para apagar los mocks, por fases
 
-El interruptor es uno (`USAR_MOCKS`), pero **no se puede apagar de golpe**: con 103 endpoints en
-español y el Backend en inglés, apagarlo dejaría la app vacía. Orden propuesto, un módulo por PR y
-con su prueba:
+No se puede apagar `USAR_MOCKS` de golpe: cada función tiene su rama sin mocks escrita con rutas
+provisionales en español. Se conecta **un módulo a la vez**, con su PR y su prueba contra Render:
 
-1. **La capa de traducción** en `src/api/cliente.ts`: prefijo `/api/v1`, mapa español→inglés y
-   desenvoltura de `results` en las 27 paginadas. **Sin esto no avanza nada más.**
-2. **Autenticación**: `{email, password}` → `{access, refresh}`, guardar el `refresh` y renovarlo, y
-   pedir `/me/` para el usuario.
-3. **Solo lectura**: `servicios`, `contenidos`, `parametros`, `espacios`.
-4. **Solicitudes**: `reservas`, `tablets`, `asesorias`. Va **después del punto 3** porque las tres
-   leen de lo de allí: las asesorías sacan los horarios y los días no hábiles de `parametros`, y las
-   reservas, la disponibilidad de `espacios`.
-5. **Estadísticas y asistencia**: al final, porque dependen de que todo lo anterior escriba de verdad.
-6. **Catálogo y repositorio** van aparte: no pasan por el Backend.
+- **`usaApi(modulo)`** (`src/api/cliente.ts`) decide en cada función. Es `true` si
+  `EXPO_PUBLIC_USAR_MOCKS=false`, o si el módulo está en `EXPO_PUBLIC_API_MODULOS` (por ejemplo
+  `sesion`). Así el APK de demostración sigue con datos de prueba mientras se conecta lo demás.
+- **Cada módulo** cambia `USAR_MOCKS` por `usaApi('…')` en sus funciones y escribe su adaptador en
+  `src/api/backend/`. Las pantallas y los hooks no cambian.
+- **Mientras se mezclan:** al entrar con una cuenta real, los módulos que siguen con datos de prueba
+  están guardados con los ids de los usuarios de prueba, así que, por ejemplo, Mis solicitudes sale
+  vacía hasta la fase 3.
 
-**Antes del punto 1 hay que cerrar los cinco temas de prioridad alta de §3**, o la app no podrá
-guardar los datos de los formularios aunque consiga hablar con el servidor.
+| Fase | Qué | Módulos |
+|---|---|---|
+| 0 | Probar Render: rutas públicas, login, `/me/`, errores y paginación | — ✅ |
+| 1 | El cliente (errores, renovación del token, paginación, servidor lento) y la sesión: login, `/me/`, `/me/access/` (el superusuario cuenta como `administrador`), registro, política y perfil | `sesion` |
+| 2 | Lectura pública: servicios, contenidos, recursos, guías, fotos de Inicio, Koha, autoarchivo, horarios, festivos, espacios con disponibilidad, temas y líneas | `servicios`, `contenidos`, `recursos`, `guias`, `fotosInicio`, `autoarchivo`, `parametros`, `espacios` |
+| 3 | Solicitudes de la comunidad: reservas, asesorías (sin jornadas ni franjas), tablets, capacitaciones, Mis solicitudes con historial, notificaciones y foto de perfil | `reservas`, `asesorias`, `tablets`, `capacitaciones`, `solicitudes`, `notificaciones` |
+| 4 | Personal: bandejas, entrega y devolución con firma y `receipt_code`, y la administración | `bloqueos`, `usuarios` y la parte del personal de los anteriores |
+| 5 | Estadísticas y asistencia (#231) | `estadisticas`, `asistencia` |
+| 6 | APK contra el servidor con HTTPS y pruebas de aceptación | todos |
+
+**Catálogo y repositorio** van aparte: no pasan por el Backend.
 
 ---
 
-## 5. Lo que este documento no cubre
+## 5. Lo que se encontró en Render (24 de noviembre)
 
-No hay una instancia del Backend en el entorno donde se escribió esto: **el contraste es contra el
-`schema.yml`**, que es lo que el Backend declara, no contra respuestas reales. Las pruebas de
-integración de verdad siguen pendientes de un entorno.
+Pruebas de la fase 0 (rutas públicas, login con una cuenta de estudiante y con la de la
+administración, y errores provocados) y de la fase 1 (el cliente compilado y llamado desde Node):
+
+- **El servidor se duerme.** Render, en su plan gratis, lo apaga cuando nadie lo usa: la primera
+  llamada tardó **35 s** y las demás entre 0,1 y 1,5 s. La app espera hasta 60 s y, desde los 8 s,
+  dice «Conectando con la biblioteca…» (`src/store/conexion.ts`). Antes de una demostración, abrir
+  la app un minuto antes.
+- **Datos de prueba de los desarrolladores**, no de la biblioteca: temas y líneas de ejemplo, un solo
+  espacio, sin contenidos ni guías, y **el horario de atención vacío** (`config/schedules/` responde
+  `[]`): sin él, los calendarios de la app no ofrecen ningún día. Se pidió `seed_library_data`.
+- **La foto del espacio** apunta al panel de Supabase y devuelve HTML, no la imagen. Se pidió la
+  dirección pública.
+- **El login falla en inglés** («No active account found…»); la app muestra su propio mensaje para el
+  401. Se pidió en español.
+- **Los servicios no coinciden** con los de la app (`slug` distintos, sigue la Hemeroteca, faltan el
+  préstamo de libros y el de computadores). Para la fase 2: la categoría sale de `access_url`, y el
+  catálogo se carga como el acordado con la bibliotecóloga.
+- **`config/parameters/` pide sesión**: sin cuenta, los días hábiles se arman con `config/schedules/`,
+  `config/holidays/` y `config/calendar/check/`, que son públicas.
+- **La cuenta de la administración** es superusuaria y tiene el rol `administrador`. No se pide otra:
+  `set_library_admin` deja una sola persona con ese rol y se lo quitaría.
 
 Los tres documentos de la entrega de la 1.1 son:
 

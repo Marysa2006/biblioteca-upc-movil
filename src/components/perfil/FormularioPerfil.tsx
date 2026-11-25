@@ -6,7 +6,8 @@
  * #225 (CA3): antes de los campos dice para qué se usan y enlaza la política de la UPC, porque
  * aquí es donde la persona escribe datos que no vienen de su cuenta institucional.
  *
- * La dirección es provisional: no está en el esquema del Backend (ver src/types).
+ * La dirección es provisional: no está en el Backend, así que solo aparece con datos de prueba
+ * (`conDireccion`).
  */
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
@@ -20,11 +21,14 @@ import type { DatosEditablesPerfil, Perfil } from '@/types';
 import { esquemaPerfil, LARGO_MAXIMO_DIRECCION, limpiarTelefono } from '@/utils/perfil';
 
 /** Para qué se usan los datos de contacto (#225, CA3), con lo que respondió la bibliotecóloga. */
-const PARA_QUE_SIRVEN =
-  'Tu teléfono lo usa la biblioteca para confirmar tus solicitudes; la dirección es opcional. El tratamiento de estos datos se rige por la política de la Universidad.';
+const PARA_QUE_SIRVEN = 'Tu teléfono lo usa la biblioteca para confirmar tus solicitudes.';
+const DIRECCION_OPCIONAL = ' La dirección es opcional.';
+const POLITICA = ' El tratamiento de estos datos se rige por la política de la Universidad.';
 
 type Props = {
   perfil: Perfil;
+  /** Si se muestra y se edita la dirección. */
+  conDireccion: boolean;
   guardando: boolean;
   /** Error de la API al guardar (CA4); null si no hay. */
   mensajeError: string | null;
@@ -32,7 +36,14 @@ type Props = {
   onCancelar: () => void;
 };
 
-export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, onCancelar }: Props) {
+export function FormularioPerfil({
+  perfil,
+  conDireccion,
+  guardando,
+  mensajeError,
+  onGuardar,
+  onCancelar,
+}: Props) {
   const {
     control,
     handleSubmit,
@@ -45,7 +56,10 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, o
   });
 
   const guardar = handleSubmit((datos) =>
-    onGuardar({ telefono: limpiarTelefono(datos.telefono), direccion: datos.direccion }),
+    onGuardar({
+      telefono: limpiarTelefono(datos.telefono),
+      ...(conDireccion ? { direccion: datos.direccion } : {}),
+    }),
   );
 
   return (
@@ -56,7 +70,9 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, o
         </View>
       ) : null}
 
-      <NotaDatosPersonales mensaje={PARA_QUE_SIRVEN} />
+      <NotaDatosPersonales
+        mensaje={`${PARA_QUE_SIRVEN}${conDireccion ? DIRECCION_OPCIONAL : ''}${POLITICA}`}
+      />
 
       <Controller
         control={control}
@@ -76,11 +92,17 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, o
               keyboardType="phone-pad"
               autoComplete="tel"
               textContentType="telephoneNumber"
-              returnKeyType="next"
-              submitBehavior="submit"
-              onSubmitEditing={() => setFocus('direccion')}
-              right={<TextInput.Icon icon="phone-outline" accessible={false} importantForAccessibility="no" />}
-              accessibilityLabel="Teléfono celular, entre 7 y 10 dígitos"
+              returnKeyType={conDireccion ? 'next' : 'done'}
+              submitBehavior={conDireccion ? 'submit' : 'blurAndSubmit'}
+              onSubmitEditing={() => (conDireccion ? setFocus('direccion') : guardar())}
+              right={
+                <TextInput.Icon
+                  icon="phone-outline"
+                  accessible={false}
+                  importantForAccessibility="no"
+                />
+              }
+              accessibilityLabel="Teléfono celular, 10 dígitos que empiezan por 3"
             />
             <HelperText type="error" visible={errors.telefono != null}>
               {errors.telefono?.message}
@@ -89,33 +111,35 @@ export function FormularioPerfil({ perfil, guardando, mensajeError, onGuardar, o
         )}
       />
 
-      <Controller
-        control={control}
-        name="direccion"
-        render={({ field: { ref, value, onChange, onBlur } }) => (
-          <View>
-            <TextInput
-              ref={ref}
-              mode="outlined"
-              label="Dirección (opcional)"
-              value={value}
-              onChangeText={onChange}
-              onBlur={onBlur}
-              error={errors.direccion != null}
-              disabled={guardando}
-              maxLength={LARGO_MAXIMO_DIRECCION}
-              autoComplete="street-address"
-              textContentType="fullStreetAddress"
-              returnKeyType="done"
-              onSubmitEditing={() => guardar()}
-              accessibilityLabel="Dirección, opcional"
-            />
-            <HelperText type="error" visible={errors.direccion != null}>
-              {errors.direccion?.message}
-            </HelperText>
-          </View>
-        )}
-      />
+      {conDireccion ? (
+        <Controller
+          control={control}
+          name="direccion"
+          render={({ field: { ref, value, onChange, onBlur } }) => (
+            <View>
+              <TextInput
+                ref={ref}
+                mode="outlined"
+                label="Dirección (opcional)"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.direccion != null}
+                disabled={guardando}
+                maxLength={LARGO_MAXIMO_DIRECCION}
+                autoComplete="street-address"
+                textContentType="fullStreetAddress"
+                returnKeyType="done"
+                onSubmitEditing={() => guardar()}
+                accessibilityLabel="Dirección, opcional"
+              />
+              <HelperText type="error" visible={errors.direccion != null}>
+                {errors.direccion?.message}
+              </HelperText>
+            </View>
+          )}
+        />
+      ) : null}
 
       <View style={estilos.acciones}>
         <Button

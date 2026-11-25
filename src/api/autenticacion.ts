@@ -1,14 +1,13 @@
 /**
- * Autenticación provisional (HU-05, capa de datos).
+ * Autenticación (HU-05, capa de datos): inicio de sesión, registro (#203) y autorización de datos.
  *
- * Mientras el inicio de sesión institucional (SSO de la UPC) no se defina con el
- * ingeniero de la biblioteca, estas funciones validan correo + contraseña contra
- * los datos de prueba de src/api/mocks (usuarios.ts y autenticacion.ts). Cuando el Backend publique el
- * endpoint, solo cambia la rama sin mocks; la pantalla (María, #12) no cambia.
- *
- * La ruta '/auth/login/' es provisional: confírmenla con el equipo de Backend.
- *
- * El registro provisional (#203) usa `POST register/` del Backend, con sus mismos campos.
+ * Con datos de prueba, valida el correo y la contraseña contra src/api/mocks (usuarios.ts y
+ * autenticacion.ts). Con la API (módulo `sesion` de `usaApi()`):
+ * - `POST /token/` con `{email, password}` devuelve `{access, refresh}`; después, `GET /me/` y
+ *   `GET /me/access/` dan el usuario, sus roles y sus permisos (src/api/backend/usuarios.ts).
+ * - `POST /register/` crea la cuenta; luego se inicia sesión aparte.
+ * - `POST /me/privacy-acceptance/` acepta la política vigente.
+ * Las pantallas no cambian: solo cambia esta capa.
  */
 import type { AceptacionPolitica, Usuario } from '@/types';
 import { nuevaAceptacion } from '@/utils/privacidad';
@@ -19,7 +18,9 @@ import {
   type NuevaCuenta,
 } from '@/utils/registro';
 
-import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
+import { sedeHaciaBackend } from './backend/equivalencias';
+import { usuarioDesdeBackend, type AccesoBackend, type PerfilBackend } from './backend/usuarios';
+import { ErrorApi, peticion, simularRed, usaApi } from './cliente';
 import { CONTRASENA_PRUEBA, USUARIOS_INACTIVOS_PRUEBA } from './mocks/autenticacion';
 import { TOKEN_PRUEBA } from './mocks/usuarios';
 import { guardarCelularRegistrado } from './perfil';
@@ -40,6 +41,8 @@ export type CredencialesLogin = {
 export type RespuestaLogin = {
   usuario: Usuario;
   token: string;
+  /** Con la API real, para renovar el token; los datos de prueba no lo tienen. */
+  refresh?: string;
 };
 
 /** Los correos no distinguen mayúsculas ni espacios sobrantes. */
@@ -53,10 +56,11 @@ const contrasenasRegistradas = new Map<string, string>();
  * CA1: credenciales correctas y cuenta vigente → devuelve el usuario y el token.
  * CA2: credenciales inválidas → ErrorApi 401 (mismo mensaje para todos los casos,
  *      para no revelar qué correos existen).
- * CA3: cuenta inactiva → ErrorApi 403.
+ * CA3: cuenta inactiva → ErrorApi 403. Con la API real no se cumple: el Backend responde 401
+ *      igual que con una contraseña incorrecta (anotado para el Backend).
  */
-export function iniciarSesionApi(credenciales: CredencialesLogin): Promise<RespuestaLogin> {
-  if (USAR_MOCKS) {
+export async function iniciarSesionApi(credenciales: CredencialesLogin): Promise<RespuestaLogin> {
+  if (!usaApi('sesion')) {
     const correo = normalizar(credenciales.correo);
     const invalidas = () => Promise.reject(new ErrorApi(401, 'Correo o contraseña incorrectos.'));
 
@@ -84,18 +88,31 @@ export function iniciarSesionApi(credenciales: CredencialesLogin): Promise<Respu
     return simularRed({ usuario, token: TOKEN_PRUEBA });
   }
 
-  // API real: pendiente de que el Backend defina el endpoint oficial.
-  return peticion<RespuestaLogin>('/auth/login/', {
+  const tokens = await peticion<{ access: string; refresh: string }>('/token/', {
     method: 'POST',
-    body: JSON.stringify(credenciales),
+    body: JSON.stringify({
+      email: normalizar(credenciales.correo),
+      password: credenciales.contrasena,
+    }),
   });
+  // La sesión todavía no tiene el token: estas dos llamadas llevan el suyo.
+  const conToken = { headers: { Authorization: `Bearer ${tokens.access}` } };
+  const [perfil, acceso] = await Promise.all([
+    peticion<PerfilBackend>('/me/', conToken),
+    peticion<AccesoBackend>('/me/access/', conToken),
+  ]);
+  return {
+    usuario: usuarioDesdeBackend(perfil, acceso),
+    token: tokens.access,
+    refresh: tokens.refresh,
+  };
 }
 
 // ── Registro provisional (#203) ─────────────────────────────────────────────────────────
 
 /**
  * Error del registro con el campo al que se refiere, para mostrarlo bajo ese campo (CA2).
- * Con la API real, el Backend responde los errores por campo; la conversión va al conectarla.
+ * Con la API real, el Backend responde los errores por campo y `errorDeRegistro()` los traduce.
  */
 export class ErrorRegistro extends ErrorApi {
   campo?: CampoRegistro;
@@ -105,6 +122,35 @@ export class ErrorRegistro extends ErrorApi {
     this.name = 'ErrorRegistro';
     this.campo = campo;
   }
+}
+
+/** Los campos de `POST /register/` y el campo del formulario donde va su error. */
+const CAMPO_REGISTRO_DESDE_BACKEND: Record<string, CampoRegistro> = {
+  email: 'correo',
+  password: 'contrasena',
+  institutional_id: 'identificacion',
+  first_name: 'nombres',
+  last_name: 'apellidos',
+  user_type: 'tipo',
+  program: 'programa',
+  semester: 'semestre',
+  phone: 'celular',
+  department: 'dependencia',
+  campus: 'sede',
+  faculty: 'facultad',
+  accept_privacy: 'aceptaPrivacidad',
+};
+
+/**
+ * El error de la API para el formulario: el primer campo que el formulario tiene, con su mensaje;
+ * si el Backend no dice un campo conocido (`detail`, un 429), el mensaje va arriba del botón.
+ */
+function errorDeRegistro(error: ErrorApi): ErrorRegistro {
+  for (const [campoBackend, mensaje] of Object.entries(error.campos ?? {})) {
+    const campo = CAMPO_REGISTRO_DESDE_BACKEND[campoBackend];
+    if (campo) return new ErrorRegistro(error.estado, mensaje, campo);
+  }
+  return new ErrorRegistro(error.estado, error.message);
 }
 
 /** Como el Backend: más de 10 intentos por minuto responden 429. */
@@ -119,7 +165,7 @@ let intentosRegistro: number[] = [];
  * - 429: más de 10 intentos por minuto.
  */
 export async function registrarCuentaApi(cuenta: NuevaCuenta): Promise<void> {
-  if (USAR_MOCKS) {
+  if (!usaApi('sesion')) {
     const ahora = Date.now();
     intentosRegistro = intentosRegistro.filter((momento) => ahora - momento < 60_000);
     intentosRegistro.push(ahora);
@@ -151,7 +197,7 @@ export async function registrarCuentaApi(cuenta: NuevaCuenta): Promise<void> {
       tipo: cuenta.tipo,
       rolesPersonal: [],
       identificacion: cuenta.identificacion,
-      // La sede y la facultad (#294) prellenan las solicitudes; el Backend aún no las recibe.
+      // La sede y la facultad (#294) prellenan las solicitudes.
       ...(cuenta.sede ? { sede: cuenta.sede } : {}),
       ...(cuenta.facultad ? { facultad: cuenta.facultad } : {}),
       ...(cuenta.programa ? { programa: cuenta.programa } : {}),
@@ -168,42 +214,45 @@ export async function registrarCuentaApi(cuenta: NuevaCuenta): Promise<void> {
     return;
   }
 
-  // Los nombres y valores del Backend (sección 1 del documento): el semestre va como texto. La
-  // sede y la facultad no van: `POST register/` todavía no las recibe (#295).
-  await peticion<unknown>('/register/', {
-    method: 'POST',
-    body: JSON.stringify({
-      email: cuenta.correo,
-      password: cuenta.contrasena,
-      institutional_id: cuenta.identificacion,
-      first_name: cuenta.nombres,
-      last_name: cuenta.apellidos,
-      user_type: TIPO_BACKEND[cuenta.tipo],
-      ...(cuenta.programa ? { program: cuenta.programa } : {}),
-      ...(cuenta.semestre != null ? { semester: String(cuenta.semestre) } : {}),
-      phone: cuenta.celular ?? '',
-      department: cuenta.dependencia ?? '',
-      accept_privacy: cuenta.aceptaPrivacidad,
-    }),
-  });
+  // Los nombres y valores del Backend: el semestre va como texto y la sede en mayúsculas (2.1.0).
+  const sede = sedeHaciaBackend(cuenta.sede);
+  try {
+    await peticion<unknown>('/register/', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: normalizar(cuenta.correo),
+        password: cuenta.contrasena,
+        institutional_id: cuenta.identificacion,
+        first_name: cuenta.nombres,
+        last_name: cuenta.apellidos,
+        user_type: TIPO_BACKEND[cuenta.tipo],
+        ...(cuenta.programa ? { program: cuenta.programa } : {}),
+        ...(cuenta.semestre != null ? { semester: String(cuenta.semestre) } : {}),
+        ...(sede ? { campus: sede } : {}),
+        ...(cuenta.facultad ? { faculty: cuenta.facultad } : {}),
+        phone: cuenta.celular ?? '',
+        department: cuenta.dependencia ?? '',
+        accept_privacy: cuenta.aceptaPrivacidad,
+      }),
+    });
+  } catch (error) {
+    throw error instanceof ErrorApi ? errorDeRegistro(error) : error;
+  }
 }
 
 /**
  * Guarda que la persona aceptó la autorización de datos vigente (revisión de la 1.1). Solo se
  * llama cuando la Universidad publica otra política: la primera se acepta al registrarse. Con la
- * API real es `POST /me/privacy-acceptance/` del Backend, con la versión de la política.
+ * API real es `POST /me/privacy-acceptance/`, sin cuerpo: el Backend registra la versión vigente.
  */
 export async function aceptarPoliticaDatos(
   usuarioId: string,
   aceptacion: AceptacionPolitica,
 ): Promise<void> {
-  if (USAR_MOCKS) {
+  if (!usaApi('sesion')) {
     guardarAceptacionEnDirectorio(usuarioId, aceptacion);
     await simularRed(null);
     return;
   }
-  await peticion<unknown>('/me/privacy-acceptance/', {
-    method: 'POST',
-    body: JSON.stringify({ version: aceptacion.version }),
-  });
+  await peticion<unknown>('/me/privacy-acceptance/', { method: 'POST' });
 }

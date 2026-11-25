@@ -2,6 +2,7 @@
  * Datos de contacto del perfil (HU-06): se muestran como texto con un botón "Editar";
  * al editar aparece FormularioPerfil, con "Guardar cambios" y "Cancelar" (CA3 y CA4).
  * Si falta el teléfono, avisa para completarlo.
+ * La dirección solo aparece con `conDireccion`: con la API real no existe (el Backend no la tiene).
  */
 import { StyleSheet, View } from 'react-native';
 import { Button, Divider, Icon, Text } from 'react-native-paper';
@@ -13,6 +14,8 @@ import { FormularioPerfil } from './FormularioPerfil';
 
 type Props = {
   perfil: Perfil;
+  /** Si se muestra y se edita la dirección. */
+  conDireccion: boolean;
   editando: boolean;
   guardando: boolean;
   mensajeError: string | null;
@@ -23,6 +26,7 @@ type Props = {
 
 export function DatosContacto({
   perfil,
+  conDireccion,
   editando,
   guardando,
   mensajeError,
@@ -32,7 +36,7 @@ export function DatosContacto({
 }: Props) {
   const datos = [
     { etiqueta: 'Teléfono celular', valor: perfil.telefono },
-    { etiqueta: 'Dirección', valor: perfil.direccion },
+    ...(conDireccion ? [{ etiqueta: 'Dirección', valor: perfil.direccion }] : []),
   ];
 
   return (
@@ -53,6 +57,7 @@ export function DatosContacto({
       {editando ? (
         <FormularioPerfil
           perfil={perfil}
+          conDireccion={conDireccion}
           guardando={guardando}
           mensajeError={mensajeError}
           onGuardar={onGuardar}

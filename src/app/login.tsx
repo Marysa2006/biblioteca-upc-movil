@@ -18,7 +18,7 @@ import { Button, Text } from 'react-native-paper';
 
 import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
 import { TextoAutorizacionDatos } from '@/components/privacidad/TextoAutorizacionDatos';
-import { AvisoError, DialogoTexto, Pantalla, Upecito } from '@/components/ui';
+import { AvisoConexionLenta, AvisoError, DialogoTexto, Pantalla, Upecito } from '@/components/ui';
 import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
 import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
@@ -68,6 +68,8 @@ export default function Login() {
       <View style={estilos.tarjeta}>
         {mensajeError ? <AvisoError mensaje={mensajeError} /> : null}
         <FormularioLogin enviando={isPending} onEnviar={iniciarSesion} />
+        {/* Si el servidor estaba dormido, el primer ingreso tarda: se dice por qué. */}
+        {isPending ? <AvisoConexionLenta /> : null}
       </View>
 
       {/* #203: la comunidad sin cuenta se registra. Reemplaza al login: atrás vuelve al origen. */}

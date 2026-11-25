@@ -71,12 +71,14 @@ function aceptacionesValidas(valor: unknown): Aceptaciones {
   return validas;
 }
 
-type SesionGuardada = { usuario: Usuario | null; token: string | null };
+type SesionGuardada = { usuario: Usuario | null; token: string | null; refresh: string | null };
 type ResultadoMigracion = SesionGuardada & { aceptaciones: Aceptaciones };
 
 /**
  * Migración de una sesión guardada con otra versión del store (#225).
  *
+ * - Versión 3: la sesión se conserva sin `refresh` (con datos de prueba no hace falta). Con la
+ *   API real, el primer 401 no puede renovar el token y la persona vuelve a iniciar sesión.
  * - Versión 2 (la última antes de este cambio): el usuario ya tiene la forma actual (`tipo` y
  *   `rolesPersonal`), así que la sesión se conserva y solo se le añaden las aceptaciones. Al
  *   abrir, la app pide la autorización antes de dejar usar nada con cuenta.
@@ -98,6 +100,11 @@ export function migrarSesionGuardada(
     typeof usuario.id === 'string' &&
     typeof anterior.token === 'string';
 
-  if (!sesionSirve) return { usuario: null, token: null, aceptaciones };
-  return { usuario: usuario as Usuario, token: anterior.token as string, aceptaciones };
+  if (!sesionSirve) return { usuario: null, token: null, refresh: null, aceptaciones };
+  return {
+    usuario: usuario as Usuario,
+    token: anterior.token as string,
+    refresh: typeof anterior.refresh === 'string' ? anterior.refresh : null,
+    aceptaciones,
+  };
 }

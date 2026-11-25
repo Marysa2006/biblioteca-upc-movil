@@ -5,9 +5,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
-import { actualizarPerfil, obtenerPerfil } from '@/api/perfil';
+import { actualizarPerfil, obtenerPerfil, PERFIL_CON_DIRECCION } from '@/api/perfil';
 import { useSesion } from '@/store/sesion';
 import type { DatosEditablesPerfil } from '@/types';
+
+/** ¿Se muestra y se edita la dirección? Solo con datos de prueba: el Backend no la tiene. */
+export const CON_DIRECCION = PERFIL_CON_DIRECCION;
 
 /** Perfil del usuario con sesión. No consulta mientras no haya sesión. */
 export function usePerfil() {

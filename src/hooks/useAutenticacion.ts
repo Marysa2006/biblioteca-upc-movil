@@ -29,8 +29,8 @@ import type { CampoRegistro } from '@/utils/registro';
 export function useIniciarSesion() {
   return useMutation({
     mutationFn: (credenciales: CredencialesLogin) => iniciarSesionApi(credenciales),
-    onSuccess: ({ usuario, token }) => {
-      useSesion.getState().iniciarSesion(usuario, token);
+    onSuccess: ({ usuario, token, refresh }) => {
+      useSesion.getState().iniciarSesion(usuario, token, refresh);
     },
   });
 }
@@ -47,9 +47,9 @@ export function useRegistrarCuenta() {
       await registrarCuentaApi(cuenta);
       return iniciarSesionApi({ correo: cuenta.correo, contrasena: cuenta.contrasena });
     },
-    onSuccess: ({ usuario, token }) => {
+    onSuccess: ({ usuario, token, refresh }) => {
       const sesion = useSesion.getState();
-      sesion.iniciarSesion(usuario, token);
+      sesion.iniciarSesion(usuario, token, refresh);
       sesion.aceptarTratamientoDatos();
     },
   });
@@ -85,6 +85,7 @@ export function errorRegistro(error: Error): { campo?: CampoRegistro; mensaje: s
 /**
  * Cierra la sesión y borra de la caché los datos del usuario anterior
  * (solicitudes, servicios, etc., que ya no deben verse tras salir).
+ * Es solo local: el Backend no tiene una ruta para cerrar sesión, y el token vence solo.
  */
 export function useCerrarSesion() {
   const queryClient = useQueryClient();
