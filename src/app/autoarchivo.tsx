@@ -6,7 +6,7 @@
  *
  * "Ir al repositorio" primero comprueba que el repositorio responde (CA3) y, si responde, lo abre
  * en el navegador integrado (CA2). Si no, muestra el aviso con Reintentar y no abre nada.
- * Patrón de datos: usePortalAutoarchivo() → obtenerPortalAutoarchivo() → mock.
+ * Patrón de datos: usePortalAutoarchivo() → obtenerPortalAutoarchivo() → API o mock.
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
@@ -148,7 +148,7 @@ export default function Autoarchivo() {
               accessibilityRole="link"
               accessibilityLabel="Abrir el Repositorio Institucional para depositar tu trabajo"
             >
-              Ir al depósito
+              Ir al repositorio
             </Button>
             <Text variant="bodySmall" style={estilos.secundario}>
               El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la

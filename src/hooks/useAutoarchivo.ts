@@ -2,7 +2,7 @@
  * Hook de la orientación de autoarchivo (HU-11). Para ir al repositorio, la pantalla usa
  * useComprobarRepositorio() y abrirRepositorio() de useRepositorio.
  *
- *   const { data: orientacion, isPending, isError, refetch } = usePortalAutoarchivo();
+ *   const { data: portal, isPending, isError, refetch } = usePortalAutoarchivo();
  */
 import { useQuery } from '@tanstack/react-query';
 

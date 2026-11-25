@@ -363,12 +363,18 @@ con rutas provisionales. Los datos de prueba siguen disponibles con el interrupt
 | Parámetros | Horarios permite agregar, editar y quitar franjas de un día. Valida cruces antes de reconciliar las franjas con `/config/schedules/`. La disponibilidad con datos de prueba respeta los descansos entre franjas. | Confirmar en Render que los calendarios de espacios, asesoría y tablets respeten la jornada partida y los horarios propios de cada servicio. |
 | Perfil | Lee `photo` desde `GET /me/`. Envía JPG, PNG o WEBP de hasta 5 MB con `PATCH /me/` multipart y quita la foto con `{"photo":null}`. Actualiza el perfil y la sesión, y usa iniciales cuando no hay foto. | Verificar en Render que las direcciones de las fotos devueltas sean públicas y que la eliminación persista. |
 | Identificadores | Mis reservas prefiere `space_id` del detalle (incluido en `details` o en la raíz) y conserva la búsqueda por nombre. Asesorías prefiere `facilitator_id` en la gestión, con el criterio anterior de nombre o correo si falta. | Publicar y documentar los identificadores estables en esas respuestas. |
-| Koha | Lee `url` y `staff_url` de `GET /portal/koha-opac/`. Usa `URL_CATALOGO_KOHA` si `url` es nula. En Gestión aparece «Ingresar a Koha» solo si hay `staff_url`. El OPAC y Koha del personal se abren sin el token de la app. | Configurar `KOHA_OPAC_URL` en Render y publicar `staff_url` (#311). |
+| Koha | Usa `url` de `GET /portal/koha-opac/` para el OPAC. En Gestión aparece «Ingresar a Koha» solo si hay `staff_url`. Koha recibe las peticiones sin el token de la app. | Configurar `KOHA_OPAC_URL` en Render y publicar `staff_url` (#311). |
 | Firma | Mi firma aparece en perfiles del personal si `GET /me/` incluye `signature`, incluso si vale `null`. Guarda o quita la firma con `PATCH /me/`. La constancia lee `delivery.responsible_signature` y `return_record.responsible_signature` si están presentes y conserva «firmado con su cuenta» si no hay firma. | Confirmar y publicar esos campos. Formato propuesto para cada firma: `{path, width, height, signed_at}` o `null`. El Backend debe conservar la firma que tenía el responsable en cada operación. |
-| Autoarchivo | Lee `guide.body` en `GET /portal/self-archive/`. Si la guía es nula o el texto no cumple el formato, muestra la orientación de prueba. | Publicar la guía usando el formato propuesto abajo. |
+| Autoarchivo y repositorio | Lee `repository_url`, `message` y `guide` de `GET /portal/self-archive/`. La URL sirve para buscar en DSpace, abrir el repositorio y reconocer el acceso del servicio Depósito de trabajos de grado. Una guía nula o mal formada muestra la orientación de prueba. | Publicar `repository_url` y la guía con el formato propuesto abajo. |
 | Cuenta inactiva | Un 403 de `POST /token/` muestra «Tu cuenta está inactiva. Contacta a la biblioteca para más información.» Un 401 conserva el mensaje de credenciales incorrectas. | Confirmar en Render el 403 para una cuenta inactiva con credenciales correctas. En la prueba anterior el servidor respondió 401. |
 | Jornadas de asesoría | El flujo vigente usa `/advisories/appointments/` por fecha y hora. | Las antiguas jornadas y franjas administrativas fueron retiradas del Backend. |
 | Estadísticas y asistencia | El detalle individual sale en el CSV. El QR vence automáticamente. | El contrato no ofrece listado JSON de registros ni acciones para abrir, cerrar o regenerar el QR. |
+
+Si falla la consulta de un enlace del portal, la pantalla ofrece **Reintentar**. Si `url` o
+`repository_url` viene como `null`, la pantalla muestra `message` y oculta la búsqueda y la
+apertura de esa plataforma. Si se desactiva el módulo conectado, el mock responde con
+las direcciones de demostración. Las búsquedas públicas quedan habilitadas con `servicios`
+para Koha y con `autoarchivo` para DSpace en el perfil `integracion`.
 
 ### Formato propuesto para `guide.body`
 
