@@ -35,6 +35,7 @@ const categoriasPorSlug = new Map<string, CategoriaServicio>([
   ['capacitaciones', 'capacitaciones'],
   ['espacios', 'espacios'],
   ['repositorio', 'repositorio'],
+  ['repositorio-institucional', 'repositorio'],
   ['prestamos', 'prestamo'],
   ['prestamo', 'prestamo'],
   ['tablets', 'tablets'],
@@ -70,7 +71,8 @@ export function servicioGestionDesdeBackend(
   repositorio: string | null,
 ): Servicio {
   const slug = categorias.find((categoria) => categoria.id === servicio.category)?.slug ?? '';
-  const categoria = categoriaDelAcceso(servicio.access_url, repositorio) ?? (servicio.slug === 'repositorio' ? 'repositorio' : categoriasPorSlug.get(slug)) ?? 'prestamo';
+  const categoria =
+    categoriaDelAcceso(servicio.access_url, repositorio) ?? categoriasPorSlug.get(slug) ?? 'prestamo';
   return {
     id: servicio.slug,
     nombre: servicio.name,
@@ -140,7 +142,8 @@ function resumenDesdePortal(servicio: ResumenPortal, categoria: CategoriaServici
 export function serviciosDesdePortal(respuesta: ServiciosPortal, repositorio: string | null): Servicio[] {
   return respuesta.categories.flatMap(({ slug, services }) =>
     services.flatMap((servicio) => {
-      const categoria = categoriaDelAcceso(servicio.access_url, repositorio) ?? (servicio.slug === 'repositorio' ? 'repositorio' : categoriasPorSlug.get(slug));
+      const categoria =
+        categoriaDelAcceso(servicio.access_url, repositorio) ?? categoriasPorSlug.get(slug);
       return categoria && servicio.is_available ? [resumenDesdePortal(servicio, categoria)] : [];
     }),
   );
@@ -148,7 +151,7 @@ export function serviciosDesdePortal(respuesta: ServiciosPortal, repositorio: st
 
 export function fichaDesdePortal(servicio: FichaPortal, repositorio: string | null): FichaServicio | undefined {
   const acceso = categoriaDelAcceso(servicio.access_url, repositorio);
-  const categoria = acceso ?? (servicio.slug === 'repositorio' ? 'repositorio' : categoriasPorSlug.get(servicio.category.slug));
+  const categoria = acceso ?? categoriasPorSlug.get(servicio.category.slug);
   if (!categoria || !servicio.is_available) return undefined;
 
   return {
@@ -157,6 +160,6 @@ export function fichaDesdePortal(servicio: FichaPortal, repositorio: string | nu
     publico: servicio.target_audience,
     formaSolicitud: servicio.request_method,
     horario: servicio.schedule,
-    soloInformativo: !acceso && servicio.slug !== 'repositorio',
+    soloInformativo: !acceso && categoria !== 'prestamo' && categoria !== 'repositorio',
   };
 }
