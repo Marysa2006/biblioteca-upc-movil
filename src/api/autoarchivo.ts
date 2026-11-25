@@ -2,9 +2,9 @@
  * Orientación de autoarchivo (HU-11): procedimiento, requisitos, formatos y metadatos para
  * depositar un trabajo de grado en el Repositorio Institucional. Solo orienta: el depósito se
  * hace en el repositorio (ver ./repositorio).
- * La ruta es provisional: confírmenla con el equipo de Backend.
+ * La app conserva su orientación en cuatro bloques hasta acordar su estructura con el Backend.
  */
-import { peticion, simularRed, USAR_MOCKS } from './cliente';
+import { simularRed } from './cliente';
 import { ORIENTACION_AUTOARCHIVO } from './mocks/autoarchivo';
 
 /**
@@ -24,15 +24,12 @@ export type OrientacionAutoarchivo = {
 
 /** La orientación completa, con sus cuatro bloques (HU-11, CA1). */
 export function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoarchivo> {
-  if (USAR_MOCKS) {
-    const orientacion = ORIENTACION_AUTOARCHIVO;
-    return simularRed({
-      ...orientacion,
-      procedimiento: [...orientacion.procedimiento],
-      requisitos: [...orientacion.requisitos],
-      formatos: [...orientacion.formatos],
-      metadatos: [...orientacion.metadatos],
-    });
-  }
-  return peticion<OrientacionAutoarchivo>('/autoarchivo/');
+  const orientacion = ORIENTACION_AUTOARCHIVO;
+  return simularRed({
+    ...orientacion,
+    procedimiento: [...orientacion.procedimiento],
+    requisitos: [...orientacion.requisitos],
+    formatos: [...orientacion.formatos],
+    metadatos: [...orientacion.metadatos],
+  });
 }

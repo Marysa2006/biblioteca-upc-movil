@@ -179,7 +179,7 @@ export function obtenerAsistentes(sesionId: string): Promise<AsistenciaSesion> {
  * de la sesión, si ya venció o si la asistencia está cerrada (CA4), y si la persona ya se
  * registró (no se cuenta dos veces).
  */
-export function registrarAsistenciaQr(
+function registrarAsistenciaQr(
   sesionId: string,
   codigo: string,
   usuarioId: string,
@@ -201,10 +201,7 @@ export function registrarAsistenciaQr(
     agregarRegistro(sesionId, usuarioId, 'qr');
     return simularRed(aAsistencia(sesionId));
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/qr/`, {
-    method: 'POST',
-    body: JSON.stringify({ codigo, usuarioId }),
-  });
+  return Promise.reject(new ErrorApi(400, 'Escanea el QR de la sesión para registrar la asistencia.'));
 }
 
 /**

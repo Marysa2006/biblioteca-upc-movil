@@ -226,7 +226,8 @@ export function obtenerJornadas(): Promise<Jornada[]> {
   if (USAR_MOCKS) {
     return simularRed(jornadas.map((jornada) => ({ ...jornada })));
   }
-  return peticion<Jornada[]>('/asesorias/jornadas/');
+  // La administración de temas también consulta jornadas, aunque ya no formen parte de la API.
+  return Promise.resolve([]);
 }
 
 /** Validación de la jornada: datos coherentes y sin traslape con otra del facilitador (CA2). */
@@ -321,15 +322,7 @@ export async function guardarJornada(datos: DatosJornada): Promise<ResultadoJorn
 
     return simularRed({ jornada: { ...jornada }, franjasGeneradas: nuevas.length });
   }
-  return datos.id
-    ? peticion<ResultadoJornada>(`/asesorias/jornadas/${datos.id}/`, {
-        method: 'PUT',
-        body: JSON.stringify(datos),
-      })
-    : peticion<ResultadoJornada>('/asesorias/jornadas/', {
-        method: 'POST',
-        body: JSON.stringify(datos),
-      });
+  throw new ErrorApi(400, 'Las asesorías conectadas se solicitan por fecha y hora, sin jornadas.');
 }
 
 // ── HU-14: agendar, cancelar y reprogramar citas ───────────────
@@ -479,9 +472,7 @@ export async function obtenerFranjas(
     );
     return simularRed(ordenarPorFecha(disponibles).map((franja) => ({ ...franja })));
   }
-  return peticion<FranjaAsesoria[]>(
-    `/asesorias/temas/${temaId}/franjas/?desde=${desde}&hasta=${hasta}`,
-  );
+  return [];
 }
 
 /**
@@ -532,10 +523,7 @@ export async function agendarCita(
     });
     return simularRed({ ...cita });
   }
-  return peticion<Cita>('/asesorias/citas/', {
-    method: 'POST',
-    body: JSON.stringify({ franjaId, necesidad }),
-  });
+  throw new ErrorApi(400, 'Solicita la asesoría indicando fecha y hora.');
 }
 
 // ── Versión 1.1: asesorías sin jornadas (#248) ────────────────
@@ -987,10 +975,7 @@ export async function reprogramarCita(
     });
     return simularRed({ ...actualizada });
   }
-  return peticion<Cita>(`/asesorias/citas/${id}/reprogramar/`, {
-    method: 'POST',
-    body: JSON.stringify({ nuevaFranjaId }),
-  });
+  throw new ErrorApi(400, 'Reprograma la asesoría indicando la nueva fecha y hora.');
 }
 
 // ── HU-14 (1.1): aprobar o rechazar una cita pendiente ────────

@@ -129,14 +129,13 @@ export function agregarAlDirectorio(usuario: Usuario): void {
 }
 
 /**
- * Guarda la firma de una persona del personal, o la quita con null (revisión de la 1.1). Con la API
- * real iría en su perfil; la ruta es provisional y está en el documento para el Backend.
+ * Guarda la firma en el directorio de prueba. El perfil del Backend aún no admite la firma.
  */
 export async function guardarFirmaPersonal(
   usuarioId: string,
   firma: FirmaElectronica | null,
 ): Promise<void> {
-  if (USAR_MOCKS) {
+  if (!usaApi('sesion')) {
     directorio = directorio.map((usuario) => {
       if (usuario.id !== usuarioId) return usuario;
       const { firma: _anterior, ...resto } = usuario;
@@ -145,7 +144,7 @@ export async function guardarFirmaPersonal(
     await simularRed(null);
     return;
   }
-  await peticion<unknown>('/me/firma/', { method: 'PUT', body: JSON.stringify({ firma }) });
+  throw new ErrorApi(400, 'El perfil conectado todavía no permite guardar la firma del personal.');
 }
 
 /** La firma registrada de una persona del directorio de prueba, para las constancias. */
