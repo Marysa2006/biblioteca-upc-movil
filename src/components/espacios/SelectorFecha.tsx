@@ -3,6 +3,8 @@
  * elige el día. Los días que no se pueden elegir se ven atenuados, tachados y no se presionan;
  * el lector de pantalla dice por qué. Sin paquetes de calendario: usa src/utils/calendario.ts
  * como la vista mensual de HU-17. Entrega la fecha como texto 'AAAA-MM-DD'.
+ * Con `alTocarNoElegible`, el día tachado se ve igual pero se puede tocar: el calendario se
+ * cierra y avisa a la pantalla, que explica el motivo y sugiere otra fecha (HU-10, CA3; #205).
  */
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -33,6 +35,11 @@ type Props = {
   deshabilitado?: boolean;
   /** Campos opcionales: el calendario ofrece "Quitar fecha" para dejarlo vacío. */
   permiteQuitar?: boolean;
+  /**
+   * Si existe, tocar un día tachado cierra el calendario y llama a esta función en vez de no
+   * hacer nada. El día se sigue viendo tachado y no se elige.
+   */
+  alTocarNoElegible?: (fecha: string) => void;
 };
 
 export function SelectorFecha({
@@ -47,6 +54,7 @@ export function SelectorFecha({
   descripcion,
   deshabilitado = false,
   permiteQuitar = false,
+  alTocarNoElegible,
 }: Props) {
   const [abierto, setAbierto] = useState(false);
   const valido = esFechaValida(valor);
@@ -62,6 +70,13 @@ export function SelectorFecha({
     onCambiar(fecha);
     setAbierto(false);
   };
+
+  const tocarNoElegible = alTocarNoElegible
+    ? (fecha: string) => {
+        setAbierto(false);
+        alTocarNoElegible(fecha);
+      }
+    : undefined;
 
   const quitar = () => {
     onCambiar('');
@@ -163,6 +178,7 @@ export function SelectorFecha({
                       elegida={fecha === valor}
                       motivo={motivoNoElegible(fecha)}
                       onPress={() => elegir(fecha)}
+                      onPressNoElegible={tocarNoElegible && (() => tocarNoElegible(fecha))}
                     />
                   ) : (
                     <View key={`vacio-${j}`} style={estilos.celda} />
@@ -173,8 +189,9 @@ export function SelectorFecha({
 
             {hayNoElegibles ? (
               <Text variant="bodySmall" style={estilos.leyenda}>
-                Los días tachados no se pueden elegir: ya pasaron, son festivos, no hay atención o ya
-                tienen un bloqueo.
+                {tocarNoElegible
+                  ? 'Los días tachados no se pueden elegir: al tocar uno, te decimos por qué y te sugerimos otro.'
+                  : 'Los días tachados no se pueden elegir: ya pasaron, son festivos, no hay atención o ya tienen un bloqueo.'}
               </Text>
             ) : null}
           </Dialog.Content>
@@ -211,12 +228,34 @@ function CeldaDia({
   elegida,
   motivo,
   onPress,
+  onPressNoElegible,
 }: {
   fecha: string;
   elegida: boolean;
   motivo: string | null;
   onPress: () => void;
+  /** Si existe, el día tachado se puede tocar para saber por qué y ver otra fecha. */
+  onPressNoElegible?: () => void;
 }) {
+  if (motivo && onPressNoElegible) {
+    return (
+      <View style={estilos.celda}>
+        <TouchableRipple
+          onPress={onPressNoElegible}
+          accessibilityRole="button"
+          accessibilityLabel={`${fechaCompleta(fecha)}, no disponible: ${motivo}`}
+          accessibilityHint="Muestra una fecha sugerida"
+        >
+          <View style={estilos.contenidoCelda}>
+            <Text variant="bodyMedium" style={estilos.numeroNoElegible}>
+              {numeroDia(fecha)}
+            </Text>
+          </View>
+        </TouchableRipple>
+      </View>
+    );
+  }
+
   if (motivo) {
     return (
       <View

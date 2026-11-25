@@ -156,6 +156,7 @@ export default function RecursosEnLinea() {
           // CA2
           <View style={estilos.sinResultados}>
             <EstadoVacio
+              pose={busqueda ? 'buscando' : 'leyendo'}
               mensaje={
                 busqueda
                   ? `Ninguna fuente coincide con «${busqueda}». Prueba con otro nombre o tema.`

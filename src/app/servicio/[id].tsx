@@ -107,7 +107,7 @@ function Detalle({ servicio }: { servicio: Servicio }) {
         </Button>
       ) : null}
 
-      {/* HU-14: los temas se consultan sin cuenta; la sesión se pide al confirmar la cita. */}
+      {/* HU-14: los temas se consultan sin cuenta; la sesión se pide al elegir el tema (#249). */}
       {categoria === 'asesorias' ? (
         <View style={estilos.filaBotones}>
           <Button
@@ -117,9 +117,9 @@ function Detalle({ servicio }: { servicio: Servicio }) {
             style={estilos.botonEnFila}
             contentStyle={estilos.contenidoBoton}
             accessibilityRole="button"
-            accessibilityLabel="Agendar una asesoría"
+            accessibilityLabel="Solicitar una asesoría"
           >
-            Agendar asesoría
+            Solicitar asesoría
           </Button>
           <Button
             mode="outlined"
@@ -160,6 +160,23 @@ function Detalle({ servicio }: { servicio: Servicio }) {
           accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
         >
           Ver orientación
+        </Button>
+      ) : null}
+
+      {/*
+        Préstamo de libros: la disponibilidad se consulta en Koha, sin cuenta. Por id y no por
+        categoría: otros servicios de préstamo, como las tablets, son de la misma categoría.
+      */}
+      {servicio.id === 'prestamo' ? (
+        <Button
+          mode="contained"
+          icon="book-search-outline"
+          onPress={() => router.push('/catalogo/koha')}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="Buscar libros en el catálogo Koha"
+        >
+          Buscar en el catálogo
         </Button>
       ) : null}
 

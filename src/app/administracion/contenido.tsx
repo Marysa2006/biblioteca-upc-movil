@@ -1,5 +1,7 @@
 /**
  * Crear o editar un aviso o informativo (HU-04). Sin ?id= crea; con ?id= edita.
+ * Con el permiso `contenidos` o, desde la versión 1.1, `novedades` (#257): aquí solo hay avisos e
+ * informativos, nunca servicios.
  * Al guardar vuelve a "Contenidos del portal" (CA1). El error de la API (CA3) se muestra
  * dentro del formulario.
  */
@@ -30,7 +32,7 @@ export default function EditarContenido() {
     <>
       <EncabezadoApilado titulo={titulo} />
       <Pantalla titulo={titulo} conEncabezado conTeclado>
-        {tienePermiso('contenidos') ? <Formulario id={id} /> : <SinPermiso />}
+        {tienePermiso('contenidos') || tienePermiso('novedades') ? <Formulario id={id} /> : <SinPermiso />}
       </Pantalla>
     </>
   );
@@ -70,7 +72,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar el contenido." onReintentar={() => refetch()} />;
   }
   const contenido = data.find((c) => c.id === id);
-  if (!contenido) return <EstadoVacio mensaje="Este contenido ya no existe." />;
+  if (!contenido) return <EstadoVacio pose="buscando" mensaje="Este contenido ya no existe." />;
 
   return (
     <FormularioContenido

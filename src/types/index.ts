@@ -11,6 +11,7 @@ export * from './contenidos';
 export * from './espacios';
 export * from './estadisticas';
 export * from './guias';
+export * from './inicio';
 export * from './notificaciones';
 export * from './parametros';
 export * from './perfil';

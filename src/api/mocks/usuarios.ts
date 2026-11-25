@@ -2,10 +2,24 @@
  * USUARIOS DE PRUEBA para el inicio de sesión provisional.
  * Sirven para ver la app con cada tipo de usuario y rol del personal mientras no exista el
  * login institucional (HU-05). Todos entran con la contraseña biblioteca123.
+ *
+ * Es la semilla: `USUARIOS_DIRECTORIO` la copia y le suma gente. El login NO lee esta lista,
+ * sino el directorio, que es el que cambian los roles y los permisos (#256).
  */
-import type { Usuario } from '@/types';
+import type { AceptacionPolitica, Usuario } from '@/types';
+import { VERSION_POLITICA_DATOS } from '@/utils/constantes';
 
-export const USUARIOS_PRUEBA: Usuario[] = [
+/**
+ * Los usuarios de prueba ya aceptaron la autorización de datos, como si se hubieran registrado
+ * (revisión de la 1.1): al iniciar sesión no se les vuelve a pedir.
+ */
+const ACEPTADA: AceptacionPolitica = {
+  version: VERSION_POLITICA_DATOS,
+  fecha: '2026-10-01T13:00:00.000Z',
+};
+const conAceptacion = (usuario: Usuario): Usuario => ({ ...usuario, aceptacionDatos: ACEPTADA });
+
+const SEMILLA_PRUEBA: Usuario[] = [
   {
     id: 'u-estudiante',
     nombre: 'Laura Pérez',
@@ -14,6 +28,10 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     rolesPersonal: [],
     programa: 'Enfermería',
     semestre: 8,
+    identificacion: '1065123456',
+    nivel: 'pregrado',
+    facultad: 'Ciencias de la Salud',
+    sede: 'Valledupar',
   },
   {
     id: 'u-docente',
@@ -22,6 +40,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     tipo: 'docente',
     rolesPersonal: [],
     programa: 'Ingeniería de Sistemas',
+    identificacion: '12564321',
+    facultad: 'Ingenierías y Tecnologías',
+    sede: 'Valledupar',
   },
   {
     id: 'u-administrador',
@@ -29,6 +50,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'ana.torres@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['administrador'],
+    identificacion: '12547896',
+    sede: 'Valledupar',
+    cargo: 'Bibliotecóloga',
   },
   {
     id: 'u-facilitador',
@@ -36,6 +60,9 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'julian.mendoza@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['facilitador'],
+    identificacion: '1098765432',
+    sede: 'Valledupar',
+    cargo: 'Facilitador de la biblioteca',
   },
   {
     id: 'u-gestor-espacios',
@@ -43,6 +70,11 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     correo: 'sofia.vargas@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['gestor_espacios'],
+    identificacion: '1032547896',
+    sede: 'Valledupar',
+    cargo: 'Gestora de espacios',
+    // Datos de prueba del #256: la administración le dio el permiso de novedades.
+    permisosExtra: ['novedades'],
   },
   {
     // Los egresados tienen cuenta institucional (#200).
@@ -52,8 +84,12 @@ export const USUARIOS_PRUEBA: Usuario[] = [
     tipo: 'egresado',
     rolesPersonal: [],
     programa: 'Contaduría',
+    facultad: 'Ciencias Administrativas, Contables y Económicas',
+    sede: 'Aguachica',
   },
 ];
+
+export const USUARIOS_PRUEBA: Usuario[] = SEMILLA_PRUEBA.map(conAceptacion);
 
 export const TOKEN_PRUEBA = 'token-de-prueba';
 
@@ -62,7 +98,7 @@ export const TOKEN_PRUEBA = 'token-de-prueba';
  * Arranca con los seis usuarios de prueba y suma otros para tener varios roles
  * a la vista. Es la semilla del mock: src/api/usuarios.ts trabaja sobre una copia.
  */
-export const USUARIOS_DIRECTORIO: Usuario[] = [
+const SEMILLA_DIRECTORIO: Usuario[] = [
   ...USUARIOS_PRUEBA,
   {
     id: 'u-administrativo',
@@ -78,6 +114,9 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     correo: 'andres.mejia@unicesar.edu.co',
     tipo: 'estudiante',
     rolesPersonal: [],
+    identificacion: '1098765433',
+    facultad: 'Ingenierías y Tecnologías',
+    sede: 'Valledupar',
     programa: 'Ingeniería Ambiental',
     semestre: 5,
   },
@@ -87,5 +126,10 @@ export const USUARIOS_DIRECTORIO: Usuario[] = [
     correo: 'paula.rincon@unicesar.edu.co',
     tipo: 'administrativo',
     rolesPersonal: ['facilitador'],
+    identificacion: '1064782135',
+    sede: 'Valledupar',
+    cargo: 'Facilitador de la biblioteca',
   },
 ];
+
+export const USUARIOS_DIRECTORIO: Usuario[] = SEMILLA_DIRECTORIO.map(conAceptacion);

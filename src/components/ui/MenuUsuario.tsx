@@ -1,8 +1,8 @@
 /**
  * Menú de usuario, arriba a la derecha de cada pantalla con pestañas (Pantalla lo muestra).
  * - Con sesión: Perfil, Notificaciones (HU-27), Mi calendario (HU-30), cambiar a la vista de la comunidad o del personal
- *   (solo el personal) y Cerrar sesión. Un globito sobre el botón cuenta los avisos sin leer.
- * - Sin sesión: Iniciar sesión.
+ *   (solo el personal), Ver tutorial y Cerrar sesión. Un globito sobre el botón cuenta los avisos sin leer.
+ * - Sin sesión: Iniciar sesión y Ver tutorial (#261).
  */
 import { router, useSegments } from 'expo-router';
 import { useState } from 'react';
@@ -40,6 +40,23 @@ export function MenuUsuario() {
     setAbierto(false);
     accion();
   };
+
+  // El tutorial se puede repetir con o sin sesión (#261). En la vista del personal se abre el
+  // del personal (#267).
+  const verTutorial = (
+    <Menu.Item
+      title="Ver tutorial"
+      leadingIcon="help-circle-outline"
+      onPress={() =>
+        ir(() =>
+          enVistaPersonal
+            ? router.push({ pathname: '/tutorial', params: { vista: 'personal' } })
+            : router.push('/tutorial'),
+        )
+      }
+      accessibilityLabel="Ver el tutorial de la app"
+    />
+  );
 
   const boton = (
     <View>
@@ -131,6 +148,7 @@ export function MenuUsuario() {
               />
             )
           ) : null}
+          {verTutorial}
           <Menu.Item
             title="Cerrar sesión"
             leadingIcon="logout"
@@ -144,12 +162,15 @@ export function MenuUsuario() {
           />
         </>
       ) : (
-        <Menu.Item
-          title="Iniciar sesión"
-          leadingIcon="login"
-          onPress={() => ir(() => router.push('/login'))}
-          accessibilityLabel="Iniciar sesión"
-        />
+        <>
+          <Menu.Item
+            title="Iniciar sesión"
+            leadingIcon="login"
+            onPress={() => ir(() => router.push('/login'))}
+            accessibilityLabel="Iniciar sesión"
+          />
+          {verTutorial}
+        </>
       )}
     </Menu>
   );

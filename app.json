@@ -2,7 +2,7 @@
   "expo": {
     "name": "BiblioUPC",
     "slug": "biblioteca-upc-movil",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "bibliotecaupc",
@@ -38,14 +38,9 @@
           "recordAudioAndroid": false
         }
       ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "usesCleartextTraffic": true
-          }
-        }
-      ]
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

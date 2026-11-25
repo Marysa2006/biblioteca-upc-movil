@@ -2,8 +2,9 @@
  * Fotografía de un espacio (HU-16): vista previa, elegir de la galería y quitar.
  * Revisa la foto antes de aceptarla y, si no sirve, pide corregirla (CA2).
  * Abrir la galería no necesita permiso (documentación de expo-image-picker, SDK 57).
+ * También lo usan las fotos de Inicio (#290), con su propio aspecto (16:9) y su descripción.
  */
-import { Image } from 'expo-image';
+import { Image, type ImageProps } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -17,9 +18,23 @@ type Props = {
   valor: string;
   onCambiar: (uri: string) => void;
   deshabilitado?: boolean;
+  /** Proporción del recorte y de la vista previa; por defecto 4:3, la de los espacios. */
+  aspecto?: [number, number];
+  /** Lo que dice el lector de pantalla de la vista previa. */
+  descripcion?: string;
+  /** Vista previa cuando `valor` no es una URI (las fotos que trae la app, #290). */
+  fuente?: ImageProps['source'] | null;
 };
 
-export function SelectorFoto({ valor, onCambiar, deshabilitado = false }: Props) {
+export function SelectorFoto({
+  valor,
+  onCambiar,
+  deshabilitado = false,
+  aspecto = [4, 3],
+  descripcion = 'Fotografía del espacio',
+  fuente,
+}: Props) {
+  const proporcion = { aspectRatio: aspecto[0] / aspecto[1] };
   const [problema, setProblema] = useState<string | null>(null);
 
   const elegir = async () => {
@@ -28,7 +43,7 @@ export function SelectorFoto({ valor, onCambiar, deshabilitado = false }: Props)
       const resultado = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
-        aspect: [4, 3],
+        aspect: aspecto,
         quality: 0.7,
       });
       if (resultado.canceled) return;
@@ -58,13 +73,13 @@ export function SelectorFoto({ valor, onCambiar, deshabilitado = false }: Props)
 
       {valor ? (
         <Image
-          source={{ uri: valor }}
-          style={estilos.foto}
+          source={fuente ?? { uri: valor }}
+          style={[estilos.foto, proporcion]}
           contentFit="cover"
-          accessibilityLabel="Fotografía del espacio"
+          accessibilityLabel={descripcion}
         />
       ) : (
-        <View style={estilos.sinFoto}>
+        <View style={[estilos.sinFoto, proporcion]}>
           <Icon source="image-outline" size={40} color={colores.textoSecundario} />
           <Text variant="bodyMedium" style={estilos.textoSecundario}>
             Sin fotografía

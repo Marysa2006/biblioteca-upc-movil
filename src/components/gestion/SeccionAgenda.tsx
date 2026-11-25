@@ -9,8 +9,8 @@
  * - Semana: la malla horaria (MallaSemana), con las horas de atención de los parámetros. Tocar
  *   un día del encabezado lo abre en Hoy.
  * - Mes: el calendario con las citas de cada día por estado; al tocar un día, sus citas debajo.
- * Las tres usan los mismos datos y el mismo filtro por estado: el embudo de arriba a la derecha,
- * con un chip para quitarlo mientras está activo. Cuando el periodo no es
+ * Las tres usan los mismos datos y el mismo filtro por estado (o Sin asignar, #250): el embudo
+ * de arriba a la derecha, con un chip para quitarlo mientras está activo. Cuando el periodo no es
  * el actual, un botón regresa a hoy, a esta semana o a este mes. Al tocar una cita se abre su
  * detalle (CA2).
  *
@@ -32,17 +32,19 @@ import { useAgenda } from '@/hooks/useAsesorias';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio, fuentes, radio } from '@/theme';
-import type { Cita, EstadoSolicitud } from '@/types';
+import type { Cita } from '@/types';
 import {
   citasAsignadas,
   contarCitasPorDia,
+  contarPendientes,
   diaDeAgenda,
   diasAgenda,
   filtrarPorEstado,
   moverDiaAgenda,
-  nombreEstadoAgenda,
+  nombreFiltroAgenda,
   rangoHorasMalla,
   tituloSemanaAgenda,
+  type FiltroAgenda,
 } from '@/utils/agenda';
 import {
   fechaCompleta,
@@ -83,8 +85,10 @@ export function SeccionAgenda() {
     parametros ? motivoNoDisponible(fecha, parametros) : null;
 
   // El filtro por estado se aplica a las tres vistas; no vuelve a consultar.
-  const [filtro, setFiltro] = useState<EstadoSolicitud | null>(null);
+  const [filtro, setFiltro] = useState<FiltroAgenda | null>(null);
   const citasVisibles = filtrarPorEstado(citasAsignadas(agenda.data ?? []), filtro);
+  // #217, CA2: las citas del periodo que esperan respuesta, sin importar el filtro.
+  const pendientes = contarPendientes(agenda.data ?? []);
 
   // La semana va de lunes a sábado: un domingo muestra la semana siguiente.
   const esActual = {
@@ -128,7 +132,7 @@ export function SeccionAgenda() {
     const cerrado = motivoCerrado(fecha);
     if (cerrado) return `Este día no hay atención: ${cerrado}.`;
     const quien = esAdministrador ? 'No hay citas' : 'No tienes citas';
-    const sinCitas = filtro ? `${quien} ${nombreEstadoAgenda(filtro, 2)}` : quien;
+    const sinCitas = filtro ? `${quien} ${nombreFiltroAgenda(filtro, 2)}` : quien;
     return `${sinCitas} ${fecha === hoy ? 'hoy' : 'este día'}.`;
   };
 
@@ -157,7 +161,7 @@ export function SeccionAgenda() {
         {sinCitas ? (
           <Text variant="bodyMedium" style={estilos.aviso}>
             {filtro
-              ? `No hay citas ${nombreEstadoAgenda(filtro, 2)} esta semana.`
+              ? `No hay citas ${nombreFiltroAgenda(filtro, 2)} esta semana.`
               : 'No hay citas esta semana.'}
           </Text>
         ) : null}
@@ -240,10 +244,11 @@ export function SeccionAgenda() {
             elegido={dia}
             conteo={contarCitasPorDia(citasVisibles)}
             onElegirDia={setDia}
+            motivoCerrado={motivoCerrado}
           />
         ) : null}
 
-        <ChipFiltroAgenda filtro={filtro} onCambiar={setFiltro} />
+        <ChipFiltroAgenda filtro={filtro} onCambiar={setFiltro} pendientes={pendientes} />
       </View>
 
       {citas}

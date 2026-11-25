@@ -1,22 +1,24 @@
-import { Image } from 'expo-image';
-import { type ReactNode, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useRef, useState } from 'react';
 import {
+  type HostInstance,
   KeyboardAvoidingView,
-  Platform,
   RefreshControl,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   ScrollView,
+  type ScrollViewInstance,
   StyleSheet,
   View,
 } from 'react-native';
 import { Surface, Text } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
+import { colores, espacio, fuentes, radio } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
 
 import { MenuUsuario } from './MenuUsuario';
+import { BarraTeclado, ScrollViewTeclado, SEPARACION_TECLADO } from './Teclado';
+import { Upecito } from './Upecito';
 
 type Props = {
   titulo: string;
@@ -48,11 +50,19 @@ type Props = {
   children: ReactNode;
 };
 
+/** Sube el contenido de la pantalla al inicio; fuera de una Pantalla no hace nada. */
+const SubirAlInicio = createContext<() => void>(() => {});
+
+/** Para que un componente dentro de la pantalla (por ejemplo, Paginacion) la suba al inicio. */
+export function useSubirAlInicio(): () => void {
+  return useContext(SubirAlInicio);
+}
+
 /** Cuánto hay que deslizar (en px) para que el botón flotante se encoja. */
 const DESPLAZAMIENTO_PARA_ENCOGER = espacio.xl;
 
 /**
- * Contenedor común de las pantallas: área segura, marca (logo de BiblioUPC + nombre de la app y
+ * Contenedor común de las pantallas: área segura, marca (Upecito + nombre de la app y
  * de la Universidad) con el menú de usuario, título y contenido desplazable.
  */
 export function Pantalla({
@@ -72,43 +82,51 @@ export function Pantalla({
   const [altoPie, setAltoPie] = useState(0);
   // Si el contenido ya bajó un poco, para que el botón flotante se encoja y deje ver la lista.
   const [desplazada, setDesplazada] = useState(false);
+  const desplazable = useRef<ScrollViewInstance>(null);
+  // Dónde empieza la pantalla en la ventana, para que el teclado no tape los campos (conTeclado).
+  const medidor = useRef<HostInstance>(null);
+  const [desplazamientoTeclado, setDesplazamientoTeclado] = useState(0);
+  const subirAlInicio = useCallback(
+    () => desplazable.current?.scrollTo({ y: 0, animated: true }),
+    [],
+  );
   const alDesplazar =
     typeof flotante === 'function'
       ? ({ nativeEvent }: NativeSyntheticEvent<NativeScrollEvent>) =>
           setDesplazada(nativeEvent.contentOffset.y > DESPLAZAMIENTO_PARA_ENCOGER)
       : undefined;
 
-  const contenido = (
-    <ScrollView
-      // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
-      contentContainerStyle={[
-        estilos.contenido,
-        flotante ? estilos.contenidoConFlotante : null,
-        pie ? { paddingBottom: altoPie + bottom + espacio.xl } : null,
-      ]}
-      onScroll={alDesplazar}
-      scrollEventThrottle={alDesplazar ? 16 : undefined}
-      // Con el teclado abierto, el primer toque en un botón lo presiona (y no solo cierra el teclado).
-      keyboardShouldPersistTaps="handled"
-      refreshControl={
-        recarga ? (
-          <RefreshControl
-            refreshing={recarga.recargando}
-            onRefresh={recarga.onRecargar}
-            colors={[colores.primario]}
-            tintColor={colores.primario}
-          />
-        ) : undefined
-      }
-    >
+  // #293: con el módulo nativo (APK o development build), el formulario usa la librería del
+  // teclado; en Expo Go, KeyboardAvoidingView (abajo).
+  const conLibreriaTeclado = conTeclado && ScrollViewTeclado != null;
+
+  const propiedadesDesplazable = {
+    // Con botón flotante, el final de la lista queda libre para que no tape la última tarjeta.
+    contentContainerStyle: [
+      estilos.contenido,
+      flotante ? estilos.contenidoConFlotante : null,
+      pie ? { paddingBottom: altoPie + bottom + espacio.xl } : null,
+    ],
+    onScroll: alDesplazar,
+    scrollEventThrottle: alDesplazar ? 16 : undefined,
+    // Con el teclado abierto, el primer toque en un botón lo presiona (y no solo cierra el teclado).
+    keyboardShouldPersistTaps: 'handled' as const,
+    refreshControl: recarga ? (
+      <RefreshControl
+        refreshing={recarga.recargando}
+        onRefresh={recarga.onRecargar}
+        colors={[colores.primario]}
+        tintColor={colores.primario}
+      />
+    ) : undefined,
+  };
+
+  const interior = (
+    <>
       {marcaPropia ?? (
         <View style={estilos.marca}>
-          {/* Decorativo: el nombre ya va escrito al lado, así que no lleva accessibilityLabel. */}
-          <Image
-            source={require('@/assets/images/logo-biblioupc.png')}
-            style={estilos.isotipo}
-            contentFit="contain"
-          />
+          {/* Decorativo: el nombre ya va escrito al lado. */}
+          <Upecito tamano="encabezado" />
           <View style={estilos.textosMarca}>
             <Text variant="titleMedium" style={estilos.nombreApp}>
               {NOMBRE_APP}
@@ -130,9 +148,28 @@ export function Pantalla({
           </Text>
         ) : null}
       </View>
-      {children}
-    </ScrollView>
+      <SubirAlInicio.Provider value={subirAlInicio}>{children}</SubirAlInicio.Provider>
+    </>
   );
+
+  const contenido =
+    conLibreriaTeclado && ScrollViewTeclado ? (
+      // Sube solo el campo que se escribe, por encima del teclado y de la barra.
+      <ScrollViewTeclado
+        // Su referencia es la del ScrollView más assureFocusedInputVisible: sirve para subir al inicio.
+        ref={(instancia) => {
+          desplazable.current = instancia;
+        }}
+        bottomOffset={SEPARACION_TECLADO}
+        {...propiedadesDesplazable}
+      >
+        {interior}
+      </ScrollViewTeclado>
+    ) : (
+      <ScrollView ref={desplazable} {...propiedadesDesplazable}>
+        {interior}
+      </ScrollView>
+    );
 
   const conPie = pie ? (
     <>
@@ -151,14 +188,33 @@ export function Pantalla({
 
   return (
     <SafeAreaView style={estilos.area} edges={conEncabezado ? [] : ['top']}>
-      {conTeclado ? (
-        // Según la guía de Expo: 'padding' en iOS; en Android basta con el componente.
-        <KeyboardAvoidingView
-          style={estilos.teclado}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+      {conLibreriaTeclado ? (
+        <>
           {conPie}
-        </KeyboardAvoidingView>
+          {/* Anterior, Siguiente y Listo sobre el teclado; solo aparece con el teclado abierto. */}
+          <BarraTeclado />
+        </>
+      ) : conTeclado ? (
+        // En Expo Go (sin la librería del teclado):
+        // desde la SDK 54, Android es edge-to-edge: la ventana ya no se achica con el teclado y
+        // un KeyboardAvoidingView sin `behavior` se queda debajo de él. La guía de Expo pide
+        // `behavior` en las dos plataformas, y 'padding' es la que mejor funciona.
+        // KeyboardAvoidingView mide su posición contra su contenedor, pero el teclado viene en
+        // coordenadas de la ventana: el desplazamiento es dónde empieza la pantalla en la
+        // ventana (debajo del encabezado y de la barra de estado), medido y no supuesto.
+        <View
+          ref={medidor}
+          style={estilos.teclado}
+          onLayout={() => medidor.current?.measureInWindow((_x, y) => setDesplazamientoTeclado(y))}
+        >
+          <KeyboardAvoidingView
+            style={estilos.teclado}
+            behavior="padding"
+            keyboardVerticalOffset={desplazamientoTeclado}
+          >
+            {conPie}
+          </KeyboardAvoidingView>
+        </View>
       ) : (
         conPie
       )}
@@ -188,7 +244,6 @@ const estilos = StyleSheet.create({
   },
   marca: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   textosMarca: { flex: 1 },
-  isotipo: { width: tamanoLogo.isotipo, aspectRatio: 1 },
   nombreApp: { color: colores.primario, fontFamily: fuentes.negrita },
   universidad: { color: colores.texto },
   encabezado: { gap: espacio.xs },

@@ -1,7 +1,9 @@
 /**
  * DATOS DE PRUEBA del inicio de sesión provisional (HU-05).
- * Los usuarios que pueden entrar son USUARIOS_PRUEBA (./usuarios); aquí solo va
- * lo que necesita el login para probar los criterios de aceptación.
+ * Quienes pueden entrar son los del directorio (`./usuarios`, `USUARIOS_DIRECTORIO`), y no la
+ * lista fija `USUARIOS_PRUEBA`: el login lee el directorio donde la administración cambia los
+ * roles y los permisos (#256, CA1). Aquí solo va lo que necesita el login para probar los
+ * criterios de aceptación.
  */
 import type { Usuario } from '@/types';
 

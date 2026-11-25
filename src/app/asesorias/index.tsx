@@ -1,7 +1,7 @@
 /**
  * Temas de asesoría que ofrece la biblioteca (HU-14): la lista de los activos.
- * Pantalla apilada; se abre desde el detalle del servicio de asesorías y no pide cuenta:
- * la sesión se pide al confirmar la cita.
+ * Pantalla apilada; se abre desde el detalle del servicio de asesorías y no pide cuenta: al
+ * tocar un tema se abre su solicitud (#249), que sí la pide.
  *
  * Patrón de datos: useTemas() (src/hooks) → src/api/asesorias.ts → mock o API.
  */

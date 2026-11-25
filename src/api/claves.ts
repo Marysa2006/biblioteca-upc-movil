@@ -15,6 +15,11 @@ export const claves = {
   contenidos: ['contenidos'] as const,
   parametros: ['parametros'] as const,
   usuarios: ['usuarios'] as const,
+  /**
+   * El directorio del personal de la biblioteca (#256). Va aparte de `usuarios` porque no
+   * devuelve lo mismo: el equipo excluye a la comunidad. Con la misma clave, la caché se pisa.
+   */
+  equipo: ['usuarios', 'equipo'] as const,
   recursos: ['recursos'] as const,
   /** Resultados de Koha para un texto (HU-02); las páginas van dentro de la misma clave. */
   busquedaCatalogo: (texto: string) => ['catalogo', 'busqueda', texto] as const,
@@ -85,11 +90,21 @@ export const claves = {
   misPrestamos: (usuarioId?: string) => ['prestamos', 'mios', usuarioId] as const,
   /** Préstamos pasados de la hora límite (HU-24). */
   prestamosVencidos: ['prestamos', 'vencidos'] as const,
+  /** La constancia del préstamo de tablet (#252). */
+  constanciaPrestamo: (id: string) => ['prestamos', id, 'constancia'] as const,
 
   // ── Función plus: guías sin conexión (HU-29) ─────────────────
   guias: ['guias'] as const,
   guia: (id: string) => ['guias', id] as const,
   guiasGuardadas: ['guias', 'guardadas'] as const,
+  /** Todas las guías, también las no publicadas, para Gestión → Portal → Guías (#258). */
+  guiasAdministracion: ['guias', 'administracion'] as const,
+
+  // ── Versión 1.1: fotos del carrusel de Inicio (#290) ─────────
+  /** Las publicadas, para Inicio. El prefijo refresca también la lista del personal. */
+  fotosInicio: ['fotosInicio'] as const,
+  /** Todas, también las ocultas, para Gestión → Portal → Fotos de Inicio. */
+  fotosInicioAdministracion: ['fotosInicio', 'administracion'] as const,
 
   // ── Iteración 4: autoarchivo (HU-11) ─────────────────────────
   /** Contenido de orientación de autoarchivo (HU-11). */

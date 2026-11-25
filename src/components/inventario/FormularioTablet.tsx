@@ -1,6 +1,8 @@
 /**
  * Formulario para registrar o editar una tablet (HU-21): código, serial, modelo, accesorios y
  * estado (CA1). El código o el serial repetidos se marcan bajo su propio campo (CA2).
+ * Versión 1.1 (#253): tipo, marca y valor del bien, que van en la constancia del préstamo. El
+ * valor se escribe solo con números: los puntos de miles los pone el campo.
  * Solo valida y entrega los datos: la pantalla guarda con useCrearTablet() o useEditarTablet().
  */
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +17,7 @@ import { colores, espacio, fuentes } from '@/theme';
 import type { EstadoTablet, Tablet } from '@/types';
 import {
   ACCESORIOS_COMUNES,
+  conPuntosDeMiles,
   crearEsquemaTablet,
   ESTADOS_EDITABLES,
   NOMBRE_ESTADO_TABLET,
@@ -28,6 +31,14 @@ const CAMPOS: { nombre: CampoTexto; etiqueta: string; ayuda: string; mayusculas?
   { nombre: 'codigo', etiqueta: 'Código interno', ayuda: 'Por ejemplo: TAB-007', mayusculas: true },
   { nombre: 'serial', etiqueta: 'Serial del fabricante', ayuda: 'Por ejemplo: SN-SAM-A9-004', mayusculas: true },
   { nombre: 'modelo', etiqueta: 'Modelo', ayuda: 'Por ejemplo: Samsung Galaxy Tab A9' },
+];
+
+type CampoConstancia = 'tipo' | 'marca';
+
+/** Datos del formato de constancia (#253): opcionales, pero sin ellos la constancia dice "Sin registrar". */
+const CAMPOS_CONSTANCIA: { nombre: CampoConstancia; etiqueta: string; ayuda: string; maximo: number }[] = [
+  { nombre: 'tipo', etiqueta: 'Tipo de equipo', ayuda: 'Por ejemplo: Tablet', maximo: 30 },
+  { nombre: 'marca', etiqueta: 'Marca', ayuda: 'Por ejemplo: Samsung', maximo: 40 },
 ];
 
 const AYUDA_ESTADO: Record<EstadoTablet, string> = {
@@ -62,6 +73,9 @@ export function FormularioTablet({ tablets, original, guardando, mensajeError, o
       modelo: original?.modelo ?? '',
       accesorios: original?.accesorios ?? ['cargador'],
       estado: original?.estado ?? ('disponible' as EstadoTablet),
+      tipo: original?.tipo ?? 'Tablet',
+      marca: original?.marca ?? '',
+      valor: original?.valor != null ? conPuntosDeMiles(String(original.valor)) : '',
     },
   });
   const [accesorios, estado] = useWatch({ control, name: ['accesorios', 'estado'] });
@@ -116,6 +130,64 @@ export function FormularioTablet({ tablets, original, guardando, mensajeError, o
           )}
         />
       ))}
+
+      <Text variant="labelLarge" style={estilos.titulo}>
+        Datos para la constancia del préstamo
+      </Text>
+      {CAMPOS_CONSTANCIA.map((campo) => (
+        <Controller
+          key={campo.nombre}
+          control={control}
+          name={campo.nombre}
+          render={({ field: { ref, value, onChange, onBlur } }) => (
+            <View>
+              <TextInput
+                ref={ref}
+                mode="outlined"
+                label={campo.etiqueta}
+                placeholder={campo.ayuda}
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors[campo.nombre] != null}
+                disabled={guardando}
+                maxLength={campo.maximo}
+                accessibilityLabel={campo.etiqueta}
+              />
+              <HelperText type="error" visible={errors[campo.nombre] != null}>
+                {errors[campo.nombre]?.message}
+              </HelperText>
+            </View>
+          )}
+        />
+      ))}
+      <Controller
+        control={control}
+        name="valor"
+        render={({ field: { ref, value, onChange, onBlur } }) => (
+          <View>
+            <TextInput
+              ref={ref}
+              mode="outlined"
+              label="Valor del bien (en pesos)"
+              placeholder="Por ejemplo: 1.470.000"
+              value={value}
+              // Los puntos de miles los pone el campo: se escriben solo números.
+              onChangeText={(texto) => onChange(conPuntosDeMiles(texto))}
+              onBlur={onBlur}
+              error={errors.valor != null}
+              disabled={guardando}
+              keyboardType="number-pad"
+              left={<TextInput.Affix text="$" />}
+              maxLength={14}
+              accessibilityLabel="Valor del bien en pesos"
+            />
+            <HelperText type={errors.valor ? 'error' : 'info'} visible>
+              {errors.valor?.message ?? 'Va en la constancia: es lo que responde la persona si se pierde o se daña.'}
+            </HelperText>
+          </View>
+        )}
+      />
 
       <ChipsOpcion
         titulo="Accesorios"

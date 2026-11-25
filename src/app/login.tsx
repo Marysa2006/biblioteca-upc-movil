@@ -4,7 +4,7 @@
  * el layout raíz la muestra como modal. El personal siempre entra al Panel; la comunidad, con
  * ?volver=1, regresa a la pantalla de origen.
  *
- * Arriba, el logo de BiblioUPC grande en lugar de la fila de marca, y al pie, el logo de la UPC
+ * Arriba, Upecito grande en lugar de la fila de marca, y al pie, el logo de la UPC
  * (#202).
  *
  * Patrón de datos: useIniciarSesion() (src/hooks) → iniciarSesionApi() (src/api) → mock o API.
@@ -12,12 +12,13 @@
  */
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { FormularioLogin } from '@/components/autenticacion/FormularioLogin';
-import { AvisoError, Pantalla } from '@/components/ui';
+import { TextoAutorizacionDatos } from '@/components/privacidad/TextoAutorizacionDatos';
+import { AvisoError, DialogoTexto, Pantalla, Upecito } from '@/components/ui';
 import { mensajeErrorLogin, useIniciarSesion } from '@/hooks/useAutenticacion';
 import { colores, espacio, fuentes, radio, tamanoLogo } from '@/theme';
 import { NOMBRE_APP } from '@/utils/constantes';
@@ -25,6 +26,7 @@ import { esPersonal } from '@/utils/roles';
 
 export default function Login() {
   const { volver } = useLocalSearchParams<{ volver?: string }>();
+  const [verAutorizacion, setVerAutorizacion] = useState(false);
   const { mutate, isPending, error, reset } = useIniciarSesion();
   const mensajeError = error ? mensajeErrorLogin(error) : null;
 
@@ -68,6 +70,23 @@ export default function Login() {
         <FormularioLogin enviando={isPending} onEnviar={iniciarSesion} />
       </View>
 
+      {/* #203: la comunidad sin cuenta se registra. Reemplaza al login: atrás vuelve al origen. */}
+      <View style={estilos.registro}>
+        <Text variant="bodyMedium" style={estilos.textoSeparador}>
+          ¿No tienes cuenta?
+        </Text>
+        <Button
+          mode="text"
+          onPress={() => router.replace('/registro')}
+          disabled={isPending}
+          contentStyle={estilos.contenidoBoton}
+          accessibilityRole="button"
+          accessibilityLabel="No tengo cuenta: registrarme"
+        >
+          Regístrate
+        </Button>
+      </View>
+
       <View style={estilos.separador}>
         <View style={estilos.linea} />
         <Text variant="bodyMedium" style={estilos.textoSeparador}>
@@ -88,6 +107,30 @@ export default function Login() {
         Explorar sin iniciar sesión
       </Button>
 
+      {/* La Ley 1581: la autorización y la política de la Universidad, a la vista antes de entrar
+          (#225, CA1). Revisión de la 1.1: el texto completo abre en una ventana. */}
+      <View style={estilos.privacidad}>
+        <Text variant="bodySmall" style={estilos.textoSeparador}>
+          La Universidad es la responsable de tus datos personales.
+        </Text>
+        <Button
+          mode="text"
+          icon="shield-check-outline"
+          onPress={() => setVerAutorizacion(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Tratamiento de datos personales: leer la autorización y la política"
+        >
+          Tratamiento de datos personales
+        </Button>
+      </View>
+      <DialogoTexto
+        visible={verAutorizacion}
+        titulo="Tratamiento de datos personales"
+        onCerrar={() => setVerAutorizacion(false)}
+      >
+        <TextoAutorizacionDatos />
+      </DialogoTexto>
+
       {/* La UPC, con su logo oficial, al pie (#202). */}
       <View style={estilos.universidad}>
         <Text variant="labelMedium" style={estilos.textoSeparador}>
@@ -106,16 +149,12 @@ export default function Login() {
   );
 }
 
-/** Arriba del login, en lugar de la fila de marca: el logo de BiblioUPC grande y su nombre. */
+/** Arriba del login, en lugar de la fila de marca: Upecito grande y el nombre de la app. */
 function MarcaLogin() {
   return (
     <View style={estilos.marca}>
       {/* Decorativo: el nombre va escrito debajo. */}
-      <Image
-        source={require('@/assets/images/logo-biblioupc.png')}
-        style={estilos.logoApp}
-        contentFit="contain"
-      />
+      <Upecito />
       <Text variant="titleLarge" style={estilos.nombreApp}>
         {NOMBRE_APP}
       </Text>
@@ -125,10 +164,9 @@ function MarcaLogin() {
 
 const estilos = StyleSheet.create({
   marca: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.m },
-  // maxWidth en %: en pantallas angostas o con letra grande, el logo se encoge en vez de salirse.
-  logoApp: { width: tamanoLogo.app, maxWidth: '40%', aspectRatio: 1 },
   nombreApp: { color: colores.primario, fontFamily: fuentes.negrita },
   universidad: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.l },
+  privacidad: { alignItems: 'center', gap: espacio.xs, paddingTop: espacio.s },
   // Proporción del archivo (607 × 207) para que no se deforme.
   logoUpc: { width: tamanoLogo.upcHorizontal, maxWidth: '60%', aspectRatio: 607 / 207 },
   tarjeta: {
@@ -136,6 +174,14 @@ const estilos = StyleSheet.create({
     padding: espacio.m,
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
+  },
+  // Con letra grande, el botón pasa a otra línea en vez de cortarse.
+  registro: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacio.xs,
   },
   separador: { flexDirection: 'row', alignItems: 'center', gap: espacio.s },
   linea: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: colores.bordeFuerte },

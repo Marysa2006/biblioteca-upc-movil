@@ -5,8 +5,16 @@
  */
 import { z } from 'zod';
 
-import type { CondicionTablet, EstadoPrestamo, Prestamo } from '@/types';
-import { fechaLegible } from '@/utils/fechas';
+import type {
+  CondicionTablet,
+  EstadoEquipo,
+  EstadoPrestamo,
+  FirmaElectronica,
+  Prestamo,
+  Tablet,
+} from '@/types';
+import { NOTAS_PRESTAMO } from '@/utils/constantes';
+import { fechaLegible, hoyISO } from '@/utils/fechas';
 import { minutosDeRetraso } from '@/utils/tablets';
 
 export const NOMBRE_CONDICION: Record<CondicionTablet, string> = {
@@ -22,17 +30,20 @@ export const AYUDA_CONDICION: Record<CondicionTablet, string> = {
 };
 
 /** Grupos de la sección Préstamos: lo que hay que entregar, lo que hay que recibir y lo cerrado. */
-export type GrupoPrestamos = 'entregar' | 'recibir' | 'devueltos';
+/** Desde el #310, Vencidos es un grupo de Préstamos (antes, una pestaña de Gestión). */
+export type GrupoPrestamos = 'entregar' | 'recibir' | 'vencidos' | 'devueltos';
 
 export const ESTADOS_DE_GRUPO: Record<GrupoPrestamos, readonly EstadoPrestamo[]> = {
   entregar: ['reservado'],
-  recibir: ['entregado', 'vencido'],
+  recibir: ['entregado'],
+  vencidos: ['vencido'],
   devueltos: ['devuelto'],
 };
 
 export const NOMBRE_GRUPO: Record<GrupoPrestamos, string> = {
   entregar: 'Entregar',
   recibir: 'Recibir',
+  vencidos: 'Vencidos',
   devueltos: 'Historial',
 };
 
@@ -48,6 +59,33 @@ export function prestamosDeGrupo(prestamos: Prestamo[], grupo: GrupoPrestamos): 
 export function fechaHoraLegible(fechaHora: string): string {
   const [fecha, hora] = fechaHora.split(' ');
   return `${fechaLegible(fecha)}, ${hora}`;
+}
+
+/** AAAA-MM-DD → "Hoy", "Mañana", "Ayer" o "21 de noviembre" (tarjetas de préstamos). */
+export function diaRelativo(fecha: string, hoy: string = hoyISO()): string {
+  const dia = (iso: string) => {
+    const [a, m, d] = iso.split('-').map(Number);
+    return Date.UTC(a, m - 1, d) / 86400000;
+  };
+  const diferencia = dia(fecha) - dia(hoy);
+  if (diferencia === 0) return 'Hoy';
+  if (diferencia === 1) return 'Mañana';
+  if (diferencia === -1) return 'Ayer';
+  return fechaLegible(fecha);
+}
+
+/**
+ * La franja de la tarjeta en una línea: "Hoy · 09:00 a 12:00". Entregado, empieza a la hora
+ * real de salida; si salió otro día, lo dice: "Ayer, 16:00 · hasta hoy, 12:00".
+ */
+export function franjaDelPrestamo(prestamo: Prestamo, hoy: string = hoyISO()): string {
+  const [fechaSalida, horaSalida] = prestamo.entrega
+    ? prestamo.entrega.fechaHora.split(' ')
+    : [prestamo.fecha, prestamo.horaInicio];
+  if (fechaSalida !== prestamo.fecha) {
+    return `${diaRelativo(fechaSalida, hoy)}, ${horaSalida} · hasta ${diaRelativo(prestamo.fecha, hoy).toLowerCase()}, ${prestamo.horaLimite}`;
+  }
+  return `${diaRelativo(prestamo.fecha, hoy)} · ${horaSalida} a ${prestamo.horaLimite}`;
 }
 
 /** 135 → "2 h 15 min"; 40 → "40 min". */
@@ -96,6 +134,51 @@ export const esquemaEntrega = z
 
 export type DatosFormularioEntrega = z.infer<typeof esquemaEntrega>;
 
+/** Máximo de las notas del estado del equipo en la entrega (#253). */
+export const LARGO_MAXIMO_NOTAS_EQUIPO = 300;
+
+/**
+ * Entrega con la constancia (versión 1.1, #253): lo de siempre más el estado del equipo como lo
+ * nombra el formato (Nuevo, Óptimo u Otro), las notas (obligatorias con «Otro», CA2) y que la
+ * persona leyó la constancia y acepta la responsabilidad sobre el préstamo.
+ */
+export const esquemaEntregaConstancia = z
+  .object({
+    condicion,
+    accesorios: z.array(z.string()),
+    estadoEquipo: z.enum(['nuevo', 'optimo', 'otro'], { error: 'Elige el estado del equipo.' }),
+    notas: z
+      .string()
+      .trim()
+      .max(LARGO_MAXIMO_NOTAS_EQUIPO, { error: `Máximo ${LARGO_MAXIMO_NOTAS_EQUIPO} caracteres.` }),
+    acepta: z.boolean(),
+  })
+  .superRefine((datos, ctx) => {
+    if (datos.condicion === 'danado') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['condicion'],
+        message: 'No entregues una tablet dañada: envíala a mantenimiento en la sección Tablets.',
+      });
+    }
+    if (datos.estadoEquipo === 'otro' && datos.notas === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['notas'],
+        message: 'Con el estado «Otro», escribe en las notas cómo está el equipo.',
+      });
+    }
+    if (!datos.acepta) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['acepta'],
+        message: 'Para entregarla, la persona debe leer la constancia y aceptar la responsabilidad.',
+      });
+    }
+  });
+
+export type FormularioEntregaConstancia = z.input<typeof esquemaEntregaConstancia>;
+
 /**
  * Devolución (CA2-CA3): estado, accesorios recibidos y novedades. Si volvió dañada o faltan
  * accesorios, la novedad es obligatoria y debe decir qué pasó (la API pide lo mismo).
@@ -127,3 +210,229 @@ export function crearEsquemaDevolucion(accesoriosEntregados: string[]) {
 }
 
 export type DatosFormularioDevolucion = z.infer<ReturnType<typeof crearEsquemaDevolucion>>;
+
+/** Un dato de la constancia: la etiqueta del formato y su valor ya listo para mostrar. */
+export type DatoConstancia = { etiqueta: string; valor: string };
+
+/** La constancia del préstamo, en el orden del formato de la biblioteca (#252). */
+export type ConstanciaPrestamo = {
+  /** Fecha y hora del préstamo, 'AAAA-MM-DD HH:MM'. */
+  prestamo: string;
+  /** Fecha y hora de la devolución: la registrada, o la hora límite si aún no se devolvió. */
+  devolucion: string;
+  /** Quién recibe: nombres, identificación, programa y semestre. */
+  usuario: DatoConstancia[];
+  /** El dispositivo: tipo, marca, valor, código interno y serial. */
+  dispositivo: DatoConstancia[];
+  /** Estado del equipo al entregarlo, con las notas si es «otro». */
+  estadoEquipo: string;
+  notas: string;
+  /** Quién entregó y quién recibió, con su cargo. */
+  entrego?: string;
+  recibio?: string;
+  /** Las tres notas del formato, con el valor de la tablet en la tercera (CA3). */
+  notasLegales: string[];
+  /**
+   * Cuándo aceptó la persona el formato de responsabilidad en la app, 'AAAA-MM-DD HH:MM' (#310).
+   * Opcional: si el Backend no lo manda, la constancia no lo dice.
+   */
+  aceptoEl?: string;
+  /** La firma del usuario responsable en la pantalla, si firmó así (#310). */
+  firmaUsuario?: FirmaElectronica;
+  /** Cuándo se entregó y cuándo se recibió: quien lo hizo firma con su sesión (#310). */
+  entregadaEl?: string;
+  recibidaEl?: string;
+  /** Las firmas registradas de quien entregó y de quien recibió (revisión de la 1.1), si las tienen. */
+  firmaEntrega?: FirmaElectronica;
+  firmaRecibe?: FirmaElectronica;
+};
+
+/** Solo M, L, números, espacios, puntos y signos: lo que deja el panel de firma (#310). */
+const TRAZO_VALIDO = /^[ML0-9 .-]+$/;
+
+/** ¿La firma tiene trazos y medidas válidas? Se revisa al guardar y antes de ponerla en el PDF. */
+export function esFirmaValida(firma: FirmaElectronica | undefined): firma is FirmaElectronica {
+  return (
+    firma != null &&
+    firma.trazo.length > 0 &&
+    firma.trazo.length <= 60000 &&
+    TRAZO_VALIDO.test(firma.trazo) &&
+    firma.trazo.includes('L') &&
+    firma.ancho > 0 &&
+    firma.alto > 0
+  );
+}
+
+/** Cómo firmó cada quien en la constancia (#310). */
+export type ModoFirma =
+  | {
+      tipo: 'trazo';
+      firma: FirmaElectronica;
+      /** Solo el personal: la hora de la entrega o la devolución que firma con su firma registrada. */
+      cuando?: string;
+    }
+  | { tipo: 'sesion'; fechaHora: string };
+
+/** Un recuadro de firma del formato: quién firma y sus datos; la firma va a mano (#310). */
+export type FirmaConstancia = { titulo: string; datos: DatoConstancia[]; firma?: ModoFirma };
+
+/**
+ * Los tres recuadros de "Para constancia de lo anterior firman", como en el papel: quien
+ * entrega, el usuario responsable del bien y quien recibe. Los datos van llenos si ya se
+ * conocen; si no, en blanco para escribirlos a mano. Es pura.
+ */
+/**
+ * La firma de quien entregó o recibió (revisión de la 1.1): su firma registrada, con la hora en
+ * que firmó esta constancia; sin ella, su sesión. Sin nombre u hora, el recuadro queda en blanco.
+ */
+function firmaDelPersonal(
+  nombre: string | undefined,
+  fechaHora: string | undefined,
+  firma: FirmaElectronica | undefined,
+): { firma?: ModoFirma } {
+  if (!nombre || !fechaHora) return {};
+  if (esFirmaValida(firma)) return { firma: { tipo: 'trazo', firma, cuando: fechaHora } };
+  return { firma: { tipo: 'sesion', fechaHora } };
+}
+
+export function firmasDeConstancia(constancia: ConstanciaPrestamo): FirmaConstancia[] {
+  const dato = (etiqueta: string) =>
+    constancia.usuario.find((actual) => actual.etiqueta === etiqueta)?.valor ?? '';
+  const identificacion = dato('Identificación');
+  return [
+    {
+      titulo: 'Quien entrega · Biblioteca',
+      datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.entrego ?? '' }],
+      ...firmaDelPersonal(constancia.entrego, constancia.entregadaEl, constancia.firmaEntrega),
+    },
+    {
+      titulo: 'Usuario responsable del bien',
+      datos: [
+        { etiqueta: 'Nombres completos', valor: dato('Nombres') },
+        {
+          etiqueta: 'Documento',
+          valor: identificacion === 'Sin registrar' ? '' : identificacion,
+        },
+      ],
+      ...(esFirmaValida(constancia.firmaUsuario)
+        ? { firma: { tipo: 'trazo' as const, firma: constancia.firmaUsuario } }
+        : {}),
+    },
+    {
+      titulo: 'Quien recibe · Biblioteca',
+      datos: [{ etiqueta: 'Nombre y cargo', valor: constancia.recibio ?? '' }],
+      ...firmaDelPersonal(constancia.recibio, constancia.recibidaEl, constancia.firmaRecibe),
+    },
+  ];
+}
+
+/**
+ * Arma la constancia del préstamo en el orden del formato (CA1): los datos del usuario, el
+ * dispositivo, el estado, las notas y quién entregó y recibió. Las firmas del papel van en el
+ * PDF, en recuadros para firmar a mano (firmasDeConstancia, #310); la app registra quién hizo
+ * cada paso y cuándo aceptó la persona el formato.
+ *
+ * Es pura: recibe el préstamo y la tablet, y no consulta nada.
+ */
+export function constanciaDe(prestamo: Prestamo, tablet: Tablet): ConstanciaPrestamo {
+  const solicitante = prestamo.datosSolicitante;
+  const entrega = prestamo.entrega;
+  const devolucion = prestamo.devolucion;
+
+  const usuario: DatoConstancia[] = [
+    { etiqueta: 'Nombres', valor: solicitante?.nombreCompleto ?? prestamo.solicitante },
+    { etiqueta: 'Identificación', valor: solicitante?.identificacion ?? 'Sin registrar' },
+    { etiqueta: 'Programa', valor: solicitante?.programa ?? 'Sin registrar' },
+    {
+      etiqueta: 'Semestre',
+      valor: solicitante?.semestre != null ? `${solicitante.semestre}.º` : 'Sin registrar',
+    },
+  ];
+
+  const dispositivo: DatoConstancia[] = [
+    { etiqueta: 'Tipo', valor: tablet.tipo ?? 'Tablet' },
+    { etiqueta: 'Marca', valor: tablet.marca ?? 'Sin registrar' },
+    { etiqueta: 'Valor del bien', valor: valorEnPesos(tablet.valor) },
+    { etiqueta: 'Código interno', valor: tablet.codigo },
+    { etiqueta: 'Serial', valor: tablet.serial },
+  ];
+
+  const notasLegales = notasDelPrestamo(tablet.valor);
+
+  return {
+    prestamo: `${prestamo.fecha} ${prestamo.horaInicio}`,
+    devolucion: devolucion?.fechaHora ?? `${prestamo.fecha} ${prestamo.horaLimite}`,
+    usuario,
+    dispositivo,
+    // Sin dato no se pone «Otro»: ese es un estado concreto y afirmarlo sería mentir.
+    estadoEquipo: prestamo.estadoEquipo
+      ? NOMBRE_ESTADO_EQUIPO[prestamo.estadoEquipo]
+      : 'Sin registrar',
+    notas: prestamo.notas ?? devolucion?.novedades ?? '',
+    entrego: entrega?.responsable
+      ? `${entrega.responsable.nombre}${entrega.responsable.cargo ? ` · ${entrega.responsable.cargo}` : ''}`
+      : undefined,
+    recibio: devolucion?.responsable
+      ? `${devolucion.responsable.nombre}${devolucion.responsable.cargo ? ` · ${devolucion.responsable.cargo}` : ''}`
+      : undefined,
+    notasLegales,
+    ...(prestamo.responsabilidadAceptada
+      ? { aceptoEl: prestamo.responsabilidadAceptada.fechaHora }
+      : {}),
+    ...(entrega?.firmaUsuario ? { firmaUsuario: entrega.firmaUsuario } : {}),
+    ...(entrega?.responsable ? { entregadaEl: entrega.fechaHora } : {}),
+    ...(devolucion?.responsable ? { recibidaEl: devolucion.fechaHora } : {}),
+    ...(entrega?.firmaResponsable ? { firmaEntrega: entrega.firmaResponsable } : {}),
+    ...(devolucion?.firmaResponsable ? { firmaRecibe: devolucion.firmaResponsable } : {}),
+  };
+}
+
+/**
+ * El código de verificación de la constancia (#310): una huella de sus datos y de la firma del
+ * usuario, en 4 grupos de 4 («9F3A-…»). Si alguien cambia un dato del PDF, ya no coincide con
+ * el que da la app para ese préstamo. Es una huella de comprobación (dos FNV-1a de 32 bits), no
+ * una firma criptográfica. Es pura.
+ *
+ * Las firmas de quien entrega y quien recibe no entran: salen de su Perfil al leer el préstamo,
+ * así que registrarlas después cambiaría el código de una constancia ya impresa (#317).
+ */
+export function codigoVerificacion(constancia: ConstanciaPrestamo): string {
+  const firmado = { ...constancia };
+  delete firmado.firmaEntrega;
+  delete firmado.firmaRecibe;
+  const texto = JSON.stringify(firmado);
+  let a = 0x811c9dc5;
+  let b = 0x01000193 ^ texto.length;
+  for (let i = 0; i < texto.length; i++) {
+    const codigo = texto.charCodeAt(i);
+    a = Math.imul(a ^ codigo, 0x01000193) >>> 0;
+    b = Math.imul(b ^ codigo, 0x5bd1e995) >>> 0;
+  }
+  const hex = (a.toString(16).padStart(8, '0') + b.toString(16).padStart(8, '0')).toUpperCase();
+  return hex.match(/.{4}/g)!.join('-');
+}
+
+/** Nombre del estado del equipo como lo escribe el formato. */
+export const NOMBRE_ESTADO_EQUIPO: Record<EstadoEquipo, string> = {
+  nuevo: 'Nuevo',
+  optimo: 'Óptimo',
+  otro: 'Otro',
+};
+
+/** 1470000 → "$ 1.470.000". Sin decimales: el formato habla de pesos completos. */
+export function valorEnPesos(valor: number | undefined): string {
+  if (valor == null) return 'Sin registrar';
+  return `$ ${valor.toLocaleString('es-CO')}`;
+}
+
+/**
+ * Las tres notas del formato (CA3). La tercera lleva el valor del bien, que es el de la tablet
+ * del préstamo; si no lo tiene, queda sin la cifra en vez de inventarla.
+ */
+export function notasDelPrestamo(valor: number | undefined): string[] {
+  const [primera, segunda, tercera] = NOTAS_PRESTAMO;
+  // La tercera del formato termina en «… el valor de este, que es de $ 1.470.000».
+  const conValor =
+    valor == null ? tercera : `${tercera.replace(/\.$/, '')}, que es de ${valorEnPesos(valor)}.`;
+  return [primera, segunda, conValor];
+}

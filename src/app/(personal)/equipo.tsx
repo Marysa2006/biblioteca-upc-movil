@@ -6,14 +6,17 @@
  * y "Usuarios" (todas las cuentas, con filtro por tipo de usuario), más el buscador.
  * La propia tarjeta no aparece: nadie puede quitarse su propio rol (CA4).
  *
- * Patrón de datos: useUsuarios() / useActualizarRolesPersonal() (src/hooks) → src/api/usuarios.ts
+ * Versión 1.1 (#257): en la misma ficha, el permiso adicional de publicar novedades y avisos.
+ *
+ * Patrón de datos: useUsuarios() / useActualizarRolesPersonal() / useActualizarPermisosExtra()
+ * (src/hooks) → src/api/usuarios.ts
  * → mock o API.
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Portal, Searchbar, SegmentedButtons, Snackbar } from 'react-native-paper';
 
-import { DialogoRolesPersonal } from '@/components/personal/DialogoRolesPersonal';
+import { DialogoRolesPersonal, type CambiosPersonal } from '@/components/personal/DialogoRolesPersonal';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import { TarjetaUsuario } from '@/components/personal/TarjetaUsuario';
 import {
@@ -25,11 +28,16 @@ import {
   type OpcionFiltro,
 } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
-import { useActualizarRolesPersonal, useUsuarios } from '@/hooks/useUsuarios';
+import {
+  useActualizarPermisosExtra,
+  useActualizarRolesPersonal,
+  useUsuarios,
+} from '@/hooks/useUsuarios';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { RolPersonal, TipoUsuario, Usuario } from '@/types';
 import {
   esPersonal,
+  NOMBRE_PERMISO,
   NOMBRE_ROL_PERSONAL,
   NOMBRE_TIPO,
   ROLES_PERSONAL,
@@ -70,7 +78,14 @@ export default function Equipo() {
 function GestionRoles() {
   const { usuario: yo } = useRol();
   const { data: usuarios, isPending, isError, isRefetching, refetch } = useUsuarios();
-  const { mutate, isPending: guardando, error, reset } = useActualizarRolesPersonal();
+  const cambiarRoles = useActualizarRolesPersonal();
+  const cambiarPermisos = useActualizarPermisosExtra();
+  const guardando = cambiarRoles.isPending || cambiarPermisos.isPending;
+  const error = cambiarRoles.error ?? cambiarPermisos.error;
+  const reset = () => {
+    cambiarRoles.reset();
+    cambiarPermisos.reset();
+  };
 
   const [seccion, setSeccion] = useState<Seccion>('personal');
   const [filtroRol, setFiltroRol] = useState<FiltroRol>('todos');
@@ -96,24 +111,36 @@ function GestionRoles() {
     setEditando(null);
   };
 
-  const confirmar = (rolesPersonal: RolPersonal[]) => {
+  // Guarda solo lo que cambió: primero los roles y después los permisos adicionales (#257).
+  // Si algo falla, el diálogo sigue abierto con el error.
+  const confirmar = async ({ rolesPersonal, permisosExtra }: CambiosPersonal) => {
     if (!editando) return;
     const persona = editando;
-    mutate(
-      { usuarioId: persona.id, rolesPersonal },
-      {
-        onSuccess: () => {
-          setEditando(null);
-          setAviso(
-            rolesPersonal.length > 0
-              ? `${persona.nombre} ahora tiene: ${rolesPersonal
-                  .map((rol) => NOMBRE_ROL_PERSONAL[rol])
-                  .join(', ')}.`
-              : `${persona.nombre} ya no tiene roles del personal.`,
-          );
-        },
-      },
-    );
+    const rolesCambian = rolesPersonal.join() !== persona.rolesPersonal.join();
+    const anteriores = persona.permisosExtra ?? [];
+    const permisosCambian =
+      permisosExtra.length !== anteriores.length || permisosExtra.some((p) => !anteriores.includes(p));
+    try {
+      if (rolesCambian) await cambiarRoles.mutateAsync({ usuarioId: persona.id, rolesPersonal });
+      if (permisosCambian) {
+        await cambiarPermisos.mutateAsync({ usuarioId: persona.id, permisos: permisosExtra });
+      }
+    } catch {
+      return;
+    }
+    setEditando(null);
+    const roles =
+      rolesPersonal.length > 0
+        ? `${persona.nombre} ahora tiene: ${rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(', ')}`
+        : `${persona.nombre} no tiene roles del personal`;
+    // Los permisos adicionales (#296), o que se quitaron al quedar sin roles.
+    let adicionales = '.';
+    if (permisosExtra.length > 0) {
+      adicionales = `, y también: ${permisosExtra.map((permiso) => NOMBRE_PERMISO[permiso]).join(', ')}.`;
+    } else if (anteriores.length > 0) {
+      adicionales = ', y ya no tiene permisos adicionales.';
+    }
+    setAviso(`${roles}${adicionales}`);
   };
 
   let filtros = null;
@@ -187,7 +214,7 @@ function GestionRoles() {
       } else {
         mensaje = 'Todavía no hay usuarios registrados.';
       }
-      lista = <EstadoVacio mensaje={mensaje} />;
+      lista = <EstadoVacio pose={texto ? 'buscando' : 'leyendo'} mensaje={mensaje} />;
     } else {
       lista = encontrados.map((usuario) => (
         <TarjetaUsuario key={usuario.id} usuario={usuario} onCambiarRol={() => abrir(usuario)} />
@@ -229,7 +256,7 @@ function GestionRoles() {
         guardando={guardando}
         // El error de CA4 lo da useActualizarRolesPersonal() antes de llamar a la API.
         mensajeError={error ? error.message : null}
-        onConfirmar={confirmar}
+        onConfirmar={(cambios) => void confirmar(cambios)}
         onCerrar={cerrar}
       />
       <Portal>

@@ -136,7 +136,10 @@ function NoEncontrada() {
 
   return (
     <View style={estilos.noEncontrada}>
-      <EstadoVacio mensaje="No encontramos esta solicitud entre las tuyas. Puede que ya no exista." />
+      <EstadoVacio
+        pose="buscando"
+        mensaje="No encontramos esta solicitud entre las tuyas. Puede que ya no exista."
+      />
       <Button
         mode="outlined"
         onPress={volver}

@@ -15,11 +15,23 @@ import type {
 } from '@/types';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
 import { esDiaHabil, motivoNoDisponible } from '@/utils/parametros';
-import { normalizarTexto } from '@/utils/texto';
+import {
+  camposSolicitante,
+  campoTerminos,
+  LARGO_MAXIMO_NOMBRE,
+  reglasSolicitante,
+  VALORES_SOLICITANTE_VACIOS,
+} from '@/utils/solicitante';
+import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
 export const LARGO_MAXIMO_OBJETIVO = 300;
 export const LARGO_MAXIMO_GRUPO = 200;
-export const MAXIMO_PARTICIPANTES = 100;
+/**
+ * Las capacitaciones son grupales, de 20 a 25 personas (las líneas de formación de la biblioteca,
+ * #241). Para un grupo mayor, se piden dos. El Backend todavía no tiene este máximo.
+ */
+export const MAXIMO_PARTICIPANTES = 25;
+export const MENSAJE_MAXIMO_PARTICIPANTES = `Indica cuántas personas asistirán, de 1 a ${MAXIMO_PARTICIPANTES}. Si son más, divide el grupo en dos solicitudes.`;
 /** Hasta cuántos meses adelante se ofrece el calendario. */
 export const MESES_CAPACITACION = 3;
 
@@ -37,50 +49,56 @@ export function mensajeDiaNoHabil(fecha: string, parametros: Parametros): string
   return `Ese día no hay atención: ${motivoNoDisponible(fecha, parametros)}.`;
 }
 
+/** Campos de la capacitación (HU-10); el formulario completo (#224) les suma los demás. */
+const camposCapacitacion = {
+  lineaId: z.string().trim().min(1, { error: 'Elige la línea de formación.' }),
+  // Texto y no z.enum: empieza vacía hasta que la persona elige.
+  modalidad: z
+    .string()
+    .refine((valor) => MODALIDADES_CAPACITACION.some((opcion) => opcion.valor === valor), {
+      error: 'Elige la modalidad: presencial o virtual.',
+    }),
+  fecha: z.string().trim().refine(esFechaValida, { error: 'Elige una fecha válida.' }),
+  hora: z.string().trim().refine(esHoraValida, { error: 'Elige una hora válida.' }),
+  objetivo: z
+    .string()
+    .trim()
+    .min(1, { error: 'Escribe el objetivo de la capacitación.' })
+    .max(LARGO_MAXIMO_OBJETIVO, { error: `Máximo ${LARGO_MAXIMO_OBJETIVO} caracteres.` }),
+  grupo: z
+    .string()
+    .trim()
+    .min(1, { error: 'Escribe el grupo al que va dirigida.' })
+    .max(LARGO_MAXIMO_GRUPO, { error: `Máximo ${LARGO_MAXIMO_GRUPO} caracteres.` }),
+  participantes: z
+    .string()
+    .trim()
+    .refine(
+      (valor) =>
+        /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= MAXIMO_PARTICIPANTES,
+      { error: MENSAJE_MAXIMO_PARTICIPANTES },
+    ),
+};
+
+/** Marca bajo el campo Fecha el día que no es hábil (CA3). */
+function revisarDiaHabil(fecha: string, ctx: z.RefinementCtx, parametros: Parametros) {
+  if (esFechaValida(fecha) && !esDiaHabil(fecha, parametros)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['fecha'],
+      message: mensajeDiaNoHabil(fecha, parametros),
+    });
+  }
+}
+
 /**
  * Validación del formulario (CA2). Con parámetros, también marca la fecha que no es un día
  * hábil (CA3); la fecha sugerida la ofrece el formulario aparte, debajo del campo.
  */
 export function esquemaSolicitudCapacitacion(parametros: Parametros) {
   return z
-    .object({
-      lineaId: z.string().trim().min(1, { error: 'Elige la línea de formación.' }),
-      // Texto y no z.enum: empieza vacía hasta que la persona elige.
-      modalidad: z
-        .string()
-        .refine((valor) => MODALIDADES_CAPACITACION.some((opcion) => opcion.valor === valor), {
-          error: 'Elige la modalidad: presencial o virtual.',
-        }),
-      fecha: z.string().trim().refine(esFechaValida, { error: 'Elige una fecha válida.' }),
-      hora: z.string().trim().refine(esHoraValida, { error: 'Elige una hora válida.' }),
-      objetivo: z
-        .string()
-        .trim()
-        .min(1, { error: 'Escribe el objetivo de la capacitación.' })
-        .max(LARGO_MAXIMO_OBJETIVO, { error: `Máximo ${LARGO_MAXIMO_OBJETIVO} caracteres.` }),
-      grupo: z
-        .string()
-        .trim()
-        .min(1, { error: 'Escribe el grupo al que va dirigida.' })
-        .max(LARGO_MAXIMO_GRUPO, { error: `Máximo ${LARGO_MAXIMO_GRUPO} caracteres.` }),
-      participantes: z
-        .string()
-        .trim()
-        .refine(
-          (valor) =>
-            /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= MAXIMO_PARTICIPANTES,
-          { error: `Indica cuántas personas asistirán (de 1 a ${MAXIMO_PARTICIPANTES}).` },
-        ),
-    })
-    .superRefine((datos, ctx) => {
-      if (esFechaValida(datos.fecha) && !esDiaHabil(datos.fecha, parametros)) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['fecha'],
-          message: mensajeDiaNoHabil(datos.fecha, parametros),
-        });
-      }
-    });
+    .object(camposCapacitacion)
+    .superRefine((datos, ctx) => revisarDiaHabil(datos.fecha, ctx, parametros));
 }
 
 /** Lo que guarda el formulario: todo como texto; la modalidad y los números empiezan vacíos. */
@@ -94,6 +112,92 @@ export const VALORES_INICIALES_CAPACITACION: ValoresSolicitudCapacitacion = {
   objetivo: '',
   grupo: '',
   participantes: '',
+};
+
+// ── Versión 1.1: formulario completo (#224) ────────────────────────────────
+
+export const LARGO_MAXIMO_ASIGNATURA = 150;
+export const LARGO_MAXIMO_NOVEDADES = 500;
+
+/**
+ * Los nombres de los participantes como los escribe la persona, separados por «;»:
+ * "ana  ruiz; LUIS" → ['Ana Ruiz', 'Luis']. Los vacíos se quitan.
+ */
+export function separarNombres(texto: string): string[] {
+  return texto.split(';').map(aNombrePropio).filter(Boolean);
+}
+
+/**
+ * Los nombres son opcionales (un grupo grande puede inscribirse sin ellos); si se escriben, va
+ * uno por participante. La API usa la misma regla.
+ */
+export function problemaNombresParticipantes(
+  nombres: string[],
+  participantes: number,
+): string | null {
+  if (nombres.length === 0) return null;
+  if (nombres.some((nombre) => nombre.length > LARGO_MAXIMO_NOMBRE)) {
+    return `Cada nombre puede tener máximo ${LARGO_MAXIMO_NOMBRE} caracteres.`;
+  }
+  if (nombres.length !== participantes) {
+    const escritos = `${nombres.length} ${nombres.length === 1 ? 'nombre' : 'nombres'}`;
+    const indicados = textoParticipantes(participantes);
+    return `Escribe un nombre por persona: indicaste ${indicados} y hay ${escritos}.`;
+  }
+  return null;
+}
+
+/**
+ * Formulario completo de la versión 1.1 (#224, la UI es #251): los campos de HU-10 más los
+ * datos del solicitante, la asignatura, los nombres, las novedades y los términos
+ * (TERMINOS_FORMACION). La capacitación no pide la identificación.
+ */
+export function esquemaSolicitudCapacitacionCompleta(parametros: Parametros) {
+  return z
+    .object({
+      ...camposCapacitacion,
+      ...camposSolicitante,
+      asignatura: z
+        .string()
+        .trim()
+        .max(LARGO_MAXIMO_ASIGNATURA, { error: `Máximo ${LARGO_MAXIMO_ASIGNATURA} caracteres.` }),
+      /** Un nombre por persona, separados por «;». */
+      nombresParticipantes: z.string(),
+      novedades: z
+        .string()
+        .trim()
+        .max(LARGO_MAXIMO_NOVEDADES, { error: `Máximo ${LARGO_MAXIMO_NOVEDADES} caracteres.` }),
+      terminosAceptados: campoTerminos,
+    })
+    .superRefine((datos, ctx) => {
+      revisarDiaHabil(datos.fecha, ctx, parametros);
+      reglasSolicitante(datos, ctx, { pedirIdentificacion: false, pedirSede: true });
+      const cantidad = datos.participantes.trim();
+      if (/^\d+$/.test(cantidad)) {
+        const nombres = separarNombres(datos.nombresParticipantes);
+        const problema = problemaNombresParticipantes(nombres, Number(cantidad));
+        if (problema) {
+          ctx.addIssue({ code: 'custom', path: ['nombresParticipantes'], message: problema });
+        }
+      }
+    });
+}
+
+export type ValoresSolicitudCapacitacionCompleta = z.input<
+  ReturnType<typeof esquemaSolicitudCapacitacionCompleta>
+>;
+
+/**
+ * Valores iniciales. Los del solicitante se prellenan con datosSolicitanteDe()
+ * (utils/solicitante).
+ */
+export const VALORES_INICIALES_CAPACITACION_COMPLETA: ValoresSolicitudCapacitacionCompleta = {
+  ...VALORES_INICIALES_CAPACITACION,
+  ...VALORES_SOLICITANTE_VACIOS,
+  asignatura: '',
+  nombresParticipantes: '',
+  novedades: '',
+  terminosAceptados: false,
 };
 
 // ── HU-12: gestionar las solicitudes de formación ──────────────────────────

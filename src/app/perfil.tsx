@@ -13,14 +13,24 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { DatosContacto } from '@/components/perfil/DatosContacto';
 import { DatosInstitucionales } from '@/components/perfil/DatosInstitucionales';
+import { FirmaEnVentana } from '@/components/inventario/FirmaEnVentana';
+import { EnlacePoliticaDatos } from '@/components/privacidad/EnlacePoliticaDatos';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useCerrarSesion } from '@/hooks/useAutenticacion';
 import { useActualizarPerfil, usePerfil } from '@/hooks/usePerfil';
+import { useGuardarMiFirma } from '@/hooks/useUsuarios';
 import { useSesion } from '@/store/sesion';
-import { colores, espacio, fuentes } from '@/theme';
+import { colores, espacio, fuentes, radio } from '@/theme';
 import type { DatosEditablesPerfil, Usuario } from '@/types';
+import {
+  CORREO_DATOS_PERSONALES,
+  DIAS_HABILES_CONSULTA,
+  DIAS_HABILES_RECLAMO,
+  NIT_UNIVERSIDAD,
+} from '@/utils/constantes';
 import { mensajeErrorGuardar } from '@/utils/errores';
-import { describirRoles } from '@/utils/roles';
+import { aceptacionVigente, fechaDeAceptacion } from '@/utils/privacidad';
+import { describirRoles, esPersonal } from '@/utils/roles';
 
 /** Tiempo que se ve la confirmación al guardar. */
 const DURACION_CONFIRMACION_MS = 3000;
@@ -46,6 +56,8 @@ export default function Perfil() {
           >
             Iniciar sesión
           </Button>
+          {/* #225, CA1: la política también está a la vista sin sesión. */}
+          <EnlacePoliticaDatos nota="La Universidad es la responsable del tratamiento de tus datos personales." />
         </Pantalla>
       )}
     </>
@@ -66,8 +78,11 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
   const cerrarSesion = useCerrarSesion();
   const { data: perfil, isPending, isError, refetch } = usePerfil();
   const { mutate, isPending: guardando, error, reset } = useActualizarPerfil();
+  const aceptaciones = useSesion((estado) => estado.aceptaciones);
   const [editando, setEditando] = useState(false);
   const [guardado, setGuardado] = useState(false);
+  // La autorización vigente de esta persona, para mostrar cuándo la aceptó (#225).
+  const aceptacion = aceptacionVigente(usuario, aceptaciones);
 
   // El Snackbar ya trae accessibilityLiveRegion (Android); en iOS se anuncia aquí.
   useEffect(() => {
@@ -140,6 +155,23 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
 
       {contenido}
 
+      {esPersonal(usuario) ? <MiFirma usuario={usuario} /> : null}
+
+      <View style={estilos.tarjeta}>
+        <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
+          Privacidad y datos personales
+        </Text>
+        <Text variant="bodySmall" style={estilos.notaTarjeta}>
+          {`La Universidad Popular del Cesar (NIT ${NIT_UNIVERSIDAD}) es la responsable del tratamiento de tus datos. La política es el Acuerdo 019 del 5 de octubre de 2020. Para ejercer tus derechos, escribe a ${CORREO_DATOS_PERSONALES}: la Universidad responde las consultas en máximo ${DIAS_HABILES_CONSULTA} días hábiles y los reclamos en máximo ${DIAS_HABILES_RECLAMO} días hábiles.`}
+        </Text>
+        {aceptacion ? (
+          <Text variant="bodySmall" style={estilos.notaTarjeta}>
+            {`Aceptaste esta autorización el ${fechaDeAceptacion(aceptacion.fecha)}.`}
+          </Text>
+        ) : null}
+        <EnlacePoliticaDatos />
+      </View>
+
       <Button
         mode="outlined"
         icon="logout"
@@ -160,6 +192,31 @@ function PerfilConSesion({ usuario }: { usuario: Usuario }) {
   );
 }
 
+/**
+ * La firma del personal (revisión de la 1.1): se registra una vez y se pone sola en las
+ * constancias de las tablets que entregue o reciba. Sin ella, firma con su sesión.
+ */
+function MiFirma({ usuario }: { usuario: Usuario }) {
+  const guardar = useGuardarMiFirma();
+  return (
+    <View style={estilos.tarjeta}>
+      <Text variant="titleMedium" style={estilos.tituloTarjeta} accessibilityRole="header">
+        Mi firma
+      </Text>
+      <Text variant="bodySmall" style={estilos.notaTarjeta}>
+        Regístrala una vez: se pone sola en las constancias de las tablets que entregues o recibas.
+      </Text>
+      <FirmaEnVentana
+        firmante={usuario.nombre}
+        valor={usuario.firma ?? null}
+        onCambiar={(firma) => guardar.mutate(firma)}
+        mensajeError={guardar.error ? mensajeErrorGuardar(guardar.error) : undefined}
+        deshabilitado={guardar.isPending}
+      />
+    </View>
+  );
+}
+
 const estilos = StyleSheet.create({
   cabecera: { alignItems: 'center', gap: espacio.xs, paddingVertical: espacio.s },
   // minWidth y no width: con letra grande, las iniciales agrandan el círculo en vez de cortarse.
@@ -176,5 +233,13 @@ const estilos = StyleSheet.create({
   iniciales: { color: colores.superficie, fontFamily: fuentes.negrita },
   nombre: { color: colores.texto, fontFamily: fuentes.negrita, textAlign: 'center' },
   rol: { color: colores.textoSecundario, textAlign: 'center' },
+  tarjeta: {
+    gap: espacio.xs,
+    padding: espacio.m,
+    borderRadius: radio.tarjeta,
+    backgroundColor: colores.superficie,
+  },
+  tituloTarjeta: { color: colores.texto, fontFamily: fuentes.negrita },
+  notaTarjeta: { color: colores.textoSecundario },
   contenidoBoton: { paddingVertical: espacio.xs },
 });

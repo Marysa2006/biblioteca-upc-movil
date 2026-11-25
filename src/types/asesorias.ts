@@ -6,7 +6,7 @@
  * de HU-28. Las franjas se generan a partir de la jornada (HU-13) y se ofrecen en HU-14.
  */
 
-import type { EstadoSolicitud } from './solicitudes';
+import type { Calificacion, DatosSolicitante, EstadoSolicitud } from './solicitudes';
 
 /** Modalidad de una asesoría (HU-13). */
 export type ModalidadAsesoria = 'presencial' | 'virtual';
@@ -22,6 +22,9 @@ export type TemaAsesoria = {
 /**
  * Jornada recurrente de un tema (HU-13): el facilitador atiende ciertos días, en una franja,
  * con una duración por cita y unos cupos. Al guardarla se generan sus franjas.
+ *
+ * @deprecated Desde la versión 1.1 las asesorías no se ofrecen por jornadas: la persona pide
+ * fecha y hora y la biblioteca confirma (#248). Se conserva para no romper los datos guardados.
  */
 export type Jornada = {
   id: string;
@@ -49,6 +52,9 @@ export type Jornada = {
 /**
  * Franja de atención concreta de un día, generada desde una jornada (HU-13) y ofrecida
  * en HU-14.
+ *
+ * @deprecated Desde la versión 1.1 las asesorías no tienen franjas: la persona pide fecha y hora
+ * (#248). Se conserva para no romper los datos guardados.
  */
 export type FranjaAsesoria = {
   id: string;
@@ -66,15 +72,25 @@ export type FranjaAsesoria = {
   cuposLibres: number;
 };
 
-/** Cita agendada por un usuario (HU-14) y vista por el facilitador (HU-15). */
+/**
+ * Cita agendada por un usuario (HU-14) y vista por el facilitador (HU-15).
+ *
+ * Versión 1.1: la cita es una solicitud con la fecha y la hora **pedidas**, sin franja. El
+ * facilitador y el enlace virtual (si es virtual) los pone el personal al aprobar (#248). Los
+ * campos que dejan de usarse quedan opcionales; el backend viejo se sigue leyendo.
+ */
 export type Cita = {
   id: string;
-  franjaId: string;
+  /**
+   * @deprecated Desde la versión 1.1 la cita se pide sin franja (#248).
+   */
+  franjaId?: string;
   /** Tema, facilitador, fecha y horas, para mostrarlos sin otra consulta. */
   temaId: string;
   tema: string;
-  facilitadorId: string;
-  facilitador: string;
+  /** Se asigna al aprobar (#248): la cita nace sin facilitador. */
+  facilitadorId?: string;
+  facilitador?: string;
   solicitanteId: string;
   solicitante: string;
   /** 'AAAA-MM-DD' y 'HH:MM'. */
@@ -91,4 +107,46 @@ export type Cita = {
   resultado?: string;
   /** Si la persona asistió (HU-15); vacío mientras no se atienda. */
   asistio?: boolean;
+
+  // ── Versión 1.1: asesorías sin jornadas (#248) ──────────────
+  /** Datos de quien pide la cita, copiados en la solicitud. */
+  datosSolicitante?: DatosSolicitante;
+  /** Cuántas personas asisten. */
+  personas?: number;
+  /** Los nombres de los **otros** integrantes: personas − 1 (#278). */
+  participantes?: string[];
+  asignatura?: string;
+  /** Lo que la persona quiera dejar dicho; en la interfaz se llama «Novedades». */
+  novedades?: string;
+  /** Si la persona aceptó los términos de la formación (TERMINOS_FORMACION) al pedirla. */
+  terminosAceptados?: boolean;
+  /** Cuando es virtual, el enlace lo pone el personal al aprobar (obligatorio en ese caso). */
+  enlaceVirtual?: string;
+  /** La fecha y la hora que pidió la persona, si el personal las cambió al aprobar. */
+  fechaSolicitada?: string;
+  horaSolicitada?: string;
+  /** Id de la cita anterior, cuando esta es una reprogramación. */
+  reprogramaDe?: string;
+  calificacion?: Calificacion;
+};
+
+/**
+ * Lo que manda la comunidad para pedir una cita en la versión 1.1 (#248): sin franja y sin
+ * facilitador, que los pone el personal al aprobar.
+ */
+export type NuevaSolicitudCita = {
+  temaId: string;
+  modalidad: ModalidadAsesoria;
+  /** 'AAAA-MM-DD' y 'HH:MM' pedidas. */
+  fecha: string;
+  hora: string;
+  necesidad: string;
+  personas: number;
+  /** Los nombres de los **otros** integrantes: personas − 1 (#278). */
+  participantes: string[];
+  datosSolicitante: DatosSolicitante;
+  asignatura?: string;
+  novedades?: string;
+  /** Si la persona aceptó los términos de la formación (TERMINOS_FORMACION) al pedirla. */
+  terminosAceptados?: boolean;
 };

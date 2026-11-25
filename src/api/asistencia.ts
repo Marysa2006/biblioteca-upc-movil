@@ -22,10 +22,16 @@ import { ahoraFechaHora } from '@/utils/tablets';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { registrarUso } from './estadisticas';
+import { obtenerParametros } from './parametros';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
-/** Cuántos minutos sirve el código de una sesión (CA1: tiempo limitado). */
-export const MINUTOS_VIGENCIA_CODIGO = 45;
+/**
+ * Cuántos minutos sirve el código de una sesión (CA1: tiempo limitado).
+ *
+ * @deprecated Desde la versión 1.1 la vigencia la fija `Parametros.horasVigenciaQr`
+ * (`attendance-qr-hours` del Backend, #278).
+ */
+export const MINUTOS_VIGENCIA_CODIGO = 4 * 60; // 4 horas, como pidió la biblioteca
 
 /** Estado en memoria de la asistencia de cada sesión, solo para los datos de prueba. */
 type EstadoAsistencia = {
@@ -37,6 +43,25 @@ type EstadoAsistencia = {
 };
 
 const asistencias = new Map<string, EstadoAsistencia>();
+
+/**
+ * DATOS DE PRUEBA (HU-32): la cita de hoy de Laura (cit-6) empieza con la asistencia abierta y
+ * un código fijo. Los datos de prueba viven en la memoria de cada celular, así que el QR que
+ * muestra el facilitador en otro equipo no existe en el de Laura; con este código, el QR se
+ * puede imprimir o mostrar en un computador y probar el registro en un solo celular. Si el
+ * facilitador abre la asistencia de cit-6, ve este mismo código (abrirAsistencia lo reutiliza).
+ */
+export const CITA_ASISTENCIA_PRUEBA = 'cit-6';
+export const CODIGO_ASISTENCIA_PRUEBA = '246810';
+
+if (USAR_MOCKS) {
+  asistencias.set(CITA_ASISTENCIA_PRUEBA, {
+    codigo: CODIGO_ASISTENCIA_PRUEBA,
+    vence: `${hoyISO()} 23:59`,
+    cerrada: false,
+    registros: [],
+  });
+}
 
 /** Estado de la sesión, creándolo vacío la primera vez. */
 function estadoDe(sesionId: string): EstadoAsistencia {
@@ -101,20 +126,22 @@ function aAsistencia(sesionId: string): AsistenciaSesion {
  * Si ya estaba abierta y no ha vencido, reutiliza el mismo código para no invalidar el QR
  * que el facilitador ya está mostrando.
  */
-export function abrirAsistencia(sesionId: string): Promise<AsistenciaSesion> {
+export async function abrirAsistencia(sesionId: string): Promise<AsistenciaSesion> {
   if (!sesionId?.trim()) {
-    return Promise.reject(new ErrorApi(400, 'Falta la sesión.'));
+    throw new ErrorApi(400, 'Falta la sesión.');
   }
   if (USAR_MOCKS) {
     const estado = estadoDe(sesionId);
     if (estado.cerrada) {
-      return Promise.reject(new ErrorApi(400, 'Esta asistencia ya se cerró.'));
+      throw new ErrorApi(400, 'Esta asistencia ya se cerró.');
     }
     const ahora = ahoraFechaHora();
     const vigente = estado.codigo !== null && estado.vence !== null && estado.vence > ahora;
     if (!vigente) {
+      // #278: la vigencia la fija `Parametros.horasVigenciaQr` (`attendance-qr-hours`).
+      const parametros = await obtenerParametros();
       estado.codigo = codigoTemporal(sesionId);
-      estado.vence = sumarMinutos(ahora, MINUTOS_VIGENCIA_CODIGO);
+      estado.vence = sumarMinutos(ahora, parametros.horasVigenciaQr * 60);
     }
     return simularRed(aAsistencia(sesionId));
   }

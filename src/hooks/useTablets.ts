@@ -20,6 +20,7 @@ import {
   obtenerPrestamos,
   obtenerPrestamosVencidos,
   obtenerTablets,
+  obtenerConstancia,
   registrarDevolucion,
   registrarEntrega,
   solicitarPrestamo,
@@ -30,6 +31,7 @@ import {
   type FormularioPrestamo,
 } from '@/api/tablets';
 import { useSesion } from '@/store/sesion';
+import { compartirConstanciaPdf } from '@/utils/exportarConstancia';
 import type { EstadoPrestamo, EstadoTablet } from '@/types';
 
 /** Para que la pantalla de HU-22 (María) tipe el formulario sin importar de src/api. */
@@ -156,9 +158,12 @@ export function usePrestamos(estado: EstadoPrestamo | 'todas' = 'todas') {
 /** Registra la entrega y refresca los préstamos y las tablets (HU-23, CA1). */
 export function useRegistrarEntrega() {
   const queryClient = useQueryClient();
+  const usuario = useSesion((estado) => estado.usuario);
   return useMutation({
-    mutationFn: ({ prestamoId, datos }: { prestamoId: string; datos: DatosEntrega }) =>
-      registrarEntrega(prestamoId, datos),
+    mutationFn: ({ prestamoId, datos }: { prestamoId: string; datos: DatosEntrega }) => {
+      if (!usuario) return Promise.reject(new Error('No hay sesión'));
+      return registrarEntrega(usuario, prestamoId, datos);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: claves.prestamosTablet });
       queryClient.invalidateQueries({ queryKey: claves.tablets });
@@ -207,12 +212,28 @@ export function usePrestamosVencidos({ activa = true }: { activa?: boolean } = {
   return consulta;
 }
 
+/** La constancia del préstamo, en el orden del formato (#252). */
+export function useConstancia(prestamoId: string) {
+  return useQuery({
+    queryKey: claves.constanciaPrestamo(prestamoId),
+    queryFn: () => obtenerConstancia(prestamoId),
+  });
+}
+
+/** Genera la constancia en PDF y abre el menú del celular para compartirla (#253). */
+export function useCompartirConstancia() {
+  return useMutation({ mutationFn: compartirConstanciaPdf });
+}
+
 /** Registra la devolución y refresca los préstamos y las tablets (HU-23, CA2-CA4). */
 export function useRegistrarDevolucion() {
   const queryClient = useQueryClient();
+  const usuario = useSesion((estado) => estado.usuario);
   return useMutation({
-    mutationFn: ({ prestamoId, datos }: { prestamoId: string; datos: DatosDevolucion }) =>
-      registrarDevolucion(prestamoId, datos),
+    mutationFn: ({ prestamoId, datos }: { prestamoId: string; datos: DatosDevolucion }) => {
+      if (!usuario) return Promise.reject(new Error('No hay sesión'));
+      return registrarDevolucion(usuario, prestamoId, datos);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: claves.prestamosTablet });
       queryClient.invalidateQueries({ queryKey: claves.tablets });

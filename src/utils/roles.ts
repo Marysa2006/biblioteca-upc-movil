@@ -29,6 +29,16 @@ export const NOMBRE_TIPO: Record<TipoUsuario, string> = {
   visitante: 'Visitante',
 };
 
+/**
+ * Permisos que la administración puede dar a quien quiera del personal, aparte de sus roles
+ * (versión 1.1, #296): la bibliotecóloga encarga estas tareas sin depender del rol.
+ * - `novedades`: publicar avisos e informativos en Inicio, sin tocar los servicios;
+ * - `fotos`: administrar las fotos del carrusel de Inicio;
+ * - `parametros`: editar los parámetros generales.
+ * Solo cuentan para quien tiene un rol del personal: la comunidad no entra a esa vista.
+ */
+export const PERMISOS_ASIGNABLES: readonly Permiso[] = ['novedades', 'fotos', 'parametros'];
+
 export const NOMBRE_ROL_PERSONAL: Record<RolPersonal, string> = {
   administrador: 'Administración de la biblioteca',
   facilitador: 'Facilitador',
@@ -54,6 +64,7 @@ export const PERMISOS_POR_ROL: Record<RolPersonal, readonly Permiso[]> = {
     'tablets',
     'formacion',
     'estadisticas',
+    'fotos',
   ],
   facilitador: ['asesorias', 'formacion'],
   gestor_espacios: ['espacios', 'reservas'],
@@ -70,9 +81,11 @@ export const NOMBRE_PERMISO: Record<Permiso, string> = {
   tablets: 'Préstamo de tablets',
   formacion: 'Capacitaciones',
   estadisticas: 'Estadísticas',
+  novedades: 'Novedades y avisos',
+  fotos: 'Fotos de Inicio',
 };
 
-type ConRoles = Pick<Usuario, 'rolesPersonal'> | null | undefined;
+type ConRoles = Pick<Usuario, 'rolesPersonal' | 'permisosExtra'> | null | undefined;
 
 const esRolPersonal = (rol: Rol): rol is RolPersonal =>
   (ROLES_PERSONAL as readonly string[]).includes(rol);
@@ -97,9 +110,18 @@ export function permisosDeRoles(roles: readonly RolPersonal[]): Permiso[] {
   return (Object.keys(NOMBRE_PERMISO) as Permiso[]).filter((permiso) => suma.has(permiso));
 }
 
-/** Permisos del usuario. Sin sesión, o de la comunidad, no hay ninguno. */
+/**
+ * Permisos del usuario: los de sus roles más los que le dio la administración en `permisosExtra`
+ * (versión 1.1). Los adicionales solo cuentan con algún rol del personal (#296): sin él, la
+ * persona no entra a esa vista, y un permiso guardado de antes no debe darle nada.
+ */
 export function permisosDe(usuario: ConRoles): Permiso[] {
-  return permisosDeRoles(usuario?.rolesPersonal ?? []);
+  const roles = usuario?.rolesPersonal ?? [];
+  const suma = new Set([
+    ...permisosDeRoles(roles),
+    ...(roles.length > 0 ? (usuario?.permisosExtra ?? []) : []),
+  ]);
+  return (Object.keys(NOMBRE_PERMISO) as Permiso[]).filter((permiso) => suma.has(permiso));
 }
 
 /** ¿El usuario tiene este permiso? */
@@ -107,8 +129,77 @@ export function tienePermiso(usuario: ConRoles, permiso: Permiso): boolean {
   return permisosDe(usuario).includes(permiso);
 }
 
-/** "Facilitador · Gestor de espacios" para el personal; el tipo para la comunidad. */
-export function describirRoles(usuario: Pick<Usuario, 'tipo' | 'rolesPersonal'>): string {
+/** Cómo se nombra cada permiso adicional dentro de una frase ("también: novedades, …"). */
+const PERMISO_ADICIONAL_CORTO: Partial<Record<Permiso, string>> = {
+  novedades: 'novedades',
+  fotos: 'fotos de Inicio',
+  parametros: 'parámetros',
+};
+
+/**
+ * "Facilitador · Gestor de espacios" para el personal; el tipo para la comunidad. Con permisos
+ * adicionales (#257, #296), agrega "también: novedades, fotos de Inicio". A la comunidad no se los
+ * nombra: no le sirven sin un rol del personal.
+ */
+export function describirRoles(
+  usuario: Pick<Usuario, 'tipo' | 'rolesPersonal'> & Partial<Pick<Usuario, 'permisosExtra'>>,
+): string {
   if (usuario.rolesPersonal.length === 0) return NOMBRE_TIPO[usuario.tipo];
-  return usuario.rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(' · ');
+  const base = usuario.rolesPersonal.map((rol) => NOMBRE_ROL_PERSONAL[rol]).join(' · ');
+  const extras = PERMISOS_ASIGNABLES.filter((permiso) =>
+    usuario.permisosExtra?.includes(permiso),
+  ).map((permiso) => PERMISO_ADICIONAL_CORTO[permiso] ?? NOMBRE_PERMISO[permiso]);
+  return extras.length > 0 ? `${base} · también: ${extras.join(', ')}` : base;
+}
+
+/**
+ * Quién de la comunidad puede pedir cada servicio, según su tipo (respuesta de la biblioteca
+ * del 15 de noviembre de 2026):
+ * - los espacios los reservan docentes y administrativos; los estudiantes no, y los egresados
+ *   no están en la lista;
+ * - las tablets, estudiantes, docentes y administrativos; los egresados no, porque no tienen un
+ *   vínculo directo con la Universidad.
+ * La reserva que el personal hace a nombre de otra persona (HU-19) no pasa por esta regla.
+ */
+export const TIPOS_QUE_RESERVAN_ESPACIOS: readonly TipoUsuario[] = ['docente', 'administrativo'];
+export const TIPOS_QUE_PIDEN_TABLETS: readonly TipoUsuario[] = [
+  'estudiante',
+  'docente',
+  'administrativo',
+];
+
+export const MENSAJE_NO_RESERVA_ESPACIOS =
+  'Los espacios de la biblioteca los reservan docentes y administrativos.';
+export const MENSAJE_NO_PIDE_TABLET =
+  'El préstamo de tablets es para estudiantes, docentes y administrativos.';
+
+/** ¿Este tipo de usuario puede reservar un espacio? */
+export function puedeReservarEspacios(tipo: TipoUsuario): boolean {
+  return TIPOS_QUE_RESERVAN_ESPACIOS.includes(tipo);
+}
+
+/** ¿Este tipo de usuario puede pedir una tablet? */
+export function puedePedirTablet(tipo: TipoUsuario): boolean {
+  return TIPOS_QUE_PIDEN_TABLETS.includes(tipo);
+}
+
+/**
+ * Quién puede atender una asesoría (revisión de la 1.1): el personal con el permiso `asesorias`,
+ * no solo el rol de facilitador. Así aparece la administración, que hoy atiende las asesorías
+ * (es la «superfacilitadora»): va primero, marcada como Administración, y luego los
+ * facilitadores por nombre.
+ */
+export function opcionesFacilitador(personas: Usuario[]): { id: string; nombre: string }[] {
+  const esAdministracion = (persona: Usuario) => tieneRol(persona, 'administrador');
+  return personas
+    .filter((persona) => tienePermiso(persona, 'asesorias'))
+    .sort(
+      (a, b) =>
+        Number(esAdministracion(b)) - Number(esAdministracion(a)) ||
+        a.nombre.localeCompare(b.nombre),
+    )
+    .map((persona) => ({
+      id: persona.id,
+      nombre: esAdministracion(persona) ? `${persona.nombre} (Administración)` : persona.nombre,
+    }));
 }

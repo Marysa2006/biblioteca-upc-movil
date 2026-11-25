@@ -1,6 +1,7 @@
 /**
  * Una cita en la malla de la semana (HU-15): un bloque del color de su estado, con el ícono
  * del estado (no solo color), el tema, la hora y, si cabe, el facilitador o el solicitante.
+ * La cita sin facilitador dice "Sin asignar" con su ícono, también al facilitador (#250).
  * La posición y el alto los decide MallaSemana. Se presiona entero y abre el detalle (CA2);
  * el lector dice todo aunque el texto no quepa en el bloque.
  */
@@ -9,7 +10,7 @@ import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
 import { coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Cita } from '@/types';
-import { ICONO_ESTADO_AGENDA } from '@/utils/agenda';
+import { ICONO_ESTADO_AGENDA, ICONO_SIN_ASIGNAR, sinAsignar } from '@/utils/agenda';
 
 /** Por debajo de este alto (px), el bloque muestra solo el tema y la hora en una línea cada uno. */
 const ALTO_PARA_TERCERA_LINEA = 64;
@@ -25,7 +26,8 @@ type Props = {
 export function BloqueCita({ cita, posicion, mostrarFacilitador, onAbrir }: Props) {
   const { fondo, texto, etiqueta } = coloresEstado[cita.estado];
   const horas = `${cita.horaInicio} – ${cita.horaFin}`;
-  const persona = mostrarFacilitador ? cita.facilitador : cita.solicitante;
+  const libre = sinAsignar(cita);
+  const persona = libre ? 'Sin asignar' : mostrarFacilitador ? cita.facilitador : cita.solicitante;
 
   return (
     <View style={[estilos.bloque, posicion, { backgroundColor: fondo, borderLeftColor: texto }]}>
@@ -33,12 +35,12 @@ export function BloqueCita({ cita, posicion, mostrarFacilitador, onAbrir }: Prop
         onPress={() => onAbrir(cita)}
         style={estilos.toque}
         accessibilityRole="button"
-        accessibilityLabel={`${horas}, ${cita.tema}, ${cita.solicitante}${mostrarFacilitador ? `, con ${cita.facilitador}` : ''}. ${etiqueta}. Ver el detalle`}
+        accessibilityLabel={`${horas}, ${cita.tema}, ${cita.solicitante}${libre ? ', sin asignar' : mostrarFacilitador ? `, con ${cita.facilitador}` : ''}. ${etiqueta}. Ver el detalle`}
       >
         <View style={estilos.contenido}>
           <View style={estilos.fila}>
             <Icon
-              source={ICONO_ESTADO_AGENDA[cita.estado] ?? 'circle-small'}
+              source={libre ? ICONO_SIN_ASIGNAR : (ICONO_ESTADO_AGENDA[cita.estado] ?? 'circle-small')}
               size={12}
               color={texto}
             />

@@ -1,6 +1,6 @@
 /**
  * Crear o editar un tema de asesoría (HU-13). Sin ?id= crea; con ?id= edita.
- * Al guardar vuelve a Asesorías y jornadas, que ya muestra el cambio.
+ * Al guardar vuelve a Temas de asesoría, que ya muestra el cambio.
  */
 import { router, useLocalSearchParams } from 'expo-router';
 
@@ -42,7 +42,7 @@ function Formulario({ id }: { id?: string }) {
     return <EstadoError mensaje="No pudimos cargar los temas." onReintentar={() => refetch()} />;
   }
   const original = id ? data.find((tema) => tema.id === id) : undefined;
-  if (id && !original) return <EstadoVacio mensaje="Este tema ya no existe." />;
+  if (id && !original) return <EstadoVacio pose="buscando" mensaje="Este tema ya no existe." />;
 
   return (
     <FormularioTema

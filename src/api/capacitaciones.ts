@@ -6,6 +6,7 @@
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type {
+  DatosSolicitante,
   EstadoSolicitud,
   LineaFormacion,
   ModalidadCapacitacion,
@@ -13,10 +14,25 @@ import type {
   Usuario,
 } from '@/types';
 import { sumarDias } from '@/utils/calendario';
+import {
+  crearCalificacion,
+  MENSAJE_INVITACION_CALIFICAR,
+  notaCalificacion,
+  problemaCalificacion,
+  type DatosCalificacion,
+} from '@/utils/calificacion';
+import {
+  LARGO_MAXIMO_ASIGNATURA,
+  LARGO_MAXIMO_NOVEDADES,
+  MAXIMO_PARTICIPANTES,
+  MENSAJE_MAXIMO_PARTICIPANTES,
+  problemaNombresParticipantes,
+} from '@/utils/capacitaciones';
 import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
 import { esDiaHabil, motivoNoDisponible, sugerirFechaHabil } from '@/utils/parametros';
+import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/utils/solicitante';
 import { ahoraFechaHora } from '@/utils/tablets';
-import { normalizarTexto } from '@/utils/texto';
+import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
@@ -28,7 +44,14 @@ import { obtenerParametros } from './parametros';
 
 /** Copia de una solicitud para no exponer el almacén mutable. */
 function copiarSolicitud(solicitud: SolicitudCapacitacion): SolicitudCapacitacion {
-  return { ...solicitud, solicitante: { ...solicitud.solicitante } };
+  return {
+    ...solicitud,
+    solicitante: { ...solicitud.solicitante },
+    ...(solicitud.datosSolicitante ? { datosSolicitante: { ...solicitud.datosSolicitante } } : {}),
+    ...(solicitud.nombresParticipantes
+      ? { nombresParticipantes: [...solicitud.nombresParticipantes] }
+      : {}),
+  };
 }
 
 /** Copias mutables: con mocks, lo que se crea o edita se ve durante la sesión. */
@@ -199,6 +222,17 @@ export type FormularioCapacitacion = {
   objetivo: string;
   grupo: string;
   participantes: number;
+
+  // ── Versión 1.1: formulario completo (#224) ────────────────
+  // Opcionales mientras la UI (#251) no los envíe. Con `datosSolicitante` llega el formulario
+  // completo: se validan todos y los términos son obligatorios.
+  datosSolicitante?: DatosSolicitante;
+  asignatura?: string;
+  /** Un nombre por persona; si van, uno por participante. */
+  nombresParticipantes?: string[];
+  novedades?: string;
+  /** TERMINOS_FORMACION. */
+  terminosAceptados?: boolean;
 };
 
 /** Error 400 de la fecha, con otra fecha que sí se puede pedir (CA3). */
@@ -241,10 +275,64 @@ function errorDeFormulario(datos: FormularioCapacitacion): ErrorApi | null {
   if (grupo.length > LARGO_MAXIMO_GRUPO) {
     return new ErrorApi(400, `El grupo no puede pasar de ${LARGO_MAXIMO_GRUPO} caracteres.`);
   }
-  if (!Number.isInteger(datos.participantes) || datos.participantes < 1) {
-    return new ErrorApi(400, 'Indica cuántas personas asistirán (un número entero desde 1).');
+  if (
+    !Number.isInteger(datos.participantes) ||
+    datos.participantes < 1 ||
+    datos.participantes > MAXIMO_PARTICIPANTES
+  ) {
+    return new ErrorApi(400, MENSAJE_MAXIMO_PARTICIPANTES);
   }
-  return null;
+  return errorDeDatosCompletos(datos);
+}
+
+/** Los campos de la versión 1.1 (#224), con las mismas reglas del formulario completo. */
+function errorDeDatosCompletos(datos: FormularioCapacitacion): ErrorApi | null {
+  if (datos.datosSolicitante) {
+    const problema = problemaSolicitante(datos.datosSolicitante, { pedirIdentificacion: false });
+    if (problema) return new ErrorApi(400, problema);
+    if (datos.terminosAceptados !== true) {
+      return new ErrorApi(400, 'Acepta los términos y condiciones para enviar la solicitud.');
+    }
+  }
+  if ((datos.asignatura?.trim().length ?? 0) > LARGO_MAXIMO_ASIGNATURA) {
+    return new ErrorApi(
+      400,
+      `La asignatura no puede pasar de ${LARGO_MAXIMO_ASIGNATURA} caracteres.`,
+    );
+  }
+  if ((datos.novedades?.trim().length ?? 0) > LARGO_MAXIMO_NOVEDADES) {
+    return new ErrorApi(
+      400,
+      `Las novedades no pueden pasar de ${LARGO_MAXIMO_NOVEDADES} caracteres.`,
+    );
+  }
+  const nombres = nombresNormalizados(datos.nombresParticipantes);
+  const problemaNombres = problemaNombresParticipantes(nombres, datos.participantes);
+  return problemaNombres ? new ErrorApi(400, problemaNombres) : null;
+}
+
+/** "ana ruiz" → "Ana Ruiz", sin vacíos. */
+function nombresNormalizados(nombres: string[] | undefined): string[] {
+  return (nombres ?? []).map(aNombrePropio).filter(Boolean);
+}
+
+/** Los campos de la versión 1.1 que se guardan en la solicitud; los vacíos no se guardan. */
+function camposCompletos(datos: FormularioCapacitacion): Partial<SolicitudCapacitacion> {
+  const asignatura = datos.asignatura?.trim();
+  const novedades = datos.novedades?.trim();
+  const nombres = nombresNormalizados(datos.nombresParticipantes);
+  return {
+    // Con datosSolicitante, los términos ya se validaron (errorDeDatosCompletos).
+    ...(datos.datosSolicitante
+      ? {
+          datosSolicitante: aDatosSolicitante(valoresSolicitante(datos.datosSolicitante)),
+          terminosAceptados: true,
+        }
+      : {}),
+    ...(asignatura ? { asignatura } : {}),
+    ...(nombres.length > 0 ? { nombresParticipantes: nombres } : {}),
+    ...(novedades ? { novedades } : {}),
+  };
 }
 
 /** Fecha y hora de la solicitud, en la hora del celular. */
@@ -270,7 +358,11 @@ export async function solicitarCapacitacion(
     });
   }
 
-  const error = errorDeFormulario(datos);
+  // El tipo de usuario sale de la sesión: decide qué datos académicos se exigen.
+  const formulario: FormularioCapacitacion = datos.datosSolicitante
+    ? { ...datos, datosSolicitante: { ...datos.datosSolicitante, tipo: usuario.tipo } }
+    : datos;
+  const error = errorDeFormulario(formulario);
   if (error) {
     throw error;
   }
@@ -314,6 +406,7 @@ export async function solicitarCapacitacion(
     participantes: datos.participantes,
     estado: 'pendiente',
     creada: ahoraFechaHora(),
+    ...camposCompletos(formulario),
   };
   solicitudes = [...solicitudes, nueva];
 
@@ -330,6 +423,7 @@ export async function solicitarCapacitacion(
     usuario,
     servicio: 'capacitaciones',
     finalidad: `${linea.nombre}: ${nueva.objetivo}`,
+    tematica: linea.nombre,
     fecha: nueva.fecha,
     modalidad: nueva.modalidad,
     estado: 'pendiente',
@@ -378,6 +472,17 @@ function buscarSolicitud(id: string): SolicitudCapacitacion {
   return solicitud;
 }
 
+/**
+ * Estados a los que solo se llega con una respuesta del personal (#307): desde el primero, la
+ * solicitud cuenta para el tiempo de respuesta. Cancelar la persona no es una respuesta.
+ */
+const ESTADOS_RESPONDIDOS: readonly EstadoSolicitud[] = [
+  'aprobada',
+  'rechazada',
+  'nueva_fecha',
+  'realizada',
+];
+
 /** Deja la solicitud en el almacén y avisa al solicitante (CA1 y CA3). */
 function guardarSolicitud(
   actualizada: SolicitudCapacitacion,
@@ -396,6 +501,9 @@ function guardarSolicitud(
     id: `uso-capacitacion-${actualizada.id}`,
     servicio: 'capacitaciones',
     finalidad: `${actualizada.linea}: ${actualizada.objetivo}`,
+    tematica: actualizada.linea,
+    // #307: aprobar, rechazar o proponer otra fecha es la respuesta del personal.
+    respondida: ESTADOS_RESPONDIDOS.includes(actualizada.estado),
     fecha: actualizada.fecha,
     modalidad: actualizada.modalidad,
     estado:
@@ -611,6 +719,13 @@ export async function cerrarCapacitacion(
       `Tu capacitación de ${solicitud.linea} quedó cerrada. Resultado: ${texto}`,
     );
     registrarEvento('capacitacion', id, 'realizada', AUTOR_PERSONAL, texto);
+    // #254: invita a calificar. Solo se cierra una aprobada, así que no se repite.
+    crearNotificacion({
+      usuarioId: solicitud.solicitante.id,
+      solicitudId: id,
+      titulo: '¿Cómo te pareció tu capacitación?',
+      mensaje: MENSAJE_INVITACION_CALIFICAR,
+    });
     return simularRed(guardada);
   }
   return peticion<SolicitudCapacitacion>(`/capacitaciones/solicitudes/${id}/cerrar/`, {
@@ -663,4 +778,63 @@ export async function responderNuevaFecha(
     `/capacitaciones/solicitudes/${id}/responder-fecha/`,
     { method: 'POST', body: JSON.stringify({ acepta }) },
   );
+}
+
+// ── Versión 1.1: calificación del servicio (#254) ─────────────────────────
+
+/**
+ * La persona califica su capacitación realizada, una sola vez (CA1): puntaje de 1 a 5 y
+ * comentario opcional. 404 si no existe, 403 si no es suya y 400 si no está realizada (CA2) o si
+ * ya la calificó. Deja el evento en el historial (HU-08) y el puntaje en el mismo registro de uso
+ * (HU-25) para el promedio de HU-26 (CA3).
+ */
+export async function calificarCapacitacion(
+  usuario: Usuario,
+  id: string,
+  datos: DatosCalificacion,
+): Promise<SolicitudCapacitacion> {
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend. Quien califica sale del token.
+    return peticion<SolicitudCapacitacion>(`/solicitudes/capacitacion/${id}/calificacion/`, {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    });
+  }
+
+  const solicitud = buscarSolicitud(id);
+  if (solicitud.solicitante.id !== usuario.id) {
+    throw new ErrorApi(403, 'Solo quien pidió la capacitación puede calificarla.');
+  }
+  if (solicitud.estado !== 'realizada') {
+    throw new ErrorApi(400, 'Solo puedes calificar una capacitación realizada.');
+  }
+  if (solicitud.calificacion) {
+    throw new ErrorApi(400, 'Ya calificaste esta capacitación.');
+  }
+  const problema = problemaCalificacion(datos);
+  if (problema) {
+    throw new ErrorApi(400, problema);
+  }
+
+  const calificacion = crearCalificacion(datos);
+  const actualizada: SolicitudCapacitacion = { ...solicitud, calificacion };
+  solicitudes = solicitudes.map((actual) => (actual.id === id ? actualizada : actual));
+  registrarEvento(
+    'capacitacion',
+    id,
+    'realizada',
+    usuario.nombre,
+    notaCalificacion(calificacion.puntaje),
+  );
+  registrarUso({
+    id: `uso-capacitacion-${id}`,
+    servicio: 'capacitaciones',
+    finalidad: `${actualizada.linea}: ${actualizada.objetivo}`,
+    fecha: actualizada.fecha,
+    modalidad: actualizada.modalidad,
+    estado: 'completada',
+    calificacion: calificacion.puntaje,
+    ...datosDeSolicitante(actualizada.solicitante.id),
+  });
+  return simularRed({ ...copiarSolicitud(actualizada), calificacion: { ...calificacion } });
 }

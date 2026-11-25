@@ -1,45 +1,59 @@
 /**
- * Qué hacer con la tablet que se escaneó en Inventario → Préstamos (HU-31, CA1). Función pura:
- * recibe la tablet y los préstamos, y dice qué registro abrir o por qué no hay ninguno.
+ * Qué hacer con la tablet que se escaneó en Gestión → Préstamos (HU-31, CA1). Función pura:
+ * recibe la tablet, el inventario y los préstamos, y dice qué abrir o por qué no hay nada.
  *
  * - Prestada o vencida → su devolución.
- * - Reservada para hoy (o para un día que ya pasó, como deja HU-23) → la entrega de la primera
- *   franja.
- * - Reservada solo para otro día, o sin préstamos activos → un aviso, y no se abre nada.
+ * - Libre → los préstamos por entregar (de hoy o atrasados) en los que cabe, para elegir a quién
+ *   se entrega (#310: la tablet se asigna al entregarla). Cabe si `asignarTabletAlEntregar()`
+ *   la acepta, la misma regla de la pantalla de entrega y de la API.
+ * - Cualquier otro caso → un aviso que dice por qué.
  */
 import type { Prestamo, Tablet } from '@/types';
-import { fechaLegible } from '@/utils/fechas';
+import { asignarTabletAlEntregar } from '@/utils/tablets';
 
 export type AccionEscaneo =
-  | { tipo: 'abrir'; prestamoId: string; modo: 'entrega' | 'devolucion' }
+  | { tipo: 'abrir'; prestamoId: string; modo: 'devolucion' }
+  | { tipo: 'elegir'; tablet: Tablet; prestamos: Prestamo[] }
   | { tipo: 'aviso'; mensaje: string };
 
-const porFranja = (a: Prestamo, b: Prestamo) =>
-  `${a.fecha} ${a.horaInicio}`.localeCompare(`${b.fecha} ${b.horaInicio}`);
+const ESTADO_NO_DISPONIBLE: Partial<Record<Tablet['estado'], string>> = {
+  mantenimiento: 'está en mantenimiento',
+  de_baja: 'está de baja',
+  en_prestamo: 'figura como prestada, pero no tiene un préstamo activo',
+};
 
-export function accionDeTablet(tablet: Tablet, prestamos: Prestamo[], hoy: string): AccionEscaneo {
-  const deLaTablet = prestamos.filter((prestamo) => prestamo.tabletId === tablet.id);
-
-  const porRecibir = deLaTablet.find(
-    (prestamo) => prestamo.estado === 'entregado' || prestamo.estado === 'vencido',
+export function accionDeTablet(
+  tablet: Tablet,
+  prestamos: Prestamo[],
+  tablets: Tablet[],
+  hoy: string,
+): AccionEscaneo {
+  const porRecibir = prestamos.find(
+    (prestamo) =>
+      prestamo.tabletId === tablet.id &&
+      (prestamo.estado === 'entregado' || prestamo.estado === 'vencido'),
   );
   if (porRecibir) return { tipo: 'abrir', prestamoId: porRecibir.id, modo: 'devolucion' };
 
-  const reservados = deLaTablet
-    .filter((prestamo) => prestamo.estado === 'reservado')
-    .sort(porFranja);
-  const paraHoy = reservados.find((prestamo) => prestamo.fecha <= hoy);
-  if (paraHoy) return { tipo: 'abrir', prestamoId: paraHoy.id, modo: 'entrega' };
-
-  const proximo = reservados[0];
-  if (proximo) {
+  if (tablet.estado !== 'disponible') {
     return {
       tipo: 'aviso',
-      mensaje: `${tablet.codigo} está reservada para el ${fechaLegible(proximo.fecha)}: se entrega ese día.`,
+      mensaje: `${tablet.codigo} ${ESTADO_NO_DISPONIBLE[tablet.estado] ?? 'no está disponible'}: no se puede entregar. Revísala en Inventario.`,
     };
   }
+
+  const candidatos = prestamos
+    .filter(
+      (prestamo) =>
+        prestamo.estado === 'reservado' &&
+        prestamo.fecha <= hoy &&
+        'tablet' in asignarTabletAlEntregar(tablets, prestamos, prestamo, tablet.id),
+    )
+    .sort((a, b) => `${a.fecha} ${a.horaInicio}`.localeCompare(`${b.fecha} ${b.horaInicio}`));
+  if (candidatos.length > 0) return { tipo: 'elegir', tablet, prestamos: candidatos };
+
   return {
     tipo: 'aviso',
-    mensaje: `${tablet.codigo} no tiene préstamos por entregar ni por recibir.`,
+    mensaje: `${tablet.codigo} está libre, pero hoy no hay préstamos por entregar en los que quepa.`,
   };
 }

@@ -5,7 +5,13 @@
  * datos de prueba.
  * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
-import type { Bloqueo, EstadoSolicitud, Reserva } from '@/types';
+import type {
+  Bloqueo,
+  DatosSolicitante,
+  EstadoSolicitud,
+  RecursoApoyo,
+  Reserva,
+} from '@/types';
 import { esDiaHabil } from '@/utils/parametros';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
@@ -196,6 +202,8 @@ export async function decidirReserva(
       id: `uso-reserva-${actualizada.id}`,
       servicio: 'espacios',
       finalidad: actualizada.proposito,
+      // #307: la decisión del personal cuenta para el tiempo de respuesta.
+      respondida: true,
       fecha: actualizada.fecha,
       modalidad: 'presencial',
       // Rechazar o cancelar es una operación cancelada; aprobar, completada; nueva fecha, pendiente.
@@ -318,7 +326,17 @@ export type DatosSolicitudReserva = {
   horaFin: string;
   proposito: string;
   asistentes: number;
+  /** En la interfaz se llama «Novedades» desde la versión 1.1. */
   requerimientos?: string;
+
+  // ── Versión 1.1: solicitud completa (#224) ─────────────────
+  // Opcionales mientras la UI (#251) no los envíe. Con `datosSolicitante` llega la solicitud
+  // completa: se validan todos, con la identificación, y los términos son obligatorios.
+  sede?: string;
+  recursos?: RecursoApoyo[];
+  datosSolicitante?: DatosSolicitante;
+  /** TERMINOS_ESPACIOS. */
+  terminosAceptados?: boolean;
 };
 
 /**

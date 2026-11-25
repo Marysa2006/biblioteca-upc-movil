@@ -4,7 +4,9 @@
  * los hooks usan funciones de src/api, y esas funciones usan peticion().
  *
  * Variables de entorno (archivo .env, ver .env.example):
- *   EXPO_PUBLIC_API_URL     URL base de la API, por ejemplo http://192.168.1.10:8000/api
+ *   EXPO_PUBLIC_API_URL     URL base de la API, por ejemplo https://backend.example.com/api.
+ *                           En un APK solo funciona HTTPS (#299, sin usesCleartextTraffic); un
+ *                           servidor local por http (http://192.168.1.10:8000/api) solo en Expo Go.
  *   EXPO_PUBLIC_USAR_MOCKS  "true" mientras no exista la API; las funciones devuelven datos de prueba
  */
 import { useSesion } from '@/store/sesion';
@@ -33,7 +35,8 @@ export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {})
   const respuesta = await fetch(`${API_URL}${ruta}`, {
     ...opciones,
     headers: {
-      'Content-Type': 'application/json',
+      // Con FormData (un archivo, #303), fetch pone multipart/form-data con su separador.
+      ...(opciones.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...opciones.headers,
     },

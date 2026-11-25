@@ -3,10 +3,12 @@
  * préstamos de tablet (HU-24 y HU-30). Funciones puras, sin expo-notifications: deciden cuándo
  * suena cada recordatorio y qué dice. Quien los programa es useRecordatorios.
  *
- * Cada reserva aprobada tiene dos: 24 h antes (con el plazo para cancelar de los parámetros,
- * HU-28) y 1 h antes. Cada cita aprobada, también 24 h y 1 h antes. Un préstamo reservado tiene
- * uno 1 hora antes de recoger la tablet, y uno entregado, 30 minutos antes de la hora límite
- * (HU-24, CA2). La anticipación es fija por ahora. Si el momento ya pasó, no se programa.
+ * Cada reserva y cada cita aprobada tienen uno, 3 días antes, con el plazo para cancelar de los
+ * parámetros (HU-28): así lo pidió la biblioteca el 15 de noviembre de 2026, en lugar de los de
+ * 24 h y 1 h. Un préstamo reservado tiene uno 1 hora antes de recoger la tablet, y uno entregado,
+ * 30 minutos antes de la hora límite (HU-24, CA2). La anticipación es fija por ahora. Si el
+ * momento ya pasó (por ejemplo, una solicitud aprobada a menos de 3 días), no se programa: la
+ * notificación de «aprobada» ya le avisa a la persona.
  */
 import type { Cita, Prestamo, Reserva } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
@@ -16,10 +18,9 @@ export const PREFIJO_RECORDATORIO = 'recordatorio-';
 
 const HORA_MS = 60 * 60 * 1000;
 
-const ANTICIPACIONES = [
-  { clave: '24h', horas: 24, titulo: 'Tu reserva es mañana' },
-  { clave: '1h', horas: 1, titulo: 'Tu reserva empieza en 1 hora' },
-] as const;
+/** Cuántas horas antes suena el recordatorio de una reserva o una cita: 3 días. */
+const HORAS_ANTES = 72;
+const CLAVE = '3d';
 
 export type RecordatorioPlaneado = {
   identificador: string;
@@ -54,7 +55,21 @@ function cuandoLegible(fecha: Date): string {
   return `${texto.charAt(0).toLowerCase()}${texto.slice(1)} a las ${hora}`;
 }
 
-/** Los recordatorios de una reserva: solo si está aprobada y el momento aún no pasó. */
+/**
+ * Cuándo suena el recordatorio de algo que empieza en `inicio`, y la frase con el plazo para
+ * cancelar. El plazo solo se menciona si todavía no ha vencido cuando suena.
+ */
+function momentoYPlazo(inicio: Date, horasCancelacion: number) {
+  const cuando = new Date(inicio.getTime() - HORAS_ANTES * HORA_MS);
+  const limiteCancelar = new Date(inicio.getTime() - horasCancelacion * HORA_MS);
+  const cancelar =
+    limiteCancelar > cuando
+      ? ` Si no puedes asistir, cancela antes del ${cuandoLegible(limiteCancelar)}.`
+      : '';
+  return { cuando, cancelar };
+}
+
+/** El recordatorio de una reserva: solo si está aprobada y el momento aún no pasó. */
 export function recordatoriosDeReserva(
   reserva: Reserva,
   { texto, horasCancelacion, nombreEspacio, ahora }: ContextoRecordatorios,
@@ -62,56 +77,44 @@ export function recordatoriosDeReserva(
   if (reserva.estado !== 'aprobada') return [];
 
   const inicio = inicioReserva(reserva);
-  const lugar = nombreEspacio(reserva.espacioId);
-  const limiteCancelar = new Date(inicio.getTime() - horasCancelacion * HORA_MS);
+  const { cuando, cancelar } = momentoYPlazo(inicio, horasCancelacion);
+  if (cuando <= ahora) return [];
 
-  return ANTICIPACIONES.map(({ clave, horas, titulo }) => {
-    const cuando = new Date(inicio.getTime() - horas * HORA_MS);
-    let detalle: string;
-    if (clave === '24h') {
-      // El plazo para cancelar solo se menciona si todavía no ha vencido cuando suena.
-      const cancelar =
-        limiteCancelar > cuando
-          ? ` Si no puedes asistir, cancela antes del ${cuandoLegible(limiteCancelar)}.`
-          : '';
-      detalle = `${lugar}, ${cuandoLegible(inicio)}.${cancelar}`;
-    } else {
-      detalle = `${lugar}, hoy a las ${reserva.horaInicio}.`;
-    }
-    return {
-      identificador: `${PREFIJO_RECORDATORIO}${reserva.id}-${clave}`,
+  const lugar = nombreEspacio(reserva.espacioId);
+  return [
+    {
+      identificador: `${PREFIJO_RECORDATORIO}${reserva.id}-${CLAVE}`,
       cuando,
-      titulo,
-      cuerpo: `${texto} ${detalle}`,
-    };
-  }).filter((recordatorio) => recordatorio.cuando > ahora);
+      titulo: 'Tu reserva es en 3 días',
+      cuerpo: `${texto} ${lugar}, ${cuandoLegible(inicio)}.${cancelar}`,
+    },
+  ];
 }
 
-const ANTICIPACIONES_CITA = [
-  { clave: '24h', horas: 24, titulo: 'Tu asesoría es mañana' },
-  { clave: '1h', horas: 1, titulo: 'Tu asesoría empieza en 1 hora' },
-] as const;
-
-/** Los recordatorios de una cita de asesoría: solo si está aprobada y el momento aún no pasó (HU-30). */
+/** El recordatorio de una cita de asesoría: solo si está aprobada y el momento aún no pasó (HU-30). */
 export function recordatoriosDeCita(
   cita: Cita,
-  { texto, ahora }: Pick<ContextoRecordatorios, 'texto' | 'ahora'>,
+  {
+    texto,
+    horasCancelacion,
+    ahora,
+  }: Pick<ContextoRecordatorios, 'texto' | 'horasCancelacion' | 'ahora'>,
 ): RecordatorioPlaneado[] {
   if (cita.estado !== 'aprobada') return [];
 
   const inicio = inicioReserva(cita);
-  const modalidad = cita.modalidad === 'virtual' ? ' (virtual)' : '';
+  const { cuando, cancelar } = momentoYPlazo(inicio, horasCancelacion);
+  if (cuando <= ahora) return [];
 
-  return ANTICIPACIONES_CITA.map(({ clave, horas, titulo }) => {
-    const cuando = new Date(inicio.getTime() - horas * HORA_MS);
-    const momento = clave === '24h' ? cuandoLegible(inicio) : `hoy a las ${cita.horaInicio}`;
-    return {
-      identificador: `${PREFIJO_RECORDATORIO}cita-${cita.id}-${clave}`,
+  const modalidad = cita.modalidad === 'virtual' ? ' (virtual)' : '';
+  return [
+    {
+      identificador: `${PREFIJO_RECORDATORIO}cita-${cita.id}-${CLAVE}`,
       cuando,
-      titulo,
-      cuerpo: `${texto} ${cita.tema} con ${cita.facilitador}${modalidad}, ${momento}.`,
-    };
-  }).filter((recordatorio) => recordatorio.cuando > ahora);
+      titulo: 'Tu asesoría es en 3 días',
+      cuerpo: `${texto} ${cita.tema}${cita.facilitador ? ` con ${cita.facilitador}` : ''}${modalidad}, ${cuandoLegible(inicio)}.${cancelar}`,
+    },
+  ];
 }
 
 /** Minutos antes de la hora límite en que suena el recordatorio de devolver (HU-24). */

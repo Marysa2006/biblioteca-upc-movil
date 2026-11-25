@@ -13,6 +13,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   agendarCita,
+  aprobarCitaConDatos,
   cancelarCita,
   guardarJornada,
   guardarTema,
@@ -21,14 +22,19 @@ import {
   obtenerJornadas,
   obtenerMisCitas,
   obtenerTemas,
+  rechazarCita,
   registrarInasistencia,
   registrarResultado,
   reprogramarCita,
+  reprogramarSolicitud,
+  solicitarCita,
+  type AprobacionCita,
   type DatosJornada,
   type DatosTema,
 } from '@/api/asesorias';
 import { claves } from '@/api/claves';
 import { useSesion } from '@/store/sesion';
+import type { NuevaSolicitudCita } from '@/types';
 
 /** Para que la pantalla de HU-15 (María) tipe la agenda sin importar de src/api. */
 export type { CitaAgenda } from '@/api/asesorias';
@@ -100,11 +106,15 @@ function useRefrescarCitas() {
   };
 }
 
-/** Lo que cambia al registrar lo que pasó en una cita: la agenda, las citas y su historial. */
+/**
+ * Lo que cambia al registrar lo que pasó en una cita: la agenda, las citas y su historial, y
+ * las notificaciones (el resultado crea la invitación a calificar, #254).
+ */
 function useRefrescarAtencion() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: claves.citasAsesoria });
+    queryClient.invalidateQueries({ queryKey: claves.notificaciones });
     queryClient.invalidateQueries({ queryKey: claves.solicitudesTodas });
   };
 }
@@ -137,7 +147,12 @@ export function useCancelarCita() {
   });
 }
 
-/** Pasa una cita del usuario a otra franja del mismo tema, dentro del plazo (CA3). */
+/**
+ * Pasa una cita del usuario a otra franja del mismo tema, dentro del plazo (CA3).
+ *
+ * @deprecated Desde la versión 1.1 reprogramar es enviar una solicitud nueva: usa
+ * `useReprogramarSolicitud()` (#248).
+ */
 export function useReprogramarCita() {
   const refrescar = useRefrescarCitas();
   const usuario = useSesion((estado) => estado.usuario);
@@ -146,6 +161,77 @@ export function useReprogramarCita() {
     mutationFn: ({ id, nuevaFranjaId }: { id: string; nuevaFranjaId: string }) => {
       if (!usuario) throw new Error('No hay sesión');
       return reprogramarCita(usuario, id, nuevaFranjaId);
+    },
+    onSuccess: refrescar,
+  });
+}
+
+/** Pide una asesoría con fecha y hora, sin franja (#248). Queda pendiente de aprobación. */
+export function useSolicitarCita() {
+  const refrescar = useRefrescarCitas();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    mutationFn: (nueva: NuevaSolicitudCita) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return solicitarCita(usuario, nueva);
+    },
+    onSuccess: refrescar,
+  });
+}
+
+/**
+ * Reprograma enviando una solicitud nueva (#248): la anterior queda cancelada y la nueva
+ * pendiente, con `reprogramaDe`.
+ */
+export function useReprogramarSolicitud() {
+  const refrescar = useRefrescarCitas();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    mutationFn: ({ id, nueva }: { id: string; nueva: NuevaSolicitudCita }) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return reprogramarSolicitud(usuario, id, nueva);
+    },
+    onSuccess: refrescar,
+  });
+}
+
+/**
+ * Aprueba una cita pendiente (HU-14, 1.1). Solo el facilitador de la cita o la administración;
+ * la API responde 403 si no puede. Refresca la agenda, las citas y las notificaciones.
+ */
+export function useAprobarCita() {
+  const refrescar = useRefrescarCitas();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    /**
+     * Con solo el id, el facilitador se asigna a sí mismo y no cambia la fecha (lo de siempre).
+     * Con el objeto, la administración elige facilitador y puede cambiar fecha, hora o enlace.
+     */
+    mutationFn: (entrada: string | ({ id: string } & AprobacionCita)) => {
+      if (!usuario) throw new Error('No hay sesión');
+      if (typeof entrada === 'string') return aprobarCitaConDatos(usuario, entrada, { facilitadorId: usuario.id });
+      const { id, ...aprobacion } = entrada;
+      return aprobarCitaConDatos(usuario, id, aprobacion);
+    },
+    onSuccess: refrescar,
+  });
+}
+
+/**
+ * Rechaza una cita pendiente con un motivo (HU-14, 1.1). El motivo es obligatorio y el cupo
+ * se libera. Refresca la agenda, las citas y las notificaciones.
+ */
+export function useRechazarCita() {
+  const refrescar = useRefrescarCitas();
+  const usuario = useSesion((estado) => estado.usuario);
+
+  return useMutation({
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => {
+      if (!usuario) throw new Error('No hay sesión');
+      return rechazarCita(usuario, id, motivo);
     },
     onSuccess: refrescar,
   });

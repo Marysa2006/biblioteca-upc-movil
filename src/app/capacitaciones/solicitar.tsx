@@ -7,8 +7,10 @@
  *   en el mismo lugar.
  * - CA2: lo que falte se pide bajo cada campo.
  * - CA3: un día no hábil se avisa con su motivo y una fecha sugerida.
+ * Desde la 1.1 (#251), en pestañas, con tus datos (prellenados con la cuenta y el perfil) y los
+ * términos de formación.
  *
- * Patrón de datos: useParametros() / useLineas() / useSolicitarCapacitacion() (src/hooks) →
+ * Patrón de datos: useParametros() / useLineas() / usePerfil() / useSolicitarCapacitacion() (src/hooks) →
  * src/api/capacitaciones.ts → mock o API.
  */
 import { FormularioSolicitudCapacitacion } from '@/components/capacitaciones/FormularioSolicitudCapacitacion';
@@ -22,7 +24,9 @@ import {
 } from '@/components/ui';
 import { useLineas } from '@/hooks/useCapacitaciones';
 import { useParametros } from '@/hooks/useParametros';
+import { usePerfil } from '@/hooks/usePerfil';
 import { useRol } from '@/hooks/useRol';
+import type { Usuario } from '@/types';
 
 const TITULO = 'Solicitar capacitación';
 
@@ -39,7 +43,7 @@ export default function SolicitarCapacitacion() {
         conTeclado
       >
         {usuario ? (
-          <SolicitudConSesion />
+          <SolicitudConSesion usuario={usuario} />
         ) : (
           <InvitarSesion
             mensaje="Inicia sesión con tu cuenta institucional para solicitar una capacitación."
@@ -52,16 +56,18 @@ export default function SolicitarCapacitacion() {
 }
 
 /** Se monta solo con sesión: así, sin sesión, no se consultan líneas ni parámetros. */
-function SolicitudConSesion() {
+function SolicitudConSesion({ usuario }: { usuario: Usuario }) {
   const parametros = useParametros();
   const lineas = useLineas();
+  // Prellena el celular (#224). Si no carga, no bloquea: la persona lo escribe.
+  const perfil = usePerfil();
 
   const reintentar = () => {
     if (parametros.isError) parametros.refetch();
     if (lineas.isError) lineas.refetch();
   };
 
-  if (parametros.isPending || lineas.isPending) {
+  if (parametros.isPending || lineas.isPending || perfil.isPending) {
     return <EstadoCarga mensaje="Cargando las capacitaciones…" />;
   }
   if (parametros.isError || lineas.isError) {
@@ -78,5 +84,12 @@ function SolicitudConSesion() {
     );
   }
 
-  return <FormularioSolicitudCapacitacion lineas={activas} parametros={parametros.data} />;
+  return (
+    <FormularioSolicitudCapacitacion
+      lineas={activas}
+      parametros={parametros.data}
+      usuario={usuario}
+      perfil={perfil.data}
+    />
+  );
 }

@@ -11,14 +11,24 @@ import type {
   EstadoSolicitud,
   FranjaAsesoria,
   Jornada,
+  NuevaSolicitudCita,
   Parametros,
   TemaAsesoria,
   TipoUsuario,
   Usuario,
 } from '@/types';
-import { esFechaValida, esHoraValida, hoyISO } from '@/utils/fechas';
-import { aMinutos, conservarFranjas, generarFranjas } from '@/utils/franjas';
+import {
+  crearCalificacion,
+  MENSAJE_INVITACION_CALIFICAR,
+  notaCalificacion,
+  problemaCalificacion,
+  type DatosCalificacion,
+} from '@/utils/calificacion';
+import { esFechaValida, esHoraValida, fechaLegible, hoyISO } from '@/utils/fechas';
+import { aHora, aMinutos, conservarFranjas, generarFranjas } from '@/utils/franjas';
+import { motivoNoDisponible } from '@/utils/parametros';
 import { problemaHorario } from '@/utils/reservas';
+import { tienePermiso } from '@/utils/roles';
 
 import { ErrorApi, peticion, simularRed, USAR_MOCKS } from './cliente';
 import {
@@ -217,7 +227,12 @@ function ordenarPorFecha<T extends { fecha: string; horaInicio: string }>(lista:
 }
 
 /** Suma `cambio` a los cupos libres de la franja, entre 0 y los cupos de la jornada. */
-function ajustarCupo(franjaId: string, cambio: number) {
+/**
+ * Ajusta los cupos de una franja. Desde la versión 1.1 la cita puede no tener franja (#248),
+ * y entonces no hay cupo que ajustar.
+ */
+function ajustarCupo(franjaId: string | undefined, cambio: number) {
+  if (!franjaId) return;
   franjas = franjas.map((franja) => {
     if (franja.id !== franjaId) return franja;
     const maximo = jornadas.find((j) => j.id === franja.jornadaId)?.cupos ?? Infinity;
@@ -297,7 +312,12 @@ function citaModificable(
   if (!ESTADOS_ACTIVOS.includes(cita.estado)) {
     throw new ErrorApi(400, `Esta cita ya no se puede ${accion}.`);
   }
-  if (!cumpleAnticipacion(cita.fecha, cita.horaInicio, parametros.horasMinimasCancelacion)) {
+  // #278: una cita pendiente se cancela o reprograma en cualquier momento; una aprobada, hasta
+  // el plazo de `horasMinimasCancelacion`. Es la regla del Backend (`cancel-min-hours`).
+  if (
+    cita.estado === 'aprobada' &&
+    !cumpleAnticipacion(cita.fecha, cita.horaInicio, parametros.horasMinimasCancelacion)
+  ) {
     throw new ErrorApi(
       400,
       `Solo puedes ${accion} hasta ${parametros.horasMinimasCancelacion} horas antes.`,
@@ -309,6 +329,9 @@ function citaModificable(
 /**
  * Franjas de un tema que se pueden pedir: futuras, con cupo y con la anticipación mínima
  * (HU-14, CA1). Si no hay, devuelve [] para que la pantalla lo informe (CA4).
+ *
+ * @deprecated Desde la versión 1.1 las asesorías no tienen franjas (#248). Se conserva para no
+ * romper las pantallas que aún la usan.
  */
 export async function obtenerFranjas(
   temaId: string,
@@ -338,7 +361,14 @@ export async function obtenerFranjas(
   );
 }
 
-/** Agenda una cita y la confirma (CA1). Si la franja se llenó, la rechaza (CA2). */
+/**
+ * Agenda una cita en una franja y la deja pendiente de aprobación (CA1): aparta el cupo, pero
+ * no queda aprobada hasta que el facilitador o la administración la decidan. Si la franja se
+ * llenó, la rechaza (CA2).
+ *
+ * @deprecated Desde la versión 1.1 las asesorías no van por jornadas: usa `solicitarCita()`,
+ * que pide fecha y hora sin franja (#248). Se conserva para no romper lo que ya lo usa.
+ */
 export async function agendarCita(
   usuario: Usuario,
   franjaId: string,
@@ -355,22 +385,23 @@ export async function agendarCita(
       solicitanteId: usuario.id,
       solicitante: usuario.nombre,
       necesidad: necesidad.trim(),
-      estado: 'aprobada',
+      estado: 'pendiente',
     };
     citas = [...citas, cita];
     ajustarCupo(franjaId, -1);
     crearNotificacion({
       usuarioId: usuario.id,
       solicitudId: cita.id,
-      titulo: 'Asesoría agendada',
-      mensaje: `Tu asesoría de ${cita.tema} quedó para el ${cita.fecha} a las ${cita.horaInicio}.`,
+      titulo: 'Solicitud de asesoría recibida',
+      mensaje: `Recibimos tu solicitud de ${cita.tema} para el ${fechaLegible(cita.fecha)} a las ${cita.horaInicio}. Te avisamos cuando la aprueben.`,
     });
-    registrarEvento('cita', cita.id, 'aprobada', usuario.nombre, 'Asesoría agendada.');
+    registrarEvento('cita', cita.id, 'pendiente', usuario.nombre, 'Solicitud de asesoría recibida.');
     // HU-25: agendar deja su registro de uso.
     registrarUso({
       id: `uso-cita-${cita.id}`,
       servicio: 'asesorias',
       finalidad: cita.tema,
+      tematica: cita.tema,
       fecha: cita.fecha,
       modalidad: cita.modalidad,
       estado: 'pendiente',
@@ -382,6 +413,324 @@ export async function agendarCita(
     method: 'POST',
     body: JSON.stringify({ franjaId, necesidad }),
   });
+}
+
+// ── Versión 1.1: asesorías sin jornadas (#248) ────────────────
+
+/**
+ * Cita que la persona pide con fecha y hora, sin franja ni facilitador: la biblioteca la
+ * confirma y asigna quién la atiende. Es lo que pide la bibliotecóloga desde el 15 de
+ * noviembre de 2026.
+ */
+export async function solicitarCita(
+  usuario: Usuario,
+  nueva: NuevaSolicitudCita,
+): Promise<Cita> {
+  if (!USAR_MOCKS) {
+    return peticion<Cita>('/asesorias/citas/', { method: 'POST', body: JSON.stringify(nueva) });
+  }
+
+  const tema = temas.find((t) => t.id === nueva.temaId);
+  if (!tema?.activo) {
+    throw new ErrorApi(400, 'Ese tema de asesoría ya no se ofrece.');
+  }
+  if (!esFechaValida(nueva.fecha) || !esHoraValida(nueva.hora)) {
+    throw new ErrorApi(400, 'Revisa la fecha y la hora de la asesoría.');
+  }
+  const parametros = await obtenerParametros();
+
+  const noHabil = motivoNoDisponible(nueva.fecha, parametros);
+  if (noHabil) {
+    throw new ErrorApi(400, `Ese día la biblioteca no atiende: ${noHabil}.`);
+  }
+
+  const inicio = aMinutos(nueva.hora);
+  const fin = inicio + parametros.duracionAsesoriaMinutos;
+  const abre = parametros.horarios.find((h) => h.dia === new Date(`${nueva.fecha}T00:00:00`).getDay());
+  if (!abre) {
+    throw new ErrorApi(400, 'Ese día la biblioteca no atiende.');
+  }
+  if (inicio < aMinutos(abre.abre) || fin > aMinutos(abre.cierra)) {
+    throw new ErrorApi(
+      400,
+      `Elige una hora del horario de atención (${abre.abre} a ${abre.cierra}); la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
+    );
+  }
+
+  if (!cumpleAnticipacion(nueva.fecha, nueva.hora, parametros.horasMinimasSolicitud)) {
+    throw new ErrorApi(
+      400,
+      `Las asesorías se piden con ${parametros.horasMinimasSolicitud} horas de anticipación.`,
+    );
+  }
+
+  const personas = Number(nueva.personas ?? 0);
+  if (!Number.isInteger(personas) || personas < 1) {
+    throw new ErrorApi(400, 'Indica cuántas personas asisten: al menos una.');
+  }
+  // #278: el grupo de una asesoría tiene un tope (el Backend, `advisory-max-group`). Más gente
+  // es una capacitación, que es otro servicio.
+  if (personas > parametros.maximoPersonasAsesoria) {
+    throw new ErrorApi(
+      400,
+      `Una asesoría es para ${parametros.maximoPersonasAsesoria} personas como máximo. Para un grupo mayor, solicita una capacitación.`,
+    );
+  }
+  // #278: `participantes` son los **otros** integrantes (personas − 1); quien pide ya va en
+  // `datosSolicitante`.
+  const participantes = (nueva.participantes ?? []).map((nombre) => nombre.trim()).filter(Boolean);
+  if (participantes.length !== personas - 1) {
+    throw new ErrorApi(
+      400,
+      personas === 1
+        ? 'Si vienes solo, no escribas nombres de otras personas.'
+        : 'Escribe el nombre de cada una de las otras personas que asisten.',
+    );
+  }
+
+  const necesidad = nueva.necesidad?.trim();
+  if (!necesidad) {
+    throw new ErrorApi(400, 'Cuéntanos brevemente qué necesitas.');
+  }
+
+  if (nueva.modalidad === 'presencial' && !nueva.datosSolicitante?.nombreCompleto?.trim()) {
+    throw new ErrorApi(400, 'Escribe el nombre completo de quien pide la asesoría.');
+  }
+
+  const repetida = citas.some(
+    (cita) =>
+      cita.solicitanteId === usuario.id &&
+      cita.fecha === nueva.fecha &&
+      cita.horaInicio === nueva.hora &&
+      ESTADOS_ACTIVOS.includes(cita.estado),
+  );
+  if (repetida) {
+    throw new ErrorApi(400, 'Ya tienes una asesoría a esa hora.');
+  }
+
+  const cita: Cita = {
+    id: `cit-${Date.now()}`,
+    temaId: tema.id,
+    tema: tema.nombre,
+    solicitanteId: usuario.id,
+    solicitante: usuario.nombre,
+    fecha: nueva.fecha,
+    horaInicio: nueva.hora,
+    horaFin: aHora(fin),
+    necesidad,
+    modalidad: nueva.modalidad,
+    estado: 'pendiente',
+    datosSolicitante: nueva.datosSolicitante,
+    personas,
+    participantes,
+    asignatura: nueva.asignatura?.trim() || undefined,
+    novedades: nueva.novedades?.trim() || undefined,
+    terminosAceptados: nueva.terminosAceptados,
+  };
+  citas = [...citas, cita];
+
+  crearNotificacion({
+    usuarioId: usuario.id,
+    solicitudId: cita.id,
+    titulo: 'Solicitud de asesoría recibida',
+    mensaje: `Recibimos tu solicitud de ${cita.tema} para el ${fechaLegible(cita.fecha)} a las ${cita.horaInicio}. Te avisamos cuando la aprueben.`,
+  });
+  registrarEvento('cita', cita.id, 'pendiente', usuario.nombre, 'Solicitud de asesoría recibida.');
+  registrarUso({
+    id: `uso-cita-${cita.id}`,
+    servicio: 'asesorias',
+    finalidad: cita.tema,
+    tematica: cita.tema,
+    fecha: cita.fecha,
+    modalidad: cita.modalidad,
+    estado: 'pendiente',
+    ...datosDeSolicitante(cita.solicitanteId),
+  });
+
+  return simularRed({ ...cita });
+}
+
+/** Lo que puede cambiar el personal al aprobar una cita (#248). */
+export type AprobacionCita = {
+  /** Quién la atiende. Obligatorio: la cita nace sin facilitador. */
+  facilitadorId: string;
+  /** Si el personal cambia el día, aquí va el nuevo; el pedido queda en `fechaSolicitada`. */
+  fecha?: string;
+  hora?: string;
+  /** Cuando la cita es virtual es obligatorio: es cómo entra la persona. */
+  enlaceVirtual?: string;
+};
+
+/**
+ * Aprueba una cita pendiente asignándole facilitador (CA2 de #248).
+ * - Si cambia la fecha o la hora, las originales quedan en `fechaSolicitada`/`horaSolicitada`.
+ * - Una cita virtual no se aprueba sin enlace (CA3).
+ * - Un facilitador solo puede asignarse a sí mismo; la administración, a cualquiera.
+ */
+export async function aprobarCitaConDatos(
+  usuario: Usuario,
+  id: string,
+  aprobacion: AprobacionCita,
+): Promise<Cita> {
+  if (!USAR_MOCKS) {
+    return peticion<Cita>(`/asesorias/citas/${id}/aprobar/`, {
+      method: 'POST',
+      body: JSON.stringify(aprobacion),
+    });
+  }
+
+  const cita = citaDecidible(usuario, id);
+  const esAdministracion = tienePermiso(usuario, 'asesorias') && usuario.rolesPersonal.includes('administrador');
+  if (aprobacion.facilitadorId !== usuario.id && !esAdministracion) {
+    throw new ErrorApi(403, 'Solo puedes asignarte a ti mismo como facilitador.');
+  }
+  const facilitador = USUARIOS_DIRECTORIO.find((u) => u.id === aprobacion.facilitadorId);
+  if (!facilitador) {
+    throw new ErrorApi(404, 'Ese facilitador no existe.');
+  }
+
+  const fecha = aprobacion.fecha ?? cita.fecha;
+  const hora = aprobacion.hora ?? cita.horaInicio;
+  if (!esFechaValida(fecha) || !esHoraValida(hora)) {
+    throw new ErrorApi(400, 'Revisa la fecha y la hora de la cita.');
+  }
+
+  // El día hábil y la anticipación solo se exigen cuando el personal **cambia** la fecha o la
+  // hora. La fecha pedida ya pasó esas dos reglas en `solicitarCita()`; volver a exigirlas al
+  // aprobar rechazaría citas pedidas con tiempo y aprobadas a menos de 72 h (#248, revisión).
+  const cambio = fecha !== cita.fecha || hora !== cita.horaInicio;
+  const parametros = await obtenerParametros();
+  if (cambio) {
+    const noHabil = motivoNoDisponible(fecha, parametros);
+    if (noHabil) {
+      throw new ErrorApi(400, `Ese día la biblioteca no atiende: ${noHabil}.`);
+    }
+    if (!cumpleAnticipacion(fecha, hora, parametros.horasMinimasSolicitud)) {
+      throw new ErrorApi(
+        400,
+        `La cita necesita ${parametros.horasMinimasSolicitud} horas de anticipación.`,
+      );
+    }
+  }
+
+  // #278: un facilitador no puede tener dos asesorías aprobadas a la misma hora.
+  const finNueva = aHora(aMinutos(hora) + parametros.duracionAsesoriaMinutos);
+  const choque = citas.find(
+    (otra) =>
+      otra.id !== cita.id &&
+      otra.estado === 'aprobada' &&
+      otra.facilitadorId === facilitador.id &&
+      otra.fecha === fecha &&
+      aMinutos(otra.horaInicio) < aMinutos(finNueva) &&
+      aMinutos(otra.horaFin) > aMinutos(hora),
+  );
+  if (choque) {
+    throw new ErrorApi(
+      400,
+      `${facilitador.nombre} ya tiene la asesoría «${choque.tema}» de ${choque.horaInicio} a ${choque.horaFin} ese día.`,
+    );
+  }
+
+  const enlace = aprobacion.enlaceVirtual?.trim();
+  if (cita.modalidad === 'virtual' && !enlace) {
+    throw new ErrorApi(400, 'Una asesoría virtual necesita el enlace para que la persona entre.');
+  }
+  const aprobada: Cita = {
+    ...cita,
+    estado: 'aprobada',
+    motivo: undefined,
+    facilitadorId: facilitador.id,
+    facilitador: facilitador.nombre,
+    fecha,
+    horaInicio: hora,
+    horaFin: finNueva,
+    fechaSolicitada: cambio ? (cita.fechaSolicitada ?? cita.fecha) : cita.fechaSolicitada,
+    horaSolicitada: cambio ? (cita.horaSolicitada ?? cita.horaInicio) : cita.horaSolicitada,
+    enlaceVirtual: cita.modalidad === 'virtual' ? enlace : cita.enlaceVirtual,
+  };
+  citas = citas.map((actual) => (actual.id === id ? aprobada : actual));
+
+  const cuando = `${fechaLegible(aprobada.fecha)} a las ${aprobada.horaInicio}`;
+  crearNotificacion({
+    usuarioId: cita.solicitanteId,
+    solicitudId: cita.id,
+    titulo: 'Asesoría aprobada',
+    mensaje: aprobada.enlaceVirtual
+      ? `Tu asesoría de ${cita.tema} quedó para el ${cuando}. Entra con este enlace: ${aprobada.enlaceVirtual}`
+      : `Tu asesoría de ${cita.tema} quedó para el ${cuando} con ${aprobada.facilitador}.`,
+  });
+  registrarEvento(
+    'cita',
+    cita.id,
+    'aprobada',
+    usuario.nombre,
+    cambio ? `Aprobada para el ${cuando} (la persona pidió el ${fechaLegible(cita.fechaSolicitada ?? cita.fecha)}).` : 'Asesoría aprobada.',
+  );
+  registrarUso({
+    id: `uso-cita-${cita.id}`,
+    servicio: 'asesorias',
+    finalidad: cita.tema,
+    tematica: cita.tema,
+    // #307: la primera respuesta del personal cuenta para el tiempo de respuesta.
+    respondida: true,
+    fecha: aprobada.fecha,
+    modalidad: aprobada.modalidad,
+    estado: 'pendiente',
+    ...datosDeSolicitante(cita.solicitanteId),
+  });
+
+  return simularRed({ ...aprobada });
+}
+
+/**
+ * Reprogramar en la versión 1.1 es enviar una **solicitud nueva** (CA4 de #248): la anterior
+ * queda cancelada con su motivo y la nueva nace pendiente, con `reprogramaDe` apuntando a ella.
+ * Respeta el plazo de cancelación sobre la cita anterior.
+ */
+export async function reprogramarSolicitud(
+  usuario: Usuario,
+  id: string,
+  nueva: NuevaSolicitudCita,
+): Promise<Cita> {
+  if (!USAR_MOCKS) {
+    return peticion<Cita>(`/asesorias/citas/${id}/reprogramar/`, {
+      method: 'POST',
+      body: JSON.stringify(nueva),
+    });
+  }
+
+  const parametros = await obtenerParametros();
+  const anterior = citaModificable(usuario.id, id, parametros, 'reprogramar');
+
+  const creada = await solicitarCita(usuario, nueva);
+  const cancelada: Cita = {
+    ...anterior,
+    estado: 'cancelada',
+    motivo: 'Reprogramada por la persona',
+  };
+  citas = citas.map((cita) =>
+    cita.id === anterior.id ? cancelada : cita.id === creada.id ? { ...creada, reprogramaDe: anterior.id } : cita,
+  );
+
+  // Rastro completo: la anterior se cancela con su notificación, como cualquier cancelación.
+  crearNotificacion({
+    usuarioId: anterior.solicitanteId,
+    solicitudId: anterior.id,
+    titulo: 'Asesoría reprogramada',
+    mensaje: `Tu asesoría de ${anterior.tema} del ${fechaLegible(anterior.fecha)} a las ${anterior.horaInicio} quedó cancelada porque pediste otra fecha. La nueva solicitud está pendiente de aprobación.`,
+  });
+  registrarEvento('cita', anterior.id, 'cancelada', usuario.nombre, 'Reprogramada por la persona.');
+  registrarUso({
+    id: `uso-cita-${anterior.id}`,
+    servicio: 'asesorias',
+    finalidad: anterior.tema,
+    fecha: anterior.fecha,
+    modalidad: anterior.modalidad,
+    estado: 'cancelada',
+    ...datosDeSolicitante(anterior.solicitanteId),
+  });
+
+  return simularRed({ ...creada, reprogramaDe: anterior.id });
 }
 
 /** Citas del usuario de la sesión, por fecha (HU-14 y HU-15). */
@@ -413,6 +762,7 @@ export async function cancelarCita(usuario: Usuario, id: string): Promise<Cita> 
       id: `uso-cita-${cita.id}`,
       servicio: 'asesorias',
       finalidad: cita.tema,
+      tematica: cita.tema,
       fecha: cita.fecha,
       modalidad: cita.modalidad,
       estado: 'cancelada',
@@ -426,6 +776,9 @@ export async function cancelarCita(usuario: Usuario, id: string): Promise<Cita> 
 /**
  * Pasa una cita a otra franja del mismo tema, dentro del plazo de cancelación (CA3).
  * Libera el cupo de la franja anterior y ocupa uno de la nueva.
+ *
+ * @deprecated Desde la versión 1.1 reprogramar es enviar una **solicitud nueva** pendiente de
+ * aprobación: usa `reprogramarSolicitud()` (#248).
  */
 export async function reprogramarCita(
   usuario: Usuario,
@@ -442,7 +795,8 @@ export async function reprogramarCita(
     if (datos.temaId !== cita.temaId) {
       throw new ErrorApi(400, 'Elige una franja del mismo tema.');
     }
-    const actualizada: Cita = { ...cita, ...datos, estado: 'aprobada', motivo: undefined };
+    // Reprogramar vuelve a dejar la cita pendiente: la tiene que aprobar otra vez el personal.
+    const actualizada: Cita = { ...cita, ...datos, estado: 'pendiente', motivo: undefined };
     citas = citas.map((c) => (c.id === id ? actualizada : c));
     ajustarCupo(cita.franjaId, 1);
     ajustarCupo(nuevaFranjaId, -1);
@@ -450,14 +804,14 @@ export async function reprogramarCita(
       usuarioId: usuario.id,
       solicitudId: cita.id,
       titulo: 'Asesoría reprogramada',
-      mensaje: `Tu asesoría de ${actualizada.tema} quedó para el ${actualizada.fecha} a las ${actualizada.horaInicio}.`,
+      mensaje: `Tu solicitud de ${actualizada.tema} quedó para el ${fechaLegible(actualizada.fecha)} a las ${actualizada.horaInicio}, pendiente de aprobación.`,
     });
     registrarEvento(
       'cita',
       actualizada.id,
-      'aprobada',
+      'pendiente',
       usuario.nombre,
-      `Reprogramada para el ${actualizada.fecha} a las ${actualizada.horaInicio}.`,
+      `Reprogramada para el ${fechaLegible(actualizada.fecha)} a las ${actualizada.horaInicio}.`,
     );
     // HU-25: se actualiza el mismo registro de la cita (no se duplica).
     registrarUso({
@@ -474,6 +828,120 @@ export async function reprogramarCita(
   return peticion<Cita>(`/asesorias/citas/${id}/reprogramar/`, {
     method: 'POST',
     body: JSON.stringify({ nuevaFranjaId }),
+  });
+}
+
+// ── HU-14 (1.1): aprobar o rechazar una cita pendiente ────────
+
+/**
+ * Quién decide una cita:
+ * - la administración, siempre (ya ve todas las citas);
+ * - el facilitador que la atiende, cuando ya está asignado;
+ * - **cualquier facilitador, si la cita nació sin asignar** (#248): alguien tiene que tomarla,
+ *   y es justo el caso normal de la versión 1.1, donde el facilitador se asigna al aprobar.
+ * No hace falta un rol nuevo: basta el permiso de asesorías.
+ */
+function puedeDecidirCita(usuario: Usuario, cita: Cita): boolean {
+  if (usuario.rolesPersonal.includes('administrador')) return true;
+  if (cita.facilitadorId != null) return cita.facilitadorId === usuario.id;
+  return tienePermiso(usuario, 'asesorias');
+}
+
+/**
+ * Cita pendiente que el usuario puede aprobar o rechazar. El permiso se comprueba antes que
+ * el estado: quien no puede decidir recibe 403 aunque la cita ya no esté pendiente, así no
+ * averigua el estado de una cita ajena.
+ */
+function citaDecidible(usuario: Usuario, id: string): Cita {
+  const cita = citas.find((actual) => actual.id === id);
+  if (!cita) {
+    throw new ErrorApi(404, 'La cita no existe.');
+  }
+  if (!puedeDecidirCita(usuario, cita)) {
+    throw new ErrorApi(403, 'Solo el facilitador de la cita o la administración pueden decidirla.');
+  }
+  if (cita.estado !== 'pendiente') {
+    throw new ErrorApi(400, 'Esta cita ya no está pendiente de aprobación.');
+  }
+  return cita;
+}
+
+/**
+ * Aprueba una cita pendiente (CA2). Avisa a la persona y deja el rastro de siempre:
+ * notificación, evento del historial y registro de uso.
+ */
+export async function aprobarCita(usuario: Usuario, id: string): Promise<Cita> {
+  if (USAR_MOCKS) {
+    const cita = citaDecidible(usuario, id);
+    const aprobada: Cita = { ...cita, estado: 'aprobada', motivo: undefined };
+    citas = citas.map((actual) => (actual.id === id ? aprobada : actual));
+    crearNotificacion({
+      usuarioId: cita.solicitanteId,
+      solicitudId: cita.id,
+      titulo: 'Asesoría aprobada',
+      mensaje: `Tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)} a las ${cita.horaInicio} quedó aprobada.`,
+    });
+    registrarEvento('cita', cita.id, 'aprobada', usuario.nombre, 'Asesoría aprobada.');
+    registrarUso({
+      id: `uso-cita-${cita.id}`,
+      servicio: 'asesorias',
+      finalidad: cita.tema,
+      tematica: cita.tema,
+      // #307: la primera respuesta del personal cuenta para el tiempo de respuesta.
+      respondida: true,
+      fecha: cita.fecha,
+      modalidad: cita.modalidad,
+      estado: 'pendiente',
+      ...datosDeSolicitante(cita.solicitanteId),
+    });
+    return simularRed({ ...aprobada });
+  }
+  return peticion<Cita>(`/asesorias/citas/${id}/aprobar/`, { method: 'POST' });
+}
+
+/**
+ * Rechaza una cita pendiente con un motivo obligatorio (CA3). El cupo vuelve a quedar libre
+ * y la persona ve el motivo en el detalle.
+ */
+export async function rechazarCita(usuario: Usuario, id: string, motivo: string): Promise<Cita> {
+  if (USAR_MOCKS) {
+    // Primero quién puede decidir y si sigue pendiente: un rechazo sin permiso es 403 aunque
+    // el motivo falte, para no revelar el estado de una cita ajena.
+    const cita = citaDecidible(usuario, id);
+    const texto = motivo?.trim() ?? '';
+    if (!texto) {
+      throw new ErrorApi(400, 'El motivo del rechazo es obligatorio.');
+    }
+    if (texto.length > 200) {
+      throw new ErrorApi(400, 'Máximo 200 caracteres.');
+    }
+    const rechazada: Cita = { ...cita, estado: 'rechazada', motivo: texto };
+    citas = citas.map((actual) => (actual.id === id ? rechazada : actual));
+    ajustarCupo(cita.franjaId, 1);
+    crearNotificacion({
+      usuarioId: cita.solicitanteId,
+      solicitudId: cita.id,
+      titulo: 'Asesoría rechazada',
+      mensaje: `Tu asesoría de ${cita.tema} del ${fechaLegible(cita.fecha)} a las ${cita.horaInicio} no se pudo agendar: ${texto}`,
+    });
+    registrarEvento('cita', cita.id, 'rechazada', usuario.nombre, texto);
+    registrarUso({
+      id: `uso-cita-${cita.id}`,
+      servicio: 'asesorias',
+      finalidad: cita.tema,
+      tematica: cita.tema,
+      // #307: la primera respuesta del personal cuenta para el tiempo de respuesta.
+      respondida: true,
+      fecha: cita.fecha,
+      modalidad: cita.modalidad,
+      estado: 'cancelada',
+      ...datosDeSolicitante(cita.solicitanteId),
+    });
+    return simularRed({ ...rechazada });
+  }
+  return peticion<Cita>(`/asesorias/citas/${id}/rechazar/`, {
+    method: 'POST',
+    body: JSON.stringify({ motivo }),
   });
 }
 
@@ -498,15 +966,16 @@ function aCitaAgenda(cita: Cita): CitaAgenda {
 }
 
 /**
- * Cita activa del facilitador que ya terminó, para registrar lo que pasó. Una cita de otro
- * facilitador responde como si no existiera.
+ * Cita activa del facilitador que ya terminó, para registrar lo que pasó. Solo una cita
+ * aprobada se atiende: una pendiente todavía no se aprobó y una rechazada no se da.
+ * Una cita de otro facilitador responde como si no existiera.
  */
 function citaAtendible(usuarioId: string, citaId: string, accion: string): Cita {
   const cita = citas.find((c) => c.id === citaId && c.facilitadorId === usuarioId);
   if (!cita) {
     throw new ErrorApi(404, 'La cita no existe.');
   }
-  if (!ESTADOS_ACTIVOS.includes(cita.estado)) {
+  if (cita.estado !== 'aprobada') {
     throw new ErrorApi(400, 'Esta cita ya no se puede atender.');
   }
   if (new Date(`${cita.fecha}T${cita.horaFin}:00`) > new Date()) {
@@ -533,7 +1002,10 @@ export function obtenerAgenda(
       (cita) =>
         cita.fecha >= desde &&
         cita.fecha <= hasta &&
-        (facilitadorId === 'todas' || cita.facilitadorId === facilitadorId),
+        (facilitadorId === 'todas' ||
+          cita.facilitadorId === facilitadorId ||
+          // Las pendientes sin asignar las ve todo el personal: alguien tiene que aprobarlas.
+          (cita.facilitadorId == null && cita.estado === 'pendiente')),
     );
     return simularRed(ordenarPorFecha(lista).map(aCitaAgenda));
   }
@@ -569,6 +1041,14 @@ export async function registrarResultado(
       estado: 'completada',
       ...datosDeSolicitante(actualizada.solicitanteId),
     });
+    // #254: invita a calificar. Solo aquí: una inasistencia no se califica. citaAtendible()
+    // exige una cita aprobada, así que una ya realizada no vuelve a invitar.
+    crearNotificacion({
+      usuarioId: actualizada.solicitanteId,
+      solicitudId: actualizada.id,
+      titulo: '¿Cómo te pareció tu asesoría?',
+      mensaje: MENSAJE_INVITACION_CALIFICAR,
+    });
     return simularRed(aCitaAgenda(actualizada));
   }
   return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/resultado/`, {
@@ -600,6 +1080,65 @@ export async function registrarInasistencia(usuario: Usuario, citaId: string): P
     return simularRed(aCitaAgenda(actualizada));
   }
   return peticion<CitaAgenda>(`/asesorias/citas/${citaId}/inasistencia/`, { method: 'POST' });
+}
+
+// ── Versión 1.1: calificación del servicio (#254) ─────────────────────────
+
+/**
+ * La persona califica su asesoría realizada, una sola vez (CA1): puntaje de 1 a 5 y comentario
+ * opcional. 404 si no existe, 403 si no es suya y 400 si no está realizada (CA2), si no asistió
+ * o si ya la calificó. Deja el evento en el historial (HU-08) y el puntaje en el mismo registro
+ * de uso (HU-25) para el promedio de HU-26 (CA3).
+ */
+export async function calificarCita(
+  usuario: Usuario,
+  id: string,
+  datos: DatosCalificacion,
+): Promise<Cita> {
+  if (!USAR_MOCKS) {
+    // Ruta provisional: confirmar con Backend. Quien califica sale del token.
+    return peticion<Cita>(`/solicitudes/cita/${id}/calificacion/`, {
+      method: 'POST',
+      body: JSON.stringify(datos),
+    });
+  }
+
+  const cita = citas.find((actual) => actual.id === id);
+  if (!cita) {
+    throw new ErrorApi(404, 'La asesoría no existe.');
+  }
+  if (cita.solicitanteId !== usuario.id) {
+    throw new ErrorApi(403, 'Solo quien pidió la asesoría puede calificarla.');
+  }
+  if (cita.estado !== 'realizada') {
+    throw new ErrorApi(400, 'Solo puedes calificar una asesoría realizada.');
+  }
+  if (cita.asistio === false) {
+    throw new ErrorApi(400, 'No puedes calificar una asesoría a la que no asististe.');
+  }
+  if (cita.calificacion) {
+    throw new ErrorApi(400, 'Ya calificaste esta asesoría.');
+  }
+  const problema = problemaCalificacion(datos);
+  if (problema) {
+    throw new ErrorApi(400, problema);
+  }
+
+  const calificacion = crearCalificacion(datos);
+  const actualizada: Cita = { ...cita, calificacion };
+  citas = citas.map((actual) => (actual.id === id ? actualizada : actual));
+  registrarEvento('cita', id, 'realizada', usuario.nombre, notaCalificacion(calificacion.puntaje));
+  registrarUso({
+    id: `uso-cita-${id}`,
+    servicio: 'asesorias',
+    finalidad: actualizada.tema,
+    fecha: actualizada.fecha,
+    modalidad: actualizada.modalidad,
+    estado: 'completada',
+    calificacion: calificacion.puntaje,
+    ...datosDeSolicitante(actualizada.solicitanteId),
+  });
+  return simularRed({ ...actualizada, calificacion: { ...calificacion } });
 }
 
 

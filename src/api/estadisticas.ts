@@ -17,6 +17,7 @@ import {
 } from '@/types';
 
 import { hoyISO } from '@/utils/fechas';
+import { periodoDe } from '@/utils/estadisticas';
 
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
@@ -41,6 +42,17 @@ export type OperacionUso = {
   fechaFin?: string;
   modalidad?: ModalidadUso;
   estado?: EstadoUso;
+  /** Calificación de la calidad, de 1 a 5, si la persona la dejó (versión 1.1). */
+  calificacion?: number;
+  /** Tema de la asesoría o línea de formación (#307). */
+  tematica?: string;
+  /** Solo tablets: horas de la entrega a la devolución (#307). */
+  duracionHoras?: number;
+  /**
+   * true cuando esta operación es la respuesta del personal (aprobar, rechazar o proponer otra
+   * fecha): guarda la hora de la primera respuesta para el tiempo de respuesta (#307).
+   */
+  respondida?: boolean;
 };
 
 /** Hoy en la hora del celular, 'AAAA-MM-DD'. */
@@ -74,6 +86,26 @@ export function registrarUso(operacion: OperacionUso): RegistroUso {
     fechaFin: operacion.fechaFin ?? anterior?.fechaFin,
     modalidad: operacion.modalidad ?? anterior?.modalidad ?? NO_INFORMADO,
     estado: operacion.estado ?? 'completada',
+    facultad: usuario?.facultad?.trim() || anterior?.facultad || NO_INFORMADO,
+    sede: usuario?.sede?.trim() || anterior?.sede || NO_INFORMADO,
+    semestre:
+      (usuario?.semestre != null ? String(usuario.semestre) : '') ||
+      anterior?.semestre ||
+      NO_INFORMADO,
+    calificacion: operacion.calificacion ?? anterior?.calificacion,
+    // #307: la temática se conserva; la hora de la solicitud es la del primer registro, y la de
+    // la respuesta, la de la primera vez que el personal respondió (reprogramar no la cambia).
+    // Si el primer registro ya es la respuesta (una solicitud de los datos de prueba que no se
+    // registró al pedirse), no se sabe cuándo se pidió: no entra en el tiempo de respuesta.
+    tematica: operacion.tematica?.trim() || anterior?.tematica,
+    duracionHoras: operacion.duracionHoras ?? anterior?.duracionHoras,
+    solicitadaEl: anterior
+      ? anterior.solicitadaEl
+      : operacion.respondida
+        ? undefined
+        : new Date().toISOString(),
+    respondidaEl:
+      anterior?.respondidaEl ?? (operacion.respondida ? new Date().toISOString() : undefined),
   };
   registros = anterior
     ? registros.map((actual) => (actual.id === id ? registro : actual))
@@ -100,6 +132,21 @@ export function filtrarRegistros(
       return false;
     }
     if (filtros.programa && filtros.programa !== 'todos' && registro.programa !== filtros.programa) {
+      return false;
+    }
+    // Versión 1.1 (#259): los tres cruces nuevos.
+    if (filtros.facultad && filtros.facultad !== 'todos' && registro.facultad !== filtros.facultad) {
+      return false;
+    }
+    if (filtros.sede && filtros.sede !== 'todos' && registro.sede !== filtros.sede) {
+      return false;
+    }
+    if (filtros.periodo && filtros.periodo !== 'todos' && periodoDe(registro.fecha) !== filtros.periodo) {
+      return false;
+    }
+    // @deprecated: el semestre del estudiante ya no es un filtro (#278); se sigue aceptando para
+    // no romper a quien lo use, pero el cruce de tiempo es `periodo`.
+    if (filtros.semestre && filtros.semestre !== 'todos' && registro.semestre !== filtros.semestre) {
       return false;
     }
     return true;

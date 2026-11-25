@@ -26,11 +26,12 @@
 - [¿Para quién es?](#-para-quién-es)
 - [Funcionalidades](#-funcionalidades)
 - [Planificación](#-planificación)
-- [Estado del Release 1.0](#-estado-del-release-10)
+- [Estado del Release 1.1](#-estado-del-release-11)
 - [Arquitectura](#️-arquitectura)
 - [Stack tecnológico](#️-stack-tecnológico)
 - [Cómo empezar](#-cómo-empezar)
 - [Estructura del proyecto](#-estructura-del-proyecto)
+- [Documentación](#-documentación)
 - [Cómo trabajamos](#-cómo-trabajamos)
 - [Equipo](#-equipo)
 
@@ -105,7 +106,7 @@ Visitantes y usuarios con cuenta ven la misma app; iniciar sesión desbloquea lo
 | Inicio de sesión institucional y perfil | 05, 06 | — | ✅ | 1 |
 | Disponibilidad de espacios (vista semanal y mensual) | 17 | ✅ | ✅ | 2 |
 | Solicitud de reserva de espacios | 18 | — | ✅ | 2 |
-| Asesorías: agendar, cancelar y reprogramar | 14 | — | ✅ | 3 |
+| Asesorías: agendar, cancelar y reprogramar; la cita queda pendiente hasta que el personal la aprueba | 14 | — | ✅ | 3 |
 | Disponibilidad y solicitud de tablets | 22 | — | ✅ | 3 |
 | Mis solicitudes: estado e historial en un solo lugar | 08 | — | ✅ | 4 |
 | Solicitud de capacitaciones | 10 | — | ✅ | 4 |
@@ -143,6 +144,7 @@ Todo lo que la administración y los facilitadores hacen en el portal web tambi�
 |---|---|:---:|
 | Vistas según el rol del usuario y asignación de roles | 07 | 1 |
 | Notificaciones: el backend envía el correo y la app suma notificaciones push | 27 | 2 |
+| Tratamiento de datos personales: la política de la UPC (Acuerdo 019 de 2020) y la autorización en el primer ingreso | Ley 1581 de 2012 | 1.1 |
 
 El control de préstamos vencidos (HU-24) y el registro estadístico (HU-25) son procesos automáticos del backend; la app muestra sus resultados.
 
@@ -235,45 +237,45 @@ Prioridad: 1 = alta, 2 = media, 3 = baja. La columna *En la app* indica en qué 
 
 ---
 
-## ✅ Estado del Release 1.0
+## ✅ Estado del Release 1.1
 
-La versión **1.0.0** cierra la iteración 4 (5 de noviembre de 2026).
+La versión **1.1.0** (26 de noviembre de 2026) cierra el proyecto con lo que pidió la bibliotecóloga en la reunión del 5 de noviembre. **Historias del plan: 28 de 28**, todas con datos de prueba, más las funciones plus.
 
-**Historias del plan: 28 de 28.** Todas están en la app con datos de prueba. HU-24 y HU-25 son procesos del backend: mientras llega, los datos de prueba hacen su parte (marcar los préstamos vencidos y registrar cada uso).
+**Lo nuevo de la 1.1:**
 
-**Funciones plus:**
+| Función | Issues |
+|---|---|
+| 📝 Registro de cuentas, con sede, facultad y programa de listas, y la autorización de datos (Acuerdo 019) guardada en la cuenta | #203, #225, #294 |
+| 🧾 Solicitudes por pasos (Solicitud · Tus datos · Términos), con los campos de los formatos de la biblioteca | #251 |
+| 🗓️ Asesorías con fecha y hora que aprueba la biblioteca; la administración también las atiende | #216, #248 |
+| ⭐ Calificar asesorías y capacitaciones | #254 |
+| 📊 Dashboard del personal y estadísticas por pestañas, con CSV y PDF | #306, #307 |
+| 📱 Tablet asignada al entregarla, por lista o escáner; se libera si no se recoge en 1 hora | #310 |
+| ✍️ Constancia del préstamo con firma electrónica en la pantalla (o en papel), en PDF con código de verificación | #253, #310 |
+| 📚 Guías en PDF, con enlace o escritas, que se leen sin conexión | #297, #303 |
+| 🖼️ Fotos de Inicio y permisos adicionales por persona | #290, #296 |
+| 🗂️ Gestión → Portal en tres grupos (Publicaciones, Servicios con Espacios, Configuración) | #313 |
+| 🖊️ Firma del personal registrada una vez en **Perfil → Mi firma**, que sale sola en la constancia; la firma se hace en una ventana; textos legales en ventanas y ayudas en el registro | #317 |
+| 🐣 Tutorial de Upecito en el primer ingreso | #261, #267 |
 
-| Función | HU | Estado |
-|---|:---:|---|
-| 📴 Guías sin conexión | HU-29 | ✅ Entregada |
-| 📅 Mi calendario con recordatorios | HU-30 | ✅ Entregada |
-| 🏷️ Préstamos con código de barras | HU-31 | ✅ Entregada. Falta la aprobación para etiquetar las tablets; mientras tanto, el código se busca a mano |
-| 📷 Control de asistencia con QR (facilitador) | HU-33 | ✅ Entregada |
-| 📷 Registro de asistencia con QR (comunidad) | HU-32 | 🟡 Los datos están listos; la pantalla queda para la versión 1.1 (#171) |
-
-**También en esta versión:** **Bibliotecas en línea** (antes "Recursos en línea"), con búsqueda por nombre, tema o área (#201); el logo de BiblioUPC en el encabezado y el de la UPC en el login (#202), y fotos reales en el carrusel de Inicio (#164).
+Además, se quitó el servicio «Préstamo de computadores», que no llegó a implementarse (#317).
 
 ### Limitaciones conocidas
 
-- **Datos de prueba:** la app aún no está conectada al Backend en Django ni a los sistemas de la Universidad. Lo que se crea se borra al cerrar la app, y las fechas de prueba se calculan a partir del día en que se abre.
-- **Datos de la biblioteca de ejemplo:** espacios, tablets, temas de asesoría, líneas de formación, horarios y festivos, hasta que la biblioteca confirme los reales.
+- **Datos de prueba:** la app aún no está conectada al Backend en Django. Lo que se crea se borra al cerrar la app. Lo que la app necesita del Backend está en el documento «App móvil y Backend: campos pendientes y archivos» y en [docs/integracion-backend.md](docs/integracion-backend.md).
+- **Datos de la biblioteca de ejemplo:** espacios, tablets, temas, líneas y horarios, hasta que la biblioteca confirme los reales.
 - **Solo Android:** ver [¿Y en iPhone?](#y-en-iphone).
-- **Sin pantalla de registro:** se entra con los usuarios de prueba. Cómo se crean las cuentas se define con el Backend (#203).
-- **Repositorio institucional por HTTP** y sin disponibilidad de ejemplares de Koha: dependen del área de sistemas (#165).
+- **Ejemplares de Koha:** la disponibilidad se ve en la ficha del libro; falta el acceso a la API de Koha (#165).
 - **Notificaciones:** son recordatorios locales del celular; el push desde el servidor llega con el Backend.
 
-### Lo que sigue (versión 1.1)
+### Lo que sigue
 
 | Issue | Qué |
 |---|---|
-| #161 | Paginación de 10 en 10 en las listas largas |
-| #171 | HU-32: registrar la asistencia escaneando el QR |
-| #203 | Pantalla de registro provisional |
-| #205 | Días no hábiles iguales en todos los calendarios |
-| #163 | Préstamo de tablet por varias horas |
-| #165 | Repositorio por HTTPS y ejemplares de Koha *(bloqueado)* |
-
-Después: la conexión con el Backend en Django, el push desde el servidor, iOS, el tutorial del primer ingreso y el ingreso con huella.
+| #231 | Conectar la asistencia con QR con la del Backend (sus rutas ya existen) |
+| #311 | Ingreso de Koha para el personal |
+| #298 | Build de desarrollo (para lo que Expo Go no trae) |
+| — | Conectar la app con el Backend, módulo por módulo: el inventario y el plan están en [docs/integracion-backend.md](docs/integracion-backend.md) |
 
 ---
 
@@ -348,7 +350,7 @@ Escanea el código QR de la terminal con Expo Go. El celular y el computador deb
 
 Para usar la app sin Expo Go ni computador (por ejemplo, en una demo), instala el APK del último build:
 
-1. Descarga en el celular `biblioupc-v1.0.0.apk` desde el [Release v1.0.0](https://github.com/Marysa2006/biblioteca-upc-movil/releases/tag/v1.0.0). Para un build más reciente, abre su enlace (está en la descripción del PR o en [expo.dev](https://expo.dev/accounts/biblioupc/projects/biblioteca-upc-movil/builds)) o escanea su código QR, y toca **Install**.
+1. Descarga en el celular `biblioupc-v1.1.0.apk` desde el [Release v1.1.0](https://github.com/Marysa2006/biblioteca-upc-movil/releases/tag/v1.1.0). Para un build más reciente, abre su enlace (está en la descripción del PR o en [expo.dev](https://expo.dev/accounts/biblioupc/projects/biblioteca-upc-movil/builds)) o escanea su código QR, y toca **Install**.
 2. Abre el `.apk` descargado. Si Android lo pide, permite instalar apps de esa fuente; si Play Protect avisa de una app no reconocida, elige **Más detalles → Instalar de todas formas**.
 
 El APK trae los datos de prueba: se entra con los mismos usuarios de abajo, y lo que se crea se borra al cerrar la app. Se instala junto a Expo Go, sin reemplazarla.
@@ -391,7 +393,7 @@ Mientras el Backend publica el inicio de sesión institucional, la app usa datos
 
 Para probar el rechazo de una cuenta inactiva (HU-05), entra con `pedro.gomez`.
 
-**Roles del personal (provisionales).** Un usuario tiene un **tipo** (estudiante, docente, administrativo, egresado o visitante) y una lista de **roles del personal**, vacía para la comunidad. Sus permisos son la suma de los de sus roles:
+**Roles del personal (provisionales).** Un usuario tiene un **tipo** (estudiante, docente, administrativo o egresado; `visitante` es el valor cuando no hay sesión) y una lista de **roles del personal**, vacía para la comunidad. Sus permisos son la suma de los de sus roles:
 
 | Rol | Identificador | Permisos |
 |---|---|---|
@@ -449,6 +451,18 @@ biblioteca-upc-movil/
 | Datos de prueba | `src/api/mocks/servicios.ts` | Integración |
 
 Con `EXPO_PUBLIC_USAR_MOCKS=true` en el `.env`, la app usa los datos de prueba. Cuando el Backend publique un endpoint, integración lo conecta en la función de API y la pantalla no cambia.
+
+---
+
+## 📚 Documentación
+
+| Documento | Para qué |
+|---|---|
+| [Manual de usuario](docs/manual-usuario.md) | Cómo se usa la app: qué hace cada pantalla, con capturas. Es lo que se entrega a la biblioteca. |
+| [Guía técnica](docs/guia-tecnica.md) | Cómo está hecha la app: arquitectura, datos, programación, especificaciones de diseño, cómo generar el APK y cómo publicar una versión. Para quien desarrolle, mantenga o integre. |
+| [Integración con el Backend](docs/integracion-backend.md) | Los 103 endpoints que usa la app frente al Backend actual (`develop` `53d1350`, esquema 2.0.1): qué existe, qué cambia y qué falta, campo por campo, y el plan para apagar los datos de prueba. Para quien conecte la app con el servidor. |
+| [Paleta de colores](docs/paleta-colores.md) | Los colores y la tipografía exactos, tomados del manual de identidad de la UPC. |
+| [Spike de cámara](docs/spike-camara.md) | La prueba del escáner de códigos (HU-31 y HU-32). |
 
 ---
 

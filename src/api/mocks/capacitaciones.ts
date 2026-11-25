@@ -1,14 +1,13 @@
 /**
  * DATOS DE PRUEBA de las capacitaciones (HU-09, HU-10 y HU-12).
  *
- * PROVISIONAL: los nombres y las descripciones son los servicios de formación que ofrece la
- * biblioteca; las fechas, los grupos y los participantes son de ejemplo y se esperan por
- * confirmar con la biblioteca (sección 2 del documento de la iteración 4).
+ * Las líneas de formación son las que confirmó la biblioteca (15 de noviembre de 2026); las
+ * fechas, los grupos y los participantes son de ejemplo.
  *
- * Hay una línea inactiva (`lin-zotero`, no debe ofrecerse) y una con solicitudes activas
- * (`lin-apa`, para la advertencia al desactivar de HU-09, CA3).
+ * `lin-apa` tiene solicitudes activas, para la advertencia al desactivar de HU-09 (CA3). Para
+ * probar una línea inactiva, se desactiva una desde Gestión → Portal.
  */
-import type { LineaFormacion, SolicitudCapacitacion } from '@/types';
+import type { DatosSolicitante, LineaFormacion, SolicitudCapacitacion } from '@/types';
 import { sumarDias } from '@/utils/calendario';
 import { fechaLegible } from '@/utils/fechas';
 
@@ -36,30 +35,31 @@ const MOTIVO_CAP_3 = `El facilitador no puede el ${fechaLegible(FECHAS_CAPACITAC
 /** El motivo de la nueva fecha de cap-3; el historial lo repite. */
 export const MOTIVOS_CAPACITACIONES = { 'cap-3': MOTIVO_CAP_3 };
 
+/** Las cuatro líneas que confirmó la biblioteca (15 de noviembre de 2026), para grupos de 20 a 25. */
 export const LINEAS_FORMACION: LineaFormacion[] = [
   {
     id: 'lin-apa',
-    nombre: 'Normas APA 7',
-    descripcion: 'Citas, referencias y formato del trabajo de grado.',
+    nombre: 'Normas APA',
+    descripcion: 'Capacitación grupal, de 20 a 25 personas.',
     activa: true,
   },
   {
     id: 'lin-busqueda',
-    nombre: 'Búsqueda de información',
-    descripcion: 'Catálogo, bases de datos y evaluación de fuentes.',
+    nombre: 'Búsqueda de información de impacto',
+    descripcion: 'Apoyo a la investigación; grupal, de 20 a 25 personas.',
     activa: true,
   },
   {
-    id: 'lin-mendeley',
-    nombre: 'Mendeley',
-    descripcion: 'Organiza las fuentes y genera la bibliografía.',
+    id: 'lin-gestores',
+    nombre: 'Gestores bibliográficos',
+    descripcion: 'Capacitación grupal, de 20 a 25 personas.',
     activa: true,
   },
   {
-    id: 'lin-zotero',
-    nombre: 'Zotero',
-    descripcion: 'Línea de prueba inactiva: no debe ofrecerse para solicitar.',
-    activa: false,
+    id: 'lin-repositorio',
+    nombre: 'Repositorio institucional',
+    descripcion: 'Pasos para depositar los trabajos; grupal, de 20 a 25 personas.',
+    activa: true,
   },
 ];
 
@@ -67,11 +67,37 @@ export const LINEAS_FORMACION: LineaFormacion[] = [
  * Solicitudes de Laura (u-estudiante) y Carlos (u-docente), una por cada estado, para probar
  * la bandeja de HU-12, «Mis solicitudes» (HU-08) y la respuesta a la nueva fecha (CA4).
  */
+/**
+ * Datos del solicitante copiados en la solicitud (versión 1.1, #224). Las solicitudes viejas
+ * no los tienen y siguen funcionando.
+ */
+const DATOS_LAURA: DatosSolicitante = {
+  tipo: 'estudiante',
+  nombreCompleto: 'Laura Pérez',
+  identificacion: '1065123456',
+  correo: 'laura.perez@unicesar.edu.co',
+  celular: '3001234567',
+  nivel: 'pregrado',
+  facultad: 'Ciencias de la Salud',
+  programa: 'Enfermería',
+  semestre: 8,
+};
+
+const DATOS_CARLOS: DatosSolicitante = {
+  tipo: 'docente',
+  nombreCompleto: 'Carlos Ramírez',
+  identificacion: '12564321',
+  correo: 'carlos.ramirez@unicesar.edu.co',
+  celular: '3109876543',
+  facultad: 'Ingenierías y Tecnologías',
+  programa: 'Ingeniería de Sistemas',
+};
+
 export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
   {
     id: 'cap-1',
     lineaId: 'lin-apa',
-    linea: 'Normas APA 7',
+    linea: 'Normas APA',
     solicitante: {
       id: 'u-estudiante',
       nombre: 'Laura Pérez',
@@ -86,11 +112,15 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     participantes: 25,
     estado: 'pendiente',
     creada: enviada(7, '09:12'),
+    datosSolicitante: DATOS_LAURA,
+    terminosAceptados: true,
+    asignatura: 'Seminario de investigación',
+    novedades: 'Algunos estudiantes no tienen portátil.',
   },
   {
     id: 'cap-2',
     lineaId: 'lin-busqueda',
-    linea: 'Búsqueda de información',
+    linea: 'Búsqueda de información de impacto',
     solicitante: {
       id: 'u-docente',
       nombre: 'Carlos Ramírez',
@@ -102,16 +132,19 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     hora: '14:00',
     objetivo: 'Capacitar al grupo en el uso de bases de datos para el proyecto integrador.',
     grupo: 'Ingeniería de Sistemas · Proyecto integrador',
-    participantes: 30,
+    participantes: 24,
     estado: 'aprobada',
     responsableId: 'u-facilitador',
     responsable: 'Julián Mendoza',
     creada: enviada(7, '10:05'),
+    datosSolicitante: DATOS_CARLOS,
+    terminosAceptados: true,
+    asignatura: 'Proyecto integrador',
   },
   {
     id: 'cap-3',
     lineaId: 'lin-apa',
-    linea: 'Normas APA 7',
+    linea: 'Normas APA',
     solicitante: {
       id: 'u-estudiante',
       nombre: 'Laura Pérez',
@@ -131,11 +164,28 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     responsable: 'Julián Mendoza',
     motivo: MOTIVO_CAP_3,
     creada: enviada(6, '08:20'),
+    datosSolicitante: DATOS_LAURA,
+    terminosAceptados: true,
+    // Un nombre por participante (12).
+    nombresParticipantes: [
+      'Laura Pérez',
+      'Andrés Mejía',
+      'Valentina Ríos',
+      'Camilo Ortega',
+      'Daniela Suárez',
+      'Jhonatan Peña',
+      'María José Cuello',
+      'Sebastián Daza',
+      'Natalia Fuentes',
+      'Kevin Ochoa',
+      'Luisa Fernanda Arias',
+      'Óscar Maestre',
+    ],
   },
   {
     id: 'cap-4',
-    lineaId: 'lin-mendeley',
-    linea: 'Mendeley',
+    lineaId: 'lin-gestores',
+    linea: 'Gestores bibliográficos',
     solicitante: {
       id: 'u-docente',
       nombre: 'Carlos Ramírez',
@@ -147,7 +197,7 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
     hora: '16:00',
     objetivo: 'Que los estudiantes organicen las fuentes del anteproyecto.',
     grupo: 'Ingeniería de Sistemas · metodología',
-    participantes: 40,
+    participantes: 22,
     estado: 'rechazada',
     motivo: 'No hay facilitador disponible esa semana.',
     creada: enviada(8, '11:40'),
@@ -155,7 +205,7 @@ export const SOLICITUDES_CAPACITACION: SolicitudCapacitacion[] = [
   {
     id: 'cap-5',
     lineaId: 'lin-busqueda',
-    linea: 'Búsqueda de información',
+    linea: 'Búsqueda de información de impacto',
     solicitante: {
       id: 'u-estudiante',
       nombre: 'Laura Pérez',

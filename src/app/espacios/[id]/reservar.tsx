@@ -1,9 +1,11 @@
 /**
  * Solicitar la reserva de un espacio (HU-18). Pantalla apilada; se llega desde el calendario
  * de HU-17 al tocar una franja disponible, con la fecha y la hora en la ruta.
- * Reservar pide cuenta: sin sesión, invita a iniciarla y vuelve aquí después.
+ * Reservar pide cuenta: sin sesión, invita a iniciarla y vuelve aquí después. Con sesión, solo
+ * docentes y administrativos reservan (#240): a los demás se les explica en lugar del formulario.
+ * Desde la 1.1 (#251), por pasos: la solicitud, tus datos (prellenados) y los términos.
  *
- * Patrón de datos: useEspacios() / useParametros() / useSolicitarReserva() (src/hooks)
+ * Patrón de datos: useEspacios() / useParametros() / usePerfil() / useSolicitarReserva() (src/hooks)
  * → src/api → mock o API.
  */
 import { router, useLocalSearchParams } from 'expo-router';
@@ -12,11 +14,14 @@ import { Button, Icon, Text } from 'react-native-paper';
 
 import { FormularioSolicitudReserva } from '@/components/reservas/FormularioSolicitudReserva';
 import { InvitarSesion } from '@/components/reservas/InvitarSesion';
+import { ServicioNoPermitido } from '@/components/reservas/ServicioNoPermitido';
 import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
 import { useEspacios } from '@/hooks/useEspacios';
 import { useParametros } from '@/hooks/useParametros';
+import { usePerfil } from '@/hooks/usePerfil';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio } from '@/theme';
+import { MENSAJE_NO_RESERVA_ESPACIOS, puedeReservarEspacios } from '@/utils/roles';
 
 const TITULO = 'Solicitar reserva';
 
@@ -25,6 +30,8 @@ export default function ReservarEspacio() {
   const { usuario } = useRol();
   const espacios = useEspacios();
   const parametros = useParametros();
+  // Prellena el celular (#224). Sin sesión no consulta; si falla, no bloquea: se escribe.
+  const perfil = usePerfil();
   const lugar = espacios.data?.find((e) => e.id === id);
 
   const reintentar = () => {
@@ -33,7 +40,7 @@ export default function ReservarEspacio() {
   };
 
   let contenido;
-  if (espacios.isPending || parametros.isPending) {
+  if (espacios.isPending || parametros.isPending || (usuario != null && perfil.isPending)) {
     contenido = <EstadoCarga mensaje="Cargando el espacio…" />;
   } else if (espacios.isError || parametros.isError) {
     contenido = <EstadoError mensaje="No pudimos cargar el espacio." onReintentar={reintentar} />;
@@ -46,11 +53,15 @@ export default function ReservarEspacio() {
         etiqueta="Iniciar sesión para solicitar la reserva"
       />
     );
+  } else if (!puedeReservarEspacios(usuario.tipo)) {
+    contenido = <ServicioNoPermitido mensaje={MENSAJE_NO_RESERVA_ESPACIOS} tipo={usuario.tipo} />;
   } else {
     contenido = (
       <FormularioSolicitudReserva
         espacio={lugar}
         parametros={parametros.data}
+        usuario={usuario}
+        perfil={perfil.data}
         fecha={fecha}
         hora={hora}
       />
@@ -58,7 +69,7 @@ export default function ReservarEspacio() {
   }
 
   const subtitulo = lugar
-    ? `${lugar.nombre} · hasta ${lugar.capacidad} personas · ${lugar.horario}`
+    ? `${lugar.nombre} · unas ${lugar.capacidad} personas · ${lugar.horario}`
     : undefined;
 
   return (

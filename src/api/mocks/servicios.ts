@@ -9,7 +9,7 @@ export const SERVICIOS: Servicio[] = [
     id: 'asesorias',
     nombre: 'Asesorías especializadas',
     descripcion:
-      'Asesoría personalizada o grupal en Normas APA 7, el gestor bibliográfico Mendeley y búsqueda especializada de información.',
+      'Asesoría para una persona o un grupo pequeño en búsqueda en bases de datos, búsqueda de información de impacto, gestores bibliográficos, Normas APA y Turnitin, y repositorio institucional.',
     categoria: 'asesorias',
     publico: 'Estudiantes y docentes',
     formaSolicitud: 'Agenda tu cita en la app con tu cuenta institucional',
@@ -21,7 +21,7 @@ export const SERVICIOS: Servicio[] = [
     id: 'capacitaciones',
     nombre: 'Capacitaciones',
     descripcion:
-      'Formación para grupos y asignaturas en búsqueda de información, evaluación de fuentes, creación de contenidos y seguridad digital.',
+      'Formación para grupos de 20 a 25 personas en Normas APA, búsqueda de información de impacto, gestores bibliográficos y repositorio institucional.',
     categoria: 'capacitaciones',
     publico: 'Docentes y grupos de estudiantes',
     formaSolicitud: 'Solicítala en la app indicando grupo, fecha y modalidad',
@@ -66,21 +66,11 @@ export const SERVICIOS: Servicio[] = [
   {
     id: 'prestamo',
     nombre: 'Préstamo de material bibliográfico',
-    descripcion: 'Consulta y préstamo de libros físicos a través del catálogo de la biblioteca.',
+    descripcion:
+      'Préstamo de libros físicos en el mostrador de la biblioteca. Consulta la disponibilidad en el catálogo (Koha).',
     categoria: 'prestamo',
     publico: 'Comunidad universitaria',
-    formaSolicitud: 'Busca en el catálogo y acércate al mostrador',
-    horario: 'Por confirmar con la biblioteca',
-    requiereCuenta: false,
-    activo: true,
-  },
-  {
-    id: 'hemeroteca',
-    nombre: 'Hemeroteca',
-    descripcion: 'Consulta de revistas y publicaciones periódicas.',
-    categoria: 'prestamo',
-    publico: 'Comunidad universitaria',
-    formaSolicitud: 'Acércate a la hemeroteca',
+    formaSolicitud: 'Consulta el catálogo y solicita el préstamo en el mostrador.',
     horario: 'Por confirmar con la biblioteca',
     requiereCuenta: false,
     activo: true,

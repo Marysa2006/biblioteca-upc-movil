@@ -55,7 +55,7 @@ function deCita(cita: Cita): Compromiso {
     horaFin: cita.horaFin,
     lugar: cita.modalidad === 'virtual' ? 'Virtual' : 'Biblioteca',
     titulo: cita.tema,
-    detalle: `Con ${cita.facilitador}`,
+    detalle: cita.facilitador ? `Con ${cita.facilitador}` : 'Sin facilitador asignado',
   };
 }
 

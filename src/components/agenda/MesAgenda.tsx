@@ -4,7 +4,8 @@
  * oscuro y la Agenda muestra sus citas debajo. Sigue la grilla de VistaMes (HU-17), con la
  * semana de lunes a domingo; los días pasados también se tocan, porque en ellos se registra
  * el resultado (CA3).
- * Las celdas no tienen alto fijo: con letra grande crecen hacia abajo.
+ * Los días sin atención (festivos y días sin horario) se ven grises y lo dicen con texto, como en
+ * MallaSemana (#205). Las celdas no tienen alto fijo: con letra grande crecen hacia abajo.
  */
 import { StyleSheet, View } from 'react-native';
 import { Text, TouchableRipple } from 'react-native-paper';
@@ -26,9 +27,15 @@ type Props = {
   /** Citas de cada día por estado ('AAAA-MM-DD' → conteo). */
   conteo: Map<string, ConteoDia>;
   onElegirDia: (fecha: string) => void;
+  /** Por qué un día no tiene atención, o null; sin parámetros todavía, ningún día se marca. */
+  motivoCerrado?: (fecha: string) => string | null;
 };
 
-export function MesAgenda({ mes, hoy, elegido, conteo, onElegirDia }: Props) {
+export function MesAgenda({ mes, hoy, elegido, conteo, onElegirDia, motivoCerrado = () => null }: Props) {
+  const hayCerrados = grillaMes(mes).some((semana) =>
+    semana.some((fecha) => fecha != null && motivoCerrado(fecha) != null),
+  );
+
   return (
     <View style={estilos.grilla}>
       {/* Las iniciales son visuales: cada día ya dice su nombre al lector de pantalla. */}
@@ -52,11 +59,13 @@ export function MesAgenda({ mes, hoy, elegido, conteo, onElegirDia }: Props) {
             const conCitas = delDia != null && delDia.total > 0;
             const esHoy = fecha === hoy;
             const esElegido = fecha === elegido;
+            const cerrado = motivoCerrado(fecha);
             return (
               <View
                 key={fecha}
                 style={[
                   estilos.celda,
+                  cerrado != null && estilos.celdaCerrada,
                   conCitas && estilos.celdaConCitas,
                   esHoy && estilos.celdaHoy,
                   esElegido && estilos.celdaElegida,
@@ -66,13 +75,14 @@ export function MesAgenda({ mes, hoy, elegido, conteo, onElegirDia }: Props) {
                   onPress={() => onElegirDia(fecha)}
                   accessibilityRole="button"
                   accessibilityState={{ selected: esElegido }}
-                  accessibilityLabel={`${fechaCompleta(fecha)}${esHoy ? ', hoy' : ''}, ${textoConteoDia(delDia).toLowerCase()}. Ver sus citas`}
+                  accessibilityLabel={`${fechaCompleta(fecha)}${esHoy ? ', hoy' : ''}, ${cerrado ? `sin atención: ${cerrado}, ` : ''}${textoConteoDia(delDia).toLowerCase()}. Ver sus citas`}
                 >
                   <View style={estilos.contenido}>
                     <Text
                       variant="bodyMedium"
                       style={[
                         estilos.numero,
+                        cerrado != null && estilos.numeroCerrado,
                         esHoy && estilos.numeroHoy,
                         esElegido && estilos.numeroElegido,
                       ]}
@@ -92,6 +102,12 @@ export function MesAgenda({ mes, hoy, elegido, conteo, onElegirDia }: Props) {
           })}
         </View>
       ))}
+
+      {hayCerrados ? (
+        <Text variant="bodySmall" style={estilos.leyenda}>
+          Los días en gris no tienen atención: festivos o días sin horario de la biblioteca.
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -109,6 +125,7 @@ const estilos = StyleSheet.create({
     borderColor: colores.superficie,
     overflow: 'hidden',
   },
+  celdaCerrada: { backgroundColor: colores.superficieVariante },
   celdaConCitas: { backgroundColor: colores.primarioSuave },
   celdaHoy: { borderColor: colores.primario },
   celdaElegida: { backgroundColor: colores.primarioOscuro, borderColor: colores.primarioOscuro },
@@ -122,4 +139,6 @@ const estilos = StyleSheet.create({
   numero: { color: colores.texto, fontFamily: fuentes.seminegrita },
   numeroHoy: { color: colores.primario, fontFamily: fuentes.negrita },
   numeroElegido: { color: colores.superficie },
+  numeroCerrado: { color: colores.textoSecundario, fontFamily: fuentes.regular },
+  leyenda: { color: colores.textoSecundario },
 });

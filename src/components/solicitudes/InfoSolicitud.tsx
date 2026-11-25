@@ -2,19 +2,25 @@
  * La información de una solicitud en su detalle (HU-08, CA2), según su tipo. Cada sección
  * consulta su propio hook (useMisReservas, useMisCitas, useMisPrestamos o useMisCapacitaciones),
  * que ya trae los datos completos; así no se repite su lógica.
- * - Cita: dentro del plazo (puedeCancelarCita, HU-28) se cancela aquí con confirmación; para
- *   reprogramar, Mis citas de Asesorías.
+ * - Cita: dentro del plazo (puedeCancelarCita, HU-28) se cancela aquí con confirmación o se
+ *   reprograma (solo la fecha y la hora, asesorias/reprogramar/[id], #249). Si el personal cambió
+ *   la fecha al aprobar, se ve también la pedida; la virtual aprobada tiene "Abrir enlace". El
+ *   día de la cita, registrar la asistencia con QR (HU-32).
  * - Capacitación con nueva fecha (HU-12, CA4): se muestra la fecha propuesta y se responde aquí.
  *   Aceptarla la deja Aprobada con esa fecha; "No me sirve" pide confirmación y la deja
  *   Cancelada (responderNuevaFecha). El diálogo recibe todo por props.
+ * - Asesoría o capacitación realizada: «¿Cómo te pareció?» para calificarla una vez (#255).
  */
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
 
+import { BotonEnlaceCita } from '@/components/asesorias/BotonEnlaceCita';
 import { DialogoCancelarCita } from '@/components/asesorias/DialogoCancelarCita';
+import { BotonRegistrarAsistencia } from '@/components/asistencia/BotonRegistrarAsistencia';
 import { DialogoNoMeSirve } from '@/components/capacitaciones/DialogoNoMeSirve';
+import { SeccionCalificacion } from '@/components/solicitudes/SeccionCalificacion';
 import { AvisoError, EstadoCarga, EstadoError } from '@/components/ui';
 import { useCancelarCita, useMisCitas } from '@/hooks/useAsesorias';
 import { useMisCapacitaciones, useResponderNuevaFecha } from '@/hooks/useCapacitaciones';
@@ -23,11 +29,17 @@ import { useMisReservas } from '@/hooks/useReservas';
 import { useMisPrestamos } from '@/hooks/useTablets';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { Cita, ResumenSolicitud, SolicitudCapacitacion } from '@/types';
-import { citaEnCurso, puedeCancelarCita, textoPlazoCancelacion } from '@/utils/asesorias';
+import {
+  citaEnCurso,
+  fechaPedidaCita,
+  puedeCancelarCita,
+  textoPlazoCancelacion,
+} from '@/utils/asesorias';
 import { fechaCompleta } from '@/utils/calendario';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { fechaLegible } from '@/utils/fechas';
 import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
+import { textoRecursos } from '@/utils/reservas';
 import { notaDePrestamo } from '@/utils/solicitudes';
 
 export type Dato = { etiqueta: string; valor?: string | number | null };
@@ -76,7 +88,8 @@ function InfoReserva({ solicitud }: { solicitud: ResumenSolicitud }) {
         { etiqueta: 'Horario', valor: `${reserva.horaInicio} a ${reserva.horaFin}` },
         { etiqueta: 'Propósito', valor: reserva.proposito },
         { etiqueta: 'Asistentes', valor: reserva.asistentes },
-        { etiqueta: 'Requerimientos', valor: reserva.requerimientos },
+        { etiqueta: 'Recursos de apoyo', valor: textoRecursos(reserva.recursos) },
+        { etiqueta: 'Novedades', valor: reserva.requerimientos },
         { etiqueta: 'Motivo', valor: reserva.motivo },
       ]}
     />
@@ -101,14 +114,13 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
   const horas = parametros.data?.horasMinimasCancelacion;
   const puedeCancelar = horas != null && puedeCancelarCita(cita, horas);
   const fueraDePlazo = horas != null && citaEnCurso(cita) && !puedeCancelar;
+  const pedida = fechaPedidaCita(cita);
 
   const confirmarCancelar = (actual: Cita) => {
     cancelar.mutate(actual.id, {
       onSuccess: () => {
         setPorCancelar(null);
-        setAviso(
-          `Cancelaste tu asesoría del ${fechaLegible(actual.fecha)}. La franja quedó libre.`,
-        );
+        setAviso(`Cancelaste tu asesoría del ${fechaLegible(actual.fecha)}.`);
       },
     });
   };
@@ -125,15 +137,32 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
       <ListaDatos
         datos={[
           { etiqueta: 'Tema', valor: cita.tema },
-          { etiqueta: 'Facilitador', valor: cita.facilitador },
-          { etiqueta: 'Fecha', valor: fechaCompleta(cita.fecha) },
+          {
+            etiqueta: 'Facilitador',
+            valor: cita.facilitador ?? 'Se asigna cuando la biblioteca apruebe la solicitud',
+          },
+          {
+            etiqueta: cita.estado === 'pendiente' ? 'Fecha que pediste' : 'Fecha',
+            valor: fechaCompleta(cita.fecha),
+          },
           { etiqueta: 'Horario', valor: `${cita.horaInicio} a ${cita.horaFin}` },
+          {
+            etiqueta: 'Fecha y hora que pediste (la biblioteca las cambió al aprobar)',
+            valor: pedida ? `${fechaCompleta(pedida.fecha)} a las ${pedida.hora}` : null,
+          },
           { etiqueta: 'Modalidad', valor: NOMBRE_MODALIDAD[cita.modalidad] },
+          { etiqueta: 'Personas', valor: cita.personas },
+          { etiqueta: 'Los otros integrantes', valor: cita.participantes?.join(', ') },
           { etiqueta: 'Lo que necesitas', valor: cita.necesidad },
+          { etiqueta: 'Asignatura', valor: cita.asignatura },
+          { etiqueta: 'Novedades', valor: cita.novedades },
           { etiqueta: 'Resultado', valor: cita.resultado },
           { etiqueta: 'Motivo', valor: cita.motivo },
         ]}
       />
+      <BotonEnlaceCita cita={cita} />
+      <BotonRegistrarAsistencia cita={cita} />
+      <SeccionCalificacion tipo="cita" solicitud={cita} />
       {puedeCancelar ? (
         <View style={estilos.acciones}>
           <Button
@@ -153,11 +182,13 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
           </Button>
           <Button
             mode="text"
-            onPress={() => router.push('/asesorias/mis-citas')}
+            onPress={() =>
+              router.push({ pathname: '/asesorias/reprogramar/[id]', params: { id: cita.id } })
+            }
             style={estilos.boton}
             contentStyle={estilos.contenidoBoton}
             accessibilityRole="button"
-            accessibilityLabel="Reprogramar en Mis citas"
+            accessibilityLabel={`Reprogramar la asesoría de ${cita.tema}`}
           >
             Reprogramar
           </Button>
@@ -322,14 +353,16 @@ function InfoCapacitacion({ solicitud }: { solicitud: ResumenSolicitud }) {
           { etiqueta: 'Modalidad', valor: NOMBRE_MODALIDAD[capacitacion.modalidad] },
           { etiqueta: 'Fecha solicitada', valor: fechaCompleta(capacitacion.fecha) },
           { etiqueta: 'Hora', valor: capacitacion.hora },
-          { etiqueta: 'Grupo', valor: capacitacion.grupo },
+          { etiqueta: 'Asignatura y grupo', valor: capacitacion.grupo },
           { etiqueta: 'Participantes', valor: capacitacion.participantes },
           { etiqueta: 'Objetivo', valor: capacitacion.objetivo },
+          { etiqueta: 'Novedades', valor: capacitacion.novedades },
           { etiqueta: 'Responsable', valor: capacitacion.responsable },
           { etiqueta: 'Resultado', valor: capacitacion.resultado },
           { etiqueta: 'Motivo', valor: capacitacion.motivo },
         ]}
       />
+      <SeccionCalificacion tipo="capacitacion" solicitud={capacitacion} />
 
       <DialogoNoMeSirve
         solicitud={porRechazar}

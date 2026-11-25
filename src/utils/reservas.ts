@@ -6,9 +6,16 @@
  */
 import { z } from 'zod';
 
-import type { Espacio, EstadoSolicitud, Parametros, Reserva } from '@/types';
+import type { Espacio, EstadoSolicitud, Parametros, RecursoApoyo, Reserva } from '@/types';
+import { SEDES } from '@/utils/constantes';
 import { esFechaValida, esHoraValida } from '@/utils/fechas';
 import { motivoNoDisponible } from '@/utils/parametros';
+import {
+  camposSolicitante,
+  campoTerminos,
+  reglasSolicitante,
+  VALORES_SOLICITANTE_VACIOS,
+} from '@/utils/solicitante';
 
 /** Lo que el personal decide sobre una solicitud; lo mismo que recibe useDecidirReserva(). */
 export type AccionReserva = 'aprobar' | 'nueva_fecha' | 'rechazar' | 'cancelar';
@@ -151,14 +158,13 @@ export function problemaHorario(inicio: string, fin: string): ProblemaHorario | 
   return null;
 }
 
-/** Al menos 1 asistente y no más que la capacidad del espacio (HU-18, CA3). */
-export function problemaCapacidad(asistentes: string, espacio: Espacio | undefined): string | null {
+/**
+ * Al menos 1 asistente (HU-18, CA3). La capacidad del espacio es orientativa: la biblioteca
+ * agrega sillas si hace falta, así que no limita la reserva (15 de noviembre de 2026).
+ */
+export function problemaCapacidad(asistentes: string): string | null {
   if (!/^\d+$/.test(asistentes)) return null;
-  const cantidad = Number(asistentes);
-  if (cantidad < 1) return 'Debe asistir al menos 1 persona.';
-  if (espacio && cantidad > espacio.capacidad) {
-    return `${espacio.nombre} admite hasta ${espacio.capacidad} personas. Ajusta el número.`;
-  }
+  if (Number(asistentes) < 1) return 'Debe asistir al menos 1 persona.';
   return null;
 }
 
@@ -187,7 +193,7 @@ type DatosReglas = { fecha: string; horaInicio: string; horaFin: string; asisten
 function aplicarReglas(
   datos: DatosReglas,
   ctx: z.RefinementCtx,
-  { parametros, hoy, espacio }: { parametros: Parametros; hoy: string; espacio: Espacio | undefined },
+  { parametros, hoy }: { parametros: Parametros; hoy: string },
 ) {
   const fecha = problemaFecha(datos.fecha, parametros, hoy);
   if (fecha) ctx.addIssue({ code: 'custom', path: ['fecha'], message: fecha });
@@ -195,7 +201,7 @@ function aplicarReglas(
   const horario = problemaHorario(datos.horaInicio, datos.horaFin);
   if (horario) ctx.addIssue({ code: 'custom', path: [horario.campo], message: horario.mensaje });
 
-  const capacidad = problemaCapacidad(datos.asistentes, espacio);
+  const capacidad = problemaCapacidad(datos.asistentes);
   if (capacidad) ctx.addIssue({ code: 'custom', path: ['asistentes'], message: capacidad });
 }
 
@@ -207,20 +213,14 @@ type ContextoReserva = { parametros: Parametros; espacios: Espacio[]; hoy: strin
  * Valida antes de enviar las reglas de la reserva; la API vuelve a validar el día hábil y los
  * choques de horario (CA3).
  */
-export function esquemaReservaTercero({ parametros, espacios, hoy }: ContextoReserva) {
+export function esquemaReservaTercero({ parametros, hoy }: ContextoReserva) {
   return z
     .object({
       solicitanteId: z.string().min(1, { error: 'Elige a la persona que reserva.' }),
       espacioId: z.string().min(1, { error: 'Elige el espacio.' }),
       ...camposReserva,
     })
-    .superRefine((datos, ctx) =>
-      aplicarReglas(datos, ctx, {
-        parametros,
-        hoy,
-        espacio: espacios.find((e) => e.id === datos.espacioId),
-      }),
-    );
+    .superRefine((datos, ctx) => aplicarReglas(datos, ctx, { parametros, hoy }));
 }
 
 export type FormularioReservaTercero = z.input<ReturnType<typeof esquemaReservaTercero>>;
@@ -230,13 +230,123 @@ type ContextoSolicitud = { parametros: Parametros; espacio: Espacio; hoy: string
 
 /**
  * Solicitud de reserva de la comunidad (HU-18): el espacio ya viene del calendario y el
- * solicitante sale de la sesión. Valida antes de enviar las reglas de la reserva (CA3: la
- * capacidad); la API vuelve a validar y responde la disponibilidad con alternativas (CA2).
+ * solicitante sale de la sesión. Valida antes de enviar las reglas de la reserva (CA3: al menos
+ * 1 asistente; la capacidad ya no limita); la API vuelve a validar y responde la disponibilidad
+ * con alternativas (CA2).
  */
-export function esquemaSolicitudReserva({ parametros, espacio, hoy }: ContextoSolicitud) {
+export function esquemaSolicitudReserva({ parametros, hoy }: ContextoSolicitud) {
   return z
     .object(camposReserva)
-    .superRefine((datos, ctx) => aplicarReglas(datos, ctx, { parametros, hoy, espacio }));
+    .superRefine((datos, ctx) => aplicarReglas(datos, ctx, { parametros, hoy }));
 }
 
 export type FormularioSolicitud = z.input<ReturnType<typeof esquemaSolicitudReserva>>;
+
+// ── Versión 1.1: solicitud completa (#224) ───────────────────────────────────────────
+
+export const LARGO_MAXIMO_NOVEDADES_RESERVA = 500;
+
+/** Recursos de apoyo que se pueden pedir con el espacio; no elegir ninguno es la lista vacía. */
+export const RECURSOS_APOYO: { valor: RecursoApoyo; etiqueta: string }[] = [
+  { valor: 'portatil', etiqueta: 'Portátil' },
+  { valor: 'hdmi', etiqueta: 'Cable HDMI' },
+  { valor: 'cable_red', etiqueta: 'Cable de red' },
+  { valor: 'mouse', etiqueta: 'Mouse' },
+  { valor: 'marcadores', etiqueta: 'Marcadores' },
+];
+
+/**
+ * Los recursos pedidos, para mostrarlos (#251): "Portátil, Mouse", "No requiere" si la lista está
+ * vacía, o null si la reserva es de antes de la versión 1.1 y no los trae.
+ */
+export function textoRecursos(recursos: readonly RecursoApoyo[] | undefined): string | null {
+  if (recursos == null) return null;
+  if (recursos.length === 0) return 'No requiere';
+  return recursos
+    .map(
+      (recurso) => RECURSOS_APOYO.find((opcion) => opcion.valor === recurso)?.etiqueta ?? recurso,
+    )
+    .join(', ');
+}
+
+/**
+ * La sede del espacio que se envía con la reserva: la que dice el espacio o, si no la dice, la
+ * primera de SEDES (Valledupar). El formulario no la pregunta (#251).
+ */
+export function sedeDeEspacio(espacio: Pick<Espacio, 'sede'>): string {
+  return espacio.sede ?? SEDES[0];
+}
+
+/** La sede es una de SEDES y, si el espacio dice su sede, la misma. */
+export function problemaSede(
+  sede: string,
+  espacio?: Pick<Espacio, 'nombre' | 'sede'>,
+): string | null {
+  if (!SEDES.includes(sede)) return 'Elige la sede.';
+  if (espacio?.sede && espacio.sede !== sede) {
+    return `${espacio.nombre} queda en la sede ${espacio.sede}.`;
+  }
+  return null;
+}
+
+/** Solo recursos de la lista. */
+export function problemaRecursos(recursos: readonly string[]): string | null {
+  const validos = recursos.every((recurso) =>
+    RECURSOS_APOYO.some((opcion) => opcion.valor === recurso),
+  );
+  return validos ? null : 'Elige los recursos de la lista.';
+}
+
+/**
+ * Solicitud completa de la versión 1.1 (#224, la UI es #251): los campos de HU-18 más los
+ * recursos de apoyo, los datos del solicitante con su identificación (NIP) y los términos
+ * (TERMINOS_ESPACIOS). `requerimientos` es el campo «Novedades». Los asistentes siguen sin
+ * máximo: la capacidad del espacio es orientativa (problemaCapacidad).
+ *
+ * `sede` en el formulario es la de la persona (datos del solicitante, #251). La sede del espacio
+ * no se pregunta: el formulario la envía aparte (la del espacio o la primera de SEDES), y la API
+ * la revisa con problemaSede().
+ */
+export function esquemaSolicitudReservaCompleta({ parametros, hoy }: ContextoSolicitud) {
+  return z
+    .object({
+      ...camposReserva,
+      ...camposSolicitante,
+      recursos: z.array(z.string()),
+      requerimientos: z
+        .string()
+        .trim()
+        .max(LARGO_MAXIMO_NOVEDADES_RESERVA, {
+          error: `Máximo ${LARGO_MAXIMO_NOVEDADES_RESERVA} caracteres.`,
+        }),
+      terminosAceptados: campoTerminos,
+    })
+    .superRefine((datos, ctx) => {
+      aplicarReglas(datos, ctx, { parametros, hoy });
+      reglasSolicitante(datos, ctx, { pedirIdentificacion: true, pedirSede: true });
+      const recursos = problemaRecursos(datos.recursos);
+      if (recursos) ctx.addIssue({ code: 'custom', path: ['recursos'], message: recursos });
+    });
+}
+
+export type FormularioSolicitudCompleta = z.input<
+  ReturnType<typeof esquemaSolicitudReservaCompleta>
+>;
+
+/**
+ * Valores iniciales sin el día ni las horas, que vienen del calendario. Los datos del solicitante
+ * (con su sede) se prellenan con datosSolicitanteDe() (utils/solicitante).
+ */
+export function valoresInicialesReservaCompleta(): Omit<
+  FormularioSolicitudCompleta,
+  'fecha' | 'horaInicio' | 'horaFin'
+> {
+  return {
+    proposito: '',
+    asistentes: '',
+    requerimientos: '',
+    ...VALORES_SOLICITANTE_VACIOS,
+    recursos: [],
+    terminosAceptados: false,
+  };
+}
