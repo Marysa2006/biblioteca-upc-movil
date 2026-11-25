@@ -19,6 +19,7 @@ import { GraficoBarras } from '@/components/estadisticas/GraficoBarras';
 import { GraficoTiempoRespuesta } from '@/components/estadisticas/GraficoTiempoRespuesta';
 import { TarjetaIndicador } from '@/components/estadisticas/TarjetaIndicador';
 import { EstadoCarga, EstadoError, EstadoVacio, PestanasFiltro } from '@/components/ui';
+import { usaApi } from '@/api/cliente';
 import { useIndicadores } from '@/hooks/useEstadisticas';
 import { acentoServicio, colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import {
@@ -27,7 +28,7 @@ import {
   type IndicadoresUso,
   type ServicioEstadistica,
 } from '@/types';
-import { NOMBRE_ESTADO_USO, NOMBRE_MODALIDAD_USO, NOMBRE_TIPO_USUARIO } from '@/utils/estadisticas';
+import { indicadoresDeFinalizacion, NOMBRE_ESTADO_USO, NOMBRE_MODALIDAD_USO, NOMBRE_TIPO_USUARIO } from '@/utils/estadisticas';
 import {
   conMayuscula,
   hallazgosClave,
@@ -118,7 +119,8 @@ function PestanaResumen({
 }) {
   const { total } = indicadores;
   const servicio = indicadores.porServicio[0];
-  const usuarios = indicadores.porTipoUsuario[0];
+  const usuarios = usaApi('estadisticas') ? undefined : indicadores.porTipoUsuario[0];
+  const cierre = indicadoresDeFinalizacion(indicadores);
   const ultimoMes = indicadores.porMes.at(-1);
   const variacion = variacionUltimoMes(indicadores.porMes);
   // La bibliotecóloga lo quiere por mes, con la opción de agrupar por semestre (tabla 2.7).
@@ -156,6 +158,10 @@ function PestanaResumen({
             detalle={`${textoPorcentaje(usuarios.cantidad, total)} de las operaciones`}
           />
         ) : null}
+        <TarjetaIndicador icono="check-circle-outline" titulo="Tasa de finalización"
+          valor={String(cierre.tasaFinalizacion) + ' %'} detalle={String(cierre.finalizadas) + ' finalizadas'} />
+        <TarjetaIndicador icono="close-circle-outline" titulo="Cancelaciones y rechazos"
+          valor={String(cierre.tasaCancelacionesYRechazos) + ' %'} detalle={String(cierre.noPrestadas) + ' solicitudes sin prestar'} />
         {ultimoMes ? (
           <TarjetaIndicador
             icono="calendar-month-outline"
@@ -167,6 +173,10 @@ function PestanaResumen({
         ) : null}
       </View>
 
+      {indicadores.asistentesPorServicio?.length ? (
+        <GraficoBarras titulo="Asistentes por servicio" datos={indicadores.asistentesPorServicio}
+          total={indicadores.asistentes ?? 0} sustantivo="asistentes" />
+      ) : null}
       {hallazgos.length > 0 ? <HallazgosClave frases={hallazgos} /> : null}
 
       <ColumnasMes

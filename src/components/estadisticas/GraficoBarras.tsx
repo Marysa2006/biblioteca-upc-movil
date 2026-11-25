@@ -26,6 +26,7 @@ type Props = {
   textoResto?: (cantidadGrupos: number) => string;
   /** Ranking: antepone el puesto (#1, #2…) a cada grupo. */
   numerado?: boolean;
+  sustantivo?: string;
 };
 
 export function GraficoBarras({
@@ -36,6 +37,7 @@ export function GraficoBarras({
   limite,
   textoResto,
   numerado = false,
+  sustantivo,
 }: Props) {
   const visibles = limite ? datos.slice(0, limite) : datos;
   const resto = datos.slice(visibles.length);
@@ -64,7 +66,7 @@ export function GraficoBarras({
             key={dato.etiqueta}
             style={estilos.grupo}
             accessible
-            accessibilityLabel={`${puesto}${dato.etiqueta}: ${textoOperaciones(dato.cantidad)}, ${porcentaje} del total`}
+            accessibilityLabel={`${puesto}${dato.etiqueta}: ${(sustantivo ? dato.cantidad + ' ' + sustantivo : textoOperaciones(dato.cantidad))}, ${porcentaje} del total`}
           >
             {/* Con letra grande, el número pasa debajo de la etiqueta en vez de cortarla. */}
             <View style={estilos.fila}>

@@ -114,6 +114,7 @@ export type ConteoIndicador = {
 export type IndicadoresUso = {
   usuariosUnicos?: number;
   asistentes?: number;
+  asistentesPorServicio?: ConteoIndicador[];
   porDiaSemana?: ConteoIndicador[];
   porTematica?: ConteoIndicador[];
   total: number;

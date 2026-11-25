@@ -228,7 +228,7 @@ export async function registrarAsistencia(
   registrarUso({
     id: `uso-asistencia-${datos.sesionId}-${usuario.id}`,
     usuario,
-    servicio: 'asesorias',
+    servicio: datos.sesionId.startsWith('cap-') ? 'capacitaciones' : 'asesorias',
     finalidad: 'Asistencia con QR',
     fecha: hoyISO(),
     estado: 'completada',
@@ -290,7 +290,7 @@ export function marcarAsistenciaManual(
         semestre: datos.semestre?.trim(), tipoUsuario: datos.tipo,
         fechaHora: ahoraFechaHora(), medio: 'manual',
       }];
-      registrarUso({ id: `uso-${id}`, servicio: 'asesorias', finalidad: 'Asistencia manual',
+      registrarUso({ id: `uso-${id}`, servicio: sesionId.startsWith('cap-') ? 'capacitaciones' : 'asesorias', finalidad: 'Asistencia manual',
         fecha: hoyISO(), estado: 'completada' });
     }
     return simularRed(aAsistencia(sesionId));
@@ -307,7 +307,7 @@ export function marcarAsistenciaManual(
   agregarRegistro(sesionId, usuarioId, 'manual');
   const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
   registrarUso({ id: `uso-asistencia-${sesionId}-${usuarioId}`, usuario,
-    servicio: 'asesorias', finalidad: 'Asistencia manual', fecha: hoyISO(), estado: 'completada' });
+    servicio: sesionId.startsWith('cap-') ? 'capacitaciones' : 'asesorias', finalidad: 'Asistencia manual', fecha: hoyISO(), estado: 'completada' });
   return simularRed(aAsistencia(sesionId));
 }
 

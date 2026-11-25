@@ -145,10 +145,15 @@ export function calcularIndicadores(
       tablets: indicadoresTablets([], horasReferenciaTablet),
     };
   }
+  const asistencias = registros.filter((registro) =>
+    registro.id.startsWith('uso-asistencia-') || registro.id.startsWith('uso-asi-manual-'),
+  );
   const calificadas = registros.filter((r) => r.calificacion != null);
   const porPeriodo = contarPor(registros, (r) => periodoDe(r.fecha), NOMBRE_PROGRAMA);
   return {
     total: registros.length,
+    asistentes: asistencias.length,
+    asistentesPorServicio: contarPor(asistencias, (r) => r.servicio, NOMBRE_SERVICIO),
     porServicio: contarPor(registros, (r) => r.servicio, NOMBRE_SERVICIO),
     porTipoUsuario: contarPor(registros, (r) => r.tipoUsuario, NOMBRE_TIPO_USUARIO),
     porPrograma: contarPor(registros, (r) => r.programa, NOMBRE_PROGRAMA),
@@ -324,4 +329,36 @@ export function registrosACsv(registros: RegistroUso[]): string {
 /** Nombre del archivo, con la fecha del día: `estadisticas-2026-10-30.csv`. */
 export function nombreArchivoCsv(hoy: string): string {
   return `estadisticas-${hoy}.csv`;
+}
+
+export function indicadoresDeFinalizacion({ total, porEstado }: IndicadoresUso) {
+  // StatisticsPage (web): suma las etiquetas Finalizada o Cancelada/Rechazada
+  // respectivamente y redondea 100 × suma / total. «Completada» es su equivalente en los mocks.
+  const suma = (patron: RegExp) => porEstado.reduce((n, fila) =>
+    patron.test(fila.etiqueta) ? n + fila.cantidad : n, 0);
+  const porcentaje = (conteo: number) => total > 0 ? Math.round(100 * conteo / total) : 0;
+  const finalizadas = suma(/finalizad|completad/i);
+  const noPrestadas = suma(/cancelad|rechazad/i);
+  return {
+    finalizadas,
+    noPrestadas,
+    tasaFinalizacion: porcentaje(finalizadas),
+    tasaCancelacionesYRechazos: porcentaje(noPrestadas),
+  };
+}
+
+export function agregarIndicadoresAlCsv(csv: string, datos: IndicadoresUso, separador: string): string {
+  const { tasaFinalizacion, tasaCancelacionesYRechazos, finalizadas, noPrestadas } =
+    indicadoresDeFinalizacion(datos);
+  const filas = [
+    ['Indicador', 'Cantidad', 'Porcentaje'],
+    ['Tasa de finalización', String(finalizadas), String(tasaFinalizacion) + '%'],
+    ['Cancelaciones y rechazos', String(noPrestadas), String(tasaCancelacionesYRechazos) + '%'],
+    [],
+    ['Asistentes por servicio', 'Cantidad'],
+    ...(datos.asistentesPorServicio ?? []).map(({ etiqueta, cantidad }) => [etiqueta, String(cantidad)]),
+  ];
+  // Las etiquetas del servidor son texto, incluso si empiezan por un signo de fórmula.
+  const escapar = (valor: string) => '"' + (/^[=+\-@\t\r]/.test(valor) ? "'" : '') + valor.replace(/"/g, '""') + '"';
+  return csv.trimEnd() + '\r\n\r\n' + filas.map((fila) => fila.map(escapar).join(separador)).join('\r\n');
 }

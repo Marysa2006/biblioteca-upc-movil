@@ -127,9 +127,22 @@ function calidad(
 }
 
 /** Los registros de uso, con un id estable `uso-1`, `uso-2`… */
-export const REGISTROS_USO: RegistroUso[] = FILAS.map((fila, indice) => ({
+const registros: RegistroUso[] = FILAS.map((fila, indice) => ({
   id: `uso-${indice + 1}`,
   ...dePersona(fila.usuarioId),
   ...calidad(fila, indice),
   ...fila,
 }));
+
+/** Asistencias simuladas que se incluyen al filtrar el resumen de demostración. */
+export const REGISTROS_USO: RegistroUso[] = [
+  ...registros,
+  {
+    ...registros[1], id: 'uso-asistencia-demo-asesoria', finalidad: 'Asistencia con QR',
+    calificacion: undefined, tematica: undefined, solicitadaEl: undefined, respondidaEl: undefined,
+  },
+  {
+    ...registros[4], id: 'uso-asistencia-demo-capacitacion', finalidad: 'Asistencia manual',
+    calificacion: undefined, tematica: undefined, solicitadaEl: undefined, respondidaEl: undefined,
+  },
+];

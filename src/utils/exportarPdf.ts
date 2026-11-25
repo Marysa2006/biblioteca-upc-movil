@@ -15,6 +15,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 import { colores, coloresEstado } from '@/theme';
+import { indicadoresDeFinalizacion } from '@/utils/estadisticas';
 import type {
   ConteoIndicador,
   FiltrosEstadisticas,
@@ -169,10 +170,11 @@ function respuestaPromedio(tiempos: TiempoRespuesta[]): { horas: number; cantida
 }
 
 /** Resumen: cuatro cifras, los hallazgos clave y las operaciones por mes y por semestre. */
-function htmlResumen(indicadores: IndicadoresUso): string {
+function htmlResumen(indicadores: IndicadoresUso, mostrarUsuariosFrecuentes: boolean): string {
   const { total } = indicadores;
   const servicio = indicadores.porServicio[0];
-  const usuarios = indicadores.porTipoUsuario[0];
+  const usuarios = mostrarUsuariosFrecuentes ? indicadores.porTipoUsuario[0] : undefined;
+  const cierre = indicadoresDeFinalizacion(indicadores);
   const respuesta = respuestaPromedio(indicadores.tiempoRespuesta);
   const detalle = (grupo: ConteoIndicador) =>
     `${grupo.cantidad} · ${textoPorcentaje(grupo.cantidad, total)}`;
@@ -183,11 +185,9 @@ function htmlResumen(indicadores: IndicadoresUso): string {
     `<div class="cifras">${[
       cifra(String(total), 'Operaciones'),
       cifra(servicio?.etiqueta ?? 'Sin datos', 'Servicio más usado', servicio && detalle(servicio)),
-      cifra(
-        usuarios?.etiqueta ?? 'Sin datos',
-        'Usuarios más frecuentes',
-        usuarios && detalle(usuarios),
-      ),
+      usuarios ? cifra(usuarios.etiqueta, 'Usuarios más frecuentes', detalle(usuarios)) : '',
+      cifra(String(cierre.tasaFinalizacion) + ' %', 'Tasa de finalización', String(cierre.finalizadas) + ' finalizadas'),
+      cifra(String(cierre.tasaCancelacionesYRechazos) + ' %', 'Cancelaciones y rechazos', String(cierre.noPrestadas) + ' solicitudes sin prestar'),
       cifra(
         respuesta ? textoHoras(respuesta.horas) : 'Sin datos',
         'Respuesta promedio',
@@ -199,6 +199,7 @@ function htmlResumen(indicadores: IndicadoresUso): string {
           .map((frase) => `<li>${escaparHtml(frase)}</li>`)
           .join('')}</ul></div>`
       : '') +
+    (indicadores.asistentesPorServicio?.length ? barras('Asistentes por servicio', indicadores.asistentesPorServicio, { total: indicadores.asistentes }) : '') +
     barras('Operaciones por mes', indicadores.porMes, { total }) +
     barras('Operaciones por semestre', periodosEnOrden(indicadores.porPeriodo), { total })
   );
@@ -257,7 +258,7 @@ function htmlTablets(indicadores: IndicadoresUso): string {
         `Duraron ${tablets.horasReferencia} h o menos`,
         tablets.conDuracion ? `${tablets.dentroDeReferencia} de ${tablets.conDuracion}` : undefined,
       ),
-      cifra(String(tablets.sinHoraCompleta), 'Sin hora completa', 'Calidad de los datos'),
+      tablets.sinHoraCompleta != null ? cifra(String(tablets.sinHoraCompleta), 'Sin hora completa', 'Calidad de los datos') : '',
     ].join('')}</div>` +
     barras('Préstamos por mes', tablets.porMes, { total: tablets.prestamos }) +
     barras('Préstamos por programa', tablets.porPrograma, { total: tablets.prestamos })
@@ -275,7 +276,7 @@ function htmlCalidad(indicadores: IndicadoresUso): string {
           (fila) =>
             `<tr><td>${escaparHtml(fila.etiqueta)}</td>` +
             `<td class="n">${textoHoras(fila.horasPromedio)}</td>` +
-            `<td class="n">${fila.cantidad}</td></tr>`,
+            `<td class="n">${fila.cantidad ?? '—'}</td></tr>`,
         )
         .join('')}</tbody></table></div>`
     : '<p class="vacio">Todavía no hay solicitudes respondidas.</p>';
@@ -309,6 +310,7 @@ function htmlCalidad(indicadores: IndicadoresUso): string {
 export function htmlDelReporte(
   indicadores: IndicadoresUso,
   filtros: FiltrosEstadisticas = {},
+  mostrarUsuariosFrecuentes = true,
 ): string {
   const activos = filtrosActivos(filtros);
   const chips = activos.length
@@ -353,7 +355,7 @@ export function htmlDelReporte(
 <body>
   ${encabezadoPdf('Estadísticas de uso de la biblioteca', 'Reporte de los servicios, con los filtros que se eligieron en la app.')}
   <div class="chips">${chips}</div>
-  ${htmlResumen(indicadores)}
+  ${htmlResumen(indicadores, mostrarUsuariosFrecuentes)}
   ${htmlServicios(indicadores)}
   ${htmlTablets(indicadores)}
   ${htmlCalidad(indicadores)}
@@ -367,11 +369,35 @@ export function htmlDelReporte(
 export async function exportarPdf(
   indicadores: IndicadoresUso,
   filtros: FiltrosEstadisticas = {},
-): Promise<{ compartido: boolean }> {
-  const uri = await guardarPdf(
-    htmlDelReporte(indicadores, filtros),
-    `estadisticas-${hoyISO()}.pdf`,
-  );
+  mostrarUsuariosFrecuentes = true,
+): Promise<{ compartido: boolean; impresion?: boolean }> {
+  const html = htmlDelReporte(indicadores, filtros, mostrarUsuariosFrecuentes);
+  if (typeof document !== 'undefined') {
+    // En web, expo-print imprime la pantalla actual. Se imprime el reporte en su propio documento.
+    await new Promise<void>((resolver, rechazar) => {
+      const marco = document.createElement('iframe');
+      marco.style.position = 'fixed';
+      marco.style.left = '-10000px';
+      marco.style.width = '1px';
+      marco.style.height = '1px';
+      marco.title = 'Reporte de estadísticas';
+      marco.addEventListener('load', () => {
+        const ventana = marco.contentWindow;
+        if (!ventana) {
+          marco.remove();
+          rechazar(new Error('No pudimos abrir la vista de impresión.'));
+          return;
+        }
+        ventana.addEventListener('afterprint', () => marco.remove(), { once: true });
+        ventana.print();
+        resolver();
+      }, { once: true });
+      marco.srcdoc = html;
+      document.body.append(marco);
+    });
+    return { compartido: false, impresion: true };
+  }
+  const uri = await guardarPdf(html, 'estadisticas-' + hoyISO() + '.pdf');
   const disponible = await Sharing.isAvailableAsync();
   if (!disponible) {
     return { compartido: false };

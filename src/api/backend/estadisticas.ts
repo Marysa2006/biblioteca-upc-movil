@@ -5,6 +5,7 @@ import { normalizarTexto } from '@/utils/texto';
 type Serie = { labels: string[]; values: (number | null)[] };
 export type ResumenBackend = {
   total: number; unique_users: number; attendees: number; average_rating: number | null;
+  attendees_by_service?: Serie;
   by_service: Serie; by_month: Serie; by_department: Serie; by_campus: Serie;
   by_topic: Serie; by_weekday: Serie; by_semester: Serie;
   by_user_type: Serie; by_program: Serie; by_status: Serie; by_modality: Serie;
@@ -52,6 +53,10 @@ export function indicadoresDesdeBackend(resumen: ResumenBackend): IndicadoresUso
     .find(([etiqueta]) => servicioEstadistico(etiqueta) === 'tablets')?.[1];
   return {
     total: resumen.total, usuariosUnicos: resumen.unique_users, asistentes: resumen.attendees,
+    asistentesPorServicio: conteos(resumen.attendees_by_service).map(({ etiqueta, cantidad }) => {
+      const servicio = servicioEstadistico(etiqueta);
+      return { etiqueta: servicio ? NOMBRE_SERVICIO[servicio] : etiqueta, cantidad };
+    }),
     porServicio, porTipoUsuario: conteos(resumen.by_user_type), porPrograma: conteos(resumen.by_program),
     porMes: conteos(resumen.by_month), porFacultad: conteos(resumen.by_department),
     porSede: conteos(resumen.by_campus), porPeriodo: periodos, porSemestre: periodos,

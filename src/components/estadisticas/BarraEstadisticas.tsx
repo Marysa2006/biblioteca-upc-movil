@@ -91,9 +91,10 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
   const alExportarExcel = () => {
     setMenu(false);
     const lista = registros.data;
-    if (!conApi && !lista) return;
+    const datos = indicadores.data;
+    if (!datos || (!conApi && !lista)) return;
     exportarPdf.reset();
-    exportar.mutate({ registros: lista ?? [], filtros }, {
+    exportar.mutate({ registros: lista ?? [], filtros, indicadores: datos }, {
       onSuccess: ({ archivo, compartido }) =>
         setAviso(
           compartido
@@ -112,9 +113,9 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
     exportarPdf.mutate(
       { indicadores: datos, filtros },
       {
-        onSuccess: ({ compartido }) =>
+        onSuccess: ({ compartido, impresion }) =>
           setAviso(
-            compartido
+            impresion ? 'Se abrió el diálogo para guardar el PDF.' : compartido
               ? `Se exportó el PDF con ${textoOperaciones(datos.total)} y los filtros aplicados.`
               : 'El celular no permite compartir: el PDF quedó generado en la app.',
           ),
