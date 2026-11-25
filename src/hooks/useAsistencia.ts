@@ -49,11 +49,11 @@ export function useAbrirAsistencia() {
   });
 }
 
-export function useCodigoAsistencia(sesionId: string) {
+export function useCodigoAsistencia(sesionId: string, { permitirMock = false } = {}) {
   return useQuery({
     queryKey: [...claves.asistenciaSesion(sesionId), 'qr'],
     queryFn: () => obtenerCodigoAsistencia(sesionId),
-    enabled: usaApi('asistencia') && sesionId !== '',
+    enabled: (permitirMock || usaApi('asistencia')) && sesionId !== '',
   });
 }
 

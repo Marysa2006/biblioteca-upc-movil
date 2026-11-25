@@ -32,6 +32,7 @@ import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 export type { DatosAsistenciaManual } from './backend/asistencia';
 
 export async function obtenerCodigoAsistencia(sesionId: string) {
+  if (!usaApi('asistencia')) return (await abrirAsistencia(sesionId)).codigo;
   const respuesta = await peticion<QrAsistenciaBackend>(`/attendance/${encodeURIComponent(sesionId)}/qr/`);
   return codigoDesdeBackend(respuesta);
 }

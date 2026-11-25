@@ -56,20 +56,36 @@ const CADA_MEDIO_MINUTO = 30_000;
 
 export default function TomarAsistencia() {
   const { tienePermiso } = useRol();
-  const { id, tipo } = useLocalSearchParams<{ id: string; tipo?: string }>();
+  const { id, tipo, mostrarQr } = useLocalSearchParams<{ id: string; tipo?: string; mostrarQr?: string }>();
   const conApi = usaApi('asistencia');
-  const permiso = conApi && tipo === 'capacitacion' ? 'formacion' : 'asesorias';
+  const permiso = tipo === 'capacitacion' ? 'formacion' : 'asesorias';
 
   return (
     <>
       <EncabezadoApilado titulo={TITULO} />
       <Pantalla titulo={TITULO} conEncabezado conTeclado>
         {tienePermiso(permiso) ? (
-          conApi && id ? <ControlAsistenciaBackend sesionId={id} /> : <Asistencia />
+          conApi && id ? <ControlAsistenciaBackend sesionId={id} />
+            : mostrarQr === '1' && id ? <MostrarQrDePrueba sesionId={id} /> : <Asistencia />
         ) : <SinPermiso />}
       </Pantalla>
     </>
   );
+}
+
+function MostrarQrDePrueba({ sesionId }: { sesionId: string }) {
+  const qr = useCodigoAsistencia(sesionId, { permitirMock: true });
+  const [ahora, setAhora] = useState(() => new Date());
+  useEffect(() => {
+    const intervalo = setInterval(() => setAhora(new Date()), CADA_MEDIO_MINUTO);
+    return () => clearInterval(intervalo);
+  }, []);
+  if (qr.isPending) return <EstadoCarga mensaje="Cargando el QR…" />;
+  if (qr.isError) {
+    return <EstadoError mensaje={mensajeErrorGuardar(qr.error)} onReintentar={() => qr.refetch()} />;
+  }
+  if (!qr.data) return <EstadoVacio mensaje="El QR de esta sesión no está disponible." />;
+  return <QrAsistencia codigo={qr.data} minutosRestantes={minutosParaVencer(qr.data.vence, ahora)} />;
 }
 
 function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {

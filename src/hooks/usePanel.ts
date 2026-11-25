@@ -105,6 +105,14 @@ export function usePanel() {
   return {
     hoy,
     datos,
+    asistencia: {
+      cargando: (conAsesorias && citas.isPending) || (conFormacion && capacitaciones.isPending),
+      conError: (conAsesorias && citas.isError) || (conFormacion && capacitaciones.isError),
+      reintentar: () => void Promise.all([
+        ...(conAsesorias ? [citas.refetch()] : []),
+        ...(conFormacion ? [capacitaciones.refetch()] : []),
+      ]),
+    },
     /** Si la persona tiene algo que ver en el Dashboard (solicitudes o préstamos). */
     conSolicitudes: activas.length > 0,
     cargando: activas.some((consulta) => consulta.isPending),
