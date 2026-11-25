@@ -153,6 +153,6 @@ export function fichaDesdePortal(servicio: FichaPortal): FichaServicio | undefin
     publico: servicio.target_audience,
     formaSolicitud: servicio.request_method,
     horario: servicio.schedule,
-    soloInformativo: !acceso,
+    soloInformativo: !acceso && servicio.slug !== 'prestamo',
   };
 }
