@@ -103,7 +103,7 @@ export function useCondicionesTablet() {
 }
 
 /** Préstamos del usuario de la sesión, por fecha (HU-22 y HU-30). No consulta sin sesión. */
-export function useMisPrestamos() {
+export function useMisPrestamos({ activa = true } = {}) {
   const usuario = useSesion((estado) => estado.usuario);
 
   return useQuery({
@@ -112,7 +112,7 @@ export function useMisPrestamos() {
       if (!usuario) throw new Error('No hay sesión');
       return obtenerMisPrestamos(usuario.id);
     },
-    enabled: usuario != null,
+    enabled: usuario != null && activa,
   });
 }
 

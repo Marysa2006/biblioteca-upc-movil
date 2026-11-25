@@ -9,6 +9,11 @@
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { cancelarMiCapacitacion } from '@/api/capacitaciones';
+import { usaApi } from '@/api/cliente';
+import { obtenerPlazoCancelacion } from '@/api/parametros';
+import { cancelarMiReserva } from '@/api/reservas';
+import { cancelarMiPrestamo } from '@/api/tablets';
 import { claves } from '@/api/claves';
 import { obtenerHistorialSolicitud } from '@/api/historial';
 import {
@@ -76,6 +81,44 @@ export function useCalificarSolicitud() {
       queryClient.invalidateQueries({ queryKey: claves.citasAsesoria });
       queryClient.invalidateQueries({ queryKey: claves.solicitudesCapacitacionTodas });
       queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });
+    },
+  });
+}
+
+const cancelar = {
+  reserva: cancelarMiReserva,
+  capacitacion: cancelarMiCapacitacion,
+  prestamo: cancelarMiPrestamo,
+};
+
+type TipoCancelable = keyof typeof cancelar;
+
+export function usePlazoCancelacion(tipo: TipoSolicitud | '', activa: boolean) {
+  const conApi = tipo === 'reserva' ? usaApi('espacios') : usaApi('capacitaciones');
+  return useQuery({
+    queryKey: claves.plazoCancelacion(conApi),
+    queryFn: () => obtenerPlazoCancelacion(conApi),
+    enabled: activa && (tipo === 'reserva' || tipo === 'capacitacion'),
+  });
+}
+
+export function useCancelarMiSolicitud() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ tipo, id, motivo }: { tipo: TipoCancelable; id: string; motivo: string }) => {
+      const usuario = useSesion.getState().usuario;
+      if (!usuario) throw new Error('No hay sesión.');
+      return cancelar[tipo](id, motivo, usuario);
+    },
+    onSuccess: (_resultado, { tipo }) => {
+      const delServicio = {
+        reserva: [claves.reservas, claves.disponibilidadTodas],
+        capacitacion: [claves.solicitudesCapacitacionTodas],
+        prestamo: [claves.prestamosTablet, claves.disponibilidadTabletsTodas, claves.tablets],
+      };
+      return Promise.all([
+        claves.solicitudesTodas, claves.notificaciones, claves.estadisticasTodas, ...delServicio[tipo],
+      ].map((queryKey) => queryClient.invalidateQueries({ queryKey })));
     },
   });
 }

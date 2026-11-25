@@ -14,6 +14,7 @@ export const claves = {
   serviciosAdministracion: ['servicios', 'administracion'] as const,
   contenidos: ['contenidos'] as const,
   parametros: ['parametros'] as const,
+  plazoCancelacion: (conApi: boolean) => ['parametros', 'cancelacion', conApi] as const,
   usuarios: ['usuarios'] as const,
   /**
    * El directorio del personal de la biblioteca (#256). Va aparte de `usuarios` porque no

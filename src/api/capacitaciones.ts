@@ -34,6 +34,7 @@ import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/ut
 import { ahoraFechaHora } from '@/utils/tablets';
 import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
+import { puedeCancelarSolicitud } from '@/utils/cancelacionSolicitud';
 import { useSesion } from '@/store/sesion';
 import { describirRoles, tienePermiso } from '@/utils/roles';
 
@@ -55,7 +56,7 @@ import { historialDesdeBackend } from './backend/solicitudes';
 import { crearNotificacion } from './notificaciones';
 import { LINEAS_FORMACION, SOLICITUDES_CAPACITACION } from './mocks/capacitaciones';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
-import { obtenerParametros } from './parametros';
+import { obtenerParametros, obtenerPlazoCancelacion } from './parametros';
 
 /** Copia de una solicitud para no exponer el almacén mutable. */
 function copiarSolicitud(solicitud: SolicitudCapacitacion): SolicitudCapacitacion {
@@ -629,6 +630,26 @@ async function modificarCapacitacion(id: string, accion: string, cuerpo: object)
     `${RUTA_GESTION_CAPACITACIONES}${encodeURIComponent(id)}/${accion}/`,
     { method: 'POST', body: JSON.stringify(cuerpo) },
   ));
+}
+
+export async function cancelarMiCapacitacion(id: string, motivo: string, usuario: Usuario): Promise<void> {
+  const reason = motivo.trim();
+  if (!reason) throw new ErrorApi(400, 'Indica el motivo de la cancelación.');
+  if (usaApi('capacitaciones')) {
+    await peticion('/trainings/requests/' + encodeURIComponent(id) + '/cancel/', {
+      method: 'POST', body: JSON.stringify({ reason }),
+    });
+    return;
+  }
+  const plazo = await obtenerPlazoCancelacion(false);
+  const capacitacion = buscarSolicitud(id);
+  if (capacitacion.solicitante.id !== usuario.id) throw new ErrorApi(404, 'No encontramos tu capacitación.');
+  if (!puedeCancelarSolicitud('capacitacion', capacitacion.estado, capacitacion.fecha, capacitacion.hora, plazo)) {
+    throw new ErrorApi(400, 'Esta capacitación ya no se puede cancelar.');
+  }
+  guardarSolicitud({ ...capacitacion, estado: 'cancelada', motivo: reason }, 'Capacitación cancelada', reason);
+  registrarEvento('capacitacion', id, 'cancelada', usuario.nombre, reason);
+  await simularRed(null);
 }
 
 export async function cancelarCapacitacionPersonal(id: string, motivo: string) {

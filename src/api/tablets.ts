@@ -49,6 +49,7 @@ import {
   ultimoDiaTablet,
 } from '@/utils/tablets';
 
+import { puedeCancelarSolicitud } from '@/utils/cancelacionSolicitud';
 import { useSesion } from '@/store/sesion';
 
 import {
@@ -114,6 +115,25 @@ async function rutaPrestamo(id: string) {
   return `${RUTA_PRESTAMOS}${encontrado}/`;
 }
 
+export async function cancelarMiPrestamo(idSolicitud: string, motivo: string, usuario: Usuario): Promise<void> {
+  const reason = motivo.trim();
+  if (usaApi('tablets')) {
+    const lista = await leerMisPrestamosBackend();
+    const prestamo = lista.find((actual) => String(actual.request_id) === idSolicitud);
+    if (!prestamo) throw new ErrorApi(404, 'No encontramos tu préstamo.');
+    await peticion('/tablets/loans/' + prestamo.id + '/cancel/', {
+      method: 'POST', body: JSON.stringify({ reason }),
+    });
+    return;
+  }
+  const prestamo = prestamos.find((actual) => actual.id === idSolicitud && actual.solicitanteId === usuario.id);
+  if (!prestamo) throw new ErrorApi(404, 'No encontramos tu préstamo.');
+  if (prestamo.estado !== 'reservado' || !puedeCancelarSolicitud('prestamo', 'aprobada', prestamo.fecha, prestamo.horaInicio, undefined)) {
+    throw new ErrorApi(400, 'Solo se puede cancelar un préstamo reservado antes de que empiece.');
+  }
+  await cancelarPrestamoSimulado(prestamo, reason || 'Cancelado por la persona solicitante.', usuario.nombre);
+}
+
 export async function cancelarPrestamoPersonal(id: string, motivo: string): Promise<Prestamo> {
   const reason = motivo.trim();
   if (!reason) throw new ErrorApi(400, 'Indica el motivo de la cancelación.');
@@ -126,6 +146,11 @@ export async function cancelarPrestamoPersonal(id: string, motivo: string): Prom
   const prestamo = prestamos.find((actual) => actual.id === id);
   if (!prestamo) throw new ErrorApi(404, 'El préstamo no existe.');
   if (prestamo.estado !== 'reservado') throw new ErrorApi(400, 'Solo se puede cancelar un préstamo reservado.');
+  return cancelarPrestamoSimulado(prestamo, reason, useSesion.getState().usuario?.nombre ?? 'Personal de la biblioteca');
+}
+
+function cancelarPrestamoSimulado(prestamo: Prestamo, reason: string, autor: string) {
+  const id = prestamo.id;
   const cancelado: Prestamo = { ...prestamo, estado: 'cancelado' };
   prestamos = prestamos.map((actual) => actual.id === id ? cancelado : actual);
   crearNotificacion({
@@ -133,7 +158,7 @@ export async function cancelarPrestamoPersonal(id: string, motivo: string): Prom
     titulo: 'Préstamo de tablet cancelado', mensaje: reason,
   });
   registrarEvento('prestamo', id, estadoDePrestamo('cancelado'),
-    useSesion.getState().usuario?.nombre ?? 'Personal de la biblioteca', reason);
+    autor, reason);
   registrarUso({
     id: `uso-prestamo-${id}`, servicio: 'tablets', finalidad: 'Préstamo de tablet',
     fecha: prestamo.fecha, modalidad: 'presencial', estado: 'cancelada', respondida: true,
@@ -1086,13 +1111,14 @@ export async function solicitarPrestamo(
 }
 
 /** Préstamos del usuario de la sesión, por fecha y hora, en todos sus estados (HU-22 y HU-30). */
+function leerMisPrestamosBackend() {
+  return peticionTodas<PrestamoBackend, PrestamoBackend>('/tablets/loans/', (prestamo) => prestamo);
+}
+
 export async function obtenerMisPrestamos(usuarioId: string): Promise<Prestamo[]> {
   if (usaApi('tablets')) {
     const solicitante = { id: usuarioId, nombre: useSesion.getState().usuario?.nombre ?? '' };
-    const lista = await peticionTodas<PrestamoBackend, PrestamoBackend>(
-      '/tablets/loans/',
-      (prestamo) => prestamo,
-    );
+    const lista = await leerMisPrestamosBackend();
     return ordenarPrestamos(lista.map((prestamo) => prestamoDesdeBackend(prestamo, solicitante)));
   }
   if (USAR_MOCKS) liberarNoRecogidos();

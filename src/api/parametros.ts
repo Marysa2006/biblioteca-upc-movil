@@ -107,6 +107,12 @@ function parametrosDesdeConfiguracion({ periodos, festivos, horarios, plazos }: 
   });
 }
 
+export async function obtenerPlazoCancelacion(conApi: boolean): Promise<number> {
+  if (!conApi) return parametros.horasMinimasCancelacion;
+  const reglas = await peticion<{ cancel_min_hours: number }>('/config/rules/');
+  return reglas.cancel_min_hours;
+}
+
 export async function obtenerParametros(): Promise<Parametros> {
   if (!usaApi('parametros')) return simularRed(clonar(parametros));
   return parametrosDesdeConfiguracion(await leerConfiguracion());

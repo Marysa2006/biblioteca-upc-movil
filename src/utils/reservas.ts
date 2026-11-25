@@ -89,6 +89,10 @@ export const esquemaMotivo = z.object({
     .max(LARGO_MAXIMO_MOTIVO, { error: `Máximo ${LARGO_MAXIMO_MOTIVO} caracteres.` }),
 });
 
+export const esquemaMotivoOpcional = z.object({
+  motivo: z.string().trim().max(LARGO_MAXIMO_MOTIVO),
+});
+
 export type FormularioMotivo = z.input<typeof esquemaMotivo>;
 
 /** Otra fecha (CA1, "modificar"): fecha y horario válidos, con el fin después del inicio. */

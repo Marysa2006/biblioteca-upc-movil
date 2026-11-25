@@ -12,7 +12,7 @@ import { AvisoError } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes } from '@/theme';
 import type { Reserva } from '@/types';
 import { fechaLegible } from '@/utils/fechas';
-import { esquemaMotivo, type FormularioMotivo } from '@/utils/reservas';
+import { esquemaMotivo, esquemaMotivoOpcional, type FormularioMotivo } from '@/utils/reservas';
 
 export type SolicitudMotivo = { reserva: Reserva; accion: 'rechazar' | 'cancelar' };
 
@@ -42,7 +42,7 @@ export function DialogoMotivo({ solicitud, ...props }: Props) {
 }
 
 type AccionMotivo = { id: string; titulo: string; detalle: string; boton: string };
-type PropsAccion = Omit<Props, 'solicitud'> & { accion: AccionMotivo | null; impedido?: boolean };
+type PropsAccion = Omit<Props, 'solicitud'> & { accion: AccionMotivo | null; impedido?: boolean; motivoOpcional?: boolean };
 
 export function DialogoMotivoAccion({ accion, ...props }: PropsAccion) {
   return (
@@ -56,13 +56,14 @@ export function DialogoMotivoAccion({ accion, ...props }: PropsAccion) {
 function Contenido({
   accion,
   impedido,
+  motivoOpcional,
   guardando,
   mensajeError,
   onConfirmar,
   onCerrar,
 }: PropsAccion & { accion: AccionMotivo }) {
   const { control, handleSubmit } = useForm<FormularioMotivo>({
-    resolver: zodResolver(esquemaMotivo),
+    resolver: zodResolver(motivoOpcional ? esquemaMotivoOpcional : esquemaMotivo),
     defaultValues: { motivo: '' },
   });
 
@@ -81,7 +82,7 @@ function Contenido({
               <TextInput
                 ref={ref}
                 mode="outlined"
-                label="Motivo"
+                label={motivoOpcional ? 'Motivo (opcional)' : 'Motivo'}
 
                 value={value}
                 onChangeText={onChange}

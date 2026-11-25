@@ -13,7 +13,9 @@ import type {
   EstadoSolicitud,
   RecursoApoyo,
   Reserva,
+  Usuario,
 } from '@/types';
+import { puedeCancelarSolicitud } from '@/utils/cancelacionSolicitud';
 import { esDiaHabil } from '@/utils/parametros';
 
 import {
@@ -34,7 +36,7 @@ import { RESERVAS } from './mocks/reservas';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
-import { obtenerParametros } from './parametros';
+import { obtenerParametros, obtenerPlazoCancelacion } from './parametros';
 import { buscarEnDirectorio } from './usuarios';
 
 /** Copia mutable: con mocks, las decisiones se ven durante la sesión de la app. */
@@ -458,6 +460,31 @@ export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva
 }
 
 /** Reservas del usuario de la sesión, ordenadas por fecha (HU-27 y HU-08). */
+export async function cancelarMiReserva(id: string, motivo: string, usuario: Usuario): Promise<void> {
+  const reason = motivo.trim();
+  if (usaApi('espacios')) {
+    await peticion('/spaces/reservations/' + encodeURIComponent(id) + '/cancel/', {
+      method: 'POST', body: JSON.stringify({ reason }),
+    });
+    return;
+  }
+  const plazo = await obtenerPlazoCancelacion(false);
+  const reserva = reservas.find((actual) => actual.id === id && actual.solicitanteId === usuario.id);
+  if (!reserva) throw new ErrorApi(404, 'No encontramos tu reserva.');
+  if (!puedeCancelarSolicitud('reserva', reserva.estado, reserva.fecha, reserva.horaInicio, plazo)) {
+    throw new ErrorApi(400, 'Esta reserva ya no se puede cancelar.');
+  }
+  const nota = reason || 'Cancelada por la persona solicitante.';
+  reservas = reservas.map((actual) => actual.id === id ? { ...actual, estado: 'cancelada', motivo: nota } : actual);
+  crearNotificacion({ usuarioId: usuario.id, solicitudId: id, titulo: 'Reserva cancelada', mensaje: nota });
+  registrarEvento('reserva', id, 'cancelada', usuario.nombre, nota);
+  registrarUso({
+    id: 'uso-reserva-' + id, usuario, servicio: 'espacios', finalidad: reserva.proposito,
+    fecha: reserva.fecha, modalidad: 'presencial', estado: 'cancelada',
+  });
+  await simularRed(null);
+}
+
 export async function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
   if (usaApi('espacios')) {
     const solicitante = { id: usuarioId, nombre: useSesion.getState().usuario?.nombre ?? '' };
