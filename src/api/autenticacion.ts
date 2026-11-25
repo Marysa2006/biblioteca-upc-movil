@@ -56,8 +56,8 @@ const contrasenasRegistradas = new Map<string, string>();
  * CA1: credenciales correctas y cuenta vigente → devuelve el usuario y el token.
  * CA2: credenciales inválidas → ErrorApi 401 (mismo mensaje para todos los casos,
  *      para no revelar qué correos existen).
- * CA3: cuenta inactiva → ErrorApi 403. Con la API real no se cumple: el Backend responde 401
- *      igual que con una contraseña incorrecta (anotado para el Backend).
+ * CA3: si /token/ devuelve 403, se conserva el estado para mostrar el aviso de cuenta inactiva.
+ * El Backend desplegado todavía devuelve 401 en este caso (ver el documento de integración).
  */
 export async function iniciarSesionApi(credenciales: CredencialesLogin): Promise<RespuestaLogin> {
   if (!usaApi('sesion')) {
