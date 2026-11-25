@@ -6,6 +6,7 @@
  */
 import { peticion, simularRed, usaApi } from './cliente';
 import { ORIENTACION_AUTOARCHIVO } from './mocks/autoarchivo';
+import { PORTAL_AUTOARCHIVO_PRUEBA } from './mocks/enlacesPortal';
 
 /**
  * Contenido de la orientación. Es un tipo de contenido de esta capa, no va en src/types.
@@ -31,11 +32,7 @@ type AutoarchivoBackend = {
 export async function obtenerPortalAutoarchivo() {
   const respuesta = usaApi('autoarchivo')
     ? await peticion<AutoarchivoBackend>('/portal/self-archive/')
-    : await simularRed<AutoarchivoBackend>({
-        repository_url: 'https://repositorio.unicesar.edu.co',
-        message: null,
-        guide: null,
-      });
+    : await simularRed<AutoarchivoBackend>(PORTAL_AUTOARCHIVO_PRUEBA);
   const guia = respuesta.guide;
   const bloques = typeof guia?.body === 'string' ? leerBloques(guia.body) : undefined;
   const orientacion = bloques ? {

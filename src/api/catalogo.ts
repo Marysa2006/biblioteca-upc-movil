@@ -15,13 +15,14 @@ import type { PaginaResultados } from '@/utils/busqueda';
 import { leerResultadosCatalogo } from '@/utils/catalogo';
 
 import { peticion, simularRed, usaApi } from './cliente';
+import { PORTAL_KOHA_PRUEBA } from './mocks/enlacesPortal';
 
 type KohaBackend = { url: string | null; staff_url?: string | null; message?: string | null };
 
 export async function obtenerEnlacesKoha() {
   const enlaces = usaApi('servicios')
     ? await peticion<KohaBackend>('/portal/koha-opac/')
-    : await simularRed<KohaBackend>({ url: 'https://koha.unicesar.edu.co', staff_url: null });
+    : await simularRed<KohaBackend>(PORTAL_KOHA_PRUEBA);
   return {
     opac: enlaces.url ?? null,
     personal: enlaces.staff_url ?? null,
