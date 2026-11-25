@@ -20,7 +20,7 @@ import {
   type ServicioGestionBackend,
   type ServiciosPortal,
 } from './backend/servicios';
-import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { SERVICIOS } from './mocks/servicios';
 
 /** Copia mutable: con mocks, lo que crea o edita la administración se ve durante la sesión de la app. */
@@ -87,10 +87,7 @@ export function obtenerTodosLosServicios(): Promise<Servicio[]> {
       categoriasDeGestion(),
     ]).then(([lista, categorias]) => lista.map((servicio) => servicioGestionDesdeBackend(servicio, categorias)));
   }
-  if (USAR_MOCKS) {
-    return simularRed(servicios.map((servicio) => ({ ...servicio })));
-  }
-  return peticion<Servicio[]>('/servicios/?todos=1');
+  return simularRed(servicios.map((servicio) => ({ ...servicio })));
 }
 
 /** Validación de la HU-04 (CA3): los campos de texto son obligatorios. */
@@ -113,33 +110,27 @@ function errorDeValidacion(datos: DatosServicio): ErrorApi | null {
 
 export function crearServicio(datos: DatosServicio): Promise<Servicio> {
   if (usaApi('servicios')) return guardarServicioBackend(datos);
-  if (USAR_MOCKS) {
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    const nuevo: Servicio = { ...datos, id: `servicio-${Date.now()}` };
-    servicios = [...servicios, nuevo];
-    return simularRed({ ...nuevo });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
   }
-  return peticion<Servicio>('/servicios/', { method: 'POST', body: JSON.stringify(datos) });
+  const nuevo: Servicio = { ...datos, id: `servicio-${Date.now()}` };
+  servicios = [...servicios, nuevo];
+  return simularRed({ ...nuevo });
 }
 
 export function editarServicio(id: string, datos: DatosServicio): Promise<Servicio> {
   if (usaApi('servicios')) return guardarServicioBackend(datos, id);
-  if (USAR_MOCKS) {
-    const indice = servicios.findIndex((servicio) => servicio.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
-    }
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    servicios = servicios.map((servicio, i) => (i === indice ? { ...datos, id } : servicio));
-    return simularRed({ ...servicios[indice] });
+  const indice = servicios.findIndex((servicio) => servicio.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
   }
-  return peticion<Servicio>(`/servicios/${id}/`, { method: 'PUT', body: JSON.stringify(datos) });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
+  }
+  servicios = servicios.map((servicio, i) => (i === indice ? { ...datos, id } : servicio));
+  return simularRed({ ...servicios[indice] });
 }
 
 /** Activa o desactiva un servicio (HU-04, CA2): un servicio inactivo no se muestra a la comunidad. */
@@ -152,16 +143,10 @@ export function cambiarEstadoServicio(id: string, activo: boolean): Promise<Serv
       categoriasDeGestion(),
     ]).then(([servicio, categorias]) => servicioGestionDesdeBackend(servicio, categorias));
   }
-  if (USAR_MOCKS) {
-    const indice = servicios.findIndex((servicio) => servicio.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
-    }
-    servicios = servicios.map((servicio, i) => (i === indice ? { ...servicio, activo } : servicio));
-    return simularRed({ ...servicios[indice] });
+  const indice = servicios.findIndex((servicio) => servicio.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El servicio no existe.'));
   }
-  return peticion<Servicio>(`/servicios/${id}/estado/`, {
-    method: 'PATCH',
-    body: JSON.stringify({ activo }),
-  });
+  servicios = servicios.map((servicio, i) => (i === indice ? { ...servicio, activo } : servicio));
+  return simularRed({ ...servicios[indice] });
 }

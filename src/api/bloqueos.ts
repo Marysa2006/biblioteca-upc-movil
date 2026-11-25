@@ -4,7 +4,6 @@
  * afectadas (CA1) y, al confirmar, se cancelan y se avisa a los afectados (CA2). Sin reservas
  * afectadas, el bloqueo se aplica directo (CA3). Los bloqueos aparecen como "bloqueado" en la
  * disponibilidad de HU-17.
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { Bloqueo, Reserva } from '@/types';
 import { useSesion } from '@/store/sesion';
@@ -20,7 +19,7 @@ import {
   type BloqueoBackend,
   type ReservaAfectadaBackend,
 } from './backend/bloqueos';
-import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { BLOQUEOS } from './mocks/reservas';
 import { cancelarReservas, reservasAfectadasPorBloqueo } from './reservas';
 
@@ -86,12 +85,8 @@ export function obtenerBloqueos(espacioId?: string): Promise<Bloqueo[]> {
     const consulta = espacioId ? `?space=${encodeURIComponent(espacioId)}` : '';
     return peticionTodas(`${RUTA_BLOQUEOS}${consulta}`, bloqueoDesdeBackend);
   }
-  if (USAR_MOCKS) {
-    const lista = espacioId ? bloqueos.filter((b) => b.espacioId === espacioId) : bloqueos;
-    return simularRed(lista.map((bloqueo) => ({ ...bloqueo })));
-  }
-  const consulta = espacioId ? `?espacio=${espacioId}` : '';
-  return peticion<Bloqueo[]>(`/bloqueos/${consulta}`);
+  const lista = espacioId ? bloqueos.filter((b) => b.espacioId === espacioId) : bloqueos;
+  return simularRed(lista.map((bloqueo) => ({ ...bloqueo })));
 }
 
 /** Reservas que quedarían afectadas por el bloqueo, antes de confirmarlo (CA1). */
@@ -112,18 +107,13 @@ export async function previsualizarBloqueo(datos: DatosBloqueo): Promise<Revisio
       };
     }
   }
-  if (USAR_MOCKS) {
-    const error = errorDeRango(datos);
-    if (error) {
-      throw error;
-    }
-    return simularRed({
-      afectadas: reservasAfectadasPorBloqueo(datos).map((reserva) => ({ ...reserva })),
-    });
+  const error = errorDeRango(datos);
+  if (error) {
+    throw error;
   }
-  return { afectadas: await peticion<Reserva[]>('/bloqueos/afectadas/', {
-    method: 'POST', body: JSON.stringify(datos),
-  }) };
+  return simularRed({
+    afectadas: reservasAfectadasPorBloqueo(datos).map((reserva) => ({ ...reserva })),
+  });
 }
 
 /**
@@ -136,27 +126,24 @@ export async function confirmarBloqueo(datos: DatosBloqueo): Promise<ResultadoBl
     if (error) throw error;
     return enviarBloqueo(datos, true);
   }
-  if (USAR_MOCKS) {
-    const error = errorDeValidacion(datos);
-    if (error) {
-      throw error;
-    }
-
-    const afectadas = reservasAfectadasPorBloqueo(datos);
-    const bloqueo: Bloqueo = { ...datos, id: `blo-${Date.now()}` };
-    bloqueos = [...bloqueos, bloqueo];
-
-    const canceladas = cancelarReservas(
-      afectadas.map((reserva) => reserva.id),
-      `Bloqueo institucional: ${datos.motivo.trim()}`,
-    );
-
-    return simularRed({
-      bloqueo: { ...bloqueo },
-      canceladas: canceladas.map((reserva) => ({ ...reserva })),
-    });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    throw error;
   }
-  return peticion<ResultadoBloqueo>('/bloqueos/', { method: 'POST', body: JSON.stringify(datos) });
+
+  const afectadas = reservasAfectadasPorBloqueo(datos);
+  const bloqueo: Bloqueo = { ...datos, id: `blo-${Date.now()}` };
+  bloqueos = [...bloqueos, bloqueo];
+
+  const canceladas = cancelarReservas(
+    afectadas.map((reserva) => reserva.id),
+    `Bloqueo institucional: ${datos.motivo.trim()}`,
+  );
+
+  return simularRed({
+    bloqueo: { ...bloqueo },
+    canceladas: canceladas.map((reserva) => ({ ...reserva })),
+  });
 }
 
 export async function cancelarBloqueo(id: string, motivo: string): Promise<Bloqueo> {

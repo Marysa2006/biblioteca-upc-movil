@@ -2,14 +2,13 @@
  * Usuarios y permisos del personal (HU-07).
  * Lista el directorio, actualiza los roles del personal de uno y le da o le quita los
  * permisos que van aparte de los roles (versión 1.1).
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { AceptacionPolitica, FirmaElectronica, Permiso, RolPersonal, Usuario } from '@/types';
 import { NOMBRE_PERMISO, PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
 
 import { permisosExtraDesdeBackend, permisosExtraHaciaBackend } from './backend/equivalencias';
 import { usuarioDirectorioDesdeBackend, type UsuarioBackend } from './backend/usuarios';
-import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { crearNotificacion } from './notificaciones';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
@@ -27,10 +26,7 @@ export function obtenerUsuarios(rol?: RolPersonal): Promise<Usuario[]> {
     const consulta = rol ? `?role=${encodeURIComponent(rol)}` : '';
     return peticionTodas(`/users/${consulta}`, usuarioDirectorioDesdeBackend);
   }
-  if (USAR_MOCKS) {
-    return simularRed(directorio.filter((usuario) => !rol || usuario.rolesPersonal.includes(rol)).map(copiar));
-  }
-  return peticion<Usuario[]>('/usuarios/');
+  return simularRed(directorio.filter((usuario) => !rol || usuario.rolesPersonal.includes(rol)).map(copiar));
 }
 
 /**
@@ -41,10 +37,7 @@ export function obtenerEquipo(): Promise<Usuario[]> {
   if (usaApi('usuarios')) {
     return obtenerUsuarios().then((usuarios) => usuarios.filter((u) => u.rolesPersonal.length > 0));
   }
-  if (USAR_MOCKS) {
-    return simularRed(directorio.filter((usuario) => usuario.rolesPersonal.length > 0).map(copiar));
-  }
-  return peticion<Usuario[]>('/usuarios/?personal=1');
+  return simularRed(directorio.filter((usuario) => usuario.rolesPersonal.length > 0).map(copiar));
 }
 
 async function obtenerUsuarioDirectorio(id: string) {
@@ -204,46 +197,40 @@ export function actualizarPermisosExtra(
     });
   }
 
-  if (USAR_MOCKS) {
-    const indice = directorio.findIndex((actual) => actual.id === usuarioId);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
-    }
-    const anterior = directorio[indice];
-    if (permisos.length > 0 && anterior.rolesPersonal.length === 0) {
-      return Promise.reject(
-        new ErrorApi(
-          400,
-          'Primero asígnale un rol del personal: sin él, los permisos adicionales no le sirven.',
-        ),
-      );
-    }
-    const siguiente: Usuario = {
-      ...anterior,
-      permisosExtra: permisos.length > 0 ? [...permisos] : undefined,
-    };
-    directorio = directorio.map((actual, i) => (i === indice ? siguiente : actual));
-
-    // Solo se avisa de los que son nuevos para la persona.
-    const nuevos = permisos.filter((permiso) => !anterior.permisosExtra?.includes(permiso));
-    if (nuevos.length > 0) {
-      crearNotificacion({
-        usuarioId,
-        // No nace de una solicitud: es el aviso de un permiso nuevo. El campo es obligatorio
-        // en el tipo, así que va vacío y la pantalla lo ignora.
-        solicitudId: '',
-        titulo: 'Nuevos permisos',
-        mensaje: `Ahora tienes ${nuevos.length === 1 ? 'el permiso' : 'los permisos'}: ${nuevos
-          .map((permiso) => NOMBRE_PERMISO[permiso])
-          .join(', ')}.`,
-      });
-    }
-    return simularRed(copiar(siguiente));
+  const indice = directorio.findIndex((actual) => actual.id === usuarioId);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
   }
-  return peticion<Usuario>(`/usuarios/${usuarioId}/permisos/`, {
-    method: 'PUT',
-    body: JSON.stringify({ permisosExtra: permisos }),
-  });
+  const anterior = directorio[indice];
+  if (permisos.length > 0 && anterior.rolesPersonal.length === 0) {
+    return Promise.reject(
+      new ErrorApi(
+        400,
+        'Primero asígnale un rol del personal: sin él, los permisos adicionales no le sirven.',
+      ),
+    );
+  }
+  const siguiente: Usuario = {
+    ...anterior,
+    permisosExtra: permisos.length > 0 ? [...permisos] : undefined,
+  };
+  directorio = directorio.map((actual, i) => (i === indice ? siguiente : actual));
+
+  // Solo se avisa de los que son nuevos para la persona.
+  const nuevos = permisos.filter((permiso) => !anterior.permisosExtra?.includes(permiso));
+  if (nuevos.length > 0) {
+    crearNotificacion({
+      usuarioId,
+      // No nace de una solicitud: es el aviso de un permiso nuevo. El campo es obligatorio
+      // en el tipo, así que va vacío y la pantalla lo ignora.
+      solicitudId: '',
+      titulo: 'Nuevos permisos',
+      mensaje: `Ahora tienes ${nuevos.length === 1 ? 'el permiso' : 'los permisos'}: ${nuevos
+        .map((permiso) => NOMBRE_PERMISO[permiso])
+        .join(', ')}.`,
+    });
+  }
+  return simularRed(copiar(siguiente));
 }
 
 /**
@@ -255,18 +242,12 @@ export function actualizarRolesPersonal(
   rolesPersonal: RolPersonal[],
 ): Promise<Usuario> {
   if (usaApi('usuarios')) return actualizarRolesBackend(usuarioId, rolesPersonal);
-  if (USAR_MOCKS) {
-    const indice = directorio.findIndex((usuario) => usuario.id === usuarioId);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
-    }
-    directorio = directorio.map((usuario, i) =>
-      i === indice ? { ...usuario, rolesPersonal: [...rolesPersonal] } : usuario,
-    );
-    return simularRed(copiar(directorio[indice]));
+  const indice = directorio.findIndex((usuario) => usuario.id === usuarioId);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El usuario no existe.'));
   }
-  return peticion<Usuario>(`/usuarios/${usuarioId}/roles/`, {
-    method: 'PUT',
-    body: JSON.stringify({ rolesPersonal }),
-  });
+  directorio = directorio.map((usuario, i) =>
+    i === indice ? { ...usuario, rolesPersonal: [...rolesPersonal] } : usuario,
+  );
+  return simularRed(copiar(directorio[indice]));
 }

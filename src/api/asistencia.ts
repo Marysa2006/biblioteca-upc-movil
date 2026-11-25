@@ -142,24 +142,19 @@ export async function abrirAsistencia(sesionId: string): Promise<AsistenciaSesio
     throw new ErrorApi(400, 'Falta la sesión.');
   }
   if (usaApi('asistencia')) throw new ErrorApi(400, 'El QR está disponible automáticamente.');
-  if (USAR_MOCKS) {
-    const estado = estadoDe(sesionId);
-    if (estado.cerrada) {
-      throw new ErrorApi(400, 'Esta asistencia ya se cerró.');
-    }
-    const ahora = ahoraFechaHora();
-    const vigente = estado.codigo !== null && estado.vence !== null && estado.vence > ahora;
-    if (!vigente) {
-      // #278: la vigencia la fija `Parametros.horasVigenciaQr` (`attendance-qr-hours`).
-      const parametros = await obtenerParametros();
-      estado.codigo = codigoTemporal(sesionId);
-      estado.vence = sumarMinutos(ahora, parametros.horasVigenciaQr * 60);
-    }
-    return simularRed(aAsistencia(sesionId));
+  const estado = estadoDe(sesionId);
+  if (estado.cerrada) {
+    throw new ErrorApi(400, 'Esta asistencia ya se cerró.');
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/abrir/`, {
-    method: 'POST',
-  });
+  const ahora = ahoraFechaHora();
+  const vigente = estado.codigo !== null && estado.vence !== null && estado.vence > ahora;
+  if (!vigente) {
+    // #278: la vigencia la fija `Parametros.horasVigenciaQr` (`attendance-qr-hours`).
+    const parametros = await obtenerParametros();
+    estado.codigo = codigoTemporal(sesionId);
+    estado.vence = sumarMinutos(ahora, parametros.horasVigenciaQr * 60);
+  }
+  return simularRed(aAsistencia(sesionId));
 }
 
 /** Asistentes de la sesión, del primero al último que se registró (CA2). */
@@ -168,10 +163,7 @@ export function obtenerAsistentes(sesionId: string): Promise<AsistenciaSesion> {
     return peticion<RegistroAsistenciaBackend[]>(`/attendance/${encodeURIComponent(sesionId)}/`)
       .then((lista) => listaAsistenciaDesdeBackend(sesionId, lista));
   }
-  if (USAR_MOCKS) {
-    return simularRed(aAsistencia(sesionId));
-  }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/`);
+  return simularRed(aAsistencia(sesionId));
 }
 
 /**
@@ -284,45 +276,39 @@ export function marcarAsistenciaManual(
     }).then(asistenciaDesdeBackend);
   }
   const usuarioId = 'usuarioId' in datos ? datos.usuarioId : '';
-  if (USAR_MOCKS) {
-    const estado = estadoDe(sesionId);
-    if (estado.cerrada) {
-      return Promise.reject(new ErrorApi(400, 'La asistencia de esta sesión ya cerró.'));
+  const estado = estadoDe(sesionId);
+  if (estado.cerrada) {
+    return Promise.reject(new ErrorApi(400, 'La asistencia de esta sesión ya cerró.'));
+  }
+  if ('nombre' in datos) {
+    const nombre = datos.nombre.trim();
+    if (!nombre) return Promise.reject(new ErrorApi(400, 'Indica el nombre de la persona.'));
+    const id = `asi-manual-${sesionId}-${nombre.toLocaleLowerCase()}`;
+    if (!estado.registros.some((registro) => registro.id === id)) {
+      estado.registros = [...estado.registros, {
+        id, sesionId, usuarioId: '', nombre, programa: datos.programa?.trim(),
+        semestre: datos.semestre?.trim(), tipoUsuario: datos.tipo,
+        fechaHora: ahoraFechaHora(), medio: 'manual',
+      }];
+      registrarUso({ id: `uso-${id}`, servicio: 'asesorias', finalidad: 'Asistencia manual',
+        fecha: hoyISO(), estado: 'completada' });
     }
-    if ('nombre' in datos) {
-      const nombre = datos.nombre.trim();
-      if (!nombre) return Promise.reject(new ErrorApi(400, 'Indica el nombre de la persona.'));
-      const id = `asi-manual-${sesionId}-${nombre.toLocaleLowerCase()}`;
-      if (!estado.registros.some((registro) => registro.id === id)) {
-        estado.registros = [...estado.registros, {
-          id, sesionId, usuarioId: '', nombre, programa: datos.programa?.trim(),
-          semestre: datos.semestre?.trim(), tipoUsuario: datos.tipo,
-          fechaHora: ahoraFechaHora(), medio: 'manual',
-        }];
-        registrarUso({ id: `uso-${id}`, servicio: 'asesorias', finalidad: 'Asistencia manual',
-          fecha: hoyISO(), estado: 'completada' });
-      }
-      return simularRed(aAsistencia(sesionId));
-    }
-    if (!usuarioId?.trim()) {
-      return Promise.reject(new ErrorApi(400, 'Elige a la persona que asistió.'));
-    }
-    if (!USUARIOS_DIRECTORIO.some((usuario) => usuario.id === usuarioId)) {
-      return Promise.reject(new ErrorApi(404, 'Esa persona no existe.'));
-    }
-    if (estado.registros.some((registro) => registro.usuarioId === usuarioId)) {
-      return simularRed(aAsistencia(sesionId));
-    }
-    agregarRegistro(sesionId, usuarioId, 'manual');
-    const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
-    registrarUso({ id: `uso-asistencia-${sesionId}-${usuarioId}`, usuario,
-      servicio: 'asesorias', finalidad: 'Asistencia manual', fecha: hoyISO(), estado: 'completada' });
     return simularRed(aAsistencia(sesionId));
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/manual/`, {
-    method: 'POST',
-    body: JSON.stringify({ usuarioId }),
-  });
+  if (!usuarioId?.trim()) {
+    return Promise.reject(new ErrorApi(400, 'Elige a la persona que asistió.'));
+  }
+  if (!USUARIOS_DIRECTORIO.some((usuario) => usuario.id === usuarioId)) {
+    return Promise.reject(new ErrorApi(404, 'Esa persona no existe.'));
+  }
+  if (estado.registros.some((registro) => registro.usuarioId === usuarioId)) {
+    return simularRed(aAsistencia(sesionId));
+  }
+  agregarRegistro(sesionId, usuarioId, 'manual');
+  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
+  registrarUso({ id: `uso-asistencia-${sesionId}-${usuarioId}`, usuario,
+    servicio: 'asesorias', finalidad: 'Asistencia manual', fecha: hoyISO(), estado: 'completada' });
+  return simularRed(aAsistencia(sesionId));
 }
 
 /**
@@ -331,17 +317,12 @@ export function marcarAsistenciaManual(
  */
 export function cerrarAsistencia(sesionId: string): Promise<AsistenciaSesion> {
   if (usaApi('asistencia')) return Promise.reject(new ErrorApi(400, 'El QR vence automáticamente.'));
-  if (USAR_MOCKS) {
-    const estado = estadoDe(sesionId);
-    if (estado.cerrada) {
-      return Promise.reject(new ErrorApi(400, 'Esta asistencia ya estaba cerrada.'));
-    }
-    estado.cerrada = true;
-    return simularRed(aAsistencia(sesionId));
+  const estado = estadoDe(sesionId);
+  if (estado.cerrada) {
+    return Promise.reject(new ErrorApi(400, 'Esta asistencia ya estaba cerrada.'));
   }
-  return peticion<AsistenciaSesion>(`/asesorias/citas/${sesionId}/asistencia/cerrar/`, {
-    method: 'POST',
-  });
+  estado.cerrada = true;
+  return simularRed(aAsistencia(sesionId));
 }
 
 /** @internal Reinicia la asistencia de las pruebas (solo para los tests). */

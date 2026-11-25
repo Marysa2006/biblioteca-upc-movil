@@ -13,7 +13,7 @@ import {
   type CambioBackend,
   type TipoBackend,
 } from './backend/solicitudes';
-import { peticion, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { peticion, simularRed, usaApi } from './cliente';
 import { HISTORIAL_SOLICITUDES } from './mocks/historial';
 
 /** Un evento guardado con la solicitud a la que pertenece; al devolverlo se quitan esas claves. */
@@ -82,11 +82,8 @@ export async function obtenerHistorialSolicitud(
     );
     return historialDesdeBackend(detalle.id, detalle.service, detalle.history);
   }
-  if (USAR_MOCKS) {
-    // sort es estable: dos eventos del mismo minuto quedan en el orden en que se registraron.
-    return simularRed(historialDePrueba(tipo, id));
-  }
-  return peticion<EventoSolicitud[]>(`/solicitudes/${tipo}/${id}/historial/`);
+  // sort es estable: dos eventos del mismo minuto quedan en el orden en que se registraron.
+  return simularRed(historialDePrueba(tipo, id));
 }
 
 export function historialDePrueba(tipo: TipoSolicitud, id: string): EventoSolicitud[] {

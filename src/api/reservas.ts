@@ -29,7 +29,7 @@ import {
   type ReservaPersonalBackend,
 } from './backend/reservas';
 import { ESTADO_DESDE_BACKEND } from './backend/equivalencias';
-import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { RESERVAS } from './mocks/reservas';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
@@ -163,12 +163,8 @@ export async function obtenerSolicitudesReserva(
     const lista = await peticionTodas(`${RUTA_PERSONAL}${consulta}`, leerReservaPersonal);
     return ordenar(estado === 'todas' ? lista : lista.filter((r) => r.estado === estado));
   }
-  if (USAR_MOCKS) {
-    const lista = estado === 'todas' ? reservas : reservas.filter((r) => r.estado === estado);
-    return simularRed(ordenar(lista).map((reserva) => ({ ...reserva })));
-  }
-  const consulta = estado === 'todas' ? '' : `?estado=${estado}`;
-  return peticion<Reserva[]>(`/reservas/${consulta}`);
+  const lista = estado === 'todas' ? reservas : reservas.filter((r) => r.estado === estado);
+  return simularRed(ordenar(lista).map((reserva) => ({ ...reserva })));
 }
 
 /**
@@ -203,101 +199,95 @@ export async function decidirReserva(
     const accion = { aprobar: 'approve', rechazar: 'reject', cancelar: 'cancel' }[decision];
     return guardarReservaPersonal(`${ruta}${accion}/`, 'POST', { reason });
   }
-  if (USAR_MOCKS) {
-    const indice = reservas.findIndex((reserva) => reserva.id === id);
-    if (indice === -1) {
-      throw new ErrorApi(404, 'La solicitud no existe.');
-    }
-    if ((decision === 'rechazar' || decision === 'cancelar') && !motivo?.trim()) {
-      throw new ErrorApi(400, 'El motivo es obligatorio para rechazar o cancelar.');
-    }
-
-    const actual = reservas[indice];
-    const fecha = cambios?.fecha ?? actual.fecha;
-    const horaInicio = cambios?.horaInicio ?? actual.horaInicio;
-    const horaFin = cambios?.horaFin ?? actual.horaFin;
-
-    if (decision === 'nueva_fecha') {
-      if (!cambios?.fecha) {
-        throw new ErrorApi(400, 'Indica la nueva fecha de la reserva.');
-      }
-      const parametros = await obtenerParametros();
-      if (!esDiaHabil(fecha, parametros)) {
-        throw new ErrorApi(400, 'La nueva fecha no es un día hábil de la biblioteca.');
-      }
-    }
-
-    if (
-      (decision === 'aprobar' || decision === 'nueva_fecha') &&
-      hayChoque({ id, espacioId: actual.espacioId, fecha, horaInicio, horaFin })
-    ) {
-      throw new ErrorApi(400, 'Ese horario ya está ocupado por otra reserva.');
-    }
-
-    const estadoPorDecision: Record<DecisionReserva, EstadoSolicitud> = {
-      aprobar: 'aprobada',
-      rechazar: 'rechazada',
-      cancelar: 'cancelada',
-      nueva_fecha: 'nueva_fecha',
-    };
-
-    const actualizada: Reserva = {
-      ...actual,
-      fecha,
-      horaInicio,
-      horaFin,
-      estado: estadoPorDecision[decision],
-      motivo: motivo?.trim() || actual.motivo,
-    };
-    reservas = reservas.map((reserva, i) => (i === indice ? actualizada : reserva));
-
-    crearNotificacion({
-      usuarioId: actualizada.solicitanteId,
-      solicitudId: actualizada.id,
-      titulo: tituloDeDecision(decision),
-      mensaje: mensajeDeDecision(actualizada, decision, motivo),
-    });
-    // HU-08: la nota es el motivo y, con nueva fecha, la fecha propuesta.
-    registrarEvento(
-      'reserva',
-      actualizada.id,
-      actualizada.estado,
-      'Personal de la biblioteca',
-      [
-        motivo?.trim(),
-        decision === 'nueva_fecha'
-          ? `Nueva fecha: ${actualizada.fecha} de ${actualizada.horaInicio} a ${actualizada.horaFin}.`
-          : '',
-      ]
-        .filter(Boolean)
-        .join(' '),
-    );
-
-    // HU-25: cada operación completada deja su registro de uso.
-    registrarUso({
-      id: `uso-reserva-${actualizada.id}`,
-      servicio: 'espacios',
-      finalidad: actualizada.proposito,
-      // #307: la decisión del personal cuenta para el tiempo de respuesta.
-      respondida: true,
-      fecha: actualizada.fecha,
-      modalidad: 'presencial',
-      // Rechazar o cancelar es una operación cancelada; aprobar, completada; nueva fecha, pendiente.
-      estado:
-        decision === 'aprobar'
-          ? 'completada'
-          : decision === 'rechazar' || decision === 'cancelar'
-            ? 'cancelada'
-            : 'pendiente',
-      ...(datosDeSolicitante(actualizada.solicitanteId) ?? {}),
-    });
-
-    return simularRed({ ...actualizada });
+  const indice = reservas.findIndex((reserva) => reserva.id === id);
+  if (indice === -1) {
+    throw new ErrorApi(404, 'La solicitud no existe.');
   }
-  return peticion<Reserva>(`/reservas/${id}/decision/`, {
-    method: 'POST',
-    body: JSON.stringify({ decision, motivo, cambios }),
+  if ((decision === 'rechazar' || decision === 'cancelar') && !motivo?.trim()) {
+    throw new ErrorApi(400, 'El motivo es obligatorio para rechazar o cancelar.');
+  }
+
+  const actual = reservas[indice];
+  const fecha = cambios?.fecha ?? actual.fecha;
+  const horaInicio = cambios?.horaInicio ?? actual.horaInicio;
+  const horaFin = cambios?.horaFin ?? actual.horaFin;
+
+  if (decision === 'nueva_fecha') {
+    if (!cambios?.fecha) {
+      throw new ErrorApi(400, 'Indica la nueva fecha de la reserva.');
+    }
+    const parametros = await obtenerParametros();
+    if (!esDiaHabil(fecha, parametros)) {
+      throw new ErrorApi(400, 'La nueva fecha no es un día hábil de la biblioteca.');
+    }
+  }
+
+  if (
+    (decision === 'aprobar' || decision === 'nueva_fecha') &&
+    hayChoque({ id, espacioId: actual.espacioId, fecha, horaInicio, horaFin })
+  ) {
+    throw new ErrorApi(400, 'Ese horario ya está ocupado por otra reserva.');
+  }
+
+  const estadoPorDecision: Record<DecisionReserva, EstadoSolicitud> = {
+    aprobar: 'aprobada',
+    rechazar: 'rechazada',
+    cancelar: 'cancelada',
+    nueva_fecha: 'nueva_fecha',
+  };
+
+  const actualizada: Reserva = {
+    ...actual,
+    fecha,
+    horaInicio,
+    horaFin,
+    estado: estadoPorDecision[decision],
+    motivo: motivo?.trim() || actual.motivo,
+  };
+  reservas = reservas.map((reserva, i) => (i === indice ? actualizada : reserva));
+
+  crearNotificacion({
+    usuarioId: actualizada.solicitanteId,
+    solicitudId: actualizada.id,
+    titulo: tituloDeDecision(decision),
+    mensaje: mensajeDeDecision(actualizada, decision, motivo),
   });
+  // HU-08: la nota es el motivo y, con nueva fecha, la fecha propuesta.
+  registrarEvento(
+    'reserva',
+    actualizada.id,
+    actualizada.estado,
+    'Personal de la biblioteca',
+    [
+      motivo?.trim(),
+      decision === 'nueva_fecha'
+        ? `Nueva fecha: ${actualizada.fecha} de ${actualizada.horaInicio} a ${actualizada.horaFin}.`
+        : '',
+    ]
+      .filter(Boolean)
+      .join(' '),
+  );
+
+  // HU-25: cada operación completada deja su registro de uso.
+  registrarUso({
+    id: `uso-reserva-${actualizada.id}`,
+    servicio: 'espacios',
+    finalidad: actualizada.proposito,
+    // #307: la decisión del personal cuenta para el tiempo de respuesta.
+    respondida: true,
+    fecha: actualizada.fecha,
+    modalidad: 'presencial',
+    // Rechazar o cancelar es una operación cancelada; aprobar, completada; nueva fecha, pendiente.
+    estado:
+      decision === 'aprobar'
+        ? 'completada'
+        : decision === 'rechazar' || decision === 'cancelar'
+          ? 'cancelada'
+          : 'pendiente',
+    ...(datosDeSolicitante(actualizada.solicitanteId) ?? {}),
+  });
+
+  return simularRed({ ...actualizada });
 }
 
 /**
@@ -313,55 +303,52 @@ export async function crearReservaTercero({
     if (!correo) throw new ErrorApi(400, 'Indica el correo del solicitante.');
     return guardarReservaPersonal(RUTA_PERSONAL, 'POST', reservaTerceroHaciaBackend(datos, correo));
   }
-  if (USAR_MOCKS) {
-    if (!datos.proposito?.trim()) {
-      throw new ErrorApi(400, 'El propósito es obligatorio.');
-    }
-    const persona = !datos.solicitanteId && correoSolicitante ? buscarEnDirectorio(correoSolicitante) : undefined;
-    if (!datos.solicitanteId && (!persona || persona.activo === false)) {
-      throw new ErrorApi(400, 'No encontramos una cuenta activa con ese correo institucional.');
-    }
-    if (persona && persona.tipo !== 'docente' && persona.tipo !== 'administrativo') {
-      throw new ErrorApi(400, 'La cuenta debe pertenecer a un docente o administrativo.');
-    }
-    const parametros = await obtenerParametros();
-    if (!esDiaHabil(datos.fecha, parametros)) {
-      throw new ErrorApi(400, 'La fecha no es un día hábil de la biblioteca.');
-    }
-    if (hayChoque(datos)) {
-      throw new ErrorApi(400, 'Ese horario ya está ocupado por otra reserva.');
-    }
-
-    const nueva: Reserva = {
-      ...datos,
-      ...(persona ? { solicitanteId: persona.id, solicitante: persona.nombre } : {}),
-      id: `res-${Date.now()}`,
-      estado: 'aprobada',
-    };
-    reservas = [...reservas, nueva];
-
-    crearNotificacion({
-      usuarioId: nueva.solicitanteId,
-      solicitudId: nueva.id,
-      titulo: 'Reserva creada',
-      mensaje: `El personal reservó el ${nueva.fecha} a las ${nueva.horaInicio} a tu nombre.`,
-    });
-    registrarEvento(
-      'reserva',
-      nueva.id,
-      'aprobada',
-      'Personal de la biblioteca',
-      'Creada por el personal.',
-    );
-    registrarUso({
-      id: `uso-reserva-${nueva.id}`, servicio: 'espacios', finalidad: nueva.proposito,
-      fecha: nueva.fecha, modalidad: 'presencial', estado: 'pendiente', respondida: true,
-      ...datosDeSolicitante(nueva.solicitanteId),
-    });
-
-    return simularRed({ ...nueva });
+  if (!datos.proposito?.trim()) {
+    throw new ErrorApi(400, 'El propósito es obligatorio.');
   }
-  return peticion<Reserva>('/reservas/terceros/', { method: 'POST', body: JSON.stringify(datos) });
+  const persona = !datos.solicitanteId && correoSolicitante ? buscarEnDirectorio(correoSolicitante) : undefined;
+  if (!datos.solicitanteId && (!persona || persona.activo === false)) {
+    throw new ErrorApi(400, 'No encontramos una cuenta activa con ese correo institucional.');
+  }
+  if (persona && persona.tipo !== 'docente' && persona.tipo !== 'administrativo') {
+    throw new ErrorApi(400, 'La cuenta debe pertenecer a un docente o administrativo.');
+  }
+  const parametros = await obtenerParametros();
+  if (!esDiaHabil(datos.fecha, parametros)) {
+    throw new ErrorApi(400, 'La fecha no es un día hábil de la biblioteca.');
+  }
+  if (hayChoque(datos)) {
+    throw new ErrorApi(400, 'Ese horario ya está ocupado por otra reserva.');
+  }
+
+  const nueva: Reserva = {
+    ...datos,
+    ...(persona ? { solicitanteId: persona.id, solicitante: persona.nombre } : {}),
+    id: `res-${Date.now()}`,
+    estado: 'aprobada',
+  };
+  reservas = [...reservas, nueva];
+
+  crearNotificacion({
+    usuarioId: nueva.solicitanteId,
+    solicitudId: nueva.id,
+    titulo: 'Reserva creada',
+    mensaje: `El personal reservó el ${nueva.fecha} a las ${nueva.horaInicio} a tu nombre.`,
+  });
+  registrarEvento(
+    'reserva',
+    nueva.id,
+    'aprobada',
+    'Personal de la biblioteca',
+    'Creada por el personal.',
+  );
+  registrarUso({
+    id: `uso-reserva-${nueva.id}`, servicio: 'espacios', finalidad: nueva.proposito,
+    fecha: nueva.fecha, modalidad: 'presencial', estado: 'pendiente', respondida: true,
+    ...datosDeSolicitante(nueva.solicitanteId),
+  });
+
+  return simularRed({ ...nueva });
 }
 
 /** Criterio de un bloqueo para saber qué reservas caen dentro (HU-20). */
@@ -490,11 +477,7 @@ export async function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> 
       detalles.map((detalle) => miReservaDesdeBackend(detalle, solicitante, espacios)),
     );
   }
-  if (USAR_MOCKS) {
-    const mias = reservas.filter((reserva) => reserva.solicitanteId === usuarioId);
-    return simularRed(ordenar(mias).map((reserva) => ({ ...reserva })));
-  }
-  // Ruta provisional: confirmar con Backend.
-  return peticion<Reserva[]>('/reservas/mias/');
+  const mias = reservas.filter((reserva) => reserva.solicitanteId === usuarioId);
+  return simularRed(ordenar(mias).map((reserva) => ({ ...reserva })));
 }
 

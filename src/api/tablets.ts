@@ -3,7 +3,6 @@
  * y préstamos vencidos (HU-24).
  * Lista, crea, edita y cambia el estado operativo; muestra la disponibilidad por franja,
  * registra la solicitud, entrega y recibe los equipos, y marca y avisa los vencidos.
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type {
   CondicionesTablet,
@@ -187,54 +186,45 @@ export function obtenerTablets(): Promise<Tablet[]> {
         return inventario.map((tablet) => tabletInventarioDesdeBackend(tablet, codigos.has(tablet.internal_code)));
       });
   }
-  if (USAR_MOCKS) {
-    return simularRed(tablets.map((tablet) => ({ ...tablet })));
-  }
-  return peticion<Tablet[]>('/tablets/');
+  return simularRed(tablets.map((tablet) => ({ ...tablet })));
 }
 
 export function crearTablet(datos: DatosTablet): Promise<Tablet> {
   if (usaApi('tablets')) return guardarTabletBackend(tabletHaciaBackend(datos), 'POST');
-  if (USAR_MOCKS) {
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    const nueva: Tablet = {
-      ...datos,
-      id: `tab-${Date.now()}`,
-      codigo: datos.codigo.trim(),
-      serial: datos.serial.trim(),
-      modelo: datos.modelo.trim(),
-    };
-    tablets = [...tablets, nueva];
-    return simularRed({ ...nueva });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
   }
-  return peticion<Tablet>('/tablets/', { method: 'POST', body: JSON.stringify(datos) });
+  const nueva: Tablet = {
+    ...datos,
+    id: `tab-${Date.now()}`,
+    codigo: datos.codigo.trim(),
+    serial: datos.serial.trim(),
+    modelo: datos.modelo.trim(),
+  };
+  tablets = [...tablets, nueva];
+  return simularRed({ ...nueva });
 }
 
 export function editarTablet(id: string, datos: DatosTablet): Promise<Tablet> {
   if (usaApi('tablets')) return guardarTabletBackend(tabletHaciaBackend(datos), 'PUT', id);
-  if (USAR_MOCKS) {
-    const indice = tablets.findIndex((tablet) => tablet.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'La tablet no existe.'));
-    }
-    const error = errorDeValidacion({ ...datos, id });
-    if (error) {
-      return Promise.reject(error);
-    }
-    const actualizada: Tablet = {
-      ...datos,
-      id,
-      codigo: datos.codigo.trim(),
-      serial: datos.serial.trim(),
-      modelo: datos.modelo.trim(),
-    };
-    tablets = tablets.map((tablet, i) => (i === indice ? actualizada : tablet));
-    return simularRed({ ...actualizada });
+  const indice = tablets.findIndex((tablet) => tablet.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'La tablet no existe.'));
   }
-  return peticion<Tablet>(`/tablets/${id}/`, { method: 'PUT', body: JSON.stringify(datos) });
+  const error = errorDeValidacion({ ...datos, id });
+  if (error) {
+    return Promise.reject(error);
+  }
+  const actualizada: Tablet = {
+    ...datos,
+    id,
+    codigo: datos.codigo.trim(),
+    serial: datos.serial.trim(),
+    modelo: datos.modelo.trim(),
+  };
+  tablets = tablets.map((tablet, i) => (i === indice ? actualizada : tablet));
+  return simularRed({ ...actualizada });
 }
 
 /** Cambia el estado operativo (CA3): una tablet no operativa deja de estar disponible. */
@@ -242,21 +232,15 @@ export function cambiarEstadoTablet(id: string, estado: EstadoTablet): Promise<T
   if (usaApi('tablets')) {
     return guardarTabletBackend({ operational_status: estadoTabletHaciaBackend(estado) }, 'PATCH', id);
   }
-  if (USAR_MOCKS) {
-    const indice = tablets.findIndex((tablet) => tablet.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'La tablet no existe.'));
-    }
-    if (!ESTADOS.includes(estado)) {
-      return Promise.reject(new ErrorApi(400, 'El estado de la tablet no es válido.'));
-    }
-    tablets = tablets.map((tablet, i) => (i === indice ? { ...tablet, estado } : tablet));
-    return simularRed({ ...tablets[indice] });
+  const indice = tablets.findIndex((tablet) => tablet.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'La tablet no existe.'));
   }
-  return peticion<Tablet>(`/tablets/${id}/estado/`, {
-    method: 'PATCH',
-    body: JSON.stringify({ estado }),
-  });
+  if (!ESTADOS.includes(estado)) {
+    return Promise.reject(new ErrorApi(400, 'El estado de la tablet no es válido.'));
+  }
+  tablets = tablets.map((tablet, i) => (i === indice ? { ...tablet, estado } : tablet));
+  return simularRed({ ...tablets[indice] });
 }
 
 // ── HU-23: entrega y devolución de préstamos ───────────────────
@@ -378,18 +362,15 @@ export async function obtenerConstancia(prestamoId: string): Promise<ConstanciaP
     };
     return { ...constanciaDe(prestamoPersonalDesdeBackend(registro), tablet), codigoBackend: registro.receipt_code };
   }
-  if (USAR_MOCKS) {
-    const prestamo = prestamos.find((actual) => actual.id === prestamoId);
-    if (!prestamo) {
-      return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
-    }
-    const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
-    if (!tablet) {
-      return Promise.reject(new ErrorApi(404, 'La tablet del préstamo no existe.'));
-    }
-    return simularRed(constanciaDe(conFirmasRegistradas(prestamo), tablet));
+  const prestamo = prestamos.find((actual) => actual.id === prestamoId);
+  if (!prestamo) {
+    return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
   }
-  return peticion<ConstanciaPrestamo>(`/prestamos/${prestamoId}/constancia/`);
+  const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
+  if (!tablet) {
+    return Promise.reject(new ErrorApi(404, 'La tablet del préstamo no existe.'));
+  }
+  return simularRed(constanciaDe(conFirmasRegistradas(prestamo), tablet));
 }
 
 /** Préstamos, opcionalmente filtrados por estado (HU-23). */
@@ -406,14 +387,10 @@ export function obtenerPrestamos(
       return lista.map((prestamo) => prestamoPersonalDesdeBackend(prestamo, ids.get(prestamo.tablet ?? '')));
     });
   }
-  if (USAR_MOCKS) {
-    liberarNoRecogidos();
-    const filtrados =
-      estado === 'todas' ? prestamos : prestamos.filter((prestamo) => prestamo.estado === estado);
-    return simularRed(filtrados.map(copiarPrestamo));
-  }
-  const consulta = estado === 'todas' ? '' : `?estado=${estado}`;
-  return peticion<Prestamo[]>(`/prestamos/${consulta}`);
+  liberarNoRecogidos();
+  const filtrados =
+    estado === 'todas' ? prestamos : prestamos.filter((prestamo) => prestamo.estado === estado);
+  return simularRed(filtrados.map(copiarPrestamo));
 }
 
 /**
@@ -433,21 +410,18 @@ export function buscarTabletPorCodigo(codigo: string): Promise<Tablet> {
       return tabletInventarioDesdeBackend(tablet);
     });
   }
-  if (USAR_MOCKS) {
-    // Sin distinguir mayúsculas, tildes, guiones ni espacios: el escáner no siempre lee igual.
-    const buscado = normalizarTexto(codigo ?? '').replace(/[\s-]/g, '');
-    if (!buscado) {
-      return Promise.reject(new ErrorApi(400, 'Escanea o escribe el código de la tablet.'));
-    }
-    const tablet = tablets.find(
-      (actual) => normalizarTexto(actual.codigo).replace(/[\s-]/g, '') === buscado,
-    );
-    if (!tablet) {
-      return Promise.reject(new ErrorApi(404, 'Ese código no corresponde a ninguna tablet.'));
-    }
-    return simularRed({ ...tablet });
+  // Sin distinguir mayúsculas, tildes, guiones ni espacios: el escáner no siempre lee igual.
+  const buscado = normalizarTexto(codigo ?? '').replace(/[\s-]/g, '');
+  if (!buscado) {
+    return Promise.reject(new ErrorApi(400, 'Escanea o escribe el código de la tablet.'));
   }
-  return peticion<Tablet>(`/tablets/codigo/${encodeURIComponent(codigo)}/`);
+  const tablet = tablets.find(
+    (actual) => normalizarTexto(actual.codigo).replace(/[\s-]/g, '') === buscado,
+  );
+  if (!tablet) {
+    return Promise.reject(new ErrorApi(404, 'Ese código no corresponde a ninguna tablet.'));
+  }
+  return simularRed({ ...tablet });
 }
 
 /**
@@ -477,102 +451,96 @@ export async function registrarEntrega(
     });
     return prestamoPersonalDesdeBackend(prestamo, datos.tabletId);
   }
-  if (USAR_MOCKS) {
-    liberarNoRecogidos();
-    const prestamo = prestamos.find((actual) => actual.id === prestamoId);
-    if (!prestamo) {
-      return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
-    }
-    if (prestamo.estado === 'cancelado') {
-      return Promise.reject(
-        new ErrorApi(400, 'El préstamo se canceló porque no se recogió a tiempo.'),
-      );
-    }
-    if (prestamo.estado !== 'reservado') {
-      return Promise.reject(new ErrorApi(400, 'Solo se puede entregar un préstamo reservado.'));
-    }
-    if (!prestamo.condicionesAceptadas) {
-      return Promise.reject(
-        new ErrorApi(400, 'El préstamo no tiene las condiciones de uso aceptadas.'),
-      );
-    }
-    const error = errorDeRegistro(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    // #310: la tablet se asigna al entregar; la de la solicitud era provisional.
-    const asignacion = asignarTabletAlEntregar(
-      tablets,
-      prestamos,
-      prestamo,
-      datos.tabletId ?? prestamo.tabletId,
+  liberarNoRecogidos();
+  const prestamo = prestamos.find((actual) => actual.id === prestamoId);
+  if (!prestamo) {
+    return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
+  }
+  if (prestamo.estado === 'cancelado') {
+    return Promise.reject(
+      new ErrorApi(400, 'El préstamo se canceló porque no se recogió a tiempo.'),
     );
-    if ('problema' in asignacion) {
-      return Promise.reject(new ErrorApi(400, asignacion.problema));
-    }
-    const { tablet, intercambio } = asignacion;
-    const notas = datos.notas?.trim();
-    const entrega: RegistroTablet = {
-      fechaHora: ahoraFechaHora(),
-      condicion: datos.condicion,
-      accesorios: datos.accesorios.map((accesorio) => accesorio.trim()),
-      // Versión 1.1 (#252): la constancia necesita quién entregó y en qué estado.
-      ...(notas ? { novedades: notas } : {}),
-      responsable: responsableDe(usuario),
-      ...firmaDeResponsable(usuario),
-      ...(datos.firmaUsuario ? { firmaUsuario: { ...datos.firmaUsuario } } : {}),
-    };
+  }
+  if (prestamo.estado !== 'reservado') {
+    return Promise.reject(new ErrorApi(400, 'Solo se puede entregar un préstamo reservado.'));
+  }
+  if (!prestamo.condicionesAceptadas) {
+    return Promise.reject(
+      new ErrorApi(400, 'El préstamo no tiene las condiciones de uso aceptadas.'),
+    );
+  }
+  const error = errorDeRegistro(datos);
+  if (error) {
+    return Promise.reject(error);
+  }
+  // #310: la tablet se asigna al entregar; la de la solicitud era provisional.
+  const asignacion = asignarTabletAlEntregar(
+    tablets,
+    prestamos,
+    prestamo,
+    datos.tabletId ?? prestamo.tabletId,
+  );
+  if ('problema' in asignacion) {
+    return Promise.reject(new ErrorApi(400, asignacion.problema));
+  }
+  const { tablet, intercambio } = asignacion;
+  const notas = datos.notas?.trim();
+  const entrega: RegistroTablet = {
+    fechaHora: ahoraFechaHora(),
+    condicion: datos.condicion,
+    accesorios: datos.accesorios.map((accesorio) => accesorio.trim()),
+    // Versión 1.1 (#252): la constancia necesita quién entregó y en qué estado.
+    ...(notas ? { novedades: notas } : {}),
+    responsable: responsableDe(usuario),
+    ...firmaDeResponsable(usuario),
+    ...(datos.firmaUsuario ? { firmaUsuario: { ...datos.firmaUsuario } } : {}),
+  };
+  prestamos = prestamos.map((actual) =>
+    actual.id === prestamoId
+      ? {
+          ...actual,
+          tabletId: tablet.id,
+          estado: 'entregado',
+          entrega,
+          estadoEquipo: datos.estadoEquipo ?? actual.estadoEquipo,
+          notas: notas ?? actual.notas,
+        }
+      : actual,
+  );
+  // El otro préstamo apartado que tenía esta tablet se queda con la provisional de este.
+  if (intercambio) {
     prestamos = prestamos.map((actual) =>
-      actual.id === prestamoId
-        ? {
-            ...actual,
-            tabletId: tablet.id,
-            estado: 'entregado',
-            entrega,
-            estadoEquipo: datos.estadoEquipo ?? actual.estadoEquipo,
-            notas: notas ?? actual.notas,
-          }
+      actual.id === intercambio.prestamoId
+        ? { ...actual, tabletId: intercambio.tabletId }
         : actual,
     );
-    // El otro préstamo apartado que tenía esta tablet se queda con la provisional de este.
-    if (intercambio) {
-      prestamos = prestamos.map((actual) =>
-        actual.id === intercambio.prestamoId
-          ? { ...actual, tabletId: intercambio.tabletId }
-          : actual,
-      );
-    }
-    tablets = tablets.map((actual) =>
-      actual.id === tablet.id ? { ...actual, estado: estadoTabletAlEntregar() } : actual,
-    );
-    const actualizado = prestamos.find((actual) => actual.id === prestamoId);
-    if (!actualizado) {
-      return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
-    }
-    registrarEvento(
-      'prestamo',
-      actualizado.id,
-      estadoDePrestamo(actualizado.estado),
-      'Personal de la biblioteca',
-      `Tablet entregada. Devuélvela antes de las ${actualizado.horaLimite}.`,
-    );
-    // HU-25: la entrega deja su registro de uso (el préstamo queda activo).
-    registrarUso({
-      id: `uso-prestamo-${actualizado.id}`,
-      servicio: 'tablets',
-      finalidad: `Préstamo de ${tablet.modelo}`,
-      fecha: actualizado.fecha,
-      fechaFin: actualizado.fecha,
-      modalidad: 'presencial',
-      estado: 'pendiente',
-      ...datosDeSolicitante(actualizado.solicitanteId),
-    });
-    return simularRed(copiarPrestamo(actualizado));
   }
-  return peticion<Prestamo>(`/prestamos/${prestamoId}/entrega/`, {
-    method: 'POST',
-    body: JSON.stringify({ ...datos, responsableId: usuario.id }),
+  tablets = tablets.map((actual) =>
+    actual.id === tablet.id ? { ...actual, estado: estadoTabletAlEntregar() } : actual,
+  );
+  const actualizado = prestamos.find((actual) => actual.id === prestamoId);
+  if (!actualizado) {
+    return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
+  }
+  registrarEvento(
+    'prestamo',
+    actualizado.id,
+    estadoDePrestamo(actualizado.estado),
+    'Personal de la biblioteca',
+    `Tablet entregada. Devuélvela antes de las ${actualizado.horaLimite}.`,
+  );
+  // HU-25: la entrega deja su registro de uso (el préstamo queda activo).
+  registrarUso({
+    id: `uso-prestamo-${actualizado.id}`,
+    servicio: 'tablets',
+    finalidad: `Préstamo de ${tablet.modelo}`,
+    fecha: actualizado.fecha,
+    fechaFin: actualizado.fecha,
+    modalidad: 'presencial',
+    estado: 'pendiente',
+    ...datosDeSolicitante(actualizado.solicitanteId),
   });
+  return simularRed(copiarPrestamo(actualizado));
 }
 
 /**
@@ -608,89 +576,83 @@ export async function registrarDevolucion(
     });
     return prestamoPersonalDesdeBackend(guardado);
   }
-  if (USAR_MOCKS) {
-    const prestamo = prestamos.find((actual) => actual.id === prestamoId);
-    if (!prestamo) {
-      return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
-    }
-    if (prestamo.estado !== 'entregado' && prestamo.estado !== 'vencido') {
-      return Promise.reject(new ErrorApi(400, 'Solo se puede devolver un préstamo entregado.'));
-    }
-    if (!prestamo.entrega) {
-      return Promise.reject(new ErrorApi(400, 'El préstamo no tiene una entrega registrada.'));
-    }
-    const error = errorDeRegistro(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
-    if (!tablet) {
-      return Promise.reject(new ErrorApi(404, 'La tablet del préstamo no existe.'));
-    }
-    const entregados = new Set(prestamo.entrega.accesorios.map((accesorio) => accesorio.trim()));
-    const devueltos = new Set(datos.accesorios.map((accesorio) => accesorio.trim()));
-    const faltantes = [...entregados].filter((accesorio) => !devueltos.has(accesorio));
-    const novedades = datos.novedades?.trim() ?? '';
-    if ((datos.condicion === 'danado' || faltantes.length > 0) && !novedades) {
-      return Promise.reject(
-        new ErrorApi(400, 'Describe la novedad: hay daños o accesorios faltantes.'),
-      );
-    }
-    const retrasoMinutos = minutosDeRetraso(prestamo);
-    const devolucion: RegistroTablet = {
-      fechaHora: ahoraFechaHora(),
-      condicion: datos.condicion,
-      accesorios: [...devueltos],
-      ...(novedades ? { novedades } : {}),
-      tardia: retrasoMinutos > 0,
-      retrasoMinutos,
-      // Versión 1.1 (#252): quién recibe la tablet, con su cargo.
-      responsable: responsableDe(usuario),
-      ...firmaDeResponsable(usuario),
-    };
-    prestamos = prestamos.map((actual) =>
-      actual.id === prestamoId ? { ...actual, estado: 'devuelto', devolucion } : actual,
-    );
-    tablets = tablets.map((actual) =>
-      actual.id === tablet.id
-        ? { ...actual, estado: estadoTabletAlDevolver(datos.condicion) }
-        : actual,
-    );
-    const actualizado = prestamos.find((actual) => actual.id === prestamoId);
-    if (!actualizado) {
-      return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
-    }
-    const condicion = datos.condicion === 'danado' ? 'dañado' : datos.condicion;
-    registrarEvento(
-      'prestamo',
-      actualizado.id,
-      estadoDePrestamo(actualizado.estado),
-      'Personal de la biblioteca',
-      `Tablet devuelta en estado ${condicion}${
-        retrasoMinutos > 0 ? `, ${retrasoMinutos} min tarde` : ''
-      }.${novedades ? ` Novedad: ${novedades}` : ''}`,
-    );
-    // HU-25: el préstamo devuelto deja su registro de uso.
-    registrarUso({
-      id: `uso-prestamo-${actualizado.id}`,
-      servicio: 'tablets',
-      finalidad: `Préstamo de ${tablet.modelo}`,
-      fecha: actualizado.fecha,
-      fechaFin: actualizado.fecha,
-      modalidad: 'presencial',
-      estado: 'completada',
-      // #307: la duración real, de la entrega a la devolución, para la pestaña Tablets.
-      duracionHoras:
-        horasEntreFechasHoras(actualizado.entrega?.fechaHora, actualizado.devolucion?.fechaHora) ??
-        undefined,
-      ...datosDeSolicitante(actualizado.solicitanteId),
-    });
-    return simularRed(copiarPrestamo(actualizado));
+  const prestamo = prestamos.find((actual) => actual.id === prestamoId);
+  if (!prestamo) {
+    return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
   }
-  return peticion<Prestamo>(`/prestamos/${prestamoId}/devolucion/`, {
-    method: 'POST',
-    body: JSON.stringify({ ...datos, responsableId: usuario.id }),
+  if (prestamo.estado !== 'entregado' && prestamo.estado !== 'vencido') {
+    return Promise.reject(new ErrorApi(400, 'Solo se puede devolver un préstamo entregado.'));
+  }
+  if (!prestamo.entrega) {
+    return Promise.reject(new ErrorApi(400, 'El préstamo no tiene una entrega registrada.'));
+  }
+  const error = errorDeRegistro(datos);
+  if (error) {
+    return Promise.reject(error);
+  }
+  const tablet = tablets.find((actual) => actual.id === prestamo.tabletId);
+  if (!tablet) {
+    return Promise.reject(new ErrorApi(404, 'La tablet del préstamo no existe.'));
+  }
+  const entregados = new Set(prestamo.entrega.accesorios.map((accesorio) => accesorio.trim()));
+  const devueltos = new Set(datos.accesorios.map((accesorio) => accesorio.trim()));
+  const faltantes = [...entregados].filter((accesorio) => !devueltos.has(accesorio));
+  const novedades = datos.novedades?.trim() ?? '';
+  if ((datos.condicion === 'danado' || faltantes.length > 0) && !novedades) {
+    return Promise.reject(
+      new ErrorApi(400, 'Describe la novedad: hay daños o accesorios faltantes.'),
+    );
+  }
+  const retrasoMinutos = minutosDeRetraso(prestamo);
+  const devolucion: RegistroTablet = {
+    fechaHora: ahoraFechaHora(),
+    condicion: datos.condicion,
+    accesorios: [...devueltos],
+    ...(novedades ? { novedades } : {}),
+    tardia: retrasoMinutos > 0,
+    retrasoMinutos,
+    // Versión 1.1 (#252): quién recibe la tablet, con su cargo.
+    responsable: responsableDe(usuario),
+    ...firmaDeResponsable(usuario),
+  };
+  prestamos = prestamos.map((actual) =>
+    actual.id === prestamoId ? { ...actual, estado: 'devuelto', devolucion } : actual,
+  );
+  tablets = tablets.map((actual) =>
+    actual.id === tablet.id
+      ? { ...actual, estado: estadoTabletAlDevolver(datos.condicion) }
+      : actual,
+  );
+  const actualizado = prestamos.find((actual) => actual.id === prestamoId);
+  if (!actualizado) {
+    return Promise.reject(new ErrorApi(404, 'El préstamo no existe.'));
+  }
+  const condicion = datos.condicion === 'danado' ? 'dañado' : datos.condicion;
+  registrarEvento(
+    'prestamo',
+    actualizado.id,
+    estadoDePrestamo(actualizado.estado),
+    'Personal de la biblioteca',
+    `Tablet devuelta en estado ${condicion}${
+      retrasoMinutos > 0 ? `, ${retrasoMinutos} min tarde` : ''
+    }.${novedades ? ` Novedad: ${novedades}` : ''}`,
+  );
+  // HU-25: el préstamo devuelto deja su registro de uso.
+  registrarUso({
+    id: `uso-prestamo-${actualizado.id}`,
+    servicio: 'tablets',
+    finalidad: `Préstamo de ${tablet.modelo}`,
+    fecha: actualizado.fecha,
+    fechaFin: actualizado.fecha,
+    modalidad: 'presencial',
+    estado: 'completada',
+    // #307: la duración real, de la entrega a la devolución, para la pestaña Tablets.
+    duracionHoras:
+      horasEntreFechasHoras(actualizado.entrega?.fechaHora, actualizado.devolucion?.fechaHora) ??
+      undefined,
+    ...datosDeSolicitante(actualizado.solicitanteId),
   });
+  return simularRed(copiarPrestamo(actualizado));
 }
 
 // ── HU-22: disponibilidad y solicitud de préstamo ──────────────
@@ -917,10 +879,6 @@ export async function obtenerDisponibilidadTablets(fecha: string): Promise<DiaTa
     }
     return { fecha, habil: true, franjas: franjasTabletsDesdeBackend(dia), sugerencias: [] };
   }
-  if (!USAR_MOCKS) {
-    // Ruta provisional: confirmar con Backend.
-    return peticion<DiaTablets>(`/tablets/disponibilidad/?fecha=${fecha}`);
-  }
 
   const parametros = await obtenerParametros();
   if (!esDiaHabil(fecha, parametros)) {
@@ -959,10 +917,7 @@ export async function obtenerCondicionesTablet(): Promise<CondicionesTablet> {
       throw error;
     }
   }
-  if (USAR_MOCKS) {
-    return simularRed({ ...CONDICIONES_TABLET });
-  }
-  return peticion<CondicionesTablet>('/tablets/condiciones/');
+  return simularRed({ ...CONDICIONES_TABLET });
 }
 
 /**
@@ -998,9 +953,6 @@ export async function solicitarPrestamo(
       }
       throw error;
     }
-  }
-  if (!USAR_MOCKS) {
-    return peticion<Prestamo>('/prestamos/', { method: 'POST', body: JSON.stringify(datos) });
   }
   // #310: los apartados que no se recogieron ya no ocupan su cupo.
   liberarNoRecogidos();
@@ -1144,12 +1096,8 @@ export async function obtenerMisPrestamos(usuarioId: string): Promise<Prestamo[]
     return ordenarPrestamos(lista.map((prestamo) => prestamoDesdeBackend(prestamo, solicitante)));
   }
   if (USAR_MOCKS) liberarNoRecogidos();
-  if (USAR_MOCKS) {
-    const mios = prestamos.filter((prestamo) => prestamo.solicitanteId === usuarioId);
-    return simularRed(ordenarPrestamos(mios).map(copiarPrestamo));
-  }
-  // Ruta provisional: confirmar con Backend. El usuario sale del token.
-  return peticion<Prestamo[]>('/prestamos/mios/');
+  const mios = prestamos.filter((prestamo) => prestamo.solicitanteId === usuarioId);
+  return simularRed(ordenarPrestamos(mios).map(copiarPrestamo));
 }
 
 // ── #310: los préstamos que no se recogen se liberan ─────────────
@@ -1236,10 +1184,6 @@ function avisarVencido(prestamo: Prestamo): void {
  */
 export function obtenerPrestamosVencidos(): Promise<Prestamo[]> {
   if (usaApi('tablets')) return obtenerPrestamos('vencido');
-  if (!USAR_MOCKS) {
-    // Ruta provisional: confirmar con Backend. El Backend marca y avisa; la app solo lee.
-    return peticion<Prestamo[]>('/prestamos/vencidos/');
-  }
 
   liberarNoRecogidos();
   const ahora = new Date();

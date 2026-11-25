@@ -6,7 +6,6 @@
  * - los **servicios** siguen siendo solo de `contenidos`: dar novedades no da permiso sobre
  *   los servicios de la biblioteca.
  *
- * Las rutas son provisionales: confírmenlas con el equipo de Backend.
  */
 import type { Contenido, Usuario } from '@/types';
 import { tienePermiso } from '@/utils/roles';
@@ -16,7 +15,7 @@ import {
   contenidoDesdePortal, contenidoGestionDesdeBackend, contenidoHaciaBackend, esNovedad,
   type ContenidoGestionBackend, type ContenidoPortal,
 } from './backend/portal';
-import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { CONTENIDOS } from './mocks/contenidos';
 
 /** Copia mutable: con mocks, los cambios se ven durante la sesión de la app. */
@@ -81,10 +80,7 @@ function errorDeValidacion(datos: DatosContenido): ErrorApi | null {
 
 export function obtenerContenidos(): Promise<Contenido[]> {
   if (usaApi('contenidos')) return listarContenidosBackend().then((lista) => lista.map(contenidoGestionDesdeBackend));
-  if (USAR_MOCKS) {
-    return simularRed(ordenar(contenidos).map((contenido) => ({ ...contenido })));
-  }
-  return peticion<Contenido[]>('/contenidos/');
+  return simularRed(ordenar(contenidos).map((contenido) => ({ ...contenido })));
 }
 
 /**
@@ -106,20 +102,17 @@ export function crearContenido(usuario: Usuario, datos: DatosContenido): Promise
     return Promise.reject(sinPermiso);
   }
   if (usaApi('contenidos')) return guardarContenidoBackend(datos);
-  if (USAR_MOCKS) {
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    const nuevo: Contenido = {
-      ...datos,
-      id: `con-${Date.now()}`,
-      orden: datos.orden ?? contenidos.length + 1,
-    };
-    contenidos = [...contenidos, nuevo];
-    return simularRed({ ...nuevo });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
   }
-  return peticion<Contenido>('/contenidos/', { method: 'POST', body: JSON.stringify(datos) });
+  const nuevo: Contenido = {
+    ...datos,
+    id: `con-${Date.now()}`,
+    orden: datos.orden ?? contenidos.length + 1,
+  };
+  contenidos = [...contenidos, nuevo];
+  return simularRed({ ...nuevo });
 }
 
 export function editarContenido(
@@ -143,21 +136,18 @@ export function editarContenido(
   if (sinPermiso) {
     return Promise.reject(sinPermiso);
   }
-  if (USAR_MOCKS) {
-    const indice = contenidos.findIndex((contenido) => contenido.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El contenido no existe.'));
-    }
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    contenidos = contenidos.map((contenido, i) =>
-      i === indice ? { ...contenido, ...datos, id } : contenido,
-    );
-    return simularRed({ ...contenidos[indice] });
+  const indice = contenidos.findIndex((contenido) => contenido.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El contenido no existe.'));
   }
-  return peticion<Contenido>(`/contenidos/${id}/`, { method: 'PUT', body: JSON.stringify(datos) });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
+  }
+  contenidos = contenidos.map((contenido, i) =>
+    i === indice ? { ...contenido, ...datos, id } : contenido,
+  );
+  return simularRed({ ...contenidos[indice] });
 }
 
 export function cambiarPublicacionContenido(
@@ -181,20 +171,14 @@ export function cambiarPublicacionContenido(
   if (sinPermiso) {
     return Promise.reject(sinPermiso);
   }
-  if (USAR_MOCKS) {
-    const indice = contenidos.findIndex((contenido) => contenido.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El contenido no existe.'));
-    }
-    contenidos = contenidos.map((contenido, i) =>
-      i === indice ? { ...contenido, publicado } : contenido,
-    );
-    return simularRed({ ...contenidos[indice] });
+  const indice = contenidos.findIndex((contenido) => contenido.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El contenido no existe.'));
   }
-  return peticion<Contenido>(`/contenidos/${id}/publicacion/`, {
-    method: 'PATCH',
-    body: JSON.stringify({ publicado }),
-  });
+  contenidos = contenidos.map((contenido, i) =>
+    i === indice ? { ...contenido, publicado } : contenido,
+  );
+  return simularRed({ ...contenidos[indice] });
 }
 
 export function reordenarContenidos(usuario: Usuario, idsEnOrden: string[]): Promise<Contenido[]> {
@@ -215,16 +199,10 @@ export function reordenarContenidos(usuario: Usuario, idsEnOrden: string[]): Pro
       return ordenados.map(contenidoGestionDesdeBackend);
     });
   }
-  if (USAR_MOCKS) {
-    const posiciones = new Map(idsEnOrden.map((id, indice) => [id, indice + 1]));
-    contenidos = contenidos.map((contenido) => {
-      const orden = posiciones.get(contenido.id);
-      return orden === undefined ? contenido : { ...contenido, orden };
-    });
-    return simularRed(ordenar(contenidos).map((contenido) => ({ ...contenido })));
-  }
-  return peticion<Contenido[]>('/contenidos/orden/', {
-    method: 'PATCH',
-    body: JSON.stringify({ ids: idsEnOrden }),
+  const posiciones = new Map(idsEnOrden.map((id, indice) => [id, indice + 1]));
+  contenidos = contenidos.map((contenido) => {
+    const orden = posiciones.get(contenido.id);
+    return orden === undefined ? contenido : { ...contenido, orden };
   });
+  return simularRed(ordenar(contenidos).map((contenido) => ({ ...contenido })));
 }

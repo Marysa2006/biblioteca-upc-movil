@@ -52,7 +52,7 @@ import { obtenerBloqueos } from './bloqueos';
 import { registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
-import { ErrorApi, peticion, peticionTodas, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
 import { ESPACIOS } from './mocks/espacios';
 import { obtenerParametros } from './parametros';
 import {
@@ -201,11 +201,6 @@ export async function obtenerDisponibilidad(
       .filter((dia) => dia.date >= desde && dia.date <= hasta)
       .map((dia) => diaDesdeDisponibilidad(dia, minimo, parametros.horasMinimasSolicitud));
   }
-  if (!USAR_MOCKS) {
-    return peticion<DiaDisponibilidad[]>(
-      `/espacios/${espacioId}/disponibilidad/?desde=${desde}&hasta=${hasta}`,
-    );
-  }
 
   const espacio = espacios.find((e) => e.id === espacioId && e.activo);
   if (!espacio) {
@@ -295,10 +290,7 @@ export type ResultadoCambioEstado = {
 /** Todos los espacios, también los inactivos, para la administración (HU-16). */
 export function obtenerTodosLosEspacios(): Promise<Espacio[]> {
   if (usaApi('espacios')) return peticionTodas(RUTA_ESPACIOS_ADMIN, espacioAdminDesdeBackend);
-  if (USAR_MOCKS) {
-    return simularRed(espacios.map((espacio) => ({ ...espacio })));
-  }
-  return peticion<Espacio[]>('/espacios/?todos=1');
+  return simularRed(espacios.map((espacio) => ({ ...espacio })));
 }
 
 /** Validación de la HU-16 (CA2): datos e imagen. */
@@ -323,33 +315,27 @@ function errorDeValidacion(datos: DatosEspacio): ErrorApi | null {
 
 export function crearEspacio(datos: DatosEspacio): Promise<Espacio> {
   if (usaApi('espacios')) return guardarEspacioBackend(datos);
-  if (USAR_MOCKS) {
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    const nuevo: Espacio = { ...datos, id: `esp-${Date.now()}` };
-    espacios = [...espacios, nuevo];
-    return simularRed({ ...nuevo });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
   }
-  return peticion<Espacio>('/espacios/', { method: 'POST', body: JSON.stringify(datos) });
+  const nuevo: Espacio = { ...datos, id: `esp-${Date.now()}` };
+  espacios = [...espacios, nuevo];
+  return simularRed({ ...nuevo });
 }
 
 export function editarEspacio(id: string, datos: DatosEspacio, confirmar = false): Promise<Espacio> {
   if (usaApi('espacios')) return guardarEspacioBackend(datos, id, confirmar);
-  if (USAR_MOCKS) {
-    const indice = espacios.findIndex((espacio) => espacio.id === id);
-    if (indice === -1) {
-      return Promise.reject(new ErrorApi(404, 'El espacio no existe.'));
-    }
-    const error = errorDeValidacion(datos);
-    if (error) {
-      return Promise.reject(error);
-    }
-    espacios = espacios.map((espacio, i) => (i === indice ? { ...datos, id } : espacio));
-    return simularRed({ ...espacios[indice] });
+  const indice = espacios.findIndex((espacio) => espacio.id === id);
+  if (indice === -1) {
+    return Promise.reject(new ErrorApi(404, 'El espacio no existe.'));
   }
-  return peticion<Espacio>(`/espacios/${id}/`, { method: 'PUT', body: JSON.stringify(datos) });
+  const error = errorDeValidacion(datos);
+  if (error) {
+    return Promise.reject(error);
+  }
+  espacios = espacios.map((espacio, i) => (i === indice ? { ...datos, id } : espacio));
+  return simularRed({ ...espacios[indice] });
 }
 
 /** El Backend rechaza la eliminación si el espacio tiene reservas o bloqueos. */
@@ -389,13 +375,10 @@ export function reservasFuturasDeEspacio(espacioId: string): Promise<Reserva[]> 
       ),
     )).then((listas) => listas.flat());
   }
-  if (USAR_MOCKS) {
-    const hoy = new Date().toISOString().slice(0, 10);
-    return simularRed(
-      reservasAfectadasPorBloqueo({ espacioId, desde: hoy, hasta: '9999-12-31' }),
-    );
-  }
-  return peticion<Reserva[]>(`/espacios/${espacioId}/reservas-futuras/`);
+  const hoy = new Date().toISOString().slice(0, 10);
+  return simularRed(
+    reservasAfectadasPorBloqueo({ espacioId, desde: hoy, hasta: '9999-12-31' }),
+  );
 }
 
 /**
@@ -415,19 +398,13 @@ export async function cambiarEstadoEspacio(
     );
     return { espacio: espacioAdminDesdeBackend(espacio), reservasFuturas };
   }
-  if (USAR_MOCKS) {
-    const indice = espacios.findIndex((espacio) => espacio.id === id);
-    if (indice === -1) {
-      throw new ErrorApi(404, 'El espacio no existe.');
-    }
-    const reservasFuturas = activo ? [] : await reservasFuturasDeEspacio(id);
-    espacios = espacios.map((espacio, i) => (i === indice ? { ...espacio, activo } : espacio));
-    return simularRed({ espacio: { ...espacios[indice] }, reservasFuturas });
+  const indice = espacios.findIndex((espacio) => espacio.id === id);
+  if (indice === -1) {
+    throw new ErrorApi(404, 'El espacio no existe.');
   }
-  return peticion<ResultadoCambioEstado>(`/espacios/${id}/estado/`, {
-    method: 'PATCH',
-    body: JSON.stringify({ activo }),
-  });
+  const reservasFuturas = activo ? [] : await reservasFuturasDeEspacio(id);
+  espacios = espacios.map((espacio, i) => (i === indice ? { ...espacio, activo } : espacio));
+  return simularRed({ espacio: { ...espacios[indice] }, reservasFuturas });
 }
 
 // ── Solicitud de reserva (HU-18) ───────────────────────────────────────────────
@@ -542,9 +519,6 @@ export async function solicitarReserva(
       }
       throw error;
     }
-  }
-  if (!USAR_MOCKS) {
-    return peticion<Reserva>('/reservas/', { method: 'POST', body: JSON.stringify(datos) });
   }
 
   if (!puedeReservarEspacios(usuario.tipo)) {

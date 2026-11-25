@@ -22,7 +22,7 @@ import { periodoDe } from '@/utils/estadisticas';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
 import { consultaEstadisticas, indicadoresDesdeBackend, type ResumenBackend } from './backend/estadisticas';
-import { peticion, peticionRespuesta, simularRed, usaApi, USAR_MOCKS } from './cliente';
+import { peticion, peticionRespuesta, simularRed, usaApi } from './cliente';
 import { REGISTROS_USO } from './mocks/estadisticas';
 
 /** Copia mutable: con mocks, lo que se registra se ve durante la sesión. */
@@ -166,22 +166,10 @@ export function filtrarRegistros(
 /** Registros de uso que cumplen los filtros, del más reciente al más antiguo (HU-25, CA3). */
 export function obtenerRegistrosUso(filtros: FiltrosEstadisticas = {}): Promise<RegistroUso[]> {
   if (usaApi('estadisticas')) return Promise.resolve([]);
-  if (USAR_MOCKS) {
-    const filtrados = filtrarRegistros(registros, filtros).sort((a, b) =>
-      b.fecha.localeCompare(a.fecha),
-    );
-    return simularRed(filtrados.map((registro) => ({ ...registro })));
-  }
-  const consulta = new URLSearchParams();
-  if (filtros.desde) consulta.set('desde', filtros.desde);
-  if (filtros.hasta) consulta.set('hasta', filtros.hasta);
-  if (filtros.servicio && filtros.servicio !== 'todos') consulta.set('servicio', filtros.servicio);
-  if (filtros.tipoUsuario && filtros.tipoUsuario !== 'todos') {
-    consulta.set('tipo_usuario', filtros.tipoUsuario);
-  }
-  if (filtros.programa && filtros.programa !== 'todos') consulta.set('programa', filtros.programa);
-  const cadena = consulta.toString();
-  return peticion<RegistroUso[]>(`/estadisticas/registros/${cadena ? `?${cadena}` : ''}`);
+  const filtrados = filtrarRegistros(registros, filtros).sort((a, b) =>
+    b.fecha.localeCompare(a.fecha),
+  );
+  return simularRed(filtrados.map((registro) => ({ ...registro })));
 }
 
 /** Para las pruebas y los mocks: la lista actual, sin copiar (no la expongas a las pantallas). */
