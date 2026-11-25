@@ -221,7 +221,10 @@ export function Pantalla({
         conPie
       )}
       {flotante ? (
-        <View pointerEvents="box-none" style={flotanteCubrePantalla ? StyleSheet.absoluteFill : estilos.flotante}>
+        <View
+          pointerEvents="box-none"
+          style={flotanteCubrePantalla ? StyleSheet.absoluteFill : estilos.flotante}
+        >
           {typeof flotante === 'function' ? flotante(desplazada) : flotante}
         </View>
       ) : null}

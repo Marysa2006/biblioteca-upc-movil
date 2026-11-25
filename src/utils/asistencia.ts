@@ -86,12 +86,18 @@ export function textoVencimiento(minutos: number): string {
 }
 
 /** Solo las sesiones aprobadas de hoy ofrecen el acceso al escáner. */
-export function esSesionAprobadaDeHoy(sesion: { fecha: string; estado: string }, hoy = hoyISO()): boolean {
+export function esSesionAprobadaDeHoy(
+  sesion: { fecha: string; estado: string },
+  hoy = hoyISO(),
+): boolean {
   return sesion.fecha === hoy && sesion.estado === 'aprobada';
 }
 
 /** Una solicitud sin hora programada puede tener como fecha la de creación. */
 export function esSolicitudConAsistenciaHoy(solicitud: ResumenSolicitud): boolean {
-  return (solicitud.tipo === 'cita' || solicitud.tipo === 'capacitacion') &&
-    !!solicitud.hora && esSesionAprobadaDeHoy(solicitud);
+  return (
+    (solicitud.tipo === 'cita' || solicitud.tipo === 'capacitacion') &&
+    !!solicitud.hora &&
+    esSesionAprobadaDeHoy(solicitud)
+  );
 }

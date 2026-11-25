@@ -28,11 +28,7 @@ import { useRol } from '@/hooks/useRol';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes } from '@/theme';
 import { fechaCompleta } from '@/utils/calendario';
-import {
-  cifrasDelDia,
-  pendientesPorAtender,
-  resumenPorArea,
-} from '@/utils/panel';
+import { cifrasDelDia, pendientesPorAtender, resumenPorArea } from '@/utils/panel';
 import { describirRoles } from '@/utils/roles';
 
 /** Los prefijos de las consultas del Dashboard, para volver a pedirlas al entrar a la pestaña. */
@@ -123,51 +119,72 @@ export default function Panel() {
         />
       );
     } else {
-      afluencia = (
-        <AfluenciaSemanal afluencia={panel.registros.lista} />
-      );
+      afluencia = <AfluenciaSemanal afluencia={panel.registros.lista} />;
     }
   }
 
   const acciones: ComponentProps<typeof FAB.Group>['actions'] = [];
-  if (tienePermiso('tablets')) acciones.push({
-    icon: 'barcode-scan', label: 'Escanear tablet', size: 'medium', containerStyle: estilos.etiquetaAccion,
-    onPress: () => router.push('/administracion/escanear-tablet'),
-  });
-  if (tienePermiso('asesorias') || tienePermiso('formacion')) acciones.push({
-    icon: 'qrcode', label: 'Mostrar QR de asistencia', size: 'medium', containerStyle: estilos.etiquetaAccion,
-    onPress: () => setElegirSesion(true),
-  });
-  if (tienePermiso('reservas')) acciones.push({
-    icon: 'account-plus-outline', label: 'Reservar para un tercero', size: 'medium', containerStyle: estilos.etiquetaAccion,
-    onPress: () => router.push('/reservas/tercero'),
-  });
+  if (tienePermiso('tablets'))
+    acciones.push({
+      icon: 'barcode-scan',
+      label: 'Escanear tablet',
+      size: 'medium',
+      containerStyle: estilos.etiquetaAccion,
+      onPress: () => router.push('/administracion/escanear-tablet'),
+    });
+  if (tienePermiso('asesorias') || tienePermiso('formacion'))
+    acciones.push({
+      icon: 'qrcode',
+      label: 'Mostrar QR de asistencia',
+      size: 'medium',
+      containerStyle: estilos.etiquetaAccion,
+      onPress: () => setElegirSesion(true),
+    });
+  if (tienePermiso('reservas'))
+    acciones.push({
+      icon: 'account-plus-outline',
+      label: 'Reservar para un tercero',
+      size: 'medium',
+      containerStyle: estilos.etiquetaAccion,
+      onPress: () => router.push('/reservas/tercero'),
+    });
 
   const sesiones = [
     ...(panel.datos.citas ?? []).map((cita) => ({
-      id: cita.id, tipo: 'cita', titulo: cita.tema, hora: cita.horaInicio,
-      fecha: cita.fecha, estado: cita.estado,
+      id: cita.id,
+      tipo: 'cita',
+      titulo: cita.tema,
+      hora: cita.horaInicio,
+      fecha: cita.fecha,
+      estado: cita.estado,
     })),
     ...(panel.datos.capacitaciones ?? []).map((capacitacion) => ({
-      id: capacitacion.id, tipo: 'capacitacion', titulo: capacitacion.linea, hora: capacitacion.hora,
-      fecha: capacitacion.fecha, estado: capacitacion.estado,
+      id: capacitacion.id,
+      tipo: 'capacitacion',
+      titulo: capacitacion.linea,
+      hora: capacitacion.hora,
+      fecha: capacitacion.fecha,
+      estado: capacitacion.estado,
     })),
-  ].filter((sesion) => sesion.fecha === panel.hoy && sesion.estado === 'aprobada')
+  ]
+    .filter((sesion) => sesion.fecha === panel.hoy && sesion.estado === 'aprobada')
     .sort((a, b) => a.hora.localeCompare(b.hora));
 
   return (
     <Pantalla
       flotanteCubrePantalla
-      flotante={acciones.length > 0 ? (
-        <FAB.Group
-          open={menuAbierto}
-          onStateChange={({ open }) => setMenuAbierto(open)}
-          icon={menuAbierto ? 'close' : 'plus'}
-          accessibilityLabel={menuAbierto ? 'Cerrar acciones rápidas' : 'Abrir acciones rápidas'}
-          actions={acciones}
-          visible
-        />
-      ) : null}
+      flotante={
+        acciones.length > 0 ? (
+          <FAB.Group
+            open={menuAbierto}
+            onStateChange={({ open }) => setMenuAbierto(open)}
+            icon={menuAbierto ? 'close' : 'plus'}
+            accessibilityLabel={menuAbierto ? 'Cerrar acciones rápidas' : 'Abrir acciones rápidas'}
+            actions={acciones}
+            visible
+          />
+        ) : null
+      }
       titulo={usuario ? `Hola, ${usuario.nombre.split(' ')[0]}` : 'Dashboard'}
       subtitulo={usuario ? describirRoles(usuario) : undefined}
       recarga={{ recargando, onRecargar: () => void recargar() }}
@@ -182,7 +199,9 @@ export default function Panel() {
                 return (
                   <Button
                     key={sesion.tipo + ':' + sesion.id}
-                    accessibilityLabel={[tipo, sesion.titulo, sesion.hora].filter(Boolean).join(', ')}
+                    accessibilityLabel={[tipo, sesion.titulo, sesion.hora]
+                      .filter(Boolean)
+                      .join(', ')}
                     contentStyle={estilos.botonSesion}
                     onPress={() => {
                       setElegirSesion(false);
@@ -196,16 +215,23 @@ export default function Panel() {
                   </Button>
                 );
               })}
-              {panel.asistencia.cargando ? <EstadoCarga mensaje="Cargando las sesiones de hoy…" /> : null}
+              {panel.asistencia.cargando ? (
+                <EstadoCarga mensaje="Cargando las sesiones de hoy…" />
+              ) : null}
               {panel.asistencia.conError ? (
-                <EstadoError mensaje="No pudimos cargar todas las sesiones." onReintentar={panel.asistencia.reintentar} />
+                <EstadoError
+                  mensaje="No pudimos cargar todas las sesiones."
+                  onReintentar={panel.asistencia.reintentar}
+                />
               ) : null}
               {!sesiones.length && !panel.asistencia.cargando && !panel.asistencia.conError ? (
                 <Text>No hay asesorías ni capacitaciones aprobadas para hoy.</Text>
               ) : null}
             </ScrollView>
           </Dialog.ScrollArea>
-          <Dialog.Actions><Button onPress={() => setElegirSesion(false)}>Cerrar</Button></Dialog.Actions>
+          <Dialog.Actions>
+            <Button onPress={() => setElegirSesion(false)}>Cerrar</Button>
+          </Dialog.Actions>
         </Dialog>
       </Portal>
       {!panel.conSolicitudes && !panel.registros.activa ? (

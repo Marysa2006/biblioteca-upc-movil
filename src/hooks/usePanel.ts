@@ -76,7 +76,9 @@ export function usePanel() {
     queryFn: async () => {
       if (usaApi('estadisticas')) {
         const datos = await obtenerResumenEstadistico({ desde: desdeAfluencia, hasta: hoy });
-        return afluenciaDesdeTotales(Array.from({ length: 7 }, (_, i) => datos.porDiaSemana?.[i]?.cantidad ?? 0));
+        return afluenciaDesdeTotales(
+          Array.from({ length: 7 }, (_, i) => datos.porDiaSemana?.[i]?.cantidad ?? 0),
+        );
       }
       return afluenciaSemanal(await obtenerRegistrosUso({ desde: desdeAfluencia }), hoy);
     },
@@ -108,10 +110,11 @@ export function usePanel() {
     asistencia: {
       cargando: (conAsesorias && citas.isPending) || (conFormacion && capacitaciones.isPending),
       conError: (conAsesorias && citas.isError) || (conFormacion && capacitaciones.isError),
-      reintentar: () => void Promise.all([
-        ...(conAsesorias ? [citas.refetch()] : []),
-        ...(conFormacion ? [capacitaciones.refetch()] : []),
-      ]),
+      reintentar: () =>
+        void Promise.all([
+          ...(conAsesorias ? [citas.refetch()] : []),
+          ...(conFormacion ? [capacitaciones.refetch()] : []),
+        ]),
     },
     /** Si la persona tiene algo que ver en el Dashboard (solicitudes o préstamos). */
     conSolicitudes: activas.length > 0,

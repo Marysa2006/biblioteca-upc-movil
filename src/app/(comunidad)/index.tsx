@@ -28,11 +28,7 @@ import { colores, espacio, fuentes, radio } from '@/theme';
 import { esSolicitudConAsistenciaHoy } from '@/utils/asistencia';
 import { contenidosVisibles, hoyISO } from '@/utils/contenidos';
 import { imagenesDelCarrusel } from '@/utils/inicio';
-import {
-  agruparServiciosActivos,
-  CATEGORIAS_INICIO,
-  type GrupoServicios,
-} from '@/utils/servicios';
+import { agruparServiciosActivos, CATEGORIAS_INICIO, type GrupoServicios } from '@/utils/servicios';
 
 /** Desde este ancho (tablets) la cuadrícula pasa a 3 columnas. */
 const ANCHO_TABLET = 600;
@@ -44,9 +40,11 @@ export default function Inicio() {
   const solicitudes = useMisSolicitudes();
   const puedeEscanear = usuario && solicitudes.data?.some(esSolicitudConAsistenciaHoy);
   const { refetch: recargarSolicitudes } = solicitudes;
-  useFocusEffect(useCallback(() => {
-    if (usuario) void recargarSolicitudes();
-  }, [recargarSolicitudes, usuario]));
+  useFocusEffect(
+    useCallback(() => {
+      if (usuario) void recargarSolicitudes();
+    }, [recargarSolicitudes, usuario]),
+  );
   const { data: servicios, isPending, isError, isRefetching, refetch } = useServicios();
   // Avisos y novedades (HU-04): sección secundaria; mientras carga o si falla, no se muestra.
   const { data: contenidos, refetch: refetchContenidos } = useContenidosPublicos();
@@ -91,8 +89,13 @@ export default function Inicio() {
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       {usuario ? null : <InvitacionSesion />}
       {puedeEscanear ? (
-        <Button mode="contained-tonal" icon="qrcode-scan" contentStyle={estilos.botonEscaner}
-          accessibilityLabel="Registrar asistencia con QR" onPress={() => router.push('/asistencia/registrar')}>
+        <Button
+          mode="contained-tonal"
+          icon="qrcode-scan"
+          contentStyle={estilos.botonEscaner}
+          accessibilityLabel="Registrar asistencia con QR"
+          onPress={() => router.push('/asistencia/registrar')}
+        >
           Registrar asistencia con QR
         </Button>
       ) : null}

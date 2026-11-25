@@ -52,37 +52,56 @@ export default function RegistrarAsistencia() {
 
 function Contenido() {
   const { sesionId, tipo, citaId } = useLocalSearchParams<{
-    sesionId?: string; tipo?: string; citaId?: string;
+    sesionId?: string;
+    tipo?: string;
+    citaId?: string;
   }>();
   const solicitudes = useMisSolicitudes();
 
   if (solicitudes.isPending) return <EstadoCarga mensaje="Cargando tus solicitudes…" />;
   if (solicitudes.isError && !solicitudes.data) {
-    return <EstadoError mensaje="No pudimos cargar tus solicitudes." onReintentar={() => solicitudes.refetch()} />;
+    return (
+      <EstadoError
+        mensaje="No pudimos cargar tus solicitudes."
+        onReintentar={() => solicitudes.refetch()}
+      />
+    );
   }
   const id = sesionId ?? citaId;
   const tipoPedido = citaId ? 'cita' : tipo;
-  const sesiones = (solicitudes.data ?? []).filter((solicitud) =>
-    esSolicitudConAsistenciaHoy(solicitud) &&
-    (!id || (solicitud.id === id && solicitud.tipo === tipoPedido)),
+  const sesiones = (solicitudes.data ?? []).filter(
+    (solicitud) =>
+      esSolicitudConAsistenciaHoy(solicitud) &&
+      (!id || (solicitud.id === id && solicitud.tipo === tipoPedido)),
   );
   if (!sesiones.length) {
-    return <EstadoVacio mensaje="La asistencia se registra el día de una asesoría o capacitación aprobada." />;
+    return (
+      <EstadoVacio mensaje="La asistencia se registra el día de una asesoría o capacitación aprobada." />
+    );
   }
   return <Escaneo sesiones={sesiones} sesion={id ? sesiones[0] : undefined} />;
 }
 
-function Escaneo({ sesiones, sesion }: { sesiones: ResumenSolicitud[]; sesion?: ResumenSolicitud }) {
+function Escaneo({
+  sesiones,
+  sesion,
+}: {
+  sesiones: ResumenSolicitud[];
+  sesion?: ResumenSolicitud;
+}) {
   const conApi = usaApi('asistencia');
   const usuario = useSesion((estado) => estado.usuario);
-  const asistencia = useAsistencia(!conApi ? sesion?.id ?? '' : '');
+  const asistencia = useAsistencia(!conApi ? (sesion?.id ?? '') : '');
   const registrar = useRegistrarAsistenciaQr();
   const [rechazo, setRechazo] = useState<string | null>(null);
   const [recienRegistrada, setRecienRegistrada] = useState(false);
 
-  const yaRegistrada = registrar.data?.yaRegistrada ??
-    asistencia.data?.registros.some((registro) => registro.usuarioId === usuario?.id) ?? false;
-  const confirmacion = yaRegistrada ? 'Tu asistencia a esta sesión ya estaba registrada.'
+  const yaRegistrada =
+    registrar.data?.yaRegistrada ??
+    asistencia.data?.registros.some((registro) => registro.usuarioId === usuario?.id) ??
+    false;
+  const confirmacion = yaRegistrada
+    ? 'Tu asistencia a esta sesión ya estaba registrada.'
     : 'Tu asistencia quedó registrada.';
 
   // En Android lo anuncia accessibilityLiveRegion; en iOS se anuncia aquí.

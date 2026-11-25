@@ -71,7 +71,8 @@ export function servicioGestionDesdeBackend(
   categorias: CategoriaServicioBackend[],
 ): Servicio {
   const slug = categorias.find((categoria) => categoria.id === servicio.category)?.slug ?? '';
-  const categoria = categoriaDelAcceso(servicio.access_url) ?? categoriasPorSlug.get(slug) ?? 'prestamo';
+  const categoria =
+    categoriaDelAcceso(servicio.access_url) ?? categoriasPorSlug.get(slug) ?? 'prestamo';
   return {
     id: servicio.slug,
     nombre: servicio.name,
@@ -108,7 +109,9 @@ export function servicioHaciaBackend(
     target_audience: servicio.publico,
     request_method: servicio.formaSolicitud,
     schedule: servicio.horario,
-    access_url: (conservarAcceso ? anterior?.access_url : undefined) ?? accesoPorCategoria[servicio.categoria],
+    access_url:
+      (conservarAcceso ? anterior?.access_url : undefined) ??
+      accesoPorCategoria[servicio.categoria],
     requires_authentication: servicio.requiereCuenta,
     is_active: servicio.activo,
     ...(anterior ? {} : { is_published: true }),
