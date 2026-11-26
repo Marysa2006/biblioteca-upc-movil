@@ -5,11 +5,12 @@ import { firmaDesdeBackend, firmaHaciaBackend } from './backend/firmas';
  * permisos que van aparte de los roles (versión 1.1).
  */
 import type { AceptacionPolitica, FirmaElectronica, Permiso, RolPersonal, Usuario } from '@/types';
+import { normalizarTexto } from '@/utils/texto';
 import { NOMBRE_PERMISO, PERMISOS_ASIGNABLES, tienePermiso } from '@/utils/roles';
 
 import { permisosExtraDesdeBackend, permisosExtraHaciaBackend } from './backend/equivalencias';
-import { usuarioDirectorioDesdeBackend, type UsuarioBackend } from './backend/usuarios';
-import { ErrorApi, peticion, peticionTodas, simularRed, usaApi } from './cliente';
+import { personaDesdeLookup, usuarioDirectorioDesdeBackend, type PersonaEncontrada, type UsuarioBackend } from './backend/usuarios';
+import { ErrorApi, peticion, peticionPagina, peticionTodas, simularRed, usaApi } from './cliente';
 import { crearNotificacion } from './notificaciones';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
@@ -21,6 +22,41 @@ const copiar = (usuario: Usuario): Usuario => ({
 
 /** Copia mutable: con mocks, los cambios de roles se ven durante la sesión de la app. */
 let directorio: Usuario[] = USUARIOS_DIRECTORIO.map(copiar);
+
+export type ModuloBusquedaPersonas = 'reservas' | 'asistencia';
+
+const PERSONAS_POR_PAGINA = 10;
+
+export function buscarPersonas(modulo: ModuloBusquedaPersonas, texto: string, pagina: number) {
+  const termino = texto.trim();
+  if (termino.length < 3) return Promise.resolve({ elementos: [], total: 0, hayMas: false });
+  if (usaApi(modulo)) {
+    return peticionPagina(
+      '/users/lookup/?search=' + encodeURIComponent(termino),
+      pagina,
+      PERSONAS_POR_PAGINA,
+      personaDesdeLookup,
+    );
+  }
+  const palabras = normalizarTexto(termino).split(/\s+/);
+  const coincidencias = directorio.filter((persona) => {
+    const campos = normalizarTexto([persona.nombre, persona.correo, persona.identificacion].join(' '));
+    return persona.activo !== false && palabras.every((palabra) => campos.includes(palabra));
+  });
+  const inicio = (pagina - 1) * PERSONAS_POR_PAGINA;
+  const elementos = coincidencias.slice(inicio, inicio + PERSONAS_POR_PAGINA)
+    .map(({ id, nombre, correo, tipo }): PersonaEncontrada => ({ id, nombre, correo, tipo }));
+  return simularRed({
+    elementos,
+    total: coincidencias.length,
+    hayMas: inicio + elementos.length < coincidencias.length,
+  });
+}
+
+export function obtenerPersonaDePrueba(id: string): Usuario | undefined {
+  const persona = directorio.find((usuario) => usuario.id === id && usuario.activo !== false);
+  return persona && copiar(persona);
+}
 
 export function obtenerUsuarios(rol?: RolPersonal): Promise<Usuario[]> {
   if (usaApi('usuarios')) {

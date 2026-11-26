@@ -8,15 +8,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Controller, useForm, useWatch, type Control } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Chip, HelperText, Icon, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Chip, HelperText, Icon, Text, TextInput } from 'react-native-paper';
 
+import type { PersonaEncontrada } from '@/api/backend/usuarios';
+import { SelectorPersona } from '@/components/personal/SelectorPersona';
+import { useBuscarPersonas } from '@/hooks/useBuscarPersonas';
 import { NotaDatosPersonales } from '@/components/privacidad/NotaDatosPersonales';
 import { AvisoError } from '@/components/ui';
 import { useCrearReservaTercero } from '@/hooks/useReservas';
-import { colores, espacio, fuentes, radio } from '@/theme';
-import type { Espacio, Parametros, Usuario } from '@/types';
+import { colores, espacio, fuentes } from '@/theme';
+import type { Espacio, Parametros } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
 import { sumarMeses } from '@/utils/calendario';
 import { hoyISO } from '@/utils/fechas';
@@ -26,13 +29,8 @@ import {
   motivoDiaReserva,
   type FormularioReservaTercero as Formulario,
 } from '@/utils/reservas';
-import { NOMBRE_TIPO } from '@/utils/roles';
-import { normalizarTexto } from '@/utils/texto';
 
 import { CampoFormulario } from './CampoFormulario';
-
-/** Cuántas personas se muestran al buscar. */
-const MAXIMO_RESULTADOS = 5;
 
 /** Lleva el chip a 48 px de área táctil sin cambiar su tamaño visible. */
 const AREA_CHIP = { top: espacio.s, bottom: espacio.s };
@@ -50,19 +48,23 @@ const VACIO: Formulario = {
 };
 
 type Props = {
-  usuarios?: Usuario[];
   /** Espacios activos: solo en ellos se puede reservar. */
   espacios: Espacio[];
   parametros: Parametros;
 };
 
-export function FormularioReservaTercero({ usuarios, espacios, parametros }: Props) {
+export function FormularioReservaTercero({ espacios, parametros }: Props) {
   const [hoy] = useState(hoyISO);
   const { mutate, isPending: guardando, error, reset: limpiarError } = useCrearReservaTercero();
   const [creadaPara, setCreadaPara] = useState<string | null>(null);
 
-  const { control, handleSubmit, setValue, reset } = useForm<Formulario>({
-    resolver: zodResolver(esquemaReservaTercero({ parametros, espacios, hoy }, !usuarios)),
+  const [busqueda, setBusqueda] = useState('');
+  const [persona, setPersona] = useState<PersonaEncontrada | null>(null);
+  const consulta = useBuscarPersonas('reservas', busqueda, !persona && !creadaPara);
+  const porCorreo = consulta.sinPermiso;
+
+  const { control, handleSubmit, setValue, reset, formState: { errors } } = useForm<Formulario>({
+    resolver: zodResolver(esquemaReservaTercero({ parametros, espacios, hoy }, porCorreo)),
     defaultValues: VACIO,
   });
   // El máximo de asistentes es la capacidad del espacio elegido (useWatch: React Compiler).
@@ -78,9 +80,9 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
   }, [aviso]);
 
   const enviar = (datos: Formulario) => {
-    const persona = usuarios?.find((u) => u.id === datos.solicitanteId);
+
     const correo = persona?.correo ?? datos.correoSolicitante.trim().toLowerCase();
-    if (!correo || (usuarios && !persona)) return;
+    if (!correo || (!porCorreo && !persona)) return;
     mutate(
       {
         espacioId: datos.espacioId,
@@ -101,6 +103,8 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
   const crearOtra = () => {
     limpiarError();
     reset(VACIO);
+    setPersona(null);
+    setBusqueda('');
     setCreadaPara(null);
   };
 
@@ -138,13 +142,22 @@ export function FormularioReservaTercero({ usuarios, espacios, parametros }: Pro
   return (
     <View style={estilos.formulario}>
       <Seccion titulo="Persona">
-        {usuarios ? <ElegirPersona
-          usuarios={usuarios}
-          control={control}
-          // Al elegir se valida (quita el error); al "Cambiar" no, para no mostrar un error antes de buscar.
-          onElegir={(id) => setValue('solicitanteId', id, { shouldValidate: id !== '' })}
-          deshabilitado={guardando}
-        /> : <Controller
+        {!porCorreo ? (
+          <>
+            <SelectorPersona
+              seleccion={persona}
+              consulta={consulta}
+              texto={busqueda}
+              onTexto={setBusqueda}
+              onElegir={(elegida) => {
+                setPersona(elegida);
+                setValue('solicitanteId', elegida?.id ?? '', { shouldValidate: !!elegida });
+              }}
+              deshabilitado={guardando}
+            />
+            {errors.solicitanteId ? <HelperText type="error">{errors.solicitanteId.message}</HelperText> : null}
+          </>
+        ) : <Controller
           control={control}
           name="correoSolicitante"
           render={({ field, fieldState }) => (
@@ -282,106 +295,6 @@ function Seccion({ titulo, children }: { titulo: string; children: ReactNode }) 
 }
 
 /** Buscador de la persona: al elegirla, se reemplaza por su nombre con "Cambiar". */
-function ElegirPersona({
-  usuarios,
-  control,
-  onElegir,
-  deshabilitado,
-}: {
-  usuarios: Usuario[];
-  control: Control<Formulario>;
-  onElegir: (id: string) => void;
-  deshabilitado: boolean;
-}) {
-  const [busqueda, setBusqueda] = useState('');
-  const solicitanteId = useWatch({ control, name: 'solicitanteId' });
-  const elegida = usuarios.find((u) => u.id === solicitanteId);
-
-  if (elegida) {
-    return (
-      <View style={estilos.personaElegida}>
-        <View style={estilos.textosPersona}>
-          <Text variant="titleSmall" style={estilos.nombrePersona}>
-            {elegida.nombre}
-          </Text>
-          <Text variant="bodySmall" style={estilos.secundario}>
-            {`${NOMBRE_TIPO[elegida.tipo]} · ${elegida.correo}`}
-          </Text>
-        </View>
-        <Button
-          mode="text"
-          onPress={() => onElegir('')}
-          disabled={deshabilitado}
-          accessibilityRole="button"
-          accessibilityLabel={`Cambiar la persona. Ahora es ${elegida.nombre}`}
-        >
-          Cambiar
-        </Button>
-      </View>
-    );
-  }
-
-  const texto = normalizarTexto(busqueda.trim());
-  const resultados =
-    texto.length < 2
-      ? []
-      : usuarios
-          .filter(
-            (u) => normalizarTexto(u.nombre).includes(texto) || normalizarTexto(u.correo).includes(texto),
-          )
-          .slice(0, MAXIMO_RESULTADOS);
-
-  return (
-    <Controller
-      control={control}
-      name="solicitanteId"
-      render={({ fieldState: { error } }) => (
-        <View style={estilos.buscador}>
-          <TextInput
-            mode="outlined"
-            label="Buscar por nombre o correo"
-            value={busqueda}
-            onChangeText={setBusqueda}
-            error={error != null}
-            disabled={deshabilitado}
-            left={<TextInput.Icon icon="magnify" />}
-            accessibilityLabel="Buscar la persona por nombre o correo"
-          />
-          {texto.length >= 2 && resultados.length === 0 ? (
-            <Text variant="bodySmall" style={estilos.secundario} accessibilityLiveRegion="polite">
-              {`No encontramos a nadie con «${busqueda.trim()}».`}
-            </Text>
-          ) : null}
-          <View accessibilityRole="radiogroup" accessibilityLabel="Personas encontradas">
-            {resultados.map((u) => (
-              <View key={u.id} style={estilos.resultado}>
-                <TouchableRipple
-                  onPress={() => onElegir(u.id)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ checked: false }}
-                  accessibilityLabel={`${u.nombre}, ${NOMBRE_TIPO[u.tipo]}, ${u.correo}`}
-                >
-                  <View style={estilos.contenidoResultado}>
-                    <Text variant="bodyMedium" style={estilos.nombrePersona}>
-                      {u.nombre}
-                    </Text>
-                    <Text variant="bodySmall" style={estilos.secundario}>
-                      {`${NOMBRE_TIPO[u.tipo]} · ${u.correo}`}
-                    </Text>
-                  </View>
-                </TouchableRipple>
-              </View>
-            ))}
-          </View>
-          <HelperText type="error" visible={error != null}>
-            {error?.message}
-          </HelperText>
-        </View>
-      )}
-    />
-  );
-}
-
 const estilos = StyleSheet.create({
   formulario: { gap: espacio.m },
   seccion: { gap: espacio.xs },
@@ -391,26 +304,6 @@ const estilos = StyleSheet.create({
   chip: { backgroundColor: colores.primarioSuave },
   chipElegido: { backgroundColor: colores.primarioOscuro },
   textoChip: { fontFamily: fuentes.seminegrita },
-  buscador: { gap: espacio.xs },
-  // overflow: 'hidden' recorta el ripple al borde redondeado.
-  resultado: {
-    borderRadius: radio.boton,
-    backgroundColor: colores.superficie,
-    overflow: 'hidden',
-    marginTop: espacio.xs,
-  },
-  contenidoResultado: { gap: espacio.xs, padding: espacio.m },
-  personaElegida: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: espacio.s,
-    padding: espacio.m,
-    borderRadius: radio.boton,
-    backgroundColor: colores.primarioSuave,
-  },
-  textosPersona: { flex: 1, gap: espacio.xs },
-  nombrePersona: { color: colores.texto, fontFamily: fuentes.seminegrita },
   confirmacion: { alignItems: 'center', gap: espacio.m, paddingVertical: espacio.xl },
   textoConfirmacion: { color: colores.texto, textAlign: 'center' },
   botones: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: espacio.s },

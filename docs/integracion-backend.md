@@ -258,7 +258,7 @@ Agrega `servicios` a `EXPO_PUBLIC_API_MODULOS` para leer el catálogo y las fich
 
 **Fase 3 · `capacitaciones`:** las líneas (las activas de `/trainings/lines/` para la comunidad; todas, de `/trainings/lines/manage/`, para quien administra la formación, que también las crea, edita y activa o desactiva, con el aviso de las solicitudes activas de la bandeja), pedir la capacitación con «Tus datos», mis capacitaciones, aceptar o rechazar la nueva fecha (`accept-date` y `decline-date`) y calificar. El id de la solicitud es el de «Mis solicitudes». El Backend no guarda los nombres de los participantes ni la asignatura aparte: la asignatura va con el grupo en `group_or_subject` («Sistemas 7 · Investigación»). Su modalidad `HYBRID` se muestra como presencial. La bandeja de formación del personal se conectó en la fase 4.
 
-**Fase 3 · `tablets`:** la disponibilidad (`/tablets/availability/?hours=1`, pide sesión): cada 30 minutos, cuántas tablets quedan libres para una hora; con eso la app arma sus franjas y calcula cuántas horas seguidas se pueden pedir. El Backend no dice el total del inventario: la app usa el mayor número libre del día. Pedir la tablet (`/tablets/loans/`, con «Tus datos»; las condiciones y la responsabilidad van en un solo `accept_terms`); sin tablet libre (409), la app ofrece los `next_slots`. Mis préstamos: reservado, entregado (`IN_PROGRESS`), vencido (`OVERDUE`), devuelto o cancelado. Las condiciones salen de la página `condiciones-tablets` del portal; mientras siga en borrador (404), las de siempre. El inventario, la entrega, la devolución y la constancia se conectaron en la fase 4.
+**Fase 3 · `tablets`:** la disponibilidad (`/tablets/availability/?hours=1`, pide sesión): cada 30 minutos, cuántas tablets quedan libres para una hora; con eso la app arma sus franjas y calcula cuántas horas seguidas se pueden pedir. Desde el contrato 2.2.0, la app usa el `total` del Backend cuando viene y, si falta, el mayor número libre del día (ver §8.3). Pedir la tablet (`/tablets/loans/`, con «Tus datos»; las condiciones y la responsabilidad van en un solo `accept_terms`); sin tablet libre (409), la app ofrece los `next_slots`. Mis préstamos: reservado, entregado (`IN_PROGRESS`), vencido (`OVERDUE`), devuelto o cancelado. Las condiciones salen de la página `condiciones-tablets` del portal; mientras siga en borrador (404), las de siempre. El inventario, la entrega, la devolución y la constancia se conectaron en la fase 4.
 
 **Fase 3 · `solicitudes`:** «Mis solicitudes» desde `GET /me/requests/` y el historial de cada una desde `GET /me/requests/{id}/`. Se filtra por estado en la app, con el estado ya traducido (por ejemplo, aprobada junta aprobada y en curso). El préstamo de tablet pasa por su propio estado, como en los datos de prueba. **Se activa junto con `espacios`, `asesorias`, `capacitaciones` y `tablets`:** el id de las cuatro es el de la solicitud general (`request_id`), y el detalle de cada una lo busca en su servicio por ese id.
 
@@ -473,3 +473,57 @@ Con el perfil de demostración, verifica la notificación, el historial y el reg
 tras cancelar cada servicio, y que desaparezcan del calendario los eventos cancelados.
 En la API, verifica también una solicitud fuera de plazo, el contador de notificaciones y
 los dos archivos exportados con un rango que incluya asistentes.
+
+## 9. Backend 2.2.0: firma, búsqueda de personas y tablets
+
+### 9.1 Firma del personal y constancia
+
+El OpenAPI de Render declara `signature` en `Profile` y en el esquema multipart de
+`PATCH /me/`. El esquema publicado para JSON omite ese campo. La app ya envía
+`{signature: {path, width, height, signed_at}}` o `{signature: null}` en JSON y
+muestra «Mi firma» para el personal cuando el perfil incluye el campo.
+
+La constancia lee `delivery.responsible_signature` y
+`return_record.responsible_signature`. El OpenAPI desplegado omite ambos campos.
+Con una respuesta simulada que contiene las dos firmas se comprobó que aparecen
+como trazos en los recuadros de entrega y devolución.
+
+La consulta sin sesión a `GET /me/` en Render devolvió 401. Falta probar con
+una cuenta autorizada del personal y un préstamo de prueba: abrir «Mi firma»,
+guardar un trazo, volver a cargar el perfil y verificar que persiste. Después,
+abrir la constancia de un préstamo entregado y devuelto con firma registrada y
+comprobar que trae los trazos de cada operación. Conviene que Backend refleje en
+OpenAPI los campos que acepta y devuelve en estos flujos.
+
+### 9.2 Búsqueda de personas en Gestión
+
+«Reservar para un tercero» y «Registrar a mano → Con cuenta» consultan
+`GET /users/lookup/?search=…&page=…&page_size=10` a partir de tres caracteres
+y tras 300 ms sin escribir. El Backend busca cuentas activas por nombres,
+apellidos, correo o identificación. Cada resultado trae `id`, `full_name`,
+`email` y `user_type`; la app muestra nombre y correo y permite pedir otra
+página. El contrato concede búsqueda a los roles operativos descritos por
+el endpoint. Si Render responde 403, la reserva permite escribir el correo
+institucional y la asistencia usa el formulario sin cuenta. Para otros errores,
+el selector muestra Reintentar.
+
+La reserva envía `requester_email`; la asistencia con cuenta envía
+`{user: id}` a `POST /attendance/{request_id}/manual/`. Con datos de prueba,
+la búsqueda usa el directorio activo de la sesión de demostración. La reserva
+conserva notificación, historial y uso. La asistencia manual queda en la lista
+de la sesión y en el registro de uso. Si corresponde a una cuenta, también
+genera una notificación.
+
+Para reproducirlo en el APK, busca una cuenta por nombre o correo como gestor
+de espacios y úsala en la reserva. Como facilitador, abre una sesión y
+registra a esa persona con «Con cuenta»; verifica que figura como manual.
+Con una respuesta 403 del buscador, comprueba que el formulario correspondiente
+permite continuar por correo o sin cuenta.
+
+### 9.3 Disponibilidad de tablets
+
+`GET /tablets/availability/` declara `total` para el día y mantiene
+`slots[].available` como las unidades libres por franja. La app conserva un
+total explícito de cero y usa el mayor número de unidades libres del día
+cuando el campo falta o llega como `null`. Se comprobó la traducción con
+respuestas simuladas para los casos de total informado, cero y campo ausente.
