@@ -17,9 +17,12 @@ import { servicioEstadistico } from '@/api/backend/estadisticas';
 import {
   useExportarEstadisticas,
   useExportarPdf,
+  useExportarXlsx,
   useIndicadores,
   useRegistrosUso,
 } from '@/hooks/useEstadisticas';
+import { AvisoConexionLenta } from '@/components/ui';
+import { mensajeErrorGuardar } from '@/utils/errores';
 import { colores, espacio, fuentes } from '@/theme';
 import type { FiltrosEstadisticas } from '@/types';
 import {
@@ -28,16 +31,6 @@ import {
   opcionesFiltros,
   textoOperaciones,
 } from '@/utils/filtrosEstadisticas';
-
-/**
- * El aviso cuando falla una exportación. En desarrollo (Expo Go) también dice el error técnico y
- * lo deja en la consola de `npx expo start`, para encontrar la causa; en el APK, solo el aviso.
- */
-function mensajeDeError(aviso: string, error: unknown): string {
-  if (!__DEV__) return `${aviso} Inténtalo de nuevo.`;
-  console.warn(aviso, error);
-  return `${aviso} (${error instanceof Error ? error.message : String(error)})`;
-}
 
 /** Como en las demás pantallas con Snackbar. */
 const DURACION_AVISO_MS = 4000;
@@ -64,7 +57,8 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
   const indicadores = useIndicadores(filtros);
   const exportar = useExportarEstadisticas();
   const exportarPdf = useExportarPdf();
-  const exportando = exportar.isPending || exportarPdf.isPending;
+  const exportarXlsx = useExportarXlsx();
+  const exportando = exportar.isPending || exportarPdf.isPending || exportarXlsx.isPending;
   const activos = filtrosActivos(filtros);
   const total = (conApi ? indicadores.data?.total : registros.data?.length) ?? 0;
   const sinDatos = total === 0;
@@ -115,9 +109,17 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
               ? `Se exportaron ${textoOperaciones(total)} en ${archivo}.`
               : `El celular no permite compartir: el archivo ${archivo} quedó guardado en la app.`,
           ),
-        onError: (error) => setAviso(mensajeDeError('No pudimos exportar el archivo.', error)),
+        onError: (error) => setAviso(mensajeErrorGuardar(error)),
       },
     );
+  };
+
+  const alExportarXlsx = () => {
+    setMenu(false);
+    exportarXlsx.mutate(filtros, {
+      onSuccess: ({ archivo, compartido }) => setAviso(compartido ? 'Se exportó ' + archivo : 'El archivo quedó guardado en la app.'),
+      onError: (error) => setAviso(mensajeErrorGuardar(error)),
+    });
   };
 
   const alExportarPdf = () => {
@@ -128,15 +130,15 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
     exportarPdf.mutate(
       { indicadores: datos, filtros },
       {
-        onSuccess: ({ compartido, impresion }) =>
+        onSuccess: (resultado) =>
           setAviso(
-            impresion
+            'impresion' in resultado && resultado.impresion
               ? 'Se abrió el diálogo para guardar el PDF.'
-              : compartido
+              : resultado.compartido
                 ? `Se exportó el PDF con ${textoOperaciones(datos.total)} y los filtros aplicados.`
                 : 'El celular no permite compartir: el PDF quedó generado en la app.',
           ),
-        onError: (error) => setAviso(mensajeDeError('No pudimos exportar el PDF.', error)),
+        onError: (error) => setAviso(mensajeErrorGuardar(error)),
       },
     );
   };
@@ -157,7 +159,9 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
           }
           accessibilityState={{ expanded: abierto }}
         >
-          {activos.length > 0 ? `Filtros (${activos.length})` : 'Filtros'}
+          {exportando ? <AvisoConexionLenta /> : null}
+
+      {activos.length > 0 ? `Filtros (${activos.length})` : 'Filtros'}
         </Button>
         <Menu
           visible={menu}
@@ -171,7 +175,7 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
               disabled={exportando || sinDatos}
               contentStyle={estilos.contenidoBoton}
               labelStyle={estilos.textoBoton}
-              accessibilityLabel="Exportar: elige Excel o PDF"
+              accessibilityLabel="Elegir formato de exportación"
             >
               Exportar
             </Button>
@@ -179,18 +183,14 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
           anchorPosition="bottom"
           contentStyle={estilos.menu}
         >
-          <Menu.Item
-            leadingIcon="microsoft-excel"
-            title="Para Excel (CSV)"
-            onPress={alExportarExcel}
-            accessibilityLabel={`Exportar ${textoOperaciones(total)} para Excel`}
-          />
+          {conApi ? <Menu.Item leadingIcon="microsoft-excel" title="Excel (XLSX)" onPress={alExportarXlsx} /> : null}
           <Menu.Item
             leadingIcon="file-pdf-box"
             title="PDF con los indicadores"
             onPress={alExportarPdf}
             accessibilityLabel="Exportar los indicadores en PDF, con los filtros aplicados"
           />
+          <Menu.Item leadingIcon="file-delimited-outline" title="CSV" onPress={alExportarExcel} />
         </Menu>
       </View>
 

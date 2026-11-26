@@ -10,7 +10,7 @@ import { obtenerRegistrosUso, obtenerResumenEstadistico } from '@/api/estadistic
 import { usaApi } from '@/api/cliente';
 import type { FiltrosEstadisticas, IndicadoresUso } from '@/types';
 import { calcularIndicadores, HORAS_REFERENCIA_TABLET } from '@/utils/estadisticas';
-import { exportarCsvBackend, exportarRegistrosCsv } from '@/utils/exportarEstadisticas';
+import { exportarBinarioBackend, exportarCsvBackend, exportarRegistrosCsv } from '@/utils/exportarEstadisticas';
 import { exportarPdf } from '@/utils/exportarPdf';
 
 import { useParametros } from './useParametros';
@@ -55,7 +55,7 @@ export function useExportarPdf() {
     }: {
       indicadores: IndicadoresUso;
       filtros: FiltrosEstadisticas;
-    }) => exportarPdf(indicadores, filtros, !usaApi('estadisticas')),
+    }) => usaApi('estadisticas') ? exportarBinarioBackend(filtros, 'pdf') : exportarPdf(indicadores, filtros),
   });
 }
 
@@ -75,4 +75,8 @@ export function useExportarEstadisticas() {
         ? exportarCsvBackend(filtros, indicadores)
         : exportarRegistrosCsv(registros, indicadores),
   });
+}
+
+export function useExportarXlsx() {
+  return useMutation({ mutationFn: (filtros: FiltrosEstadisticas) => exportarBinarioBackend(filtros, 'xlsx') });
 }

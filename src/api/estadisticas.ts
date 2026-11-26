@@ -61,7 +61,7 @@ export async function obtenerResumenEstadistico(filtros: FiltrosEstadisticas = {
   return indicadoresDesdeBackend(respuesta);
 }
 
-export function descargarEstadisticas(filtros: FiltrosEstadisticas, formato: 'csv' | 'pdf') {
+export function descargarEstadisticas(filtros: FiltrosEstadisticas, formato: 'csv' | 'pdf' | 'xlsx') {
   return peticionRespuesta(`/statistics/export/${consultaEstadisticas(filtros, formato)}`);
 }
 
