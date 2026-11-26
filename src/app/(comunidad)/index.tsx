@@ -10,27 +10,25 @@
  * Patrón de datos: useServicios() (src/hooks) → obtenerServicios() (src/api) → mock o API.
  * Contempla los tres estados: cargando, error y vacío.
  */
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Button, Card, Icon, Text } from 'react-native-paper';
 
 import { AvisosNovedades } from '@/components/contenidos/AvisosNovedades';
-import { usaApi } from '@/api/cliente';
 import { CarruselInicio } from '@/components/inicio/CarruselInicio';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
 import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useContenidosPublicos } from '@/hooks/useContenidos';
 import { useFotosInicio } from '@/hooks/useFotosInicio';
+import { useMisSolicitudes } from '@/hooks/useSolicitudes';
 import { useServicios } from '@/hooks/useServicios';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
+import { esSolicitudConAsistenciaHoy } from '@/utils/asistencia';
 import { contenidosVisibles, hoyISO } from '@/utils/contenidos';
 import { imagenesDelCarrusel } from '@/utils/inicio';
-import {
-  agruparServiciosActivos,
-  CATEGORIAS_INICIO,
-  type GrupoServicios,
-} from '@/utils/servicios';
+import { agruparServiciosActivos, CATEGORIAS_INICIO, type GrupoServicios } from '@/utils/servicios';
 
 /** Desde este ancho (tablets) la cuadrícula pasa a 3 columnas. */
 const ANCHO_TABLET = 600;
@@ -39,6 +37,14 @@ const ESCALA_LETRA_GRANDE = 1.3;
 
 export default function Inicio() {
   const usuario = useSesion((estado) => estado.usuario);
+  const solicitudes = useMisSolicitudes();
+  const puedeEscanear = usuario && solicitudes.data?.some(esSolicitudConAsistenciaHoy);
+  const { refetch: recargarSolicitudes } = solicitudes;
+  useFocusEffect(
+    useCallback(() => {
+      if (usuario) void recargarSolicitudes();
+    }, [recargarSolicitudes, usuario]),
+  );
   const { data: servicios, isPending, isError, isRefetching, refetch } = useServicios();
   // Avisos y novedades (HU-04): sección secundaria; mientras carga o si falla, no se muestra.
   const { data: contenidos, refetch: refetchContenidos } = useContenidosPublicos();
@@ -75,14 +81,21 @@ export default function Inicio() {
           refetch();
           refetchContenidos();
           refetchFotos();
+          if (usuario) void recargarSolicitudes();
         },
       }}
     >
       <CarruselInicio imagenes={imagenesDelCarrusel(fotos)} />
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       {usuario ? null : <InvitacionSesion />}
-      {usuario && usaApi('asistencia') ? (
-        <Button mode="contained-tonal" icon="qrcode-scan" onPress={() => router.push('/asistencia/registrar')}>
+      {puedeEscanear ? (
+        <Button
+          mode="contained-tonal"
+          icon="qrcode-scan"
+          contentStyle={estilos.botonEscaner}
+          accessibilityLabel="Registrar asistencia con QR"
+          onPress={() => router.push('/asistencia/registrar')}
+        >
           Registrar asistencia con QR
         </Button>
       ) : null}
@@ -195,6 +208,7 @@ function CuadriculaCategorias({ grupos }: { grupos: GrupoServicios[] }) {
 }
 
 const estilos = StyleSheet.create({
+  botonEscaner: { minHeight: 44 },
   invitacion: {
     backgroundColor: colores.primarioSuave,
     borderRadius: radio.tarjeta,

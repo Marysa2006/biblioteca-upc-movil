@@ -56,19 +56,50 @@ const CADA_MEDIO_MINUTO = 30_000;
 
 export default function TomarAsistencia() {
   const { tienePermiso } = useRol();
-  const { id, tipo } = useLocalSearchParams<{ id: string; tipo?: string }>();
+  const { id, tipo, mostrarQr } = useLocalSearchParams<{
+    id: string;
+    tipo?: string;
+    mostrarQr?: string;
+  }>();
   const conApi = usaApi('asistencia');
-  const permiso = conApi && tipo === 'capacitacion' ? 'formacion' : 'asesorias';
+  const permiso = tipo === 'capacitacion' ? 'formacion' : 'asesorias';
 
   return (
     <>
       <EncabezadoApilado titulo={TITULO} />
       <Pantalla titulo={TITULO} conEncabezado conTeclado>
         {tienePermiso(permiso) ? (
-          conApi && id ? <ControlAsistenciaBackend sesionId={id} /> : <Asistencia />
-        ) : <SinPermiso />}
+          conApi && id ? (
+            <ControlAsistenciaBackend sesionId={id} />
+          ) : mostrarQr === '1' && id ? (
+            <MostrarQrDePrueba sesionId={id} />
+          ) : (
+            <Asistencia />
+          )
+        ) : (
+          <SinPermiso />
+        )}
       </Pantalla>
     </>
+  );
+}
+
+function MostrarQrDePrueba({ sesionId }: { sesionId: string }) {
+  const qr = useCodigoAsistencia(sesionId, { permitirMock: true });
+  const [ahora, setAhora] = useState(() => new Date());
+  useEffect(() => {
+    const intervalo = setInterval(() => setAhora(new Date()), CADA_MEDIO_MINUTO);
+    return () => clearInterval(intervalo);
+  }, []);
+  if (qr.isPending) return <EstadoCarga mensaje="Cargando el QR…" />;
+  if (qr.isError) {
+    return (
+      <EstadoError mensaje={mensajeErrorGuardar(qr.error)} onReintentar={() => qr.refetch()} />
+    );
+  }
+  if (!qr.data) return <EstadoVacio mensaje="El QR de esta sesión no está disponible." />;
+  return (
+    <QrAsistencia codigo={qr.data} minutosRestantes={minutosParaVencer(qr.data.vence, ahora)} />
   );
 }
 
@@ -95,21 +126,33 @@ function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {
   const vigente = desde != null && hasta != null && ahora >= desde && ahora < hasta;
   const idValido = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(usuarioId.trim());
   const guardar = () => {
-    const datos: DatosAsistenciaManual = conCuenta ? { usuarioId } : {
-      nombre, tipo: tipo || undefined, programa, semestre,
-    };
-    marcar.mutate({ sesionId, ...datos }, { onSuccess: () => {
-      setNombre('');
-      setUsuarioId('');
-      setTipo('');
-      setPrograma('');
-      setSemestre('');
-    } });
+    const datos: DatosAsistenciaManual = conCuenta
+      ? { usuarioId }
+      : {
+          nombre,
+          tipo: tipo || undefined,
+          programa,
+          semestre,
+        };
+    marcar.mutate(
+      { sesionId, ...datos },
+      {
+        onSuccess: () => {
+          setNombre('');
+          setUsuarioId('');
+          setTipo('');
+          setPrograma('');
+          setSemestre('');
+        },
+      },
+    );
   };
   return (
     <View style={estilos.contenido}>
       {qr.isPending ? <EstadoCarga mensaje="Cargando el QR…" /> : null}
-      {qr.isError ? <EstadoError mensaje={mensajeErrorGuardar(qr.error)} onReintentar={() => qr.refetch()} /> : null}
+      {qr.isError ? (
+        <EstadoError mensaje={mensajeErrorGuardar(qr.error)} onReintentar={() => qr.refetch()} />
+      ) : null}
       {vigente && qr.data && hasta != null ? (
         <QrAsistencia codigo={qr.data} minutosRestantes={Math.ceil((hasta - ahora) / 60_000)} />
       ) : null}
@@ -121,33 +164,79 @@ function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {
       ) : null}
       {asistencia.isPending ? <EstadoCarga mensaje="Cargando los asistentes…" /> : null}
       {asistencia.isError ? (
-        <EstadoError mensaje={mensajeErrorGuardar(asistencia.error)} onReintentar={() => asistencia.refetch()} />
+        <EstadoError
+          mensaje={mensajeErrorGuardar(asistencia.error)}
+          onReintentar={() => asistencia.refetch()}
+        />
       ) : null}
-      {asistencia.data ? <ListaAsistentes registros={asistencia.data.registros} total={asistencia.data.total} /> : null}
+      {asistencia.data ? (
+        <ListaAsistentes registros={asistencia.data.registros} total={asistencia.data.total} />
+      ) : null}
       <Text variant="titleMedium">Registrar a mano</Text>
-      {puedeElegirCuenta ? <SegmentedButtons value={conCuenta ? 'cuenta' : 'sin-cuenta'}
-        onValueChange={(valor) => setConCuenta(valor === 'cuenta')}
-        buttons={[{ value: 'sin-cuenta', label: 'Sin cuenta' }, { value: 'cuenta', label: 'Con cuenta' }]} /> : null}
+      {puedeElegirCuenta ? (
+        <SegmentedButtons
+          value={conCuenta ? 'cuenta' : 'sin-cuenta'}
+          onValueChange={(valor) => setConCuenta(valor === 'cuenta')}
+          buttons={[
+            { value: 'sin-cuenta', label: 'Sin cuenta' },
+            { value: 'cuenta', label: 'Con cuenta' },
+          ]}
+        />
+      ) : null}
       {conCuenta ? (
-        <TextInput label="ID de la cuenta (UUID)" value={usuarioId} onChangeText={setUsuarioId} autoCapitalize="none" />
+        <TextInput
+          label="ID de la cuenta (UUID)"
+          value={usuarioId}
+          onChangeText={setUsuarioId}
+          autoCapitalize="none"
+        />
       ) : (
         <>
-          <TextInput label="Nombre completo" value={nombre} onChangeText={setNombre} maxLength={201} />
-          <SegmentedButtons value={tipo} onValueChange={(valor) => setTipo(valor === tipo ? '' : valor as typeof tipo)}
+          <TextInput
+            label="Nombre completo"
+            value={nombre}
+            onChangeText={setNombre}
+            maxLength={201}
+          />
+          <SegmentedButtons
+            value={tipo}
+            onValueChange={(valor) => setTipo(valor === tipo ? '' : (valor as typeof tipo))}
             buttons={[
               { value: 'STUDENT', label: 'Estudiante' },
               { value: 'TEACHER', label: 'Docente' },
               { value: 'ADMINISTRATIVE', label: 'Administrativo' },
-            ]} />
-          <TextInput label="Programa (opcional)" value={programa} onChangeText={setPrograma} maxLength={150} />
-          <TextInput label="Semestre (opcional)" value={semestre} onChangeText={setSemestre} maxLength={10} />
+            ]}
+          />
+          <TextInput
+            label="Programa (opcional)"
+            value={programa}
+            onChangeText={setPrograma}
+            maxLength={150}
+          />
+          <TextInput
+            label="Semestre (opcional)"
+            value={semestre}
+            onChangeText={setSemestre}
+            maxLength={10}
+          />
         </>
       )}
-      <Button mode="contained" loading={marcar.isPending}
-        disabled={marcar.isPending || (desde != null && ahora < desde) || (conCuenta ? !idValido : !nombre.trim())}
-        onPress={guardar}>Registrar asistencia</Button>
+      <Button
+        mode="contained"
+        loading={marcar.isPending}
+        disabled={
+          marcar.isPending ||
+          (desde != null && ahora < desde) ||
+          (conCuenta ? !idValido : !nombre.trim())
+        }
+        onPress={guardar}
+      >
+        Registrar asistencia
+      </Button>
       {marcar.error ? <AvisoError mensaje={mensajeErrorGuardar(marcar.error)} /> : null}
-      {marcar.isSuccess ? <Text accessibilityLiveRegion="polite">Asistencia registrada.</Text> : null}
+      {marcar.isSuccess ? (
+        <Text accessibilityLiveRegion="polite">Asistencia registrada.</Text>
+      ) : null}
     </View>
   );
 }
@@ -212,8 +301,10 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
   // la consulta se actualiza.
   const cerrada = asistencia.data.cerrada || cerrar.isSuccess;
   const abierta = codigo != null && !cerrada;
-  const yaRegistrada = registros.some((registro) =>
-    registro.usuarioId === cita.solicitanteId || (!registro.usuarioId && registro.nombre === cita.solicitante),
+  const yaRegistrada = registros.some(
+    (registro) =>
+      registro.usuarioId === cita.solicitanteId ||
+      (!registro.usuarioId && registro.nombre === cita.solicitante),
   );
 
   const abrirAsistencia = () => {
@@ -224,12 +315,23 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
   const marcarAMano = () => {
     setAviso(null);
     const persona = cita.datosSolicitante;
-    const tipos = { estudiante: 'STUDENT', docente: 'TEACHER', administrativo: 'ADMINISTRATIVE' } as const;
-    const tipo = persona?.tipo && persona.tipo in tipos ? tipos[persona.tipo as keyof typeof tipos] : undefined;
+    const tipos = {
+      estudiante: 'STUDENT',
+      docente: 'TEACHER',
+      administrativo: 'ADMINISTRATIVE',
+    } as const;
+    const tipo =
+      persona?.tipo && persona.tipo in tipos
+        ? tipos[persona.tipo as keyof typeof tipos]
+        : undefined;
     const datos: DatosAsistenciaManual = tienePermiso('roles')
       ? { usuarioId: cita.solicitanteId }
-      : { nombre: cita.solicitante, tipo, programa: persona?.programa,
-          semestre: persona?.semestre != null ? String(persona.semestre) : undefined };
+      : {
+          nombre: cita.solicitante,
+          tipo,
+          programa: persona?.programa,
+          semestre: persona?.semestre != null ? String(persona.semestre) : undefined,
+        };
     marcar.mutate(
       { sesionId: cita.id, ...datos },
       { onSuccess: () => setAviso(`Marcamos la asistencia de ${cita.solicitante} a mano.`) },

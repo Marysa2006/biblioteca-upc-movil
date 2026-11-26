@@ -6,16 +6,6 @@ export const NOMBRE_APP = 'BiblioUPC';
 /** Dominio del correo institucional (HU-05). Confirmar con el ingeniero cuando se defina el login real. */
 export const DOMINIO_CORREO = 'unicesar.edu.co';
 
-/** Catálogo público (OPAC) de Koha. Confirmar la URL con el ingeniero de la biblioteca (HU-02). */
-export const URL_CATALOGO_KOHA: string = 'https://koha.unicesar.edu.co';
-
-/**
- * Repositorio Institucional (DSpace 7.5, HU-11). Por https desde noviembre de 2026 (#165): la
- * Universidad lo activó con certificado de DigiCert y el http redirige aquí. Por eso el APK ya no
- * necesita usesCleartextTraffic.
- */
-export const URL_REPOSITORIO: string = 'https://repositorio.unicesar.edu.co';
-
 /**
  * Programas de pregrado de cada facultad de la UPC, con la lista que entregó María (#251).
  * «Ciencias Básicas» y «Educación» van por separado. Los que solo se ofrecen en la seccional
@@ -73,7 +63,16 @@ export const NOMBRE_NIVEL_FORMACION: Record<NivelFormacion, string> = {
  * Hay estudiantes que pasan del X: hasta SEMESTRE_MAXIMO se eligen con «Otro» (#203).
  */
 export const SEMESTRES: readonly string[] = [
-  'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X',
+  'I',
+  'II',
+  'III',
+  'IV',
+  'V',
+  'VI',
+  'VII',
+  'VIII',
+  'IX',
+  'X',
 ];
 
 /**
