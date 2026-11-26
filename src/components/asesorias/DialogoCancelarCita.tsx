@@ -11,6 +11,7 @@ import { AvisoError } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes } from '@/theme';
 import type { Cita } from '@/types';
 import { fechaCompleta } from '@/utils/calendario';
+import { textoHorario } from '@/utils/fechas';
 
 type Props = {
   /** El diálogo se muestra mientras no sea null. */
@@ -31,7 +32,7 @@ export function DialogoCancelarCita({ cita, guardando, mensajeError, onConfirmar
             <Dialog.Title style={estilos.titulo}>Cancelar la cita</Dialog.Title>
             <Dialog.Content style={estilos.contenido}>
               <Text variant="bodyMedium" style={estilos.texto}>
-                {`¿Cancelar tu asesoría de ${cita.tema} del ${fechaCompleta(cita.fecha)}, ${cita.horaInicio} – ${cita.horaFin}?`}
+                {`¿Cancelar tu asesoría de ${cita.tema} del ${fechaCompleta(cita.fecha)}, ${textoHorario(cita.horaInicio, cita.horaFin)}?`}
               </Text>
               <Text variant="bodySmall" style={estilos.secundario}>
                 La franja quedará libre para otra persona.

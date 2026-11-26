@@ -10,7 +10,11 @@ import { obtenerRegistrosUso, obtenerResumenEstadistico } from '@/api/estadistic
 import { usaApi } from '@/api/cliente';
 import type { FiltrosEstadisticas, IndicadoresUso } from '@/types';
 import { calcularIndicadores, HORAS_REFERENCIA_TABLET } from '@/utils/estadisticas';
-import { exportarCsvBackend, exportarRegistrosCsv } from '@/utils/exportarEstadisticas';
+import {
+  exportarBinarioBackend,
+  exportarCsvBackend,
+  exportarRegistrosCsv,
+} from '@/utils/exportarEstadisticas';
 import { exportarPdf } from '@/utils/exportarPdf';
 
 import { useParametros } from './useParametros';
@@ -31,8 +35,11 @@ export function useRegistrosUso(filtros: FiltrosEstadisticas = {}) {
  * cambia, el cumplimiento se recalcula.
  */
 export function useIndicadores(filtros: FiltrosEstadisticas = {}, enabled = true) {
-  const horasReferenciaTablet =
-    useParametros().data?.horasPrestamoTablet ?? HORAS_REFERENCIA_TABLET;
+  const parametros = useParametros();
+  const conApi = usaApi('estadisticas');
+  const horasReferenciaTablet = conApi
+    ? undefined
+    : (parametros.data?.horasPrestamoTablet ?? HORAS_REFERENCIA_TABLET);
   return useQuery({
     queryKey: [...claves.indicadoresUso(filtros), horasReferenciaTablet],
     enabled,
@@ -55,7 +62,10 @@ export function useExportarPdf() {
     }: {
       indicadores: IndicadoresUso;
       filtros: FiltrosEstadisticas;
-    }) => exportarPdf(indicadores, filtros, !usaApi('estadisticas')),
+    }) =>
+      usaApi('estadisticas')
+        ? exportarBinarioBackend(filtros, 'pdf')
+        : exportarPdf(indicadores, filtros),
   });
 }
 
@@ -74,5 +84,11 @@ export function useExportarEstadisticas() {
       usaApi('estadisticas')
         ? exportarCsvBackend(filtros, indicadores)
         : exportarRegistrosCsv(registros, indicadores),
+  });
+}
+
+export function useExportarXlsx() {
+  return useMutation({
+    mutationFn: (filtros: FiltrosEstadisticas) => exportarBinarioBackend(filtros, 'xlsx'),
   });
 }

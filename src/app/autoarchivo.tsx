@@ -73,21 +73,26 @@ export default function Autoarchivo() {
       />
     );
   } else {
-    const { actualizada, procedimiento, requisitos, formatos, metadatos } = portal.data.orientacion;
-    const vacia = [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
+    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto } =
+      portal.data.orientacion;
+    const vacia =
+      !texto && [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
 
     contenido = vacia ? (
       <EstadoVacio
         mensaje={
-          (!url && portal.data.mensaje) ||
+          portal.data.mensaje ||
           'La biblioteca todavía no ha publicado la orientación de autoarchivo.'
         }
       />
     ) : (
       <>
-        <Text variant="bodySmall" style={estilos.secundario}>
-          {`Actualizada el ${fechaLegible(actualizada)}`}
-        </Text>
+        {actualizada ? (
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {`Actualizada el ${fechaLegible(actualizada)}`}
+          </Text>
+        ) : null}
+        {texto ? <Text variant="bodyMedium">{texto}</Text> : null}
 
         {procedimiento.length > 0 ? (
           <BloqueOrientacion icono="format-list-numbered" titulo="Pasos">

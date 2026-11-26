@@ -182,7 +182,7 @@ ver [trampas conocidas](#trampas-conocidas).
 
 Las peticiones a Koha y DSpace salen sin el token de la app. Si falla la consulta del portal,
 la pantalla ofrece Reintentar. Si el enlace público viene nulo, muestra el mensaje del
-Backend y oculta la apertura. Las URLs de demostración viven en `src/api/mocks/enlacesPortal.ts`.
+Backend y oculta la apertura. Las URLs de demostración viven en `src/api/mocks/enlacesPortal.ts`. Autoarchivo muestra el texto publicado cuando la guía no tiene los cuatro bloques. Si no hay guía, muestra el mensaje del Backend.
 
 ---
 
@@ -402,8 +402,8 @@ del formulario, `esquemaGuia` (`src/utils/guias.ts`).
 ### Las estadísticas (HU-25, HU-26 y #307)
 
 Con la API, `by_status` y `attendees_by_service` alimentan las tasas y las barras del
-Resumen. El CSV agrega esos indicadores al detalle descargado y el PDF se arma en la app
-a partir del resumen. El ranking de personas no forma parte del contrato 2.2.0.
+Resumen. El CSV agrega esos indicadores al detalle descargado. Con la API, XLSX y PDF se descargan
+como binarios a la caché. Con datos de prueba, CSV y PDF se generan localmente. El ranking de personas no forma parte del contrato 2.2.0.
 
 Cada operación deja **un solo registro de uso** (`RegistroUso`, `src/types/estadisticas.ts`), que
 se actualiza en cada cambio de estado con el mismo id (`uso-reserva-<id>`, `uso-cita-<id>`…). Los
@@ -682,6 +682,14 @@ Los **logos** (`assets/images/`) no se recolorean ni se deforman: `contentFit="c
 proporción del archivo.
 
 ### Los componentes compartidos
+
+`Esqueleto` dibuja placeholders para tarjetas, listas, cuadrículas y gráficas con
+`Animated`. Las formas son decorativas y el mensaje de carga sigue disponible para el
+lector de pantalla. La animación se detiene si se activa Reducir movimiento.
+
+`GraficaIndicador` comparte las vistas SVG de dona, líneas y barras horizontales entre
+Estadísticas y Afluencia semanal. La tarjeta recibe el tipo recomendado, mantiene la leyenda
+en texto y guarda la alternativa elegida en el almacenamiento local.
 
 Están en `src/components/ui`:
 

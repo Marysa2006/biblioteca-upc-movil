@@ -2,7 +2,7 @@
  * Orientación de autoarchivo (HU-11): procedimiento, requisitos, formatos y metadatos para
  * depositar un trabajo de grado en el Repositorio Institucional. Solo orienta: el depósito se
  * hace en el repositorio (ver ./repositorio).
- * Si el portal no publica la guía con los cuatro bloques, se usa la orientación de prueba.
+ * La guía publicada se muestra aunque su contenido llegue como texto libre.
  */
 import { peticion, simularRed, usaApi } from './cliente';
 import { ORIENTACION_AUTOARCHIVO } from './mocks/autoarchivo';
@@ -15,7 +15,8 @@ import { PORTAL_AUTOARCHIVO_PRUEBA } from './mocks/enlacesPortal';
 export type OrientacionAutoarchivo = {
   titulo: string;
   /** Fecha de la última actualización, 'AAAA-MM-DD'. */
-  actualizada: string;
+  actualizada?: string;
+  texto?: string;
   /** Pasos del procedimiento, en orden. */
   procedimiento: string[];
   requisitos: string[];
@@ -26,24 +27,28 @@ export type OrientacionAutoarchivo = {
 type AutoarchivoBackend = {
   repository_url: string | null;
   message?: string | null;
-  guide: { body: string; title: string; published_at?: string | null } | null;
+  guide: { body: string; title: string; published_at?: string | null; updated_at?: string } | null;
 };
 
 export async function obtenerPortalAutoarchivo() {
-  const respuesta = usaApi('autoarchivo')
-    ? await peticion<AutoarchivoBackend>('/portal/self-archive/')
-    : await simularRed<AutoarchivoBackend>(PORTAL_AUTOARCHIVO_PRUEBA);
-  const guia = respuesta.guide;
-  const bloques = typeof guia?.body === 'string' ? leerBloques(guia.body) : undefined;
-  const orientacion = bloques
-    ? {
-        ...bloques,
-        titulo: guia?.title || ORIENTACION_AUTOARCHIVO.titulo,
-        actualizada: guia?.published_at?.slice(0, 10) || ORIENTACION_AUTOARCHIVO.actualizada,
-      }
-    : ORIENTACION_AUTOARCHIVO;
+  if (!usaApi('autoarchivo')) {
+    return simularRed({
+      url: PORTAL_AUTOARCHIVO_PRUEBA.repository_url,
+      mensaje: PORTAL_AUTOARCHIVO_PRUEBA.message,
+      orientacion: ORIENTACION_AUTOARCHIVO,
+    });
+  }
 
-  return { url: respuesta.repository_url ?? null, mensaje: respuesta.message, orientacion };
+  const { repository_url, message, guide } =
+    await peticion<AutoarchivoBackend>('/portal/self-archive/');
+  const cuerpo = guide?.body;
+  const vacia = { procedimiento: [], requisitos: [], formatos: [], metadatos: [] };
+  const orientacion: OrientacionAutoarchivo = {
+    titulo: guide?.title ?? '',
+    actualizada: (guide?.published_at ?? guide?.updated_at)?.slice(0, 10),
+    ...(cuerpo?.trim() ? (leerBloques(cuerpo) ?? { ...vacia, texto: cuerpo }) : vacia),
+  };
+  return { url: repository_url ?? null, mensaje: message, orientacion };
 }
 
 function leerBloques(body: string) {

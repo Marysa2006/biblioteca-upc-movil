@@ -67,7 +67,15 @@ export function sugerirFechaHabil(
 }
 
 /** 0 = domingo … 6 = sábado, como HorarioAtencion.dia. */
-export const NOMBRE_DIA = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+export const NOMBRE_DIA = [
+  'Domingo',
+  'Lunes',
+  'Martes',
+  'Miércoles',
+  'Jueves',
+  'Viernes',
+  'Sábado',
+];
 
 /** Orden en que se muestran los días: de lunes a domingo. */
 export const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
@@ -89,7 +97,7 @@ const horas = z
 const textoAutomatico = z
   .string()
   .trim()
-  .min(1, { error: 'Escribe el texto.' })
+
   .max(LARGO_MAXIMO_TEXTO, { error: `Máximo ${LARGO_MAXIMO_TEXTO} caracteres.` });
 
 /**
@@ -129,9 +137,9 @@ export const esquemaParametros = z
     horasPrestamoTablet: horas,
     diasMaximosTablet: horas,
     minutosRecogerTablet: horas,
-    duracionAsesoriaMinutos: horas,
-    maximoPersonasAsesoria: horas,
-    horasVigenciaQr: horas,
+    duracionAsesoriaMinutos: horas.or(z.literal('')),
+    maximoPersonasAsesoria: horas.or(z.literal('')),
+    horasVigenciaQr: horas.or(z.literal('')),
   })
   .superRefine((datos, ctx) => {
     // Periodos: fechas cruzadas y periodos que se superponen.
@@ -196,7 +204,9 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
     festivos: parametros.festivos.map((f) => ({ ...f })),
     dias: ORDEN_DIAS.map((dia) => ({
       dia,
-      franjas: parametros.horarios.filter((h) => h.dia === dia).map(({ abre, cierra }) => ({ abre, cierra })),
+      franjas: parametros.horarios
+        .filter((h) => h.dia === dia)
+        .map(({ abre, cierra }) => ({ abre, cierra })),
     })),
     horasMinimasSolicitud: String(parametros.horasMinimasSolicitud),
     horasMinimasCancelacion: String(parametros.horasMinimasCancelacion),
@@ -206,16 +216,18 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
     horasPrestamoTablet: String(parametros.horasPrestamoTablet),
     diasMaximosTablet: String(parametros.diasMaximosTablet),
     minutosRecogerTablet: String(parametros.minutosRecogerTablet),
-    duracionAsesoriaMinutos: String(parametros.duracionAsesoriaMinutos),
-    maximoPersonasAsesoria: String(parametros.maximoPersonasAsesoria),
-    horasVigenciaQr: String(parametros.horasVigenciaQr),
+    duracionAsesoriaMinutos: String(parametros.duracionAsesoriaMinutos ?? ''),
+    maximoPersonasAsesoria: String(parametros.maximoPersonasAsesoria ?? ''),
+    horasVigenciaQr: String(parametros.horasVigenciaQr ?? ''),
   };
 }
 
 /** Valores del formulario ya validados → lo que guarda la API. */
 export function aParametros(datos: FormularioParametros): Parametros {
   const horarios: HorarioAtencion[] = datos.dias
-    .flatMap(({ dia, franjas }) => franjas.map(({ abre, cierra }) => ({ dia, abre: abre.trim(), cierra: cierra.trim() })))
+    .flatMap(({ dia, franjas }) =>
+      franjas.map(({ abre, cierra }) => ({ dia, abre: abre.trim(), cierra: cierra.trim() })),
+    )
     .sort((a, b) => a.dia - b.dia || a.abre.localeCompare(b.abre));
   return {
     periodos: datos.periodos.map((p) => ({
@@ -236,13 +248,16 @@ export function aParametros(datos: FormularioParametros): Parametros {
     horasPrestamoTablet: Number(datos.horasPrestamoTablet),
     diasMaximosTablet: Number(datos.diasMaximosTablet),
     minutosRecogerTablet: Number(datos.minutosRecogerTablet),
-    duracionAsesoriaMinutos: Number(datos.duracionAsesoriaMinutos),
-    maximoPersonasAsesoria: Number(datos.maximoPersonasAsesoria),
-    horasVigenciaQr: Number(datos.horasVigenciaQr),
+    duracionAsesoriaMinutos:
+      datos.duracionAsesoriaMinutos === '' ? null : Number(datos.duracionAsesoriaMinutos),
+    maximoPersonasAsesoria:
+      datos.maximoPersonasAsesoria === '' ? null : Number(datos.maximoPersonasAsesoria),
+    horasVigenciaQr: datos.horasVigenciaQr === '' ? null : Number(datos.horasVigenciaQr),
   };
 }
 export function horariosDeFecha(fecha: string, parametros: Parametros): HorarioAtencion[] {
   const dia = new Date(`${fecha}T00:00:00`).getDay();
-  return parametros.horarios.filter((horario) => horario.dia === dia)
+  return parametros.horarios
+    .filter((horario) => horario.dia === dia)
     .sort((a, b) => a.abre.localeCompare(b.abre));
 }

@@ -5,8 +5,7 @@
  * - `periods/` (paginada) y `holidays/` (paginada): públicas;
  * - `schedules/` (arreglo): público. El día va de `0` = lunes a `6` = domingo;
  * - `parameters/` (paginada): solo para quien administra los parámetros. Cada plazo es un código
- *   (`min-notice-days`, `cancel-min-hours`…). Sin acceso, la app usa los valores de siempre, que
- *   son los mismos que siembra el Backend.
+ *   (`min-notice-days`, `cancel-min-hours`…). Para la comunidad se leen los valores publicados por config/rules/.
  */
 import type { Festivo, HorarioAtencion, Parametros, PeriodoAcademico } from '@/types';
 
@@ -66,7 +65,7 @@ export function horariosDesdeBackend(horarios: HorarioBackend[]): HorarioAtencio
  * app lo guarda en horas.
  */
 type CampoPlazo = {
-  [Campo in keyof Parametros]: Parametros[Campo] extends number ? Campo : never;
+  [Campo in keyof Parametros]: Parametros[Campo] extends number | null ? Campo : never;
 }[keyof Parametros];
 
 const PLAZOS: Record<string, { campo: CampoPlazo; factor: number }> = {
@@ -81,7 +80,7 @@ const PLAZOS: Record<string, { campo: CampoPlazo; factor: number }> = {
   'attendance-qr-hours': { campo: 'horasVigenciaQr', factor: 1 },
 };
 
-/** Los plazos que trae el Backend, sobre los valores de siempre (`base`). */
+/** Los plazos que trae el Backend, sobre las reglas públicas (`base`). */
 export function plazosDesdeBackend(valores: ParametroBackend[], base: Parametros): Parametros {
   const resultado = { ...base };
   for (const { code, value, typed_value: tipado } of valores) {
@@ -93,9 +92,10 @@ export function plazosDesdeBackend(valores: ParametroBackend[], base: Parametros
 }
 
 export function plazosHaciaBackend(deseados: Parametros, actuales: Parametros) {
-  return Object.entries(PLAZOS)
-    .filter(([, { campo }]) => deseados[campo] !== actuales[campo])
-    .map(([code, { campo, factor }]) => ({ code, value: deseados[campo] / factor }));
+  return Object.entries(PLAZOS).flatMap(([code, { campo, factor }]) => {
+    const valor = deseados[campo];
+    return valor != null && valor !== actuales[campo] ? [{ code, value: valor / factor }] : [];
+  });
 }
 
 export function periodoHaciaBackend(periodo: PeriodoAcademico) {

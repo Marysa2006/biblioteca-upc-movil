@@ -27,7 +27,7 @@ import { MallaSemana } from '@/components/agenda/MallaSemana';
 import { MesAgenda } from '@/components/agenda/MesAgenda';
 import { SelectorVistaAgenda, type VistaAgenda } from '@/components/agenda/SelectorVistaAgenda';
 import { NavegacionPeriodo } from '@/components/espacios/NavegacionPeriodo';
-import { EstadoCarga, EstadoError } from '@/components/ui';
+import { Esqueleto, EstadoError } from '@/components/ui';
 import { useAgenda } from '@/hooks/useAsesorias';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
@@ -138,7 +138,7 @@ export function SeccionAgenda() {
 
   let citas;
   if (agenda.isPending) {
-    citas = <EstadoCarga mensaje="Cargando la agenda…" />;
+    citas = <Esqueleto forma="lista" mensaje="Cargando la agenda…" />;
   } else if (agenda.isError) {
     citas = (
       <EstadoError mensaje="No pudimos cargar la agenda." onReintentar={() => agenda.refetch()} />

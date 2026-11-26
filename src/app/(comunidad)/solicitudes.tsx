@@ -23,7 +23,7 @@ import { TarjetaMiSolicitud } from '@/components/solicitudes/TarjetaMiSolicitud'
 import {
   ChipsFiltro,
   ListaPaginada,
-  EstadoCarga,
+  Esqueleto,
   EstadoError,
   EstadoVacio,
   Pantalla,
@@ -118,7 +118,7 @@ function ListaSolicitudes({
   const [tipo, setTipo] = useState<FiltroTipo>('todos');
 
   if (solicitudes.isPending) {
-    return <EstadoCarga mensaje="Cargando tus solicitudes…" />;
+    return <Esqueleto forma="lista" mensaje="Cargando tus solicitudes…" />;
   }
   if (solicitudes.isError) {
     return (

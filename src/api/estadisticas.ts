@@ -21,7 +21,11 @@ import { periodoDe } from '@/utils/estadisticas';
 
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 
-import { consultaEstadisticas, indicadoresDesdeBackend, type ResumenBackend } from './backend/estadisticas';
+import {
+  consultaEstadisticas,
+  indicadoresDesdeBackend,
+  type ResumenBackend,
+} from './backend/estadisticas';
 import { peticion, peticionRespuesta, simularRed, usaApi } from './cliente';
 import { REGISTROS_USO } from './mocks/estadisticas';
 
@@ -57,11 +61,16 @@ export type OperacionUso = {
 };
 
 export async function obtenerResumenEstadistico(filtros: FiltrosEstadisticas = {}) {
-  const respuesta = await peticion<ResumenBackend>(`/statistics/summary/${consultaEstadisticas(filtros)}`);
+  const respuesta = await peticion<ResumenBackend>(
+    `/statistics/summary/${consultaEstadisticas(filtros)}`,
+  );
   return indicadoresDesdeBackend(respuesta);
 }
 
-export function descargarEstadisticas(filtros: FiltrosEstadisticas, formato: 'csv' | 'pdf') {
+export function descargarEstadisticas(
+  filtros: FiltrosEstadisticas,
+  formato: 'csv' | 'pdf' | 'xlsx',
+) {
   return peticionRespuesta(`/statistics/export/${consultaEstadisticas(filtros, formato)}`);
 }
 
@@ -131,7 +140,11 @@ export function filtrarRegistros(
   return lista.filter((registro) => {
     if (filtros.desde && registro.fecha < filtros.desde) return false;
     if (filtros.hasta && registro.fecha > filtros.hasta) return false;
-    if (filtros.servicio && filtros.servicio !== 'todos' && registro.servicio !== filtros.servicio) {
+    if (
+      filtros.servicio &&
+      filtros.servicio !== 'todos' &&
+      registro.servicio !== filtros.servicio
+    ) {
       return false;
     }
     if (
@@ -141,22 +154,38 @@ export function filtrarRegistros(
     ) {
       return false;
     }
-    if (filtros.programa && filtros.programa !== 'todos' && registro.programa !== filtros.programa) {
+    if (
+      filtros.programa &&
+      filtros.programa !== 'todos' &&
+      registro.programa !== filtros.programa
+    ) {
       return false;
     }
     // Versión 1.1 (#259): los tres cruces nuevos.
-    if (filtros.facultad && filtros.facultad !== 'todos' && registro.facultad !== filtros.facultad) {
+    if (
+      filtros.facultad &&
+      filtros.facultad !== 'todos' &&
+      registro.facultad !== filtros.facultad
+    ) {
       return false;
     }
     if (filtros.sede && filtros.sede !== 'todos' && registro.sede !== filtros.sede) {
       return false;
     }
-    if (filtros.periodo && filtros.periodo !== 'todos' && periodoDe(registro.fecha) !== filtros.periodo) {
+    if (
+      filtros.periodo &&
+      filtros.periodo !== 'todos' &&
+      periodoDe(registro.fecha) !== filtros.periodo
+    ) {
       return false;
     }
     // @deprecated: el semestre del estudiante ya no es un filtro (#278); se sigue aceptando para
     // no romper a quien lo use, pero el cruce de tiempo es `periodo`.
-    if (filtros.semestre && filtros.semestre !== 'todos' && registro.semestre !== filtros.semestre) {
+    if (
+      filtros.semestre &&
+      filtros.semestre !== 'todos' &&
+      registro.semestre !== filtros.semestre
+    ) {
       return false;
     }
     return true;
@@ -184,7 +213,6 @@ export function reiniciarRegistrosDePrueba(): void {
 
 /** Tipo de usuario tal como lo espera el registro; útil para no repetir el cast en los mocks. */
 export type TipoUsuarioUso = TipoUsuario | typeof NO_INFORMADO;
-
 
 /** Datos del solicitante para el registro de uso (lo comparten reservas, asesorías y tablets). */
 export function datosDeSolicitante(usuarioId: string) {

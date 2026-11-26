@@ -18,7 +18,7 @@ import { Button, Card, Icon, Text } from 'react-native-paper';
 import { AvisosNovedades } from '@/components/contenidos/AvisosNovedades';
 import { CarruselInicio } from '@/components/inicio/CarruselInicio';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
-import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import { Esqueleto, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useContenidosPublicos } from '@/hooks/useContenidos';
 import { useFotosInicio } from '@/hooks/useFotosInicio';
 import { useMisSolicitudes } from '@/hooks/useSolicitudes';
@@ -48,13 +48,12 @@ export default function Inicio() {
   const { data: servicios, isPending, isError, isRefetching, refetch } = useServicios();
   // Avisos y novedades (HU-04): sección secundaria; mientras carga o si falla, no se muestra.
   const { data: contenidos, refetch: refetchContenidos } = useContenidosPublicos();
-  // Sin conexión o sin fotos publicadas, el carrusel usa las del APK (#290): no lleva estados.
-  const { data: fotos, refetch: refetchFotos } = useFotosInicio();
+  const { data: fotos, isError: errorFotos, refetch: refetchFotos } = useFotosInicio();
   const avisos = contenidos ? contenidosVisibles(contenidos, hoyISO()) : [];
 
   let contenido;
   if (isPending) {
-    contenido = <EstadoCarga mensaje="Cargando servicios…" />;
+    contenido = <Esqueleto forma="cuadricula" mensaje="Cargando servicios…" />;
   } else if (isError) {
     contenido = <EstadoError onReintentar={() => refetch()} />;
   } else {
@@ -85,7 +84,7 @@ export default function Inicio() {
         },
       }}
     >
-      <CarruselInicio imagenes={imagenesDelCarrusel(fotos)} />
+      <CarruselInicio imagenes={imagenesDelCarrusel(errorFotos ? undefined : fotos)} />
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       {usuario ? null : <InvitacionSesion />}
       {puedeEscanear ? (

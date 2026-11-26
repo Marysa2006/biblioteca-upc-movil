@@ -128,5 +128,5 @@ export type CondicionesTablet = {
   titulo: string;
   texto: string;
   /** Última actualización, 'AAAA-MM-DD'. */
-  actualizada: string;
+  actualizada?: string;
 };

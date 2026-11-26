@@ -37,7 +37,7 @@ import {
 } from '@/utils/asesorias';
 import { fechaCompleta } from '@/utils/calendario';
 import { mensajeErrorGuardar } from '@/utils/errores';
-import { fechaLegible } from '@/utils/fechas';
+import { fechaLegible, textoHorario } from '@/utils/fechas';
 import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
 import { textoRecursos } from '@/utils/reservas';
 import { notaDePrestamo } from '@/utils/solicitudes';
@@ -145,7 +145,10 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
             etiqueta: cita.estado === 'pendiente' ? 'Fecha que pediste' : 'Fecha',
             valor: fechaCompleta(cita.fecha),
           },
-          { etiqueta: 'Horario', valor: `${cita.horaInicio} a ${cita.horaFin}` },
+          {
+            etiqueta: 'Horario',
+            valor: `${textoHorario(cita.horaInicio, cita.horaFin, ' a ')}`,
+          },
           {
             etiqueta: 'Fecha y hora que pediste (la biblioteca las cambió al aprobar)',
             valor: pedida ? `${fechaCompleta(pedida.fecha)} a las ${pedida.hora}` : null,

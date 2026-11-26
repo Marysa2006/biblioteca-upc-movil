@@ -89,14 +89,16 @@ export function citaHaciaBackend(nueva: NuevaSolicitudCita) {
 export function citaDesdeBackend(
   cita: CitaBackend,
   solicitante: { id: string; nombre: string },
-  duracionMinutos: number,
+  duracionMinutos: number | null,
 ): Cita {
   const pedida = { fecha: cita.desired_date, hora: horaDesdeBackend(cita.desired_time) };
   const fecha = cita.scheduled_date ?? pedida.fecha;
   const horaInicio = cita.start_time ? horaDesdeBackend(cita.start_time) : pedida.hora;
   const horaFin = cita.end_time
     ? horaDesdeBackend(cita.end_time)
-    : aHora(aMinutos(horaInicio) + duracionMinutos);
+    : duracionMinutos == null
+      ? ''
+      : aHora(aMinutos(horaInicio) + duracionMinutos);
   const cambio =
     cita.scheduled_date != null && (fecha !== pedida.fecha || horaInicio !== pedida.hora);
   return {
@@ -139,10 +141,23 @@ export type CitaGestionBackend = CitaBackend & {
   result: string;
 };
 
-export type DetalleAgendaBackend = Pick<CitaBackend,
-  'id' | 'request_id' | 'status' | 'topic' | 'start_time' | 'end_time' | 'modality' |
-  'virtual_link' | 'group_size' | 'subject' | 'members' | 'need_description' |
-  'attended' | 'quality_rating' | 'quality_comment'
+export type DetalleAgendaBackend = Pick<
+  CitaBackend,
+  | 'id'
+  | 'request_id'
+  | 'status'
+  | 'topic'
+  | 'start_time'
+  | 'end_time'
+  | 'modality'
+  | 'virtual_link'
+  | 'group_size'
+  | 'subject'
+  | 'members'
+  | 'need_description'
+  | 'attended'
+  | 'quality_rating'
+  | 'quality_comment'
 > & {
   date: string;
   requester: string;
@@ -151,7 +166,7 @@ export type DetalleAgendaBackend = Pick<CitaBackend,
   result?: string;
 };
 
-export function citaGestionDesdeBackend(cita: CitaGestionBackend, duracion: number) {
+export function citaGestionDesdeBackend(cita: CitaGestionBackend, duracion: number | null) {
   return {
     ...citaDesdeBackend(cita, { id: cita.requester.email, nombre: cita.requester.name }, duracion),
     solicitanteTipo: TIPO_DESDE_BACKEND[cita.requester.user_type],
@@ -160,7 +175,7 @@ export function citaGestionDesdeBackend(cita: CitaGestionBackend, duracion: numb
   };
 }
 
-export function citaAgendaDesdeBackend(cita: DetalleAgendaBackend, duracion: number) {
+export function citaAgendaDesdeBackend(cita: DetalleAgendaBackend, duracion: number | null) {
   const horaInicio = cita.start_time ? horaDesdeBackend(cita.start_time) : '';
   return {
     id: String(cita.request_id),
@@ -170,10 +185,13 @@ export function citaAgendaDesdeBackend(cita: DetalleAgendaBackend, duracion: num
     solicitante: cita.requester,
     fecha: cita.date,
     horaInicio,
-    horaFin: cita.end_time ? horaDesdeBackend(cita.end_time) :
-      horaInicio ? aHora(aMinutos(horaInicio) + duracion) : '',
+    horaFin: cita.end_time
+      ? horaDesdeBackend(cita.end_time)
+      : horaInicio && duracion != null
+        ? aHora(aMinutos(horaInicio) + duracion)
+        : '',
     necesidad: cita.need_description,
-    modalidad: cita.modality === 'VIRTUAL' ? 'virtual' as const : 'presencial' as const,
+    modalidad: cita.modality === 'VIRTUAL' ? ('virtual' as const) : ('presencial' as const),
     estado: ESTADO_DESDE_BACKEND[cita.status],
     personas: cita.group_size,
     participantes: cita.members ?? [],

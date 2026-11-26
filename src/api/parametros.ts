@@ -70,36 +70,54 @@ export function validarParametros(valor: Parametros): string | null {
   return null;
 }
 
-/**
- * Los plazos del Backend, solo para quien los administra: los demás reciben 403 (o 401 sin
- * sesión) y la app usa los valores de siempre.
- */
+/** La edición lee los parámetros internos solo para quien tiene permiso. */
 async function leerPlazos(): Promise<ParametroBackend[]> {
   if (!tienePermiso(useSesion.getState().usuario, 'parametros')) return [];
-  try {
-    return await peticionTodas<ParametroBackend, ParametroBackend>(
-      '/config/parameters/',
-      (parametro) => parametro,
-    );
-  } catch (error) {
-    if (error instanceof ErrorApi && (error.estado === 401 || error.estado === 403)) return [];
-    throw error;
-  }
+  return peticionTodas<ParametroBackend, ParametroBackend>(RUTA_PLAZOS, (parametro) => parametro);
 }
 
 const RUTA_PERIODOS = '/config/periods/';
 const RUTA_FESTIVOS = '/config/holidays/';
 const RUTA_HORARIOS = '/config/schedules/';
 const RUTA_PLAZOS = '/config/parameters/';
+const RUTA_REGLAS = '/config/rules/';
+type ReglasPublicas = {
+  min_notice_days: number;
+  cancel_min_hours: number;
+  tablet_max_loan_hours: number;
+  tablet_loan_hours: number;
+  tablet_max_days_ahead: number;
+  tablet_pickup_minutes: number;
+  advisory_duration_minutes?: number | null;
+  advisory_max_group?: number | null;
+  attendance_qr_hours?: number | null;
+};
+
+const REGLAS_REQUERIDAS = [
+  'min_notice_days',
+  'cancel_min_hours',
+  'tablet_max_loan_hours',
+  'tablet_loan_hours',
+  'tablet_max_days_ahead',
+  'tablet_pickup_minutes',
+] as const satisfies readonly (keyof ReglasPublicas)[];
+
+function reglaOpcional(valor: number | null | undefined): number | null {
+  return typeof valor === 'number' && Number.isFinite(valor) ? valor : null;
+}
 
 async function leerConfiguracion() {
-  const [periodos, festivos, horarios, plazos] = await Promise.all([
+  const [periodos, festivos, horarios, plazos, reglas] = await Promise.all([
     peticionTodas<PeriodoBackend, PeriodoBackend>(RUTA_PERIODOS, (periodo) => periodo),
     peticionTodas<FestivoBackend, FestivoBackend>(RUTA_FESTIVOS, (festivo) => festivo),
     peticion<HorarioBackend[]>(RUTA_HORARIOS),
     leerPlazos(),
+    peticion<ReglasPublicas>(RUTA_REGLAS),
   ]);
-  return { periodos, festivos, horarios, plazos };
+  if (REGLAS_REQUERIDAS.some((campo) => !Number.isFinite(reglas[campo]))) {
+    throw new ErrorApi(502, 'La biblioteca no devolvió todos los plazos públicos.');
+  }
+  return { periodos, festivos, horarios, plazos, reglas };
 }
 
 function parametrosDesdeConfiguracion({
@@ -107,10 +125,21 @@ function parametrosDesdeConfiguracion({
   festivos,
   horarios,
   plazos,
+  reglas,
 }: Awaited<ReturnType<typeof leerConfiguracion>>) {
   // Los textos de las comunicaciones no están en el Backend (son sus plantillas de correo).
   return plazosDesdeBackend(plazos, {
-    ...clonar(PARAMETROS),
+    horasMinimasSolicitud: reglas.min_notice_days * 24,
+    horasMinimasCancelacion: reglas.cancel_min_hours,
+    horasMaximasPrestamo: reglas.tablet_max_loan_hours,
+    horasPrestamoTablet: reglas.tablet_loan_hours,
+    diasMaximosTablet: reglas.tablet_max_days_ahead,
+    minutosRecogerTablet: reglas.tablet_pickup_minutes,
+    duracionAsesoriaMinutos: reglaOpcional(reglas.advisory_duration_minutes),
+    maximoPersonasAsesoria: reglaOpcional(reglas.advisory_max_group),
+    horasVigenciaQr: reglaOpcional(reglas.attendance_qr_hours),
+    textoRecordatorio: '',
+    textoCancelacion: '',
     periodos: periodos.map(periodoDesdeBackend),
     festivos: festivos.map(festivoDesdeBackend),
     horarios: horariosDesdeBackend(horarios),
@@ -119,7 +148,7 @@ function parametrosDesdeConfiguracion({
 
 export async function obtenerPlazoCancelacion(conApi: boolean): Promise<number> {
   if (!conApi) return parametros.horasMinimasCancelacion;
-  const reglas = await peticion<{ cancel_min_hours: number }>('/config/rules/');
+  const reglas = await peticion<ReglasPublicas>(RUTA_REGLAS);
   return reglas.cancel_min_hours;
 }
 
@@ -201,6 +230,8 @@ export async function actualizarParametros(valor: Parametros): Promise<Parametro
   const error = validarParametros(valor);
   if (error) throw new ErrorApi(400, error);
   if (!usaApi('parametros')) {
+    if (!valor.textoRecordatorio.trim() || !valor.textoCancelacion.trim())
+      throw new ErrorApi(400, 'Escribe los textos automáticos.');
     parametros = clonar(valor);
     return simularRed(clonar(parametros));
   }

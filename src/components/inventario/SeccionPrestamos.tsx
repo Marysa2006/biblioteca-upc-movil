@@ -24,7 +24,7 @@ import {
   BotonFlotante,
   ChipsFiltro,
   ListaPaginada,
-  EstadoCarga,
+  Esqueleto,
   EstadoError,
   EstadoVacio,
   type OpcionFiltro,
@@ -33,7 +33,12 @@ import { useCancelarPrestamoPersonal, usePrestamos, useTablets } from '@/hooks/u
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
 import type { Prestamo } from '@/types';
 import { mensajeErrorGuardar } from '@/utils/errores';
-import { franjaDelPrestamo, NOMBRE_GRUPO, prestamosDeGrupo, type GrupoPrestamos } from '@/utils/prestamos';
+import {
+  franjaDelPrestamo,
+  NOMBRE_GRUPO,
+  prestamosDeGrupo,
+  type GrupoPrestamos,
+} from '@/utils/prestamos';
 import { textoCantidadVencidos } from '@/utils/vencidos';
 
 const GRUPOS: GrupoPrestamos[] = ['entregar', 'recibir', 'vencidos', 'devueltos'];
@@ -68,7 +73,8 @@ export function SeccionPrestamos() {
   const abrir = (id: string, modo: 'entrega' | 'devolucion') =>
     router.push({ pathname: '/administracion/prestamo', params: { id, modo } });
 
-  if (prestamos.isPending || tablets.isPending) return <EstadoCarga mensaje="Cargando los préstamos…" />;
+  if (prestamos.isPending || tablets.isPending)
+    return <Esqueleto forma="lista" mensaje="Cargando los préstamos…" />;
   if (prestamos.isError || tablets.isError) {
     return (
       <EstadoError
@@ -139,18 +145,30 @@ export function SeccionPrestamos() {
         </ListaPaginada>
       )}
       <DialogoMotivoAccion
-        accion={porCancelar ? {
-          id: porCancelar.id, titulo: 'Cancelar préstamo', boton: 'Cancelar préstamo',
-          detalle: `${porCancelar.solicitante} · ${franjaDelPrestamo(porCancelar)}`,
-        } : null}
+        accion={
+          porCancelar
+            ? {
+                id: porCancelar.id,
+                titulo: 'Cancelar préstamo',
+                boton: 'Cancelar préstamo',
+                detalle: `${porCancelar.solicitante} · ${franjaDelPrestamo(porCancelar)}`,
+              }
+            : null
+        }
         guardando={cancelar.isPending}
         mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
-        onConfirmar={(motivo) => porCancelar && cancelar.mutate({ id: porCancelar.id, motivo }, {
-          onSuccess: () => {
-            setPorCancelar(null);
-            setAviso(true);
-          },
-        })}
+        onConfirmar={(motivo) =>
+          porCancelar &&
+          cancelar.mutate(
+            { id: porCancelar.id, motivo },
+            {
+              onSuccess: () => {
+                setPorCancelar(null);
+                setAviso(true);
+              },
+            },
+          )
+        }
         onCerrar={() => setPorCancelar(null)}
       />
       <Portal>

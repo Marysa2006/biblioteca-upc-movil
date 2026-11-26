@@ -48,9 +48,9 @@ export type Parametros = {
   /** Minutos que la persona tiene para recoger la tablet antes de que se libere. */
   minutosRecogerTablet: number;
   /** Duración de una asesoría, en minutos (`advisory-duration-minutes`). */
-  duracionAsesoriaMinutos: number;
+  duracionAsesoriaMinutos: number | null;
   /** Personas como máximo en una asesoría (`advisory-max-group`); más, se pide capacitación. */
-  maximoPersonasAsesoria: number;
+  maximoPersonasAsesoria: number | null;
   /** Horas que vale el QR de asistencia desde que empieza la sesión (`attendance-qr-hours`). */
-  horasVigenciaQr: number;
+  horasVigenciaQr: number | null;
 };

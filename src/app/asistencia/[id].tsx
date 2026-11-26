@@ -44,6 +44,7 @@ import {
   puedeTomarAsistencia,
 } from '@/utils/asistencia';
 import { fechaCompleta } from '@/utils/calendario';
+import { textoHorario } from '@/utils/fechas';
 import { mensajeErrorGuardar } from '@/utils/errores';
 
 type Parametros = { id: string; desde: string; hasta: string };
@@ -232,7 +233,7 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
           {cita.tema}
         </Text>
         <Text variant="bodyMedium" style={estilos.texto}>
-          {`${fechaCompleta(cita.fecha)} · ${cita.horaInicio} a ${cita.horaFin}`}
+          {`${fechaCompleta(cita.fecha)} · ${textoHorario(cita.horaInicio, cita.horaFin, ' a ')}`}
         </Text>
         <Text variant="bodySmall" style={estilos.secundario}>
           {`Pidió la cita: ${cita.solicitante}`}

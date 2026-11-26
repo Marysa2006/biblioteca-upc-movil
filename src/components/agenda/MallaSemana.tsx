@@ -31,6 +31,7 @@ import {
   aMinutos,
   citasDelDia,
   distribuirCitas,
+  finVisualCita,
   textoCitas,
   type RangoMalla,
 } from '@/utils/agenda';
@@ -237,7 +238,7 @@ export function MallaSemana({
                               posicion={{
                                 top: aAlto(aMinutos(cita.horaInicio)) + SEPARACION_BLOQUES / 2,
                                 height: Math.max(
-                                  aAlto(aMinutos(cita.horaFin)) -
+                                  aAlto(finVisualCita(cita)) -
                                     aAlto(aMinutos(cita.horaInicio)) -
                                     SEPARACION_BLOQUES,
                                   ALTO_HORA / 4,

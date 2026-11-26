@@ -18,7 +18,7 @@ import { ColumnasMes } from '@/components/estadisticas/ColumnasMes';
 import { GraficoBarras } from '@/components/estadisticas/GraficoBarras';
 import { GraficoTiempoRespuesta } from '@/components/estadisticas/GraficoTiempoRespuesta';
 import { TarjetaIndicador } from '@/components/estadisticas/TarjetaIndicador';
-import { EstadoCarga, EstadoError, EstadoVacio, PestanasFiltro } from '@/components/ui';
+import { Esqueleto, EstadoError, EstadoVacio, PestanasFiltro } from '@/components/ui';
 import { usaApi } from '@/api/cliente';
 import { useIndicadores } from '@/hooks/useEstadisticas';
 import { acentoServicio, colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
@@ -63,7 +63,8 @@ type Props = {
 export function SeccionIndicadores({ filtros, pestana, onQuitarFiltros }: Props) {
   const indicadores = useIndicadores(filtros);
 
-  if (indicadores.isPending) return <EstadoCarga mensaje="Calculando los indicadores…" />;
+  if (indicadores.isPending)
+    return <Esqueleto forma="grafica" mensaje="Calculando los indicadores…" />;
   if (indicadores.isError) {
     return (
       <EstadoError
@@ -228,9 +229,7 @@ function PestanaResumen({
           ? { datos: indicadores.porMes }
           : {
               datos: periodosEnOrden(indicadores.porPeriodo),
-              etiquetaCorta: (etiqueta: string) => etiqueta,
               nombreAccesible: nombrePeriodo,
-              nombrePico: 'el periodo con más operaciones',
             })}
       />
     </>
@@ -315,7 +314,7 @@ function PestanaServicios({ indicadores }: { indicadores: IndicadoresUso }) {
 
   return (
     <>
-      <BarraDistribucion
+      <GraficoBarras
         titulo="Demanda por servicio"
         descripcion="Qué parte de las operaciones fue de cada servicio"
         datos={servicios}
@@ -381,6 +380,7 @@ function PestanaServicios({ indicadores }: { indicadores: IndicadoresUso }) {
         total={total}
       />
       <GraficoBarras
+        recomendada="dona"
         titulo="Por sede"
         descripcion="Sede de quien hizo la operación"
         datos={indicadores.porSede}

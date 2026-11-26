@@ -10,6 +10,8 @@ import { Text } from 'react-native-paper';
 
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { TiempoRespuesta } from '@/types';
+import { BarraHorizontal } from './GraficaIndicador';
+
 import { textoHoras } from '@/utils/filtrosEstadisticas';
 
 type Props = {
@@ -34,34 +36,36 @@ export function GraficoTiempoRespuesta({ datos }: Props) {
         </Text>
       </View>
 
-      {datos.map((fila) => (
-        <View
-          key={fila.servicio}
-          style={estilos.fila}
-          accessible
-          accessibilityLabel={`${fila.etiqueta}: ${textoHoras(fila.horasPromedio)} en promedio, ${textoSolicitudes(fila.cantidad)}`}
-        >
-          <View style={estilos.textos}>
-            <Text variant="bodyMedium" style={estilos.nombre}>
-              {fila.etiqueta}
-            </Text>
-            <Text variant="bodyMedium" style={estilos.valor}>
-              {textoHoras(fila.horasPromedio)}
+      <View
+        accessible
+        accessibilityLabel={
+          'Tiempo de respuesta: ' +
+          datos.map((fila) => fila.etiqueta + ' ' + textoHoras(fila.horasPromedio)).join(', ')
+        }
+        style={estilos.tarjetaDatos}
+      >
+        {datos.map((fila) => (
+          <View
+            key={fila.servicio}
+            style={estilos.fila}
+            accessible
+            accessibilityLabel={`${fila.etiqueta}: ${textoHoras(fila.horasPromedio)} en promedio, ${textoSolicitudes(fila.cantidad)}`}
+          >
+            <View style={estilos.textos}>
+              <Text variant="bodyMedium" style={estilos.nombre}>
+                {fila.etiqueta}
+              </Text>
+              <Text variant="bodyMedium" style={estilos.valor}>
+                {textoHoras(fila.horasPromedio)}
+              </Text>
+            </View>
+            <BarraHorizontal proporcion={fila.horasPromedio / maximo} color={colores.primario} />
+            <Text variant="bodySmall" style={estilos.descripcion}>
+              {`Promedio ${textoSolicitudes(fila.cantidad)}`}
             </Text>
           </View>
-          <View style={estilos.pista}>
-            <View
-              style={[
-                estilos.barra,
-                { width: `${Math.max((fila.horasPromedio / maximo) * 100, 2)}%` },
-              ]}
-            />
-          </View>
-          <Text variant="bodySmall" style={estilos.descripcion}>
-            {`Promedio ${textoSolicitudes(fila.cantidad)}`}
-          </Text>
-        </View>
-      ))}
+        ))}
+      </View>
     </View>
   );
 }
@@ -76,6 +80,7 @@ const estilos = StyleSheet.create({
   encabezado: { gap: espacio.xs },
   titulo: { color: colores.texto, fontFamily: fuentes.negrita },
   descripcion: { color: colores.textoSecundario },
+  tarjetaDatos: { gap: espacio.m },
   fila: { gap: espacio.xs },
   textos: {
     flexDirection: 'row',
@@ -85,11 +90,4 @@ const estilos = StyleSheet.create({
   },
   nombre: { color: colores.texto, fontFamily: fuentes.seminegrita },
   valor: { color: colores.primarioOscuro, fontFamily: fuentes.negrita },
-  pista: {
-    height: espacio.s,
-    borderRadius: radio.boton,
-    backgroundColor: colores.superficieVariante,
-    overflow: 'hidden',
-  },
-  barra: { height: '100%', borderRadius: radio.boton, backgroundColor: colores.primario },
 });

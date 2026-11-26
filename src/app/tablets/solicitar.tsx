@@ -23,7 +23,13 @@ import { useState } from 'react';
 import { InvitarSesion } from '@/components/reservas/InvitarSesion';
 import { ServicioNoPermitido } from '@/components/reservas/ServicioNoPermitido';
 import { FormularioPrestamoTablet } from '@/components/tablets/FormularioPrestamoTablet';
-import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/components/ui';
+import {
+  EncabezadoApilado,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  Pantalla,
+} from '@/components/ui';
 import { useParametros } from '@/hooks/useParametros';
 import { usePerfil } from '@/hooks/usePerfil';
 import { useRol } from '@/hooks/useRol';
@@ -104,8 +110,13 @@ function SolicitudConSesion({ usuario }: { usuario: Usuario }) {
     return <EstadoCarga mensaje="Cargando el préstamo de tablets…" />;
   }
   if (parametros.isError || condiciones.isError) {
-    return <EstadoError mensaje="No pudimos cargar el préstamo de tablets." onReintentar={reintentar} />;
+    return (
+      <EstadoError mensaje="No pudimos cargar el préstamo de tablets." onReintentar={reintentar} />
+    );
   }
+
+  if (!condiciones.data)
+    return <EstadoVacio mensaje="La biblioteca todavía no publicó las condiciones de préstamo." />;
 
   return (
     <FormularioPrestamoTablet
