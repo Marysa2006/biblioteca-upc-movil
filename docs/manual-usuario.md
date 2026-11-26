@@ -240,7 +240,11 @@ filtrar por tipo y fechas. Cada tarjeta indica qué pasó, cuándo y quién lo r
 Arriba están las pestañas **Resumen**, **Servicios**, **Tablets**, **Calidad** y, con datos de prueba, **Registros**. Debajo, dos botones que valen para todas:
 
 - **Filtros:** el periodo (con los atajos **Este mes**, **Este semestre** y **Todo**, o las fechas **Desde** y **Hasta**) y listas para elegir el servicio, el tipo de usuario, el programa, la facultad, la sede y el periodo académico. Cada opción dice cuántas operaciones tiene. Los filtros elegidos aparecen debajo de los botones; la **✕** de cada uno lo quita y **Limpiar** los quita todos.
-- **Exportar:** **Para Excel (CSV)** guarda los registros que se están viendo, con su temática, el tiempo de respuesta y la duración del préstamo, y agrega los indicadores de finalización y asistencia; **PDF con los indicadores** arma un informe con el logo de la Universidad, las cifras clave y gráficas de barras de las cuatro pestañas, con los filtros aplicados. Los dos se comparten por correo, WhatsApp o Drive.
+- **Exportar.** Con la API puedes elegir **Excel (XLSX)**, **PDF** o **CSV**. El archivo respeta los filtros seleccionados. XLSX trae las hojas Resumen y Detalle, PDF trae el informe del Backend y CSV conserva el detalle con los indicadores al final. Con datos de prueba se ofrecen CSV y PDF generados en el celular.
+
+En las tarjetas con dos vistas, toca el ícono de **dona**, **líneas** o **barras**. La app
+recuerda la elección de cada tarjeta. La leyenda muestra los valores y porcentajes en texto.
+Las comparaciones entre categorías usan barras y las cifras individuales se mantienen como tarjetas.
 
 Qué muestra cada pestaña:
 

@@ -981,7 +981,11 @@ export async function obtenerCondicionesTablet(): Promise<CondicionesTablet | nu
       '/portal/contents/condiciones-tablets/',
     );
     if (!pagina.body.trim()) return null;
-    return { titulo: pagina.title, texto: pagina.body, actualizada: pagina.published_at?.slice(0, 10) };
+    return {
+      titulo: pagina.title,
+      texto: pagina.body,
+      actualizada: pagina.published_at?.slice(0, 10),
+    };
   }
   return simularRed({ ...CONDICIONES_TABLET });
 }

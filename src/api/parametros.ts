@@ -98,7 +98,10 @@ async function leerConfiguracion() {
     leerPlazos(),
     peticion<ReglasPublicas>(RUTA_REGLAS),
   ]);
-  if (Object.values(reglas).length < 6 || Object.values(reglas).some((valor) => !Number.isFinite(valor))) {
+  if (
+    Object.values(reglas).length < 6 ||
+    Object.values(reglas).some((valor) => !Number.isFinite(valor))
+  ) {
     throw new ErrorApi(502, 'La biblioteca no devolvió todos los plazos públicos.');
   }
   return { periodos, festivos, horarios, plazos, reglas };
@@ -214,7 +217,8 @@ export async function actualizarParametros(valor: Parametros): Promise<Parametro
   const error = validarParametros(valor);
   if (error) throw new ErrorApi(400, error);
   if (!usaApi('parametros')) {
-    if (!valor.textoRecordatorio.trim() || !valor.textoCancelacion.trim()) throw new ErrorApi(400, 'Escribe los textos automáticos.');
+    if (!valor.textoRecordatorio.trim() || !valor.textoCancelacion.trim())
+      throw new ErrorApi(400, 'Escribe los textos automáticos.');
     parametros = clonar(valor);
     return simularRed(clonar(parametros));
   }

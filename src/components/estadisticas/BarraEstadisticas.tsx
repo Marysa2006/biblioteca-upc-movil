@@ -117,7 +117,8 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
   const alExportarXlsx = () => {
     setMenu(false);
     exportarXlsx.mutate(filtros, {
-      onSuccess: ({ archivo, compartido }) => setAviso(compartido ? 'Se exportó ' + archivo : 'El archivo quedó guardado en la app.'),
+      onSuccess: ({ archivo, compartido }) =>
+        setAviso(compartido ? 'Se exportó ' + archivo : 'El archivo quedó guardado en la app.'),
       onError: (error) => setAviso(mensajeErrorGuardar(error)),
     });
   };
@@ -161,7 +162,7 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
         >
           {exportando ? <AvisoConexionLenta /> : null}
 
-      {activos.length > 0 ? `Filtros (${activos.length})` : 'Filtros'}
+          {activos.length > 0 ? `Filtros (${activos.length})` : 'Filtros'}
         </Button>
         <Menu
           visible={menu}
@@ -183,7 +184,13 @@ export function BarraEstadisticas({ filtros, onCambiar }: Props) {
           anchorPosition="bottom"
           contentStyle={estilos.menu}
         >
-          {conApi ? <Menu.Item leadingIcon="microsoft-excel" title="Excel (XLSX)" onPress={alExportarXlsx} /> : null}
+          {conApi ? (
+            <Menu.Item
+              leadingIcon="microsoft-excel"
+              title="Excel (XLSX)"
+              onPress={alExportarXlsx}
+            />
+          ) : null}
           <Menu.Item
             leadingIcon="file-pdf-box"
             title="PDF con los indicadores"

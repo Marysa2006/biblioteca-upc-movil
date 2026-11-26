@@ -145,7 +145,10 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
             etiqueta: cita.estado === 'pendiente' ? 'Fecha que pediste' : 'Fecha',
             valor: fechaCompleta(cita.fecha),
           },
-          { etiqueta: 'Horario', valor: `${[cita.horaInicio,cita.horaFin].filter(Boolean).join(' a ')}` },
+          {
+            etiqueta: 'Horario',
+            valor: `${[cita.horaInicio, cita.horaFin].filter(Boolean).join(' a ')}`,
+          },
           {
             etiqueta: 'Fecha y hora que pediste (la biblioteca las cambió al aprobar)',
             valor: pedida ? `${fechaCompleta(pedida.fecha)} a las ${pedida.hora}` : null,

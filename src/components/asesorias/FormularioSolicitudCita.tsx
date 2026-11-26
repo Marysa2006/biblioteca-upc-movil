@@ -313,7 +313,9 @@ export function FormularioSolicitudCita({
             )}
           />
           <Text variant="bodySmall" style={estilos.secundario}>
-            {maximoPersonas == null ? 'Inclúyete en el total.' : `Contándote a ti, hasta ${maximoPersonas}.`}
+            {maximoPersonas == null
+              ? 'Inclúyete en el total.'
+              : `Contándote a ti, hasta ${maximoPersonas}.`}
           </Text>
 
           {otros > 0 ? (
@@ -342,7 +344,9 @@ export function FormularioSolicitudCita({
                 />
               ))}
               {otros > integrantesVisibles ? (
-                <Button onPress={() => setIntegrantesVisibles((cantidad) => cantidad + 8)}>Mostrar más integrantes</Button>
+                <Button onPress={() => setIntegrantesVisibles((cantidad) => cantidad + 8)}>
+                  Mostrar más integrantes
+                </Button>
               ) : null}
             </View>
           ) : null}

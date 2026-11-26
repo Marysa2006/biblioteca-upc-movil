@@ -27,9 +27,11 @@ export const claves = {
   contenidosPublicos: ['contenidos', 'publicos'] as const,
   /** Resultados de Koha para un texto (HU-02); las páginas van dentro de la misma clave. */
   enlacesKoha: ['portal', 'koha-opac'] as const,
-  busquedaCatalogo: (opac: string | null, texto: string) => ['catalogo', 'busqueda', opac, texto] as const,
+  busquedaCatalogo: (opac: string | null, texto: string) =>
+    ['catalogo', 'busqueda', opac, texto] as const,
   /** Resultados del repositorio DSpace para un texto (HU-11), con sus páginas. */
-  busquedaRepositorio: (url: string | null, texto: string) => ['repositorio', 'busqueda', url, texto] as const,
+  busquedaRepositorio: (url: string | null, texto: string) =>
+    ['repositorio', 'busqueda', url, texto] as const,
   /** El id va dentro de la clave: la caché es por usuario. */
   perfil: (usuarioId?: string) => ['perfil', usuarioId] as const,
 

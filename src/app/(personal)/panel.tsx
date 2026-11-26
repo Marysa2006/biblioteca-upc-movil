@@ -29,11 +29,7 @@ import { useRol } from '@/hooks/useRol';
 import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes } from '@/theme';
 import { fechaCompleta } from '@/utils/calendario';
-import {
-  cifrasDelDia,
-  pendientesPorAtender,
-  resumenPorArea,
-} from '@/utils/panel';
+import { cifrasDelDia, pendientesPorAtender, resumenPorArea } from '@/utils/panel';
 import { describirRoles } from '@/utils/roles';
 
 /** Los prefijos de las consultas del Dashboard, para volver a pedirlas al entrar a la pestaña. */
@@ -118,9 +114,7 @@ export default function Panel() {
         />
       );
     } else {
-      afluencia = (
-        <AfluenciaSemanal afluencia={panel.registros.lista} />
-      );
+      afluencia = <AfluenciaSemanal afluencia={panel.registros.lista} />;
     }
   }
 
@@ -131,7 +125,11 @@ export default function Panel() {
       recarga={{ recargando, onRecargar: () => void recargar() }}
     >
       {usuario && usaApi('asistencia') ? (
-        <Button mode="contained-tonal" icon="qrcode-scan" onPress={() => router.push('/asistencia/registrar')}>
+        <Button
+          mode="contained-tonal"
+          icon="qrcode-scan"
+          onPress={() => router.push('/asistencia/registrar')}
+        >
           Registrar asistencia con QR
         </Button>
       ) : null}

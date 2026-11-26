@@ -63,7 +63,8 @@ type Props = {
 export function SeccionIndicadores({ filtros, pestana, onQuitarFiltros }: Props) {
   const indicadores = useIndicadores(filtros);
 
-  if (indicadores.isPending) return <Esqueleto forma="grafica" mensaje="Calculando los indicadores…" />;
+  if (indicadores.isPending)
+    return <Esqueleto forma="grafica" mensaje="Calculando los indicadores…" />;
   if (indicadores.isError) {
     return (
       <EstadoError
@@ -378,7 +379,8 @@ function PestanaServicios({ indicadores }: { indicadores: IndicadoresUso }) {
         datos={indicadores.porFacultad}
         total={total}
       />
-      <GraficoBarras recomendada="dona"
+      <GraficoBarras
+        recomendada="dona"
         titulo="Por sede"
         descripcion="Sede de quien hizo la operación"
         datos={indicadores.porSede}

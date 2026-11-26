@@ -167,12 +167,17 @@ export function horasInicioCita(
   fecha: string,
   parametros: Parametros,
 ): { desde: string; hasta: string } | null {
-  const rangos = horariosDeFecha(fecha, parametros)
-    .filter(({ abre, cierra }) => aMinutos(cierra) - aMinutos(abre) >= (parametros.duracionAsesoriaMinutos ?? 0));
+  const rangos = horariosDeFecha(fecha, parametros).filter(
+    ({ abre, cierra }) =>
+      aMinutos(cierra) - aMinutos(abre) >= (parametros.duracionAsesoriaMinutos ?? 0),
+  );
   const primero = rangos[0];
   const ultimo = rangos.at(-1);
   return primero && ultimo
-    ? { desde: primero.abre, hasta: aHora(aMinutos(ultimo.cierra) - (parametros.duracionAsesoriaMinutos ?? 0)) }
+    ? {
+        desde: primero.abre,
+        hasta: aHora(aMinutos(ultimo.cierra) - (parametros.duracionAsesoriaMinutos ?? 0)),
+      }
     : null;
 }
 
@@ -193,10 +198,20 @@ export function problemaFechaHoraCita(
   const horas = horasInicioCita(fecha, parametros);
   if (!horas) return { campo: 'fecha', mensaje: 'Ese día la biblioteca no atiende.' };
   if (!esHoraValida(hora)) return { campo: 'hora', mensaje: 'Elige la hora.' };
-  if (!horariosDeFecha(fecha, parametros).some((h) => hora >= h.abre && hora < h.cierra && aMinutos(hora) + (parametros.duracionAsesoriaMinutos ?? 0) <= aMinutos(h.cierra))) {
+  if (
+    !horariosDeFecha(fecha, parametros).some(
+      (h) =>
+        hora >= h.abre &&
+        hora < h.cierra &&
+        aMinutos(hora) + (parametros.duracionAsesoriaMinutos ?? 0) <= aMinutos(h.cierra),
+    )
+  ) {
     return {
       campo: 'hora',
-      mensaje: parametros.duracionAsesoriaMinutos == null ? 'Elige una hora dentro del horario de atención.' : `Elige una hora dentro de una franja de atención: la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
+      mensaje:
+        parametros.duracionAsesoriaMinutos == null
+          ? 'Elige una hora dentro del horario de atención.'
+          : `Elige una hora dentro de una franja de atención: la asesoría dura ${parametros.duracionAsesoriaMinutos} minutos.`,
     };
   }
   if (!cumpleAnticipacionCita(fecha, hora, parametros, ahora)) {

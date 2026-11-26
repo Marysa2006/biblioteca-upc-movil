@@ -36,28 +36,35 @@ export function GraficoTiempoRespuesta({ datos }: Props) {
         </Text>
       </View>
 
-      <View accessible accessibilityLabel={'Tiempo de respuesta: ' + datos.map((fila) => fila.etiqueta + ' ' + textoHoras(fila.horasPromedio)).join(', ')} style={estilos.tarjetaDatos}>
-      {datos.map((fila) => (
-        <View
-          key={fila.servicio}
-          style={estilos.fila}
-          accessible
-          accessibilityLabel={`${fila.etiqueta}: ${textoHoras(fila.horasPromedio)} en promedio, ${textoSolicitudes(fila.cantidad)}`}
-        >
-          <View style={estilos.textos}>
-            <Text variant="bodyMedium" style={estilos.nombre}>
-              {fila.etiqueta}
-            </Text>
-            <Text variant="bodyMedium" style={estilos.valor}>
-              {textoHoras(fila.horasPromedio)}
+      <View
+        accessible
+        accessibilityLabel={
+          'Tiempo de respuesta: ' +
+          datos.map((fila) => fila.etiqueta + ' ' + textoHoras(fila.horasPromedio)).join(', ')
+        }
+        style={estilos.tarjetaDatos}
+      >
+        {datos.map((fila) => (
+          <View
+            key={fila.servicio}
+            style={estilos.fila}
+            accessible
+            accessibilityLabel={`${fila.etiqueta}: ${textoHoras(fila.horasPromedio)} en promedio, ${textoSolicitudes(fila.cantidad)}`}
+          >
+            <View style={estilos.textos}>
+              <Text variant="bodyMedium" style={estilos.nombre}>
+                {fila.etiqueta}
+              </Text>
+              <Text variant="bodyMedium" style={estilos.valor}>
+                {textoHoras(fila.horasPromedio)}
+              </Text>
+            </View>
+            <BarraHorizontal proporcion={fila.horasPromedio / maximo} color={colores.primario} />
+            <Text variant="bodySmall" style={estilos.descripcion}>
+              {`Promedio ${textoSolicitudes(fila.cantidad)}`}
             </Text>
           </View>
-          <BarraHorizontal proporcion={fila.horasPromedio / maximo} color={colores.primario} />
-          <Text variant="bodySmall" style={estilos.descripcion}>
-            {`Promedio ${textoSolicitudes(fila.cantidad)}`}
-          </Text>
-        </View>
-      ))}
+        ))}
       </View>
     </View>
   );

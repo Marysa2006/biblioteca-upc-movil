@@ -46,7 +46,10 @@ export function servicioEstadistico(etiqueta: string): keyof typeof CODIGOS | un
   if (valor.includes('tablet')) return 'tablets';
 }
 
-export function consultaEstadisticas(filtros: FiltrosEstadisticas, formato?: 'csv' | 'pdf' | 'xlsx') {
+export function consultaEstadisticas(
+  filtros: FiltrosEstadisticas,
+  formato?: 'csv' | 'pdf' | 'xlsx',
+) {
   const { desde, hasta, facultad, sede, servicio, programa } = filtros;
   const codigo =
     servicio && servicio in CODIGOS ? CODIGOS[servicio as keyof typeof CODIGOS] : undefined;

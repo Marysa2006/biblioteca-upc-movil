@@ -40,7 +40,7 @@ export default function Repositorio() {
   // Texto enviado desde el campo; vacío, no hay resultados.
   const [textoBuscado, setTextoBuscado] = useState('');
   const portal = useOrientacionAutoarchivo();
-  const url = portal.isSuccess ? portal.data.url ?? null : null;
+  const url = portal.isSuccess ? (portal.data.url ?? null) : null;
   const busqueda = useBusquedaRepositorio(url, textoBuscado);
   const resultados = busqueda.data?.pages.flatMap((pagina) => pagina.resultados) ?? [];
   const [aviso, setAviso] = useState<string | null>(null);

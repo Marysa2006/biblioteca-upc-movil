@@ -21,7 +21,7 @@ type Props = {
 };
 
 export function TarjetaCitaAgenda({ cita, mostrarFacilitador, onAbrir }: Props) {
-  const horas = `${[cita.horaInicio,cita.horaFin].filter(Boolean).join(' – ')}`;
+  const horas = `${[cita.horaInicio, cita.horaFin].filter(Boolean).join(' – ')}`;
   const modalidad = NOMBRE_MODALIDAD[cita.modalidad];
   const libre = sinAsignar(cita);
   const facilitador = libre
@@ -47,7 +47,11 @@ export function TarjetaCitaAgenda({ cita, mostrarFacilitador, onAbrir }: Props) 
                 <EtiquetaEstado estado={cita.estado} />
                 {libre ? (
                   <View style={estilos.sinAsignar}>
-                    <Icon source={ICONO_SIN_ASIGNAR} size={14} color={coloresEstado.cancelada.texto} />
+                    <Icon
+                      source={ICONO_SIN_ASIGNAR}
+                      size={14}
+                      color={coloresEstado.cancelada.texto}
+                    />
                     <Text variant="labelMedium" style={estilos.textoSinAsignar}>
                       Sin asignar
                     </Text>

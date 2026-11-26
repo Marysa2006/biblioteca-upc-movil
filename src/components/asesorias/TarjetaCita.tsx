@@ -35,7 +35,7 @@ type Props = {
 };
 
 export function TarjetaCita({ cita, horasCancelacion, onCancelar, onReprogramar }: Props) {
-  const cuando = `${fechaCompleta(cita.fecha)} · ${[cita.horaInicio,cita.horaFin].filter(Boolean).join(' – ')}`;
+  const cuando = `${fechaCompleta(cita.fecha)} · ${[cita.horaInicio, cita.horaFin].filter(Boolean).join(' – ')}`;
   const puedeCambiar = puedeCancelarCita(cita, horasCancelacion);
   const fueraDePlazo = citaEnCurso(cita) && !puedeCambiar;
   const pedida = fechaPedidaCita(cita);

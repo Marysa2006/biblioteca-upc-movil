@@ -26,11 +26,7 @@ import { useSesion } from '@/store/sesion';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { contenidosVisibles, hoyISO } from '@/utils/contenidos';
 import { imagenesDelCarrusel } from '@/utils/inicio';
-import {
-  agruparServiciosActivos,
-  CATEGORIAS_INICIO,
-  type GrupoServicios,
-} from '@/utils/servicios';
+import { agruparServiciosActivos, CATEGORIAS_INICIO, type GrupoServicios } from '@/utils/servicios';
 
 /** Desde este ancho (tablets) la cuadrícula pasa a 3 columnas. */
 const ANCHO_TABLET = 600;
@@ -81,7 +77,11 @@ export default function Inicio() {
       {avisos.length > 0 ? <AvisosNovedades contenidos={avisos} /> : null}
       {usuario ? null : <InvitacionSesion />}
       {usuario && usaApi('asistencia') ? (
-        <Button mode="contained-tonal" icon="qrcode-scan" onPress={() => router.push('/asistencia/registrar')}>
+        <Button
+          mode="contained-tonal"
+          icon="qrcode-scan"
+          onPress={() => router.push('/asistencia/registrar')}
+        >
           Registrar asistencia con QR
         </Button>
       ) : null}

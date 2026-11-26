@@ -22,7 +22,10 @@ type KohaBackend = { url: string | null; staff_url?: string | null; message?: st
 export async function obtenerEnlacesKoha() {
   const enlaces = usaApi('servicios')
     ? await peticion<KohaBackend>('/portal/koha-opac/')
-    : await simularRed<KohaBackend>({ url: URL_CATALOGO_KOHA + '/cgi-bin/koha/opac-main.pl', staff_url: null });
+    : await simularRed<KohaBackend>({
+        url: URL_CATALOGO_KOHA + '/cgi-bin/koha/opac-main.pl',
+        staff_url: null,
+      });
   return {
     opac: enlaces.url ?? null,
     personal: enlaces.staff_url ?? null,

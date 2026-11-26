@@ -92,11 +92,10 @@ export function plazosDesdeBackend(valores: ParametroBackend[], base: Parametros
 }
 
 export function plazosHaciaBackend(deseados: Parametros, actuales: Parametros) {
-  return Object.entries(PLAZOS)
-    .flatMap(([code, { campo, factor }]) => {
-      const valor = deseados[campo];
-      return valor != null && valor !== actuales[campo] ? [{ code, value: valor / factor }] : [];
-    });
+  return Object.entries(PLAZOS).flatMap(([code, { campo, factor }]) => {
+    const valor = deseados[campo];
+    return valor != null && valor !== actuales[campo] ? [{ code, value: valor / factor }] : [];
+  });
 }
 
 export function periodoHaciaBackend(periodo: PeriodoAcademico) {

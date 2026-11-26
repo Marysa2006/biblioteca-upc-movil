@@ -73,16 +73,22 @@ export default function Autoarchivo() {
       />
     );
   } else {
-    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto, mensaje } = orientacion.data;
-    const vacia = !texto && [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
+    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto, mensaje } =
+      orientacion.data;
+    const vacia =
+      !texto && [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
 
     contenido = vacia ? (
-      <EstadoVacio mensaje={mensaje || 'La biblioteca todavía no ha publicado la orientación de autoarchivo.'} />
+      <EstadoVacio
+        mensaje={mensaje || 'La biblioteca todavía no ha publicado la orientación de autoarchivo.'}
+      />
     ) : (
       <>
-        {actualizada ? <Text variant="bodySmall" style={estilos.secundario}>
-          {`Actualizada el ${fechaLegible(actualizada)}`}
-        </Text> : null}
+        {actualizada ? (
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {`Actualizada el ${fechaLegible(actualizada)}`}
+          </Text>
+        ) : null}
         {texto ? <Text variant="bodyMedium">{texto}</Text> : null}
 
         {procedimiento.length > 0 ? (
@@ -122,39 +128,45 @@ export default function Autoarchivo() {
           </BloqueOrientacion>
         ) : null}
 
-        {url ? <View style={estilos.deposito}>
-          {aviso ? (
-            <AvisoError mensaje={aviso}>
-              <Button
-                mode="outlined"
-                onPress={() => irAlDeposito()}
-                disabled={comprobar.isPending}
-                style={estilos.reintentar}
-                accessibilityRole="button"
-                accessibilityLabel="Reintentar abrir el Repositorio Institucional"
-              >
-                Reintentar
-              </Button>
-            </AvisoError>
-          ) : null}
+        {url ? (
+          <View style={estilos.deposito}>
+            {aviso ? (
+              <AvisoError mensaje={aviso}>
+                <Button
+                  mode="outlined"
+                  onPress={() => irAlDeposito()}
+                  disabled={comprobar.isPending}
+                  style={estilos.reintentar}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reintentar abrir el Repositorio Institucional"
+                >
+                  Reintentar
+                </Button>
+              </AvisoError>
+            ) : null}
 
-          <Button
-            mode="contained"
-            icon="open-in-new"
-            onPress={() => irAlDeposito()}
-            loading={comprobar.isPending}
-            disabled={comprobar.isPending}
-            contentStyle={estilos.contenidoBoton}
-            accessibilityRole="link"
-            accessibilityLabel="Abrir el Repositorio Institucional para depositar tu trabajo"
-          >
-            Ir al depósito
-          </Button>
-          <Text variant="bodySmall" style={estilos.secundario}>
-            El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la
-            Universidad. Al cerrarlo vuelves aquí.
-          </Text>
-        </View> : <EstadoVacio mensaje={mensaje || 'El repositorio todavía no tiene un enlace publicado.'} />}
+            <Button
+              mode="contained"
+              icon="open-in-new"
+              onPress={() => irAlDeposito()}
+              loading={comprobar.isPending}
+              disabled={comprobar.isPending}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="link"
+              accessibilityLabel="Abrir el Repositorio Institucional para depositar tu trabajo"
+            >
+              Ir al depósito
+            </Button>
+            <Text variant="bodySmall" style={estilos.secundario}>
+              El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la
+              Universidad. Al cerrarlo vuelves aquí.
+            </Text>
+          </View>
+        ) : (
+          <EstadoVacio
+            mensaje={mensaje || 'El repositorio todavía no tiene un enlace publicado.'}
+          />
+        )}
       </>
     );
   }

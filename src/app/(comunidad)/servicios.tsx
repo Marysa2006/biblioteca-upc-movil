@@ -19,7 +19,11 @@ import { Esqueleto, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useServicios } from '@/hooks/useServicios';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { CategoriaServicio } from '@/types';
-import { agruparServiciosActivos, CATEGORIAS_SERVICIO, type GrupoServicios } from '@/utils/servicios';
+import {
+  agruparServiciosActivos,
+  CATEGORIAS_SERVICIO,
+  type GrupoServicios,
+} from '@/utils/servicios';
 
 export default function Servicios() {
   const { categoria } = useLocalSearchParams<{ categoria?: string }>();
@@ -38,7 +42,9 @@ export default function Servicios() {
       // Categoría desconocida o sin servicios (por ejemplo, tras recargar): todas.
       const elegido = grupos.find((g) => g.categoria === categoria);
       const visibles = elegido ? [elegido] : grupos;
-      const presentacion = elegido ? CATEGORIAS_SERVICIO[elegido.categoria].presentacion : undefined;
+      const presentacion = elegido
+        ? CATEGORIAS_SERVICIO[elegido.categoria].presentacion
+        : undefined;
 
       contenido = (
         <>

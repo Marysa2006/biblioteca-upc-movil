@@ -41,7 +41,10 @@ export function CarruselInicio({ imagenes }: Props) {
       <View style={estilos.carrusel}>
         <View style={[estilos.foto, estilos.bienvenida, letraGrande && estilos.bienvenidaVertical]}>
           <Upecito pose="saludando" tamano={letraGrande ? 'encabezado' : 'grande'} />
-          <Text variant="titleMedium" style={[estilos.saludo, letraGrande && estilos.saludoCentrado]}>
+          <Text
+            variant="titleMedium"
+            style={[estilos.saludo, letraGrande && estilos.saludoCentrado]}
+          >
             ¡Hola! Te damos la bienvenida a la Biblioteca de la UPC.
           </Text>
         </View>
@@ -76,7 +79,9 @@ export function CarruselInicio({ imagenes }: Props) {
         accessibilityRole="adjustable"
         accessibilityLabel={`Fotos de la biblioteca. Foto ${actual + 1} de ${imagenes.length}: ${descripcion}`}
         accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
-        onAccessibilityAction={(evento) => irA(actual + (evento.nativeEvent.actionName === 'increment' ? 1 : -1))}
+        onAccessibilityAction={(evento) =>
+          irA(actual + (evento.nativeEvent.actionName === 'increment' ? 1 : -1))
+        }
       >
         {ancho > 0 ? (
           <ScrollView
@@ -114,14 +119,19 @@ export function CarruselInicio({ imagenes }: Props) {
         )}
       </View>
 
-      <View style={estilos.puntos} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {imagenes.length > 1 && imagenes.map((_, posicion) => (
+      <View
+        style={estilos.puntos}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        {imagenes.length > 1 &&
+          imagenes.map((_, posicion) => (
             <View
               key={posicion}
               style={[estilos.punto, posicion === actual && estilos.puntoActual]}
             />
           ))}
-        </View>
+      </View>
     </View>
   );
 }
@@ -131,7 +141,9 @@ function claveDe(fuente: ImagenInicio['fuente']): string {
   if (fuente == null) return '';
   if (typeof fuente === 'number' || typeof fuente === 'string') return String(fuente);
   if (Array.isArray(fuente)) {
-    return fuente.map((parte) => (typeof parte === 'string' ? parte : (parte?.uri ?? ''))).join(',');
+    return fuente
+      .map((parte) => (typeof parte === 'string' ? parte : (parte?.uri ?? '')))
+      .join(',');
   }
   return 'uri' in fuente ? (fuente.uri ?? '') : '';
 }
@@ -147,7 +159,15 @@ const estilos = StyleSheet.create({
     backgroundColor: colores.superficieVariante,
   },
   textoSinFoto: { color: colores.textoSecundario },
-  bienvenida: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: espacio.s, padding: espacio.m, backgroundColor: colores.primarioSuave, borderRadius: radio.tarjeta },
+  bienvenida: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacio.s,
+    padding: espacio.m,
+    backgroundColor: colores.primarioSuave,
+    borderRadius: radio.tarjeta,
+  },
   bienvenidaVertical: { flexDirection: 'column', gap: espacio.xs, padding: espacio.s },
   saludoCentrado: { flex: 0, textAlign: 'center' },
   saludo: { flex: 1, color: colores.primarioOscuro },

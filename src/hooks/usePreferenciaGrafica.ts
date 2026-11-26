@@ -14,13 +14,15 @@ export function usePreferenciaGrafica(clave: string, recomendada: TipoGrafica) {
     async function leer() {
       try {
         const tipo = await almacen.getItem(almacenamiento);
-        if (vigente) setSeleccion((actual) => actual?.clave === clave ? actual : { clave, tipo });
+        if (vigente) setSeleccion((actual) => (actual?.clave === clave ? actual : { clave, tipo }));
       } catch {
         // La tarjeta conserva el tipo recomendado cuando el almacenamiento no responde.
       }
     }
     void leer();
-    return () => { vigente = false; };
+    return () => {
+      vigente = false;
+    };
   }, [almacenamiento, clave, recomendada]);
 
   async function elegir(tipo: TipoGrafica) {
@@ -33,5 +35,5 @@ export function usePreferenciaGrafica(clave: string, recomendada: TipoGrafica) {
   }
 
   const recordada = seleccion?.clave === clave ? seleccion.tipo : null;
-  return { tipo: recordada === 'barras' ? 'barras' as const : recomendada, elegir };
+  return { tipo: recordada === 'barras' ? ('barras' as const) : recomendada, elegir };
 }

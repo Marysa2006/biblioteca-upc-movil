@@ -30,19 +30,43 @@ export type OrientacionAutoarchivo = {
 /** La orientación completa, con sus cuatro bloques (HU-11, CA1). */
 export async function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoarchivo> {
   if (usaApi('autoarchivo')) {
-    const { guide, message, repository_url: url } = await peticion<{
-      guide: { body: string; title: string; published_at: string | null; updated_at: string } | null;
+    const {
+      guide,
+      message,
+      repository_url: url,
+    } = await peticion<{
+      guide: {
+        body: string;
+        title: string;
+        published_at: string | null;
+        updated_at: string;
+      } | null;
       message: string | null;
       repository_url: string | null;
     }>('/portal/self-archive/');
-    if (!guide?.body.trim()) return { titulo: '', url, mensaje: message, procedimiento: [], requisitos: [], formatos: [], metadatos: [] };
+    if (!guide?.body.trim())
+      return {
+        titulo: '',
+        url,
+        mensaje: message,
+        procedimiento: [],
+        requisitos: [],
+        formatos: [],
+        metadatos: [],
+      };
     const bloques = leerBloques(guide.body);
     return {
       titulo: guide.title,
       url,
       mensaje: message,
       actualizada: (guide.published_at ?? guide.updated_at)?.slice(0, 10),
-      ...(bloques ?? { texto: guide.body, procedimiento: [], requisitos: [], formatos: [], metadatos: [] }),
+      ...(bloques ?? {
+        texto: guide.body,
+        procedimiento: [],
+        requisitos: [],
+        formatos: [],
+        metadatos: [],
+      }),
     };
   }
   const orientacion = ORIENTACION_AUTOARCHIVO;
@@ -58,7 +82,10 @@ export async function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoar
 
 function leerBloques(body: string) {
   const bloques: Record<'procedimiento' | 'requisitos' | 'formatos' | 'metadatos', string[]> = {
-    procedimiento: [], requisitos: [], formatos: [], metadatos: [],
+    procedimiento: [],
+    requisitos: [],
+    formatos: [],
+    metadatos: [],
   };
   const titulos = new Map<string, keyof typeof bloques>([
     ['## Procedimiento', 'procedimiento'],

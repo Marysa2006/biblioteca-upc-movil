@@ -79,7 +79,9 @@ export function obtenerFotosInicioAdministracion(usuario: Usuario): Promise<Foto
   const sinPermiso = errorDePermiso(usuario);
   if (sinPermiso) return Promise.reject(sinPermiso);
   if (usaApi('fotosInicio')) {
-    return peticion<FotoInicioBackend[]>(RUTA_GESTION).then((lista) => lista.map(fotoInicioDesdeBackend));
+    return peticion<FotoInicioBackend[]>(RUTA_GESTION).then((lista) =>
+      lista.map(fotoInicioDesdeBackend),
+    );
   }
   return simularRed(copia(ordenar(fotos)));
 }
@@ -100,10 +102,12 @@ export async function guardarFotoInicio(
     if (!id && /^https?:/.test(datos.imagen)) {
       throw new ErrorApi(400, 'Selecciona un archivo de imagen.');
     }
-    return fotoInicioDesdeBackend(await peticion<FotoInicioBackend>(ruta, {
-      method: id ? 'PATCH' : 'POST',
-      body: await cuerpoFotoInicio(datos, anterior),
-    }));
+    return fotoInicioDesdeBackend(
+      await peticion<FotoInicioBackend>(ruta, {
+        method: id ? 'PATCH' : 'POST',
+        body: await cuerpoFotoInicio(datos, anterior),
+      }),
+    );
   }
   const error = errorDeValidacion(datos);
   if (error) return Promise.reject(error);
@@ -134,7 +138,8 @@ export function cambiarPublicacionFotoInicio(
   if (sinPermiso) return Promise.reject(sinPermiso);
   if (usaApi('fotosInicio')) {
     return peticion<FotoInicioBackend>(`${RUTA_GESTION}${encodeURIComponent(id)}/`, {
-      method: 'PATCH', body: JSON.stringify({ is_published: publicada }),
+      method: 'PATCH',
+      body: JSON.stringify({ is_published: publicada }),
     }).then(fotoInicioDesdeBackend);
   }
   const anterior = fotos.find((foto) => foto.id === id);
@@ -157,7 +162,8 @@ export function reordenarFotosInicio(
   if (usaApi('fotosInicio')) {
     const items = idsEnOrden.map((id, i) => ({ id: Number(id), order: i + 1 }));
     return peticion<FotoInicioBackend[]>(`${RUTA_GESTION}reorder/`, {
-      method: 'POST', body: JSON.stringify({ items }),
+      method: 'POST',
+      body: JSON.stringify({ items }),
     }).then((lista) => lista.map(fotoInicioDesdeBackend));
   }
   const posiciones = new Map(idsEnOrden.map((id, i) => [id, i + 1]));

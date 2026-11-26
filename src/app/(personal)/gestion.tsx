@@ -26,10 +26,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 
 import { SeccionAgenda } from '@/components/gestion/SeccionAgenda';
-import {
-  BotonEscanearTablet,
-  SeccionPrestamos,
-} from '@/components/inventario/SeccionPrestamos';
+import { BotonEscanearTablet, SeccionPrestamos } from '@/components/inventario/SeccionPrestamos';
 import { SeccionPortal } from '@/components/gestion/SeccionPortal';
 import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
@@ -109,7 +106,12 @@ export default function Gestion() {
       subtitulo="Solicitudes, préstamos y administración del portal"
       flotante={Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null}
     >
-      {enlacesKoha.isError ? <EstadoError mensaje="No pudimos consultar el acceso a Koha." onReintentar={() => void enlacesKoha.refetch()} /> : kohaPersonal ? (
+      {enlacesKoha.isError ? (
+        <EstadoError
+          mensaje="No pudimos consultar el acceso a Koha."
+          onReintentar={() => void enlacesKoha.refetch()}
+        />
+      ) : kohaPersonal ? (
         <Button onPress={() => void abrirEnNavegador(kohaPersonal).catch(() => setErrorKoha(true))}>
           Ingresar a Koha
         </Button>

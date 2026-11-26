@@ -96,7 +96,9 @@ export function citaDesdeBackend(
   const horaInicio = cita.start_time ? horaDesdeBackend(cita.start_time) : pedida.hora;
   const horaFin = cita.end_time
     ? horaDesdeBackend(cita.end_time)
-    : duracionMinutos == null ? '' : aHora(aMinutos(horaInicio) + duracionMinutos);
+    : duracionMinutos == null
+      ? ''
+      : aHora(aMinutos(horaInicio) + duracionMinutos);
   const cambio =
     cita.scheduled_date != null && (fecha !== pedida.fecha || horaInicio !== pedida.hora);
   return {
@@ -139,10 +141,23 @@ export type CitaGestionBackend = CitaBackend & {
   result: string;
 };
 
-export type DetalleAgendaBackend = Pick<CitaBackend,
-  'id' | 'request_id' | 'status' | 'topic' | 'start_time' | 'end_time' | 'modality' |
-  'virtual_link' | 'group_size' | 'subject' | 'members' | 'need_description' |
-  'attended' | 'quality_rating' | 'quality_comment'
+export type DetalleAgendaBackend = Pick<
+  CitaBackend,
+  | 'id'
+  | 'request_id'
+  | 'status'
+  | 'topic'
+  | 'start_time'
+  | 'end_time'
+  | 'modality'
+  | 'virtual_link'
+  | 'group_size'
+  | 'subject'
+  | 'members'
+  | 'need_description'
+  | 'attended'
+  | 'quality_rating'
+  | 'quality_comment'
 > & {
   date: string;
   requester: string;
@@ -170,10 +185,13 @@ export function citaAgendaDesdeBackend(cita: DetalleAgendaBackend, duracion: num
     solicitante: cita.requester,
     fecha: cita.date,
     horaInicio,
-    horaFin: cita.end_time ? horaDesdeBackend(cita.end_time) :
-      horaInicio && duracion != null ? aHora(aMinutos(horaInicio) + duracion) : '',
+    horaFin: cita.end_time
+      ? horaDesdeBackend(cita.end_time)
+      : horaInicio && duracion != null
+        ? aHora(aMinutos(horaInicio) + duracion)
+        : '',
     necesidad: cita.need_description,
-    modalidad: cita.modality === 'VIRTUAL' ? 'virtual' as const : 'presencial' as const,
+    modalidad: cita.modality === 'VIRTUAL' ? ('virtual' as const) : ('presencial' as const),
     estado: ESTADO_DESDE_BACKEND[cita.status],
     personas: cita.group_size,
     participantes: cita.members ?? [],

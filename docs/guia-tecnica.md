@@ -174,11 +174,11 @@ ver [trampas conocidas](#trampas-conocidas).
 
 ### Las integraciones externas
 
-| Servicio                 | Cómo se usa                                                                                                               |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| **Koha** (catálogo)      | Búsqueda por RSS, en `src/api/catalogo.ts`. La URL está en `URL_CATALOGO_KOHA`                                            |
-| **DSpace** (repositorio) | API de DSpace, en `src/api/repositorio.ts`. Va por HTTPS desde noviembre de 2026 (#165); la URL está en `URL_REPOSITORIO` |
-| **Notificaciones**       | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend                                   |
+| Servicio                 | Cómo se usa                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------- |
+| **Koha** (catálogo)      | Búsqueda por RSS en `src/api/catalogo.ts`, con la URL publicada en `/portal/koha-opac/`.       |
+| **DSpace** (repositorio) | Búsqueda pública en `src/api/repositorio.ts`, con `repository_url` de `/portal/self-archive/`. |
+| **Notificaciones**       | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend        |
 
 ---
 
@@ -398,8 +398,8 @@ del formulario, `esquemaGuia` (`src/utils/guias.ts`).
 ### Las estadísticas (HU-25, HU-26 y #307)
 
 Con la API, `by_status` y `attendees_by_service` alimentan las tasas y las barras del
-Resumen. El CSV agrega esos indicadores al detalle descargado y el PDF se arma en la app
-a partir del resumen. El ranking de personas no forma parte del contrato 2.2.0.
+Resumen. El CSV agrega esos indicadores al detalle descargado. Con la API, XLSX y PDF se descargan
+como binarios a la caché. Con datos de prueba, CSV y PDF se generan localmente. El ranking de personas no forma parte del contrato 2.2.0.
 
 Cada operación deja **un solo registro de uso** (`RegistroUso`, `src/types/estadisticas.ts`), que
 se actualiza en cada cambio de estado con el mismo id (`uso-reserva-<id>`, `uso-cita-<id>`…). Los
@@ -678,6 +678,14 @@ Los **logos** (`assets/images/`) no se recolorean ni se deforman: `contentFit="c
 proporción del archivo.
 
 ### Los componentes compartidos
+
+`Esqueleto` dibuja placeholders para tarjetas, listas, cuadrículas y gráficas con
+`Animated`. Las formas son decorativas y el mensaje de carga sigue disponible para el
+lector de pantalla. La animación se detiene si se activa Reducir movimiento.
+
+`GraficaIndicador` comparte las vistas SVG de dona, líneas y barras horizontales entre
+Estadísticas y Afluencia semanal. La tarjeta recibe el tipo recomendado, mantiene la leyenda
+en texto y guarda la alternativa elegida en el almacenamiento local.
 
 Están en `src/components/ui`:
 

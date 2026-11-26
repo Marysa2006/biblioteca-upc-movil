@@ -24,7 +24,12 @@ export function SeccionRegistros({ filtros, onQuitarFiltros }: Props) {
 
   if (isPending) return <Esqueleto forma="lista" mensaje="Cargando los registros de uso…" />;
   if (isError) {
-    return <EstadoError mensaje="No pudimos cargar los registros de uso." onReintentar={() => refetch()} />;
+    return (
+      <EstadoError
+        mensaje="No pudimos cargar los registros de uso."
+        onReintentar={() => refetch()}
+      />
+    );
   }
   if (data.length === 0) {
     if (hayFiltros(filtros)) {

@@ -50,9 +50,11 @@ export function SeccionEspacios() {
   const futurasPorEspacio = useReservasFuturasPorEspacio(data?.map((actual) => actual.id) ?? []);
   const [porEliminar, setPorEliminar] = useState<Espacio | null>(null);
   const reservasParaEliminar = useReservasFuturas(porEliminar?.id ?? '');
-  const bloqueaEliminacion = porEliminar && (
-    reservasParaEliminar.isFetching || !reservasParaEliminar.data || reservasParaEliminar.data.length > 0
-  );
+  const bloqueaEliminacion =
+    porEliminar &&
+    (reservasParaEliminar.isFetching ||
+      !reservasParaEliminar.data ||
+      reservasParaEliminar.data.length > 0);
   const [porDesactivar, setPorDesactivar] = useState<Espacio | null>(null);
   // Se pide aquí y no en el diálogo: el Portal queda fuera del QueryClientProvider.
   const reservasFuturas = useReservasFuturas(porDesactivar?.id ?? '');
@@ -98,7 +100,9 @@ export function SeccionEspacios() {
   if (isPending) {
     lista = <Esqueleto forma="lista" mensaje="Cargando espacios…" />;
   } else if (isError) {
-    lista = <EstadoError mensaje="No pudimos cargar los espacios." onReintentar={() => refetch()} />;
+    lista = (
+      <EstadoError mensaje="No pudimos cargar los espacios." onReintentar={() => refetch()} />
+    );
   } else if (data.length === 0) {
     lista = <EstadoVacio mensaje="Todavía no hay espacios. Crea el primero." />;
   } else {
@@ -112,11 +116,15 @@ export function SeccionEspacios() {
         }
         onCambiarEstado={() => (actual.activo ? abrirDesactivar(actual) : activar(actual))}
         tieneReservasFuturas={Boolean(futurasPorEspacio.get(actual.id)?.data?.length)}
-        onEliminar={futurasPorEspacio.get(actual.id)?.isSuccess &&
-          futurasPorEspacio.get(actual.id)?.data?.length === 0 ? () => {
-          eliminar.reset();
-          setPorEliminar(actual);
-        } : undefined}
+        onEliminar={
+          futurasPorEspacio.get(actual.id)?.isSuccess &&
+          futurasPorEspacio.get(actual.id)?.data?.length === 0
+            ? () => {
+                eliminar.reset();
+                setPorEliminar(actual);
+              }
+            : undefined
+        }
         onBloquear={() =>
           router.push({ pathname: '/administracion/bloqueo', params: { espacioId: actual.id } })
         }
@@ -128,23 +136,39 @@ export function SeccionEspacios() {
     <View style={estilos.seccion}>
       {lista}
       <DialogoMotivoAccion
-        accion={porEliminar ? {
-          id: porEliminar.id, titulo: 'Eliminar espacio', boton: 'Eliminar espacio',
-          detalle: `Se eliminará ${porEliminar.nombre} del catálogo.`,
-        } : null}
+        accion={
+          porEliminar
+            ? {
+                id: porEliminar.id,
+                titulo: 'Eliminar espacio',
+                boton: 'Eliminar espacio',
+                detalle: `Se eliminará ${porEliminar.nombre} del catálogo.`,
+              }
+            : null
+        }
         impedido={Boolean(bloqueaEliminacion)}
         guardando={eliminar.isPending}
         mensajeError={
-          eliminar.error ? mensajeErrorGuardar(eliminar.error) :
-          reservasParaEliminar.isError ? 'No pudimos verificar las reservas futuras. Vuelve a abrir el diálogo.' :
-          reservasParaEliminar.data?.length ? 'El espacio tiene reservas futuras. Usa Desactivar.' : null
+          eliminar.error
+            ? mensajeErrorGuardar(eliminar.error)
+            : reservasParaEliminar.isError
+              ? 'No pudimos verificar las reservas futuras. Vuelve a abrir el diálogo.'
+              : reservasParaEliminar.data?.length
+                ? 'El espacio tiene reservas futuras. Usa Desactivar.'
+                : null
         }
-        onConfirmar={(motivo) => porEliminar && eliminar.mutate({ id: porEliminar.id, motivo }, {
-          onSuccess: () => {
-            setAviso(`${porEliminar.nombre} se eliminó del catálogo.`);
-            setPorEliminar(null);
-          },
-        })}
+        onConfirmar={(motivo) =>
+          porEliminar &&
+          eliminar.mutate(
+            { id: porEliminar.id, motivo },
+            {
+              onSuccess: () => {
+                setAviso(`${porEliminar.nombre} se eliminó del catálogo.`);
+                setPorEliminar(null);
+              },
+            },
+          )
+        }
         onCerrar={() => setPorEliminar(null)}
       />
 
@@ -160,7 +184,11 @@ export function SeccionEspacios() {
       />
 
       <Portal>
-        <Snackbar visible={aviso != null} onDismiss={() => setAviso(null)} duration={DURACION_AVISO_MS}>
+        <Snackbar
+          visible={aviso != null}
+          onDismiss={() => setAviso(null)}
+          duration={DURACION_AVISO_MS}
+        >
           {aviso}
         </Snackbar>
       </Portal>

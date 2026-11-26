@@ -36,7 +36,9 @@ export function DetalleCitaAgenda({ cita }: { cita: CitaAgenda }) {
           {datos?.nombreCompleto || cita.solicitante}
         </Text>
         {tipo ? <Dato etiqueta="Tipo de usuario" valor={NOMBRE_TIPO[tipo]} /> : null}
-        {datos?.nivel ? <Dato etiqueta="Nivel" valor={NOMBRE_NIVEL_FORMACION[datos.nivel]} /> : null}
+        {datos?.nivel ? (
+          <Dato etiqueta="Nivel" valor={NOMBRE_NIVEL_FORMACION[datos.nivel]} />
+        ) : null}
         {datos?.facultad ? <Dato etiqueta="Facultad" valor={datos.facultad} /> : null}
         {programa ? <Dato etiqueta="Programa o dependencia" valor={programa} /> : null}
         {datos?.semestre ? <Dato etiqueta="Semestre" valor={`${datos.semestre}.º`} /> : null}
@@ -61,7 +63,7 @@ export function DetalleCitaAgenda({ cita }: { cita: CitaAgenda }) {
         <Dato etiqueta="Tema" valor={cita.tema} />
         <Dato
           etiqueta="Fecha y hora"
-          valor={`${fechaCompleta(cita.fecha)}, ${[cita.horaInicio,cita.horaFin].filter(Boolean).join(' – ')}`}
+          valor={`${fechaCompleta(cita.fecha)}, ${[cita.horaInicio, cita.horaFin].filter(Boolean).join(' – ')}`}
         />
         {cambioFecha ? (
           <Dato

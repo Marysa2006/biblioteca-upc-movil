@@ -128,7 +128,8 @@ export function BandejaReservas() {
   } else {
     const encontradas = buscarReservas(reservas, busqueda, nombreEspacio);
     const hay = (estado: EstadoSolicitud) => reservas.some((r) => r.estado === estado);
-    const cantidad = (estado: EstadoSolicitud) => encontradas.filter((r) => r.estado === estado).length;
+    const cantidad = (estado: EstadoSolicitud) =>
+      encontradas.filter((r) => r.estado === estado).length;
     // Los chips son los estados que tienen solicitudes; la búsqueda solo cambia los números,
     // así no aparecen ni desaparecen mientras se escribe. "Todas" va primero.
     const opciones: OpcionFiltro<Filtro>[] = [
@@ -143,11 +144,13 @@ export function BandejaReservas() {
     const inicial: Filtro = hay('pendiente') ? 'pendiente' : 'todas';
     const filtro =
       filtroElegido && opciones.some((o) => o.valor === filtroElegido) ? filtroElegido : inicial;
-    const visibles = filtro === 'todas' ? encontradas : encontradas.filter((r) => r.estado === filtro);
+    const visibles =
+      filtro === 'todas' ? encontradas : encontradas.filter((r) => r.estado === filtro);
 
     let mensajeVacio = 'Todavía no hay solicitudes de reserva.';
     if (busqueda.trim()) mensajeVacio = `Ninguna solicitud coincide con «${busqueda.trim()}».`;
-    else if (filtro !== 'todas') mensajeVacio = `No hay solicitudes en estado «${coloresEstado[filtro].etiqueta}».`;
+    else if (filtro !== 'todas')
+      mensajeVacio = `No hay solicitudes en estado «${coloresEstado[filtro].etiqueta}».`;
 
     contenido = (
       <>
@@ -206,13 +209,21 @@ export function BandejaReservas() {
           otraFecha &&
           decidir(otraFecha, 'nueva_fecha', {
             motivo: texto.trim() || undefined,
-            cambios: { fecha: fecha.trim(), horaInicio: horaInicio.trim(), horaFin: horaFin.trim() },
+            cambios: {
+              fecha: fecha.trim(),
+              horaInicio: horaInicio.trim(),
+              horaFin: horaFin.trim(),
+            },
           })
         }
         onCerrar={cerrarDialogos}
       />
       <Portal>
-        <Snackbar visible={aviso != null} onDismiss={() => setAviso(null)} duration={DURACION_AVISO_MS}>
+        <Snackbar
+          visible={aviso != null}
+          onDismiss={() => setAviso(null)}
+          duration={DURACION_AVISO_MS}
+        >
           {aviso}
         </Snackbar>
       </Portal>

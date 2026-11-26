@@ -23,7 +23,13 @@ type Props = {
   deshabilitado?: boolean;
 };
 
-export function CondicionesUso({ condiciones, aceptadas, onCambiar, mensajeError, deshabilitado }: Props) {
+export function CondicionesUso({
+  condiciones,
+  aceptadas,
+  onCambiar,
+  mensajeError,
+  deshabilitado,
+}: Props) {
   const [ver, setVer] = useState(false);
   return (
     <View style={estilos.tarjeta}>
@@ -53,9 +59,10 @@ export function CondicionesUso({ condiciones, aceptadas, onCambiar, mensajeError
           </Text>
         ))}
         {condiciones.actualizada ? (
-        <Text variant="bodySmall" style={estilos.secundario}>
-          {`Actualizadas el ${fechaLegible(condiciones.actualizada)}.`}
-        </Text>) : null}
+          <Text variant="bodySmall" style={estilos.secundario}>
+            {`Actualizadas el ${fechaLegible(condiciones.actualizada)}.`}
+          </Text>
+        ) : null}
       </DialogoTexto>
 
       <Checkbox.Item

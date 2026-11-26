@@ -74,12 +74,17 @@ async function leerDescarga<T>(leer: () => Promise<T>): Promise<T> {
   }
 }
 
-export async function exportarBinarioBackend(filtros: FiltrosEstadisticas, formato: 'xlsx' | 'pdf') {
+export async function exportarBinarioBackend(
+  filtros: FiltrosEstadisticas,
+  formato: 'xlsx' | 'pdf',
+) {
   const respuesta = await descargarEstadisticas(filtros, formato);
   const buffer = await leerDescarga(() => respuesta.arrayBuffer());
   const archivo = 'estadisticas-' + hoyISO() + '.' + formato;
-  const mimeType = formato === 'pdf' ? 'application/pdf'
-    : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const mimeType =
+    formato === 'pdf'
+      ? 'application/pdf'
+      : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
   if (typeof document !== 'undefined') {
     const url = URL.createObjectURL(new Blob([buffer], { type: mimeType }));
     const enlace = document.createElement('a');
@@ -93,6 +98,7 @@ export async function exportarBinarioBackend(filtros: FiltrosEstadisticas, forma
   destino.create({ overwrite: true });
   destino.writeSync(new Uint8Array(buffer));
   const compartido = await Sharing.isAvailableAsync();
-  if (compartido) await Sharing.shareAsync(destino.uri, { mimeType, dialogTitle: 'Compartir estadísticas' });
+  if (compartido)
+    await Sharing.shareAsync(destino.uri, { mimeType, dialogTitle: 'Compartir estadísticas' });
   return { archivo, compartido };
 }
