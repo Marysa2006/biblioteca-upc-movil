@@ -12,7 +12,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { claves } from '@/api/claves';
-import { marcarLeida, obtenerNotificaciones } from '@/api/notificaciones';
+import { marcarLeida, marcarTodasLeidas, obtenerNotificaciones } from '@/api/notificaciones';
+import type { Notificacion } from '@/types';
 import { useSesion } from '@/store/sesion';
 
 /** Notificaciones del usuario de la sesión, la más reciente primero. No consulta sin sesión. */
@@ -43,6 +44,25 @@ export function useMarcarLeida() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: claves.notificaciones });
+    },
+  });
+}
+
+export function useMarcarTodasLeidas() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const usuario = useSesion.getState().usuario;
+      if (!usuario) throw new Error('No hay sesión.');
+      await marcarTodasLeidas(usuario.id);
+      return usuario.id;
+    },
+    onSuccess: (usuarioId) => {
+      if (useSesion.getState().usuario?.id !== usuarioId) return;
+      queryClient.setQueryData<Notificacion[]>([...claves.notificaciones, usuarioId], (avisos) =>
+        avisos?.map((aviso) => ({ ...aviso, leida: true })),
+      );
+      return queryClient.invalidateQueries({ queryKey: claves.notificaciones });
     },
   });
 }

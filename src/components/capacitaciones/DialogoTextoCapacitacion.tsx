@@ -1,7 +1,7 @@
 /**
  * Diálogo con un texto obligatorio para una solicitud de capacitación (HU-12):
  * - `rechazar`: el motivo del rechazo (CA2). Sin motivo no se envía, y la API lo vuelve a validar.
- * - `cerrar`: marcarla como realizada con el resultado (CA3), después de dictarla. Dice quién
+ * - `cerrar`: marcarla como finalizada con el resultado (CA3), después de dictarla. Dice quién
  *   es el responsable, que se asigna antes. En la API es cerrarCapacitacion().
  * El usuario recibe el texto en la notificación. No guarda: el detalle llama a la mutación con
  * onConfirmar. Va en un Portal, fuera del QueryClientProvider: recibe todo por props.
@@ -50,17 +50,21 @@ const TEXTOS: Record<
   cerrar: {
     titulo: 'Registrar el resultado',
     explicacion:
-      'Hazlo después de dictar la capacitación. La solicitud queda Realizada y el usuario recibe el resultado.',
+      'Hazlo después de dictar la capacitación. La solicitud queda Finalizada y el usuario recibe el resultado.',
     etiqueta: `Resultado (hasta ${LARGO_MAXIMO_RESULTADO} caracteres)`,
     placeholder: 'Por ejemplo: asistieron 22 personas y se entregó la guía',
-    boton: 'Marcar como realizada',
+    boton: 'Marcar como finalizada',
   },
 };
 
 export function DialogoTextoCapacitacion({ tipo, ...props }: Props) {
   return (
     <Portal>
-      <Dialog visible={tipo != null} onDismiss={props.guardando ? undefined : props.onCerrar} style={estilos.dialogo}>
+      <Dialog
+        visible={tipo != null}
+        onDismiss={props.guardando ? undefined : props.onCerrar}
+        style={estilos.dialogo}
+      >
         {tipo ? (
           // key: al abrirlo para otra acción, el texto vuelve a empezar.
           <Contenido key={tipo} tipo={tipo} {...props} />
@@ -89,8 +93,13 @@ function Contenido({
         texto: pideMotivo ? esquemaMotivo.shape.motivo : esquemaResultado.shape.resultado,
         participantes: pideMotivo
           ? z.string()
-          : z.string().regex(/^\d+$/, 'Indica cuántas personas asistieron.')
-              .refine((valor) => Number(valor) <= 32767, 'El número de asistentes es demasiado alto.'),
+          : z
+              .string()
+              .regex(/^\d+$/, 'Indica cuántas personas asistieron.')
+              .refine(
+                (valor) => Number(valor) <= 32767,
+                'El número de asistentes es demasiado alto.',
+              ),
       }),
     ),
     defaultValues: { texto: '', participantes: '' },
@@ -150,9 +159,7 @@ function Contenido({
                 error={error != null}
                 disabled={guardando}
                 multiline
-                accessibilityLabel={
-                  pideMotivo ? textos.etiqueta : 'Resultado de la capacitación'
-                }
+                accessibilityLabel={pideMotivo ? textos.etiqueta : 'Resultado de la capacitación'}
               />
               <HelperText type="error" visible={error != null}>
                 {error?.message}
@@ -176,9 +183,11 @@ function Contenido({
         </Button>
         <Button
           mode="contained"
-          onPress={() => handleSubmit(({ texto, participantes }) =>
-            onConfirmar(texto.trim(), pideMotivo ? undefined : Number(participantes)),
-          )()}
+          onPress={() =>
+            handleSubmit(({ texto, participantes }) =>
+              onConfirmar(texto.trim(), pideMotivo ? undefined : Number(participantes)),
+            )()
+          }
           loading={guardando}
           disabled={guardando}
           buttonColor={pideMotivo ? coloresEstado.rechazada.texto : undefined}

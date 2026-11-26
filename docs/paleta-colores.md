@@ -71,7 +71,7 @@ Se usan en las etiquetas de estado de las solicitudes y en los avisos. Siempre l
 | `rechazada` | Rechazada | `#F9E0E1` | `#B01B25` | 5,5:1 ✅ | Errores y préstamos vencidos |
 | `nueva_fecha` | Nueva fecha propuesta | `#E2F1FA` | `#1E648A` | 5,6:1 ✅ | Tiempo restante de un préstamo |
 | `cancelada` | Cancelada | `#ECEDF1` | `#5B6375` | 5,1:1 ✅ | |
-| `realizada` | Realizada | `#ECE9F7` | `#4B3A8C` | 7,7:1 ✅ | Préstamos devueltos |
+| `realizada` | Finalizada | `#ECE9F7` | `#4B3A8C` | 7,7:1 ✅ | Préstamos devueltos |
 
 > Los fondos y textos de estado son **derivados**: el manual no define colores de estado. El ámbar de `pendiente` reemplaza al amarillo institucional (`#FAF800`), que no se puede leer como texto.
 

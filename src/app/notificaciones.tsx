@@ -15,9 +15,10 @@ import { Button, Text } from 'react-native-paper';
 import { TarjetaAviso } from '@/components/notificaciones/TarjetaAviso';
 import { TarjetaRecordatorios } from '@/components/notificaciones/TarjetaRecordatorios';
 import { AvisoError, EncabezadoApilado, EstadoCarga, EstadoVacio, Pantalla } from '@/components/ui';
-import { useMarcarLeida, useNotificaciones } from '@/hooks/useNotificaciones';
+import { useMarcarLeida, useMarcarTodasLeidas, useNotificaciones } from '@/hooks/useNotificaciones';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio } from '@/theme';
+import { mensajeErrorGuardar } from '@/utils/errores';
 
 const TITULO = 'Notificaciones';
 
@@ -25,6 +26,7 @@ export default function Notificaciones() {
   const { usuario } = useRol();
   const { data: avisos, isPending, isError, isRefetching, refetch } = useNotificaciones();
   const marcar = useMarcarLeida();
+  const marcarTodas = useMarcarTodasLeidas();
 
   let contenido;
   if (!usuario) {
@@ -72,10 +74,29 @@ export default function Notificaciones() {
             ? 'Estás al día: ya leíste todas tus notificaciones.'
             : `Tienes ${sinLeer} ${sinLeer === 1 ? 'notificación' : 'notificaciones'} sin leer.`}
         </Text>
-        {marcar.error ? <AvisoError mensaje="No pudimos marcar la notificación como leída." /> : null}
+        {sinLeer > 0 ? (
+          <Button
+            mode="outlined"
+            icon="check-all"
+            contentStyle={estilos.botonTodas}
+            loading={marcarTodas.isPending}
+            disabled={marcarTodas.isPending}
+            onPress={() => marcarTodas.mutate()}
+          >
+            Marcar todas como leídas
+          </Button>
+        ) : null}
+        {marcarTodas.error ? <AvisoError mensaje={mensajeErrorGuardar(marcarTodas.error)} /> : null}
+        {marcar.error ? (
+          <AvisoError mensaje="No pudimos marcar la notificación como leída." />
+        ) : null}
         <View style={estilos.lista}>
           {avisos.map((aviso) => (
-            <TarjetaAviso key={aviso.id} aviso={aviso} onMarcarLeida={() => marcar.mutate(aviso.id)} />
+            <TarjetaAviso
+              key={aviso.id}
+              aviso={aviso}
+              onMarcarLeida={() => marcar.mutate(aviso.id)}
+            />
           ))}
         </View>
       </>
@@ -99,6 +120,7 @@ export default function Notificaciones() {
 }
 
 const estilos = StyleSheet.create({
+  botonTodas: { minHeight: 44 },
   sinSesion: { alignItems: 'center', gap: espacio.m, paddingVertical: espacio.xl },
   texto: { color: colores.texto, textAlign: 'center' },
   contenidoBoton: { paddingVertical: espacio.xs },

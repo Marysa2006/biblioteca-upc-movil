@@ -13,7 +13,9 @@ import type {
   EstadoSolicitud,
   RecursoApoyo,
   Reserva,
+  Usuario,
 } from '@/types';
+import { puedeCancelarSolicitud } from '@/utils/cancelacionSolicitud';
 import { esDiaHabil } from '@/utils/parametros';
 
 import {
@@ -34,7 +36,7 @@ import { RESERVAS } from './mocks/reservas';
 import { datosDeSolicitante, registrarUso } from './estadisticas';
 import { registrarEvento } from './historial';
 import { crearNotificacion } from './notificaciones';
-import { obtenerParametros } from './parametros';
+import { obtenerParametros, obtenerPlazoCancelacion } from './parametros';
 import { buscarEnDirectorio } from './usuarios';
 
 /** Copia mutable: con mocks, las decisiones se ven durante la sesión de la app. */
@@ -82,9 +84,12 @@ async function rutaGestionReserva(id: string) {
 
 async function guardarReservaPersonal(ruta: string, metodo: 'POST' | 'PATCH', cuerpo: object) {
   try {
-    return leerReservaPersonal(await peticion<ReservaPersonalBackend>(ruta, {
-      method: metodo, body: JSON.stringify(cuerpo),
-    }));
+    return leerReservaPersonal(
+      await peticion<ReservaPersonalBackend>(ruta, {
+        method: metodo,
+        body: JSON.stringify(cuerpo),
+      }),
+    );
   } catch (error) {
     if (error instanceof ErrorApi && error.estado === 409) {
       const franjas = franjasDeConflicto(error.cuerpo);
@@ -191,7 +196,8 @@ export async function decidirReserva(
       const actual = await peticion<ReservaPersonalBackend>(ruta);
       return guardarReservaPersonal(ruta, 'PATCH', {
         date: cambios?.fecha === actual.date ? undefined : cambios?.fecha,
-        start_time: cambios?.horaInicio === actual.start_time.slice(0, 5) ? undefined : cambios?.horaInicio,
+        start_time:
+          cambios?.horaInicio === actual.start_time.slice(0, 5) ? undefined : cambios?.horaInicio,
         end_time: cambios?.horaFin === actual.end_time.slice(0, 5) ? undefined : cambios?.horaFin,
         reason,
       });
@@ -306,7 +312,8 @@ export async function crearReservaTercero({
   if (!datos.proposito?.trim()) {
     throw new ErrorApi(400, 'El propósito es obligatorio.');
   }
-  const persona = !datos.solicitanteId && correoSolicitante ? buscarEnDirectorio(correoSolicitante) : undefined;
+  const persona =
+    !datos.solicitanteId && correoSolicitante ? buscarEnDirectorio(correoSolicitante) : undefined;
   if (!datos.solicitanteId && (!persona || persona.activo === false)) {
     throw new ErrorApi(400, 'No encontramos una cuenta activa con ese correo institucional.');
   }
@@ -343,8 +350,13 @@ export async function crearReservaTercero({
     'Creada por el personal.',
   );
   registrarUso({
-    id: `uso-reserva-${nueva.id}`, servicio: 'espacios', finalidad: nueva.proposito,
-    fecha: nueva.fecha, modalidad: 'presencial', estado: 'pendiente', respondida: true,
+    id: `uso-reserva-${nueva.id}`,
+    servicio: 'espacios',
+    finalidad: nueva.proposito,
+    fecha: nueva.fecha,
+    modalidad: 'presencial',
+    estado: 'pendiente',
+    respondida: true,
     ...datosDeSolicitante(nueva.solicitanteId),
   });
 
@@ -458,6 +470,52 @@ export function registrarSolicitudReserva(datos: DatosSolicitudReserva): Reserva
 }
 
 /** Reservas del usuario de la sesión, ordenadas por fecha (HU-27 y HU-08). */
+export async function cancelarMiReserva(
+  id: string,
+  motivo: string,
+  usuario: Usuario,
+): Promise<void> {
+  const reason = motivo.trim();
+  if (usaApi('espacios')) {
+    await peticion('/spaces/reservations/' + encodeURIComponent(id) + '/cancel/', {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    return;
+  }
+  const plazo = await obtenerPlazoCancelacion(false);
+  const reserva = reservas.find(
+    (actual) => actual.id === id && actual.solicitanteId === usuario.id,
+  );
+  if (!reserva) throw new ErrorApi(404, 'No encontramos tu reserva.');
+  if (
+    !puedeCancelarSolicitud('reserva', reserva.estado, reserva.fecha, reserva.horaInicio, plazo)
+  ) {
+    throw new ErrorApi(400, 'Esta reserva ya no se puede cancelar.');
+  }
+  const nota = reason || 'Cancelada por la persona solicitante.';
+  reservas = reservas.map((actual) =>
+    actual.id === id ? { ...actual, estado: 'cancelada', motivo: nota } : actual,
+  );
+  crearNotificacion({
+    usuarioId: usuario.id,
+    solicitudId: id,
+    titulo: 'Reserva cancelada',
+    mensaje: nota,
+  });
+  registrarEvento('reserva', id, 'cancelada', usuario.nombre, nota);
+  registrarUso({
+    id: 'uso-reserva-' + id,
+    usuario,
+    servicio: 'espacios',
+    finalidad: reserva.proposito,
+    fecha: reserva.fecha,
+    modalidad: 'presencial',
+    estado: 'cancelada',
+  });
+  await simularRed(null);
+}
+
 export async function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> {
   if (usaApi('espacios')) {
     const solicitante = { id: usuarioId, nombre: useSesion.getState().usuario?.nombre ?? '' };
@@ -480,4 +538,3 @@ export async function obtenerMisReservas(usuarioId: string): Promise<Reserva[]> 
   const mias = reservas.filter((reserva) => reserva.solicitanteId === usuarioId);
   return simularRed(ordenar(mias).map((reserva) => ({ ...reserva })));
 }
-

@@ -26,15 +26,12 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentType } from 'react';
 
 import { SeccionAgenda } from '@/components/gestion/SeccionAgenda';
-import {
-  BotonEscanearTablet,
-  SeccionPrestamos,
-} from '@/components/inventario/SeccionPrestamos';
+import { BotonEscanearTablet, SeccionPrestamos } from '@/components/inventario/SeccionPrestamos';
 import { SeccionPortal } from '@/components/gestion/SeccionPortal';
 import { SeccionSolicitudes } from '@/components/gestion/SeccionSolicitudes';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { BotonReservaTercero } from '@/components/reservas/BotonReservaTercero';
-import { EstadoVacio, Pantalla } from '@/components/ui';
+import { EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useEnlacesKoha } from '@/hooks/useCatalogoKoha';
 import { abrirEnNavegador } from '@/utils/navegador';
 import { useRol } from '@/hooks/useRol';
@@ -70,7 +67,8 @@ const SECCIONES: Seccion[] = SECCIONES_GESTION.map((info) => ({
 }));
 
 export default function Gestion() {
-  const kohaPersonal = useEnlacesKoha().data?.personal;
+  const enlacesKoha = useEnlacesKoha();
+  const kohaPersonal = enlacesKoha.isSuccess ? enlacesKoha.data.personal : null;
   const [errorKoha, setErrorKoha] = useState(false);
   const { tienePermiso } = useRol();
   const { seccion, abrir } = useLocalSearchParams<{ seccion?: string; abrir?: string }>();
@@ -108,7 +106,12 @@ export default function Gestion() {
       subtitulo="Solicitudes, préstamos y administración del portal"
       flotante={Flotante ? (desplazada: boolean) => <Flotante extendido={!desplazada} /> : null}
     >
-      {kohaPersonal ? (
+      {enlacesKoha.isError ? (
+        <EstadoError
+          mensaje="No pudimos consultar el acceso a Koha del personal."
+          onReintentar={() => void enlacesKoha.refetch()}
+        />
+      ) : kohaPersonal ? (
         <Button onPress={() => void abrirEnNavegador(kohaPersonal).catch(() => setErrorKoha(true))}>
           Ingresar a Koha
         </Button>

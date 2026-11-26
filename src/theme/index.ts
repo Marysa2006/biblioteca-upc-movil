@@ -54,14 +54,17 @@ export const fondoServicio: Record<CategoriaServicio, string> = {
 };
 
 /** Colores de cada estado de solicitud: fondo de la etiqueta y color del texto (≥ 5.5:1). */
-export const coloresEstado: Record<EstadoSolicitud, { fondo: string; texto: string; etiqueta: string }> = {
+export const coloresEstado: Record<
+  EstadoSolicitud,
+  { fondo: string; texto: string; etiqueta: string }
+> = {
   pendiente: { fondo: '#FEF3E3', texto: '#825A1E', etiqueta: 'Pendiente' },
   aprobada: { fondo: '#E5F2E5', texto: '#2B6B2B', etiqueta: 'Aprobada' },
   rechazada: { fondo: '#F9E0E1', texto: '#B01B25', etiqueta: 'Rechazada' },
   nueva_fecha: { fondo: '#E2F1FA', texto: '#1E648A', etiqueta: 'Nueva fecha propuesta' },
   cancelada: { fondo: '#ECEDF1', texto: '#5B6375', etiqueta: 'Cancelada' },
   // Morado y no verde: se distingue de Aprobada (7,7:1 sobre su fondo).
-  realizada: { fondo: '#ECE9F7', texto: '#4B3A8C', etiqueta: 'Realizada' },
+  realizada: { fondo: '#ECE9F7', texto: '#4B3A8C', etiqueta: 'Finalizada' },
 };
 
 export const espacio = { xs: 4, s: 8, m: 16, l: 24, xl: 32 } as const;

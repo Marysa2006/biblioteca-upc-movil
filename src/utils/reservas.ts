@@ -89,6 +89,10 @@ export const esquemaMotivo = z.object({
     .max(LARGO_MAXIMO_MOTIVO, { error: `Máximo ${LARGO_MAXIMO_MOTIVO} caracteres.` }),
 });
 
+export const esquemaMotivoOpcional = z.object({
+  motivo: z.string().trim().max(LARGO_MAXIMO_MOTIVO),
+});
+
 export type FormularioMotivo = z.input<typeof esquemaMotivo>;
 
 /** Otra fecha (CA1, "modificar"): fecha y horario válidos, con el fin después del inicio. */
@@ -216,9 +220,19 @@ type ContextoReserva = { parametros: Parametros; espacios: Espacio[]; hoy: strin
 export function esquemaReservaTercero({ parametros, hoy }: ContextoReserva, porCorreo = false) {
   return z
     .object({
-      solicitanteId: porCorreo ? z.string() : z.string().min(1, { error: 'Elige a la persona que reserva.' }),
-      correoSolicitante: porCorreo ? z.string().trim().email('Escribe un correo válido.')
-        .refine((correo) => correo.toLowerCase().endsWith('@unicesar.edu.co'), 'Usa un correo institucional.') : z.string(),
+      solicitanteId: porCorreo
+        ? z.string()
+        : z.string().min(1, { error: 'Elige a la persona que reserva.' }),
+      correoSolicitante: porCorreo
+        ? z
+            .string()
+            .trim()
+            .email('Escribe un correo válido.')
+            .refine(
+              (correo) => correo.toLowerCase().endsWith('@unicesar.edu.co'),
+              'Usa un correo institucional.',
+            )
+        : z.string(),
       espacioId: z.string().min(1, { error: 'Elige el espacio.' }),
       ...camposReserva,
     })

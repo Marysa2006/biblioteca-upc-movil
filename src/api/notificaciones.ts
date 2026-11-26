@@ -77,3 +77,16 @@ export function marcarLeida(usuarioId: string, id: string): Promise<Notificacion
     method: 'POST',
   }).then((aviso) => notificacionDesdeBackend(aviso, usuarioId));
 }
+
+export function marcarTodasLeidas(usuarioId: string): Promise<{ updated: number }> {
+  if (usaApi('notificaciones')) {
+    return peticion<{ updated: number }>('/notifications/me/read-all/', { method: 'POST' });
+  }
+  let updated = 0;
+  notificaciones = notificaciones.map((aviso) => {
+    if (aviso.usuarioId !== usuarioId || aviso.leida) return aviso;
+    updated += 1;
+    return { ...aviso, leida: true };
+  });
+  return simularRed({ updated });
+}

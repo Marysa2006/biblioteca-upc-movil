@@ -8,10 +8,12 @@
  * Patrón de datos: useMisSolicitudes() / useHistorialSolicitud() (src/hooks) → src/api → mock o API.
  */
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { IconoCategoria } from '@/components/servicios/IconoCategoria';
+import { DialogoMotivoAccion } from '@/components/reservas/DialogoMotivo';
 import { InvitarSesion } from '@/components/reservas/InvitarSesion';
 import { InfoSolicitud } from '@/components/solicitudes/InfoSolicitud';
 import { LineaTiempo } from '@/components/solicitudes/LineaTiempo';
@@ -24,7 +26,15 @@ import {
   Pantalla,
 } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
-import { useHistorialSolicitud, useMisSolicitudes } from '@/hooks/useSolicitudes';
+import {
+  useCancelarMiSolicitud,
+  useHistorialSolicitud,
+  useMisSolicitudes,
+  usePlazoCancelacion,
+} from '@/hooks/useSolicitudes';
+import { useMisPrestamos } from '@/hooks/useTablets';
+import { puedeCancelarSolicitud } from '@/utils/cancelacionSolicitud';
+import { mensajeErrorGuardar } from '@/utils/errores';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { ResumenSolicitud } from '@/types';
 import { esTipoSolicitud, textoFechaSolicitud, TIPOS_SOLICITUD } from '@/utils/solicitudes';
@@ -41,6 +51,25 @@ export default function DetalleSolicitud() {
   // Sin sesión (por ejemplo, un enlace directo) no se consulta el historial: se muestra la invitación.
   const historial = useHistorialSolicitud(usuario ? tipo : '', usuario ? id : '');
   const solicitud = solicitudes.data?.find((actual) => actual.tipo === tipo && actual.id === id);
+
+  const plazo = usePlazoCancelacion(tipo, !!usuario && solicitud?.estado === 'aprobada');
+  const prestamos = useMisPrestamos({ activa: tipo === 'prestamo' });
+  const cancelar = useCancelarMiSolicitud();
+  const [confirmando, setConfirmando] = useState(false);
+  const tipoCancelable = tipo === 'reserva' || tipo === 'capacitacion' || tipo === 'prestamo';
+  const prestamo =
+    tipo === 'prestamo' ? prestamos.data?.find((actual) => actual.id === id) : undefined;
+  const puedeCancelar =
+    solicitud &&
+    tipoCancelable &&
+    (tipo !== 'prestamo' || prestamo?.estado === 'reservado') &&
+    puedeCancelarSolicitud(
+      tipo,
+      solicitud.estado,
+      prestamo?.fecha ?? solicitud.fecha,
+      prestamo?.horaInicio ?? solicitud.hora,
+      plazo.data,
+    );
 
   const recargar = () => {
     solicitudes.refetch();
@@ -66,6 +95,41 @@ export default function DetalleSolicitud() {
       <>
         <Encabezado solicitud={solicitud} />
         <InfoSolicitud solicitud={solicitud} />
+        {puedeCancelar ? (
+          <Button
+            mode="outlined"
+            icon="calendar-remove-outline"
+            contentStyle={estilos.botonCancelar}
+            onPress={() => {
+              cancelar.reset();
+              setConfirmando(true);
+            }}
+          >
+            Cancelar solicitud
+          </Button>
+        ) : null}
+        {tipoCancelable ? (
+          <DialogoMotivoAccion
+            accion={
+              confirmando
+                ? {
+                    id,
+                    titulo: 'Cancelar solicitud',
+                    detalle: solicitud.titulo,
+                    boton: 'Confirmar cancelación',
+                  }
+                : null
+            }
+            guardando={cancelar.isPending}
+            impedido={!puedeCancelar}
+            motivoOpcional={tipo !== 'capacitacion'}
+            mensajeError={cancelar.error ? mensajeErrorGuardar(cancelar.error) : null}
+            onCerrar={() => setConfirmando(false)}
+            onConfirmar={(motivo) =>
+              cancelar.mutate({ tipo, id, motivo }, { onSuccess: () => setConfirmando(false) })
+            }
+          />
+        ) : null}
 
         <View style={estilos.seccion}>
           <Text variant="titleSmall" style={estilos.tituloSeccion} accessibilityRole="header">
@@ -154,6 +218,7 @@ function NoEncontrada() {
 }
 
 const estilos = StyleSheet.create({
+  botonCancelar: { minHeight: 44 },
   encabezado: {
     flexDirection: 'row',
     alignItems: 'flex-start',

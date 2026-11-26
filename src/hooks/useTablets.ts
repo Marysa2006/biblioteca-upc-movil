@@ -17,6 +17,8 @@ import {
   obtenerCondicionesTablet,
   obtenerDisponibilidadTablets,
   obtenerMisPrestamos,
+  obtenerIncidenciasTablets,
+  type FiltrosIncidenciasTablet,
   obtenerPrestamos,
   obtenerPrestamosVencidos,
   obtenerTablets,
@@ -31,6 +33,8 @@ import {
   type DatosTablet,
   type FormularioPrestamo,
 } from '@/api/tablets';
+import { useRol } from './useRol';
+
 import { useSesion } from '@/store/sesion';
 import { compartirConstanciaPdf } from '@/utils/exportarConstancia';
 import type { EstadoPrestamo, EstadoTablet } from '@/types';
@@ -103,7 +107,7 @@ export function useCondicionesTablet() {
 }
 
 /** Préstamos del usuario de la sesión, por fecha (HU-22 y HU-30). No consulta sin sesión. */
-export function useMisPrestamos() {
+export function useMisPrestamos({ activa = true } = {}) {
   const usuario = useSesion((estado) => estado.usuario);
 
   return useQuery({
@@ -112,7 +116,7 @@ export function useMisPrestamos() {
       if (!usuario) throw new Error('No hay sesión');
       return obtenerMisPrestamos(usuario.id);
     },
-    enabled: usuario != null,
+    enabled: usuario != null && activa,
   });
 }
 
@@ -159,11 +163,15 @@ export function usePrestamos(estado: EstadoPrestamo | 'todas' = 'todas') {
 export function useCancelarPrestamoPersonal() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, motivo }: { id: string; motivo: string }) => cancelarPrestamoPersonal(id, motivo),
+    mutationFn: ({ id, motivo }: { id: string; motivo: string }) =>
+      cancelarPrestamoPersonal(id, motivo),
     onSuccess: () => {
       for (const queryKey of [
-        claves.prestamosTablet, claves.tablets, claves.solicitudesTodas,
-        claves.notificaciones, claves.estadisticasTodas,
+        claves.prestamosTablet,
+        claves.tablets,
+        claves.solicitudesTodas,
+        claves.notificaciones,
+        claves.estadisticasTodas,
       ]) {
         queryClient.invalidateQueries({ queryKey });
       }
@@ -266,5 +274,16 @@ export function useRegistrarDevolucion() {
 export function useBuscarTabletPorCodigo() {
   return useMutation({
     mutationFn: (codigo: string) => buscarTabletPorCodigo(codigo),
+  });
+}
+
+export { TIPOS_INCIDENCIA_TABLET, type FiltrosIncidenciasTablet } from '@/api/tablets';
+
+export function useIncidenciasTablets(filtros: FiltrosIncidenciasTablet) {
+  const { tienePermiso } = useRol();
+  return useQuery({
+    queryKey: claves.incidenciasTablets(filtros),
+    queryFn: () => obtenerIncidenciasTablets(filtros),
+    enabled: tienePermiso('tablets'),
   });
 }

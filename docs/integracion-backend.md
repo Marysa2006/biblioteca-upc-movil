@@ -24,16 +24,16 @@ resuelve casi todo lo que faltaba: ver §2.1 y §3.
 Estos puntos afectan a **todos** los módulos: mientras no estén, apagar `USAR_MOCKS` deja la app
 vacía o rota.
 
-| # | Qué pasa | Qué hace falta | Estado |
-|---|---|---|---|
-| 1 | **Ninguna ruta coincide.** El móvil usa español y sin prefijo (`/asesorias/citas/`), el Backend inglés con `/api/v1/` (`/api/v1/advisories/appointments/`) | Reescribir la rama sin mocks de cada función con la ruta del Backend y un adaptador en `src/api/backend/` | Por módulo (§4); el prefijo va en `EXPO_PUBLIC_API_URL` |
-| 2 | **Los días de la semana están invertidos.** Móvil: `0 = domingo` (como `Date.getDay()`). Backend: `DayOfWeekEnum` con `0 = lunes` y `6 = domingo` | Traducir en `src/api/backend/equivalencias.ts` | Fase 2 |
-| 3 | **JWT distinto.** Backend devuelve `{ access, refresh }` (30 min y 7 días, y el `refresh` cambia en cada renovación); el móvil esperaba `{ usuario, token }` y **no renovaba** el token | Guardar el `refresh` y renovarlo; `/me/` y `/me/access/` para el usuario | ✅ Fase 1 |
-| 4 | **Paginación.** El Backend devuelve `{ count, next, previous, results }`; el móvil espera arrays planos. Hay tres formas de lista: paginada, objeto con la lista adentro (`{message, spaces}`) y arreglo simple | `peticionPagina()` y `peticionTodas()` en `src/api/cliente.ts`; cada adaptador sabe qué forma le toca | ✅ Fase 1 (las funciones) |
-| 5 | **El login no habla el mismo idioma.** Backend pide `{ email, password }`; el móvil manda `{ correo, contrasena }` | Traducir el cuerpo | ✅ Fase 1 |
-| 6 | **Estados y tipos.** Estados: **6** en el móvil contra **8** en el Backend (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `RESCHEDULE_PROPOSED`, `IN_PROGRESS`, `OVERDUE`, `COMPLETED`). Tipos de usuario: **5** en el móvil contra **3** (`STUDENT`, `TEACHER`, `ADMINISTRATIVE`) | Tabla de equivalencias para los dos | Tipos ✅ fase 1 (sin egresados, para después); estados en la fase 3 |
-| 7 | **El APK solo habla por HTTPS.** Desde el #299 el APK ya no permite tráfico HTTP (`usesCleartextTraffic` quitado); un Django local por `http://` solo sirve en Expo Go | El servidor de producción, con HTTPS | ✅ Render tiene HTTPS |
-| 8 | **Errores.** `peticion()` descartaba el cuerpo del error, así que la pantalla veía «La API respondió 400 en …» | Leer `{detail}`, `{detail, error_code}` y `{campo: [...]}` en `ErrorApi` (`codigo` y `campos`) | ✅ Fase 1 |
+| #   | Qué pasa                                                                                                                                                                                                                                                                             | Qué hace falta                                                                                            | Estado                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 1   | **Ninguna ruta coincide.** El móvil usa español y sin prefijo (`/asesorias/citas/`), el Backend inglés con `/api/v1/` (`/api/v1/advisories/appointments/`)                                                                                                                           | Reescribir la rama sin mocks de cada función con la ruta del Backend y un adaptador en `src/api/backend/` | Por módulo (§4); el prefijo va en `EXPO_PUBLIC_API_URL`             |
+| 2   | **Los días de la semana están invertidos.** Móvil: `0 = domingo` (como `Date.getDay()`). Backend: `DayOfWeekEnum` con `0 = lunes` y `6 = domingo`                                                                                                                                    | Traducir en `src/api/backend/equivalencias.ts`                                                            | Fase 2                                                              |
+| 3   | **JWT distinto.** Backend devuelve `{ access, refresh }` (30 min y 7 días, y el `refresh` cambia en cada renovación); el móvil esperaba `{ usuario, token }` y **no renovaba** el token                                                                                              | Guardar el `refresh` y renovarlo; `/me/` y `/me/access/` para el usuario                                  | ✅ Fase 1                                                           |
+| 4   | **Paginación.** El Backend devuelve `{ count, next, previous, results }`; el móvil espera arrays planos. Hay tres formas de lista: paginada, objeto con la lista adentro (`{message, spaces}`) y arreglo simple                                                                      | `peticionPagina()` y `peticionTodas()` en `src/api/cliente.ts`; cada adaptador sabe qué forma le toca     | ✅ Fase 1 (las funciones)                                           |
+| 5   | **El login no habla el mismo idioma.** Backend pide `{ email, password }`; el móvil manda `{ correo, contrasena }`                                                                                                                                                                   | Traducir el cuerpo                                                                                        | ✅ Fase 1                                                           |
+| 6   | **Estados y tipos.** Estados: **6** en el móvil contra **8** en el Backend (`PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `RESCHEDULE_PROPOSED`, `IN_PROGRESS`, `OVERDUE`, `COMPLETED`). Tipos de usuario: **5** en el móvil contra **3** (`STUDENT`, `TEACHER`, `ADMINISTRATIVE`) | Tabla de equivalencias para los dos                                                                       | Tipos ✅ fase 1 (sin egresados, para después); estados en la fase 3 |
+| 7   | **El APK solo habla por HTTPS.** Desde el #299 el APK ya no permite tráfico HTTP (`usesCleartextTraffic` quitado); un Django local por `http://` solo sirve en Expo Go                                                                                                               | El servidor de producción, con HTTPS                                                                      | ✅ Render tiene HTTPS                                               |
+| 8   | **Errores.** `peticion()` descartaba el cuerpo del error, así que la pantalla veía «La API respondió 400 en …»                                                                                                                                                                       | Leer `{detail}`, `{detail, error_code}` y `{campo: [...]}` en `ErrorApi` (`codigo` y `campos`)            | ✅ Fase 1                                                           |
 
 **Los roles ya coinciden.** `administrador`, `facilitador` y `gestor_espacios`, por **código** y no
 por nombre (`Role.code`, migración `core.0004`). Ese bloqueante desapareció.
@@ -54,79 +54,79 @@ administración, y las tres funciones de asesoría que comparten ruta con su ver
 > propio cliente HTTP). Cada llamada se comprobó con su método y su ruta contra el `schema.yml`
 > 2.0.1: **0 rutas inventadas y 0 métodos inexistentes**.
 
-| Módulo | Móvil | Backend | |
-|---|---|---|---|
-| **Asesorías** | `GET /asesorias/agenda` | `/api/v1/advisories/agenda/` | ✅ |
-| | `POST /asesorias/citas` | `/api/v1/advisories/appointments/` | ✅ con `desired_date`/`desired_time` y `accept_terms`; ya no exige franja |
-| | `GET /asesorias/citas/mias` | `/api/v1/advisories/appointments/` | ✅ |
-| | `POST /asesorias/citas/{id}/aprobar` | `/api/v1/advisories/manage/appointments/{id}/approve/` | ✅ `scheduled_date`, `start_time`, `facilitator`, `virtual_link` |
-| | `POST /asesorias/citas/{id}/cancelar` | `/api/v1/advisories/appointments/{id}/cancel/` | ✅ |
-| | `POST /asesorias/citas/{id}/inasistencia` | `/api/v1/advisories/agenda/appointments/{id}/record/` | ✅ `attended: false` |
-| | `POST /asesorias/citas/{id}/rechazar` | `/api/v1/advisories/manage/appointments/{id}/reject/` | ✅ el motivo es obligatorio |
-| | `POST /asesorias/citas/{id}/reprogramar` | `/api/v1/advisories/appointments/{id}/reschedule/` | ✅ solo fecha y hora |
-| | `POST /asesorias/citas/{id}/resultado` | `/api/v1/advisories/agenda/appointments/{id}/record/` | ✅ `attended: true` y `quality_rating` |
-| | `POST /solicitudes/cita/{id}/calificacion` | `/api/v1/advisories/appointments/{id}/rate/` | ⚠️ el Backend lo cuelga de la cita, no de `/solicitudes/` |
-| | `GET` · `POST /asesorias/jornadas` · `PUT /{id}` | ❌ | ❌ el Backend quitó `/manage/schedules/` en la 2.0.0: la asesoría no depende de una jornada |
-| | `GET /asesorias/temas` · `POST` · `PUT` | `/advisories/topics/` · `/manage/topics/` | ✅ |
-| | `GET /asesorias/temas/{id}/franjas` | ❌ | ❌ quitó `/topics/{id}/slots/`: la franja se calcula con fecha y hora |
-| **Asistencia** | `POST …/asistencia/abrir` | `GET /api/v1/attendance/{id}/qr/` | ⚠️ es GET y el token lo genera el servidor; vale 4 h |
-| | `POST …/asistencia/qr` | `POST /api/v1/attendance/` | ⚠️ la persona sale de la sesión, no del cuerpo; 201 la primera vez y 200 después |
-| | `GET …/asistencia` | `GET /api/v1/attendance/{id}/` | ⚠️ devuelve nombre, programa y semestre, sin id de usuario ni medio |
-| | `POST …/asistencia/manual` | ❌ | ❌ no existe el registro a mano |
-| | `POST …/asistencia/cerrar` | ❌ | ❌ no hay cierre: el token vence solo |
-| **Auth** | `POST /auth/login` | `/api/v1/token/` (+ `/token/refresh/`) | ⚠️ pide `{email,password}` y devuelve `{access,refresh}` |
-| | `POST /register` | `/api/v1/register/` | ⚠️ falta la sede y la facultad (ver §3) |
-| **Autoarchivo** | `GET /autoarchivo` | `/api/v1/portal/self-archive/` | ✅ |
-| **Bloqueos** | `GET /bloqueos` · `POST /bloqueos` | `GET`/`POST /spaces/blocks/` | ⚠️ el espacio va por `?space=` y el POST con `confirm: true` |
-| | `POST /bloqueos/afectadas` | ❌ | ❌ las afectadas llegan en el 409 del POST |
-| **Capacitaciones** | `GET` · `POST /capacitaciones/lineas` · `PUT /{id}` | `/trainings/lines/` · `/lines/manage/` | ✅ |
-| | `PATCH /lineas/{id}/estado` | `PATCH /lines/manage/{id}/` (`is_active`) | ✅ |
-| | `GET /lineas/{id}/solicitudes-activas` | `/trainings/requests/manage/` | ⚠️ hoy es un filtro `?line=&status=`, no una ruta aparte |
-| | `POST /capacitaciones/solicitudes` | `/api/v1/trainings/requests/` | ⚠️ faltan novedades, datos del solicitante y `accept_terms` |
-| | `GET /capacitaciones/solicitudes/mias` | `/api/v1/trainings/requests/` | ✅ |
-| | `GET /capacitaciones/solicitudes/{id}` | `/trainings/requests/manage/{id}/` | ✅ |
-| | `…/aprobar` · `/rechazar` · `/nueva-fecha` · `/cerrar` | `/manage/{id}/approve\|reject\|propose-date\|close/` | ✅ |
-| | `PATCH …/responsable` | `POST /manage/{id}/assign/` | ⚠️ es POST |
-| | `…/responder-fecha` | `/requests/{id}/accept-date\|decline-date/` | ✅ |
-| | `POST /solicitudes/capacitacion/{id}/calificacion` | ❌ | ❌ solo existe `rate` de asesorías |
-| **Contenidos** | `GET` · `POST /contenidos` | `/portal/manage/contents/` | ✅ |
-| | `PUT /contenidos/{id}` | `/manage/contents/{slug}/` | ✅ |
-| | `PATCH /contenidos/{id}/publicacion` | `…/{slug}/publish/` y `/hide/` | ⚠️ dos rutas, no un PATCH |
-| | `PATCH /contenidos/orden` | `…/manage/contents/reorder/` | ⚠️ el Backend lo expone como POST |
-| **Espacios** | `GET` · `POST /espacios` · `PUT /{id}` | `/spaces/` · `/spaces/manage/` | ✅ |
-| | `GET /espacios/{id}/disponibilidad` | `/spaces/{id}/availability/` | ✅ |
-| | `PATCH /espacios/{id}/estado` | `POST /spaces/manage/{id}/status/` | ⚠️ es POST |
-| | `GET /espacios/{id}/reservas-futuras` | `/spaces/manage/reservations/` | ⚠️ hoy es un filtro `?space=&date_from=&status=` |
-| | `POST /reservas` | `/api/v1/spaces/reservations/` | ⚠️ faltan recursos de apoyo, datos del solicitante y `accept_terms` |
-| **Estadísticas** | `GET /estadisticas/registros` | ❌ | ❌ solo hay `summary/` y `export/` |
-| **Fotos de Inicio** | 6 rutas (`GET`, `POST`, administración, orden, `PUT`, publicación) | ❌ | ❌ el recurso no existe: rutas y campos propuestos en el documento de campos |
-| **Guías** | 6 rutas (`GET`, `POST`, administración, `PUT`, detalle, publicación) | ❌ | ❌ no hay modelo de guías: los contenidos del portal son aviso, noticia y página |
-| **Historial** | `GET /solicitudes/{tipo}/{id}/historial` | `/me/requests/{id}/` | ✅ el historial viene dentro del detalle |
-| **Notificaciones** | `GET /notificaciones` | `/notifications/me/` | ✅ |
-| | `PATCH /notificaciones/{id}/leida` | `/notifications/me/{id}/read/` | ⚠️ es POST |
-| **Parámetros** | `GET /parametros` | `/config/parameters/` | ⚠️ son cuatro rutas: `parameters`, `periods`, `holidays` y `schedules` |
-| | `PUT /parametros` | `/config/parameters/{code}/` | ⚠️ uno por código, y es PATCH |
-| **Perfil** | `GET` · `PATCH /perfil` | `/api/v1/me/` | ✅ |
-| **Recursos** | `GET /recursos` | `/portal/resources/` | ✅ |
-| **Reservas** | `GET /reservas/mias` · `GET /reservas/{id}` | `/me/requests/` · `/{id}/` | ✅ |
-| | `POST /reservas/terceros` | `/spaces/manage/reservations/` | ✅ con `requester_email` |
-| | `POST /reservas/{id}/decision` | `…/manage/reservations/{id}/approve\|reject\|cancel/` | ✅ son tres rutas |
-| **Servicios** | `GET /servicios` · `GET /servicios/{id}` | `/portal/services/` · `/{slug}/` | ✅ |
-| | `POST` · `PUT` · `PATCH /estado` | ❌ | ❌ el portal solo tiene GET |
-| **Solicitudes** | `GET /solicitudes/mias/{id}` | `/api/v1/me/requests/{id}/` | ✅ |
-| **Tablets** | `GET` · `POST /tablets` · `PUT /{id}` | `/tablets/manage/` | ✅ |
-| | `PATCH /tablets/{id}/estado` | `PATCH /tablets/manage/{id}/` | ✅ |
-| | `GET /tablets/disponibilidad` | `/tablets/availability/` | ✅ |
-| | `GET /tablets/codigo/{codigo}` | ❌ | ❌ no hay búsqueda por código; propuesto `?search=` |
-| | `GET /tablets/condiciones` | ❌ | ❌ solo guarda `conditions_accepted` |
-| | `GET /prestamos/mios` · `POST /prestamos` | `/tablets/loans/` | ✅ |
-| | `GET /prestamos/{id}` | `/tablets/manage/loans/{id}/` | ✅ |
-| | `GET /prestamos/vencidos` | `/tablets/manage/loans/?status=OVERDUE` | ✅ |
-| | `POST /prestamos/{id}/entrega` · `/devolucion` | `…/manage/loans/{id}/deliver/` · `/return/` | ✅ |
-| | `GET /prestamos/{id}/constancia` | ❌ | ❌ **no hace falta**: la app arma la constancia con el detalle |
-| **Usuarios** | `GET /usuarios` | `/api/v1/users/` | ✅ |
-| | `PUT /usuarios/{id}/roles` | `POST`/`DELETE /users/{user_id}/roles/` | ⚠️ uno por uno, no un PUT con la lista |
-| | `PUT /usuarios/{id}/permisos` | ❌ | ❌ el Backend solo tiene permisos **por rol** (`Role.permissions`) |
+| Módulo              | Móvil                                                                | Backend                                                |                                                                                             |
+| ------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| **Asesorías**       | `GET /asesorias/agenda`                                              | `/api/v1/advisories/agenda/`                           | ✅                                                                                          |
+|                     | `POST /asesorias/citas`                                              | `/api/v1/advisories/appointments/`                     | ✅ con `desired_date`/`desired_time` y `accept_terms`; ya no exige franja                   |
+|                     | `GET /asesorias/citas/mias`                                          | `/api/v1/advisories/appointments/`                     | ✅                                                                                          |
+|                     | `POST /asesorias/citas/{id}/aprobar`                                 | `/api/v1/advisories/manage/appointments/{id}/approve/` | ✅ `scheduled_date`, `start_time`, `facilitator`, `virtual_link`                            |
+|                     | `POST /asesorias/citas/{id}/cancelar`                                | `/api/v1/advisories/appointments/{id}/cancel/`         | ✅                                                                                          |
+|                     | `POST /asesorias/citas/{id}/inasistencia`                            | `/api/v1/advisories/agenda/appointments/{id}/record/`  | ✅ `attended: false`                                                                        |
+|                     | `POST /asesorias/citas/{id}/rechazar`                                | `/api/v1/advisories/manage/appointments/{id}/reject/`  | ✅ el motivo es obligatorio                                                                 |
+|                     | `POST /asesorias/citas/{id}/reprogramar`                             | `/api/v1/advisories/appointments/{id}/reschedule/`     | ✅ solo fecha y hora                                                                        |
+|                     | `POST /asesorias/citas/{id}/resultado`                               | `/api/v1/advisories/agenda/appointments/{id}/record/`  | ✅ `attended: true` y `quality_rating`                                                      |
+|                     | `POST /solicitudes/cita/{id}/calificacion`                           | `/api/v1/advisories/appointments/{id}/rate/`           | ⚠️ el Backend lo cuelga de la cita, no de `/solicitudes/`                                   |
+|                     | `GET` · `POST /asesorias/jornadas` · `PUT /{id}`                     | ❌                                                     | ❌ el Backend quitó `/manage/schedules/` en la 2.0.0: la asesoría no depende de una jornada |
+|                     | `GET /asesorias/temas` · `POST` · `PUT`                              | `/advisories/topics/` · `/manage/topics/`              | ✅                                                                                          |
+|                     | `GET /asesorias/temas/{id}/franjas`                                  | ❌                                                     | ❌ quitó `/topics/{id}/slots/`: la franja se calcula con fecha y hora                       |
+| **Asistencia**      | `POST …/asistencia/abrir`                                            | `GET /api/v1/attendance/{id}/qr/`                      | ⚠️ es GET y el token lo genera el servidor; vale 4 h                                        |
+|                     | `POST …/asistencia/qr`                                               | `POST /api/v1/attendance/`                             | ⚠️ la persona sale de la sesión, no del cuerpo; 201 la primera vez y 200 después            |
+|                     | `GET …/asistencia`                                                   | `GET /api/v1/attendance/{id}/`                         | ⚠️ devuelve nombre, programa y semestre, sin id de usuario ni medio                         |
+|                     | `POST …/asistencia/manual`                                           | ❌                                                     | ❌ no existe el registro a mano                                                             |
+|                     | `POST …/asistencia/cerrar`                                           | ❌                                                     | ❌ no hay cierre: el token vence solo                                                       |
+| **Auth**            | `POST /auth/login`                                                   | `/api/v1/token/` (+ `/token/refresh/`)                 | ⚠️ pide `{email,password}` y devuelve `{access,refresh}`                                    |
+|                     | `POST /register`                                                     | `/api/v1/register/`                                    | ⚠️ falta la sede y la facultad (ver §3)                                                     |
+| **Autoarchivo**     | `GET /autoarchivo`                                                   | `/api/v1/portal/self-archive/`                         | ✅                                                                                          |
+| **Bloqueos**        | `GET /bloqueos` · `POST /bloqueos`                                   | `GET`/`POST /spaces/blocks/`                           | ⚠️ el espacio va por `?space=` y el POST con `confirm: true`                                |
+|                     | `POST /bloqueos/afectadas`                                           | ❌                                                     | ❌ las afectadas llegan en el 409 del POST                                                  |
+| **Capacitaciones**  | `GET` · `POST /capacitaciones/lineas` · `PUT /{id}`                  | `/trainings/lines/` · `/lines/manage/`                 | ✅                                                                                          |
+|                     | `PATCH /lineas/{id}/estado`                                          | `PATCH /lines/manage/{id}/` (`is_active`)              | ✅                                                                                          |
+|                     | `GET /lineas/{id}/solicitudes-activas`                               | `/trainings/requests/manage/`                          | ⚠️ hoy es un filtro `?line=&status=`, no una ruta aparte                                    |
+|                     | `POST /capacitaciones/solicitudes`                                   | `/api/v1/trainings/requests/`                          | ⚠️ faltan novedades, datos del solicitante y `accept_terms`                                 |
+|                     | `GET /capacitaciones/solicitudes/mias`                               | `/api/v1/trainings/requests/`                          | ✅                                                                                          |
+|                     | `GET /capacitaciones/solicitudes/{id}`                               | `/trainings/requests/manage/{id}/`                     | ✅                                                                                          |
+|                     | `…/aprobar` · `/rechazar` · `/nueva-fecha` · `/cerrar`               | `/manage/{id}/approve\|reject\|propose-date\|close/`   | ✅                                                                                          |
+|                     | `PATCH …/responsable`                                                | `POST /manage/{id}/assign/`                            | ⚠️ es POST                                                                                  |
+|                     | `…/responder-fecha`                                                  | `/requests/{id}/accept-date\|decline-date/`            | ✅                                                                                          |
+|                     | `POST /solicitudes/capacitacion/{id}/calificacion`                   | ❌                                                     | ❌ solo existe `rate` de asesorías                                                          |
+| **Contenidos**      | `GET` · `POST /contenidos`                                           | `/portal/manage/contents/`                             | ✅                                                                                          |
+|                     | `PUT /contenidos/{id}`                                               | `/manage/contents/{slug}/`                             | ✅                                                                                          |
+|                     | `PATCH /contenidos/{id}/publicacion`                                 | `…/{slug}/publish/` y `/hide/`                         | ⚠️ dos rutas, no un PATCH                                                                   |
+|                     | `PATCH /contenidos/orden`                                            | `…/manage/contents/reorder/`                           | ⚠️ el Backend lo expone como POST                                                           |
+| **Espacios**        | `GET` · `POST /espacios` · `PUT /{id}`                               | `/spaces/` · `/spaces/manage/`                         | ✅                                                                                          |
+|                     | `GET /espacios/{id}/disponibilidad`                                  | `/spaces/{id}/availability/`                           | ✅                                                                                          |
+|                     | `PATCH /espacios/{id}/estado`                                        | `POST /spaces/manage/{id}/status/`                     | ⚠️ es POST                                                                                  |
+|                     | `GET /espacios/{id}/reservas-futuras`                                | `/spaces/manage/reservations/`                         | ⚠️ hoy es un filtro `?space=&date_from=&status=`                                            |
+|                     | `POST /reservas`                                                     | `/api/v1/spaces/reservations/`                         | ⚠️ faltan recursos de apoyo, datos del solicitante y `accept_terms`                         |
+| **Estadísticas**    | `GET /estadisticas/registros`                                        | ❌                                                     | ❌ solo hay `summary/` y `export/`                                                          |
+| **Fotos de Inicio** | 6 rutas (`GET`, `POST`, administración, orden, `PUT`, publicación)   | ❌                                                     | ❌ el recurso no existe: rutas y campos propuestos en el documento de campos                |
+| **Guías**           | 6 rutas (`GET`, `POST`, administración, `PUT`, detalle, publicación) | ❌                                                     | ❌ no hay modelo de guías: los contenidos del portal son aviso, noticia y página            |
+| **Historial**       | `GET /solicitudes/{tipo}/{id}/historial`                             | `/me/requests/{id}/`                                   | ✅ el historial viene dentro del detalle                                                    |
+| **Notificaciones**  | `GET /notificaciones`                                                | `/notifications/me/`                                   | ✅                                                                                          |
+|                     | `PATCH /notificaciones/{id}/leida`                                   | `/notifications/me/{id}/read/`                         | ⚠️ es POST                                                                                  |
+| **Parámetros**      | `GET /parametros`                                                    | `/config/parameters/`                                  | ⚠️ son cuatro rutas: `parameters`, `periods`, `holidays` y `schedules`                      |
+|                     | `PUT /parametros`                                                    | `/config/parameters/{code}/`                           | ⚠️ uno por código, y es PATCH                                                               |
+| **Perfil**          | `GET` · `PATCH /perfil`                                              | `/api/v1/me/`                                          | ✅                                                                                          |
+| **Recursos**        | `GET /recursos`                                                      | `/portal/resources/`                                   | ✅                                                                                          |
+| **Reservas**        | `GET /reservas/mias` · `GET /reservas/{id}`                          | `/me/requests/` · `/{id}/`                             | ✅                                                                                          |
+|                     | `POST /reservas/terceros`                                            | `/spaces/manage/reservations/`                         | ✅ con `requester_email`                                                                    |
+|                     | `POST /reservas/{id}/decision`                                       | `…/manage/reservations/{id}/approve\|reject\|cancel/`  | ✅ son tres rutas                                                                           |
+| **Servicios**       | `GET /servicios` · `GET /servicios/{id}`                             | `/portal/services/` · `/{slug}/`                       | ✅                                                                                          |
+|                     | `POST` · `PUT` · `PATCH /estado`                                     | ❌                                                     | ❌ el portal solo tiene GET                                                                 |
+| **Solicitudes**     | `GET /solicitudes/mias/{id}`                                         | `/api/v1/me/requests/{id}/`                            | ✅                                                                                          |
+| **Tablets**         | `GET` · `POST /tablets` · `PUT /{id}`                                | `/tablets/manage/`                                     | ✅                                                                                          |
+|                     | `PATCH /tablets/{id}/estado`                                         | `PATCH /tablets/manage/{id}/`                          | ✅                                                                                          |
+|                     | `GET /tablets/disponibilidad`                                        | `/tablets/availability/`                               | ✅                                                                                          |
+|                     | `GET /tablets/codigo/{codigo}`                                       | ❌                                                     | ❌ no hay búsqueda por código; propuesto `?search=`                                         |
+|                     | `GET /tablets/condiciones`                                           | ❌                                                     | ❌ solo guarda `conditions_accepted`                                                        |
+|                     | `GET /prestamos/mios` · `POST /prestamos`                            | `/tablets/loans/`                                      | ✅                                                                                          |
+|                     | `GET /prestamos/{id}`                                                | `/tablets/manage/loans/{id}/`                          | ✅                                                                                          |
+|                     | `GET /prestamos/vencidos`                                            | `/tablets/manage/loans/?status=OVERDUE`                | ✅                                                                                          |
+|                     | `POST /prestamos/{id}/entrega` · `/devolucion`                       | `…/manage/loans/{id}/deliver/` · `/return/`            | ✅                                                                                          |
+|                     | `GET /prestamos/{id}/constancia`                                     | ❌                                                     | ❌ **no hace falta**: la app arma la constancia con el detalle                              |
+| **Usuarios**        | `GET /usuarios`                                                      | `/api/v1/users/`                                       | ✅                                                                                          |
+|                     | `PUT /usuarios/{id}/roles`                                           | `POST`/`DELETE /users/{user_id}/roles/`                | ⚠️ uno por uno, no un PUT con la lista                                                      |
+|                     | `PUT /usuarios/{id}/permisos`                                        | ❌                                                     | ❌ el Backend solo tiene permisos **por rol** (`Role.permissions`)                          |
 
 **Resumen:** **55 ✅ · 20 ⚠️ · 28 ❌ = 103** endpoints. Con contraparte (✅+⚠️) **75**; sin ella, **28**.
 
@@ -135,16 +135,16 @@ administración, y las tres funciones de asesoría que comparten ruta con su ver
 La tabla de arriba es contra la 2.0.1. La 2.1.0 agrega rutas para casi todos los ❌; cada uno se
 confirma al conectar su módulo:
 
-| Módulo | Ruta nueva en la 2.1.0 |
-|---|---|
-| **Asistencia** | `POST /attendance/{id}/manual/` (registro a mano, con o sin cuenta). No hay «abrir» ni «cerrar»: el QR vale 4 h desde el inicio de la sesión y cualquiera con cuenta puede escanear |
-| **Fotos de Inicio** | `GET /portal/home-photos/` (sin sesión) y `/portal/manage/home-photos/` con `reorder/`; la imagen va en `image` |
-| **Guías** | `GET /portal/guides/` (sin sesión) y `/portal/manage/guides/`; el PDF va en `file` y `updated_at` trae hora |
-| **Servicios** | `/portal/manage/services/` y `/portal/manage/service-categories/` |
-| **Capacitaciones** | `POST /trainings/requests/{id}/rate/` |
-| **Tablets** | `GET /tablets/manage/?search=` y la página `condiciones-tablets` del portal |
-| **Usuarios** | `GET`/`PUT /users/{id}/permissions/` (`extra_permissions`) y `GET /users/?role=` |
-| **Solicitudes** | `GET /me/requests/` y `/me/requests/{id}/`, con el historial |
+| Módulo              | Ruta nueva en la 2.1.0                                                                                                                                                              |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Asistencia**      | `POST /attendance/{id}/manual/` (registro a mano, con o sin cuenta). No hay «abrir» ni «cerrar»: el QR vale 4 h desde el inicio de la sesión y cualquiera con cuenta puede escanear |
+| **Fotos de Inicio** | `GET /portal/home-photos/` (sin sesión) y `/portal/manage/home-photos/` con `reorder/`; la imagen va en `image`                                                                     |
+| **Guías**           | `GET /portal/guides/` (sin sesión) y `/portal/manage/guides/`; el PDF va en `file` y `updated_at` trae hora                                                                         |
+| **Servicios**       | `/portal/manage/services/` y `/portal/manage/service-categories/`                                                                                                                   |
+| **Capacitaciones**  | `POST /trainings/requests/{id}/rate/`                                                                                                                                               |
+| **Tablets**         | `GET /tablets/manage/?search=` y la página `condiciones-tablets` del portal                                                                                                         |
+| **Usuarios**        | `GET`/`PUT /users/{id}/permissions/` (`extra_permissions`) y `GET /users/?role=`                                                                                                    |
+| **Solicitudes**     | `GET /me/requests/` y `/me/requests/{id}/`, con el historial                                                                                                                        |
 
 Las jornadas y las franjas de asesoría ya no existen: esas funciones se borran al conectar Asesorías.
 Los archivos se suben en `multipart/form-data` (foto del espacio en `photo`, fotos de Inicio en
@@ -172,40 +172,40 @@ campos pendientes y archivos»**; aquí queda el resumen para no tener que abrir
 
 ### 3.1 Lo que sigue pendiente (24 de noviembre)
 
-| Tema | Qué pasa | Quién |
-|---|---|---|
-| **Firma del personal** | El perfil conectado detecta el campo `signature` y la constancia consume las firmas del personal cuando el Backend las publica. Ver §7. | Backend |
-| **Cuenta desactivada** | `/token/` responde 401 igual que con una contraseña incorrecta, así que la app no puede decir «tu cuenta está inactiva» (HU-05, CA3). Se sugirió 403 | Backend (no bloquea) |
-| **Dirección en el perfil** | El Backend no la tiene: con la API, la app la oculta | — |
-| **Egresados** | El Backend no tiene ese tipo de usuario | Para después |
+| Tema                       | Qué pasa                                                                                                                                             | Quién                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| **Firma del personal**     | El perfil conectado detecta el campo `signature` y la constancia consume las firmas del personal cuando el Backend las publica. Ver §7.              | Backend              |
+| **Cuenta desactivada**     | `/token/` responde 401 igual que con una contraseña incorrecta, así que la app no puede decir «tu cuenta está inactiva» (HU-05, CA3). Se sugirió 403 | Backend (no bloquea) |
+| **Dirección en el perfil** | El Backend no la tiene: con la API, la app la oculta                                                                                                 | —                    |
+| **Egresados**              | El Backend no tiene ese tipo de usuario                                                                                                              | Para después         |
 
 ### Prioridad alta: la app lo pide y el Backend no lo recibe
 
-| Dato | Dónde | Estado en el Backend (`53d1350`) |
-|---|---|---|
-| **Sede de la persona** (Valledupar o Aguachica) | las cuatro solicitudes y el registro | no existe en el usuario ni en la solicitud |
-| **Solicitud de capacitación**: novedades, datos del solicitante y `accept_terms` | `POST /trainings/requests/` | `TrainingRequest` no tiene ninguno de los tres |
-| **Reserva de espacios**: recursos de apoyo, datos del solicitante y `accept_terms` | `POST /spaces/reservations/` | no existen |
-| **Registro**: sede y facultad | `POST /register/` | `Register` no las tiene |
-| **Tablets y constancia**: marca, valor y tipo de la tablet; estado del formato y firma | `POST …/deliver/` | `Tablet` no tiene marca ni valor; la entrega no tiene estado del formato ni firma |
+| Dato                                                                                   | Dónde                                | Estado en el Backend (`53d1350`)                                                  |
+| -------------------------------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------- |
+| **Sede de la persona** (Valledupar o Aguachica)                                        | las cuatro solicitudes y el registro | no existe en el usuario ni en la solicitud                                        |
+| **Solicitud de capacitación**: novedades, datos del solicitante y `accept_terms`       | `POST /trainings/requests/`          | `TrainingRequest` no tiene ninguno de los tres                                    |
+| **Reserva de espacios**: recursos de apoyo, datos del solicitante y `accept_terms`     | `POST /spaces/reservations/`         | no existen                                                                        |
+| **Registro**: sede y facultad                                                          | `POST /register/`                    | `Register` no las tiene                                                           |
+| **Tablets y constancia**: marca, valor y tipo de la tablet; estado del formato y firma | `POST …/deliver/`                    | `Tablet` no tiene marca ni valor; la entrega no tiene estado del formato ni firma |
 
 ### Prioridad media
 
-| Tema | Qué falta |
-|---|---|
-| **Archivos** | Cómo se suben (`multipart/form-data`) y dónde se guardan en producción (`MEDIA_ROOT` o un servicio externo). Hoy la app manda la **ruta local** de la foto del espacio dentro del JSON, que el servidor no puede abrir |
-| **Estadísticas** | Sede, temáticas (tema de asesoría y línea de formación), tiempo de respuesta, duración de los préstamos y calificación promedio en `summary/`; y una serie por día de la semana para la afluencia del Dashboard |
-| **Asistencia con QR** | El registro a mano y cinco preguntas: la ventana de 4 h, si se valida que quien escanea esté inscrito, el id y el medio de cada asistente, y si entra en los registros de uso |
-| **Guías de la biblioteca** | El modelo y las rutas, con el PDF y `updated_at` con hora |
-| **Fotos de Inicio y permisos por persona** | El recurso de fotos (máximo 5 publicadas) y una lista de permisos **aparte de los roles** |
+| Tema                                       | Qué falta                                                                                                                                                                                                              |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Archivos**                               | Cómo se suben (`multipart/form-data`) y dónde se guardan en producción (`MEDIA_ROOT` o un servicio externo). Hoy la app manda la **ruta local** de la foto del espacio dentro del JSON, que el servidor no puede abrir |
+| **Estadísticas**                           | Sede, temáticas (tema de asesoría y línea de formación), tiempo de respuesta, duración de los préstamos y calificación promedio en `summary/`; y una serie por día de la semana para la afluencia del Dashboard        |
+| **Asistencia con QR**                      | El registro a mano y cinco preguntas: la ventana de 4 h, si se valida que quien escanea esté inscrito, el id y el medio de cada asistente, y si entra en los registros de uso                                          |
+| **Guías de la biblioteca**                 | El modelo y las rutas, con el PDF y `updated_at` con hora                                                                                                                                                              |
+| **Fotos de Inicio y permisos por persona** | El recurso de fotos (máximo 5 publicadas) y una lista de permisos **aparte de los roles**                                                                                                                              |
 
 ### Prioridad baja
 
-| Tema | Qué falta |
-|---|---|
-| **Servicios del portal** | Crear, editar y activar o desactivar: hoy el portal solo tiene GET |
-| **Calificar la capacitación** | `POST /trainings/requests/{id}/rate/`, igual que el de asesorías |
-| **Koha para el personal** | La dirección de `KOHA_STAFF_URL`: la app la usa en el #311 |
+| Tema                          | Qué falta                                                          |
+| ----------------------------- | ------------------------------------------------------------------ |
+| **Servicios del portal**      | Crear, editar y activar o desactivar: hoy el portal solo tiene GET |
+| **Calificar la capacitación** | `POST /trainings/requests/{id}/rate/`, igual que el de asesorías   |
+| **Koha para el personal**     | La dirección de `KOHA_STAFF_URL`: la app la usa en el #311         |
 
 ### Lo que la app resuelve por su cuenta
 
@@ -232,15 +232,15 @@ El perfil `integracion` activa los módulos conectados de las fases 1 a 5. La au
   están guardados con los ids de los usuarios de prueba, así que, por ejemplo, Mis solicitudes sale
   vacía hasta la fase 3.
 
-| Fase | Qué | Módulos y estado |
-|---|---|---|
-| 0 | Probar Render: rutas públicas, login, `/me/`, errores y paginación | Verificación inicial realizada, hallazgos en §5 |
-| 1 | El cliente (errores, renovación del token, paginación, servidor lento) y la sesión: login, `/me/`, `/me/access/` (el superusuario cuenta como `administrador`), registro, política y perfil | `sesion` integrado |
-| 2 | Lectura pública: servicios, avisos de Inicio, recursos, guías, notificaciones, fotos de Inicio, y periodos, festivos, horarios y plazos (los días hábiles de todos los calendarios) | `servicios`, `contenidos`, `recursos`, `guias`, `notificaciones`, `fotosInicio`, `parametros` integrados |
-| 3 | Solicitudes de la comunidad, **cada una con su catálogo**: espacios (con disponibilidad) y reservas, temas y asesorías (sin jornadas ni franjas), líneas y capacitaciones, tablets, y Mis solicitudes con historial. La foto de perfil se completó en la fase 6 | `espacios`, `asesorias`, `capacitaciones`, `tablets`, `solicitudes` integrados |
-| 4 | Personal: bandejas, entrega y devolución con firma y `receipt_code`, y la administración | `reservas`, `bloqueos`, `usuarios` y la parte del personal de los anteriores, integrados (incluidas las cinco acciones de la fase 4b) |
-| 5 | Estadísticas y asistencia (#231) | `estadisticas`, `asistencia` integrados |
-| 6 | Cierre y prueba con APK contra Render (HTTPS) | Configuración y auditoría listas. Compilación y validación en vivo pendientes (§7) |
+| Fase | Qué                                                                                                                                                                                                                                                             | Módulos y estado                                                                                                                      |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | Probar Render: rutas públicas, login, `/me/`, errores y paginación                                                                                                                                                                                              | Verificación inicial realizada, hallazgos en §5                                                                                       |
+| 1    | El cliente (errores, renovación del token, paginación, servidor lento) y la sesión: login, `/me/`, `/me/access/` (el superusuario cuenta como `administrador`), registro, política y perfil                                                                     | `sesion` integrado                                                                                                                    |
+| 2    | Lectura pública: servicios, avisos de Inicio, recursos, guías, notificaciones, fotos de Inicio, y periodos, festivos, horarios y plazos (los días hábiles de todos los calendarios)                                                                             | `servicios`, `contenidos`, `recursos`, `guias`, `notificaciones`, `fotosInicio`, `parametros` integrados                              |
+| 3    | Solicitudes de la comunidad, **cada una con su catálogo**: espacios (con disponibilidad) y reservas, temas y asesorías (sin jornadas ni franjas), líneas y capacitaciones, tablets, y Mis solicitudes con historial. La foto de perfil se completó en la fase 6 | `espacios`, `asesorias`, `capacitaciones`, `tablets`, `solicitudes` integrados                                                        |
+| 4    | Personal: bandejas, entrega y devolución con firma y `receipt_code`, y la administración                                                                                                                                                                        | `reservas`, `bloqueos`, `usuarios` y la parte del personal de los anteriores, integrados (incluidas las cinco acciones de la fase 4b) |
+| 5    | Estadísticas y asistencia (#231)                                                                                                                                                                                                                                | `estadisticas`, `asistencia` integrados                                                                                               |
+| 6    | Cierre y prueba con APK contra Render (HTTPS)                                                                                                                                                                                                                   | Configuración y auditoría listas. Compilación y validación en vivo pendientes (§7)                                                    |
 
 En la fase 2 ya se pueden habilitar las lecturas públicas de avisos y recursos con `EXPO_PUBLIC_API_MODULOS=sesion,contenidos,recursos` y `EXPO_PUBLIC_USAR_MOCKS=true`. `contenidos` activa la lectura de Inicio, solo avisos y noticias: las páginas (`PAGE`, como `autoarchivo`) no son novedades. La administración de contenidos se conectó en la fase 4. Para abrir recursos protegidos se requiere una sesión real, ya que Render entrega su URL después del login. Render puede devolver una lista vacía cuando no hay avisos publicados.
 
@@ -286,8 +286,7 @@ administración, y errores provocados) y de la fase 1 (el cliente compilado y ll
   `[]`): sin él, los calendarios de la app no ofrecen ningún día. Se pidió `seed_library_data`.
 - **La foto del espacio** apunta al panel de Supabase y devuelve HTML, no la imagen. Se pidió la
   dirección pública.
-- **El login falla en inglés** («No active account found…»); la app muestra su propio mensaje para el
-  401. Se pidió en español.
+- **El login falla en inglés** («No active account found…»); la app muestra su propio mensaje para el 401. Se pidió en español.
 - **Los servicios no coinciden** con los de la app (`slug` distintos, sigue la Hemeroteca, faltan el
   préstamo de libros y el de computadores). Para la fase 2: la categoría sale de `access_url`, y el
   catálogo se carga como el acordado con la bibliotecóloga.
@@ -310,6 +309,7 @@ Los tres documentos de la entrega de la 1.1 son:
 **Rama:** `chore/integracion-api-personal`, que sale de la del #321. Un solo PR al final, con un commit por servicio, como la fase 3.
 
 **Reglas, las mismas de las fases 1 a 3:**
+
 - Cada función elige con `usaApi('<modulo>')` y traduce en `src/api/backend/<modulo>.ts`. Las pantallas y los hooks se adaptan cuando el contrato cambia la interacción.
 - Se reusan `equivalencias.ts` (estados, días, sede), `datosSolicitanteHaciaBackend()` y las funciones de lectura de cada servicio.
 - El id de toda solicitud en la app es el `request_id`. Si una acción del Backend pide otro id, se guarda la correspondencia, como `idsCita` en `src/api/asesorias.ts`.
@@ -318,17 +318,17 @@ Los tres documentos de la entrega de la 1.1 son:
 
 **Orden implementado.** La prueba en vivo de estos flujos con la cuenta de administración queda pendiente:
 
-| # | Módulo | Rutas del Backend | Notas |
-|---|---|---|---|
-| 1 | `reservas` (bandeja de HU-19) | `GET /spaces/manage/reservations/` (filtros `status`, `space`, `date_from`, `date_to`), `GET`/`PATCH …/{id}/`, `POST …/{id}/approve\|reject\|cancel/` (`reason`, obligatorio para rechazar o cancelar) y `POST /spaces/manage/reservations/` para terceros (`requester_email`) | Comprobar si el `id` de la bandeja es el `request_id`. Un 409 trae `alternative_slots`, igual que la comunidad |
-| 2 | `bloqueos` (HU-20) | `GET`/`POST /spaces/blocks/` (con `confirm: true`; un 409 trae las reservas afectadas) y `POST /spaces/blocks/{id}/cancel/` (`reason`) | |
-| 3 | `espacios`, administración (HU-16) | `/spaces/manage/` (CRUD; la foto va en `photo` por `multipart`), `POST …/{id}/status/` y `/spaces/manage/{space_pk}/schedules/` | El horario del espacio es por día (`0` = lunes) |
-| 4 | `asesorias`, personal (HU-15) | `GET /advisories/manage/appointments/`, `POST …/{id}/approve/` (`scheduled_date`, `start_time`, `facilitator`, `virtual_link`), `…/reject/` (`reason`) y `…/cancel/`; agenda con `GET /advisories/agenda/` y `POST /advisories/agenda/appointments/{id}/record/` (`attended`, notas); facilitadores con `GET /users/?role=facilitador` | 400 si el facilitador ya tiene otra asesoría aprobada a esa hora |
-| 5 | `capacitaciones`, bandeja (HU-12) | `/trainings/requests/manage/` (filtros `line`, `status`, `responsible`, `from`, `to`), `…/{id}/approve\|reject\|propose-date\|assign\|close\|cancel/` y `…/manage/responsibles/` | El id ya es el de la solicitud |
-| 6 | `tablets`, personal (HU-21, 23 y 24) | Inventario `/tablets/manage/` (`?search=`; `brand`, `asset_value`, `device_type`). Préstamos `/tablets/manage/loans/` (`status` con comas, `search`, `has_incident`). `…/{id}/deliver/` (`tablet` con el código interno, `format_condition` `NEW\|OPTIMAL\|OTHER`, `observations`, `signature` `{path, width, height, signed_at}`). `…/{id}/return/` y `…/{id}/cancel/` | La constancia sale del detalle e imprime el `receipt_code` del Backend en lugar del código que calcula la app. Los vencidos son `status=OVERDUE`. La firma del personal espera a que el Backend la agregue a `/me/` |
-| 7 | `usuarios` (HU-07) | `GET /users/` (`?role=`), `POST`/`DELETE /users/{id}/roles/` (el rol `administrador` no se asigna por la API), `PUT /users/{id}/permissions/` (lista completa) y `PATCH /users/{id}/` (`is_active`) | Los permisos adicionales se traducen con `equivalencias.ts` |
-| 8 | `servicios`, `contenidos` y `fotosInicio`, administración (HU-04 y #290) | `/portal/manage/services/{slug}/` y `service-categories/`; `/portal/manage/contents/{slug}/` con `publish/`, `hide/` y `reorder/`; `/portal/manage/home-photos/` (`image` por `multipart`, máximo 5 publicadas, `reorder/`) | Hoy la comunidad ya lee los tres desde el Backend |
-| 9 | `parametros`, guardar (HU-28) | `PATCH /config/parameters/{code}/` por cada plazo que cambie, y el CRUD de `periods/`, `holidays/` y `schedules/` comparando con lo que ya había | Quitar el aviso «todavía no se guardan» de `actualizarParametros()` |
+| #   | Módulo                                                                   | Rutas del Backend                                                                                                                                                                                                                                                                                                                                                       | Notas                                                                                                                                                                                                               |
+| --- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `reservas` (bandeja de HU-19)                                            | `GET /spaces/manage/reservations/` (filtros `status`, `space`, `date_from`, `date_to`), `GET`/`PATCH …/{id}/`, `POST …/{id}/approve\|reject\|cancel/` (`reason`, obligatorio para rechazar o cancelar) y `POST /spaces/manage/reservations/` para terceros (`requester_email`)                                                                                          | Comprobar si el `id` de la bandeja es el `request_id`. Un 409 trae `alternative_slots`, igual que la comunidad                                                                                                      |
+| 2   | `bloqueos` (HU-20)                                                       | `GET`/`POST /spaces/blocks/` (con `confirm: true`; un 409 trae las reservas afectadas) y `POST /spaces/blocks/{id}/cancel/` (`reason`)                                                                                                                                                                                                                                  |                                                                                                                                                                                                                     |
+| 3   | `espacios`, administración (HU-16)                                       | `/spaces/manage/` (CRUD; la foto va en `photo` por `multipart`), `POST …/{id}/status/` y `/spaces/manage/{space_pk}/schedules/`                                                                                                                                                                                                                                         | El horario del espacio es por día (`0` = lunes)                                                                                                                                                                     |
+| 4   | `asesorias`, personal (HU-15)                                            | `GET /advisories/manage/appointments/`, `POST …/{id}/approve/` (`scheduled_date`, `start_time`, `facilitator`, `virtual_link`), `…/reject/` (`reason`) y `…/cancel/`; agenda con `GET /advisories/agenda/` y `POST /advisories/agenda/appointments/{id}/record/` (`attended`, notas); facilitadores con `GET /users/?role=facilitador`                                  | 400 si el facilitador ya tiene otra asesoría aprobada a esa hora                                                                                                                                                    |
+| 5   | `capacitaciones`, bandeja (HU-12)                                        | `/trainings/requests/manage/` (filtros `line`, `status`, `responsible`, `from`, `to`), `…/{id}/approve\|reject\|propose-date\|assign\|close\|cancel/` y `…/manage/responsibles/`                                                                                                                                                                                        | El id ya es el de la solicitud                                                                                                                                                                                      |
+| 6   | `tablets`, personal (HU-21, 23 y 24)                                     | Inventario `/tablets/manage/` (`?search=`; `brand`, `asset_value`, `device_type`). Préstamos `/tablets/manage/loans/` (`status` con comas, `search`, `has_incident`). `…/{id}/deliver/` (`tablet` con el código interno, `format_condition` `NEW\|OPTIMAL\|OTHER`, `observations`, `signature` `{path, width, height, signed_at}`). `…/{id}/return/` y `…/{id}/cancel/` | La constancia sale del detalle e imprime el `receipt_code` del Backend en lugar del código que calcula la app. Los vencidos son `status=OVERDUE`. La firma del personal espera a que el Backend la agregue a `/me/` |
+| 7   | `usuarios` (HU-07)                                                       | `GET /users/` (`?role=`), `POST`/`DELETE /users/{id}/roles/` (el rol `administrador` no se asigna por la API), `PUT /users/{id}/permissions/` (lista completa) y `PATCH /users/{id}/` (`is_active`)                                                                                                                                                                     | Los permisos adicionales se traducen con `equivalencias.ts`                                                                                                                                                         |
+| 8   | `servicios`, `contenidos` y `fotosInicio`, administración (HU-04 y #290) | `/portal/manage/services/{slug}/` y `service-categories/`; `/portal/manage/contents/{slug}/` con `publish/`, `hide/` y `reorder/`; `/portal/manage/home-photos/` (`image` por `multipart`, máximo 5 publicadas, `reorder/`)                                                                                                                                             | Hoy la comunidad ya lee los tres desde el Backend                                                                                                                                                                   |
+| 9   | `parametros`, guardar (HU-28)                                            | `PATCH /config/parameters/{code}/` por cada plazo que cambie, y el CRUD de `periods/`, `holidays/` y `schedules/` comparando con lo que ya había                                                                                                                                                                                                                        | Quitar el aviso «todavía no se guardan» de `actualizarParametros()`                                                                                                                                                 |
 
 **Fase 5 · Estadísticas:** Estadísticas y la afluencia del Dashboard leen `statistics/summary/`.
 El CSV y PDF se descargan de `statistics/export/` con los filtros activos. El Backend no ofrece
@@ -358,17 +358,23 @@ con rutas provisionales. Los datos de prueba siguen disponibles con el interrupt
 
 ### Ajustes del cierre
 
-| Área | Comportamiento de la app | Pendiente del Backend |
-|---|---|---|
-| Parámetros | Horarios permite agregar, editar y quitar franjas de un día. Valida cruces antes de reconciliar las franjas con `/config/schedules/`. La disponibilidad con datos de prueba respeta los descansos entre franjas. | Confirmar en Render que los calendarios de espacios, asesoría y tablets respeten la jornada partida y los horarios propios de cada servicio. |
-| Perfil | Lee `photo` desde `GET /me/`. Envía JPG, PNG o WEBP de hasta 5 MB con `PATCH /me/` multipart y quita la foto con `{"photo":null}`. Actualiza el perfil y la sesión, y usa iniciales cuando no hay foto. | Verificar en Render que las direcciones de las fotos devueltas sean públicas y que la eliminación persista. |
-| Identificadores | Mis reservas prefiere `space_id` del detalle (incluido en `details` o en la raíz) y conserva la búsqueda por nombre. Asesorías prefiere `facilitator_id` en la gestión, con el criterio anterior de nombre o correo si falta. | Publicar y documentar los identificadores estables en esas respuestas. |
-| Koha | Lee `url` y `staff_url` de `GET /portal/koha-opac/`. Usa `URL_CATALOGO_KOHA` si `url` es nula. En Gestión aparece «Ingresar a Koha» solo si hay `staff_url`. El OPAC y Koha del personal se abren sin el token de la app. | Configurar `KOHA_OPAC_URL` en Render y publicar `staff_url` (#311). |
-| Firma | Mi firma aparece en perfiles del personal si `GET /me/` incluye `signature`, incluso si vale `null`. Guarda o quita la firma con `PATCH /me/`. La constancia lee `delivery.responsible_signature` y `return_record.responsible_signature` si están presentes y conserva «firmado con su cuenta» si no hay firma. | Confirmar y publicar esos campos. Formato propuesto para cada firma: `{path, width, height, signed_at}` o `null`. El Backend debe conservar la firma que tenía el responsable en cada operación. |
-| Autoarchivo | Lee `guide.body` en `GET /portal/self-archive/`. Si la guía es nula o el texto no cumple el formato, muestra la orientación de prueba. | Publicar la guía usando el formato propuesto abajo. |
-| Cuenta inactiva | Un 403 de `POST /token/` muestra «Tu cuenta está inactiva. Contacta a la biblioteca para más información.» Un 401 conserva el mensaje de credenciales incorrectas. | Confirmar en Render el 403 para una cuenta inactiva con credenciales correctas. En la prueba anterior el servidor respondió 401. |
-| Jornadas de asesoría | El flujo vigente usa `/advisories/appointments/` por fecha y hora. | Las antiguas jornadas y franjas administrativas fueron retiradas del Backend. |
-| Estadísticas y asistencia | El detalle individual sale en el CSV. El QR vence automáticamente. | El contrato no ofrece listado JSON de registros ni acciones para abrir, cerrar o regenerar el QR. |
+| Área                      | Comportamiento de la app                                                                                                                                                                                                                                                                                         | Pendiente del Backend                                                                                                                                                                            |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Parámetros                | Horarios permite agregar, editar y quitar franjas de un día. Valida cruces antes de reconciliar las franjas con `/config/schedules/`. La disponibilidad con datos de prueba respeta los descansos entre franjas.                                                                                                 | Confirmar en Render que los calendarios de espacios, asesoría y tablets respeten la jornada partida y los horarios propios de cada servicio.                                                     |
+| Perfil                    | Lee `photo` desde `GET /me/`. Envía JPG, PNG o WEBP de hasta 5 MB con `PATCH /me/` multipart y quita la foto con `{"photo":null}`. Actualiza el perfil y la sesión, y usa iniciales cuando no hay foto.                                                                                                          | Verificar en Render que las direcciones de las fotos devueltas sean públicas y que la eliminación persista.                                                                                      |
+| Identificadores           | Mis reservas prefiere `space_id` del detalle (incluido en `details` o en la raíz) y conserva la búsqueda por nombre. Asesorías prefiere `facilitator_id` en la gestión, con el criterio anterior de nombre o correo si falta.                                                                                    | Publicar y documentar los identificadores estables en esas respuestas.                                                                                                                           |
+| Koha                      | Usa `url` de `GET /portal/koha-opac/` para el OPAC. En Gestión aparece «Ingresar a Koha» solo si hay `staff_url`. Koha recibe las peticiones sin el token de la app.                                                                                                                                             | Configurar `KOHA_OPAC_URL` en Render y publicar `staff_url` (#311).                                                                                                                              |
+| Firma                     | Mi firma aparece en perfiles del personal si `GET /me/` incluye `signature`, incluso si vale `null`. Guarda o quita la firma con `PATCH /me/`. La constancia lee `delivery.responsible_signature` y `return_record.responsible_signature` si están presentes y conserva «firmado con su cuenta» si no hay firma. | Confirmar y publicar esos campos. Formato propuesto para cada firma: `{path, width, height, signed_at}` o `null`. El Backend debe conservar la firma que tenía el responsable en cada operación. |
+| Autoarchivo y repositorio | Lee `repository_url`, `message` y `guide` de `GET /portal/self-archive/`. La URL sirve para buscar en DSpace, abrir el repositorio y reconocer el acceso del servicio Depósito de trabajos de grado. Una guía nula o mal formada muestra la orientación de prueba.                                               | Publicar `repository_url` y la guía con el formato propuesto abajo.                                                                                                                              |
+| Cuenta inactiva           | Un 403 de `POST /token/` muestra «Tu cuenta está inactiva. Contacta a la biblioteca para más información.» Un 401 conserva el mensaje de credenciales incorrectas.                                                                                                                                               | Confirmar en Render el 403 para una cuenta inactiva con credenciales correctas. En la prueba anterior el servidor respondió 401.                                                                 |
+| Jornadas de asesoría      | El flujo vigente usa `/advisories/appointments/` por fecha y hora.                                                                                                                                                                                                                                               | Las antiguas jornadas y franjas administrativas fueron retiradas del Backend.                                                                                                                    |
+| Estadísticas y asistencia | El detalle individual sale en el CSV. El QR vence automáticamente.                                                                                                                                                                                                                                               | El contrato no ofrece listado JSON de registros ni acciones para abrir, cerrar o regenerar el QR.                                                                                                |
+
+Si falla la consulta de un enlace del portal, la pantalla ofrece **Reintentar**. Si `url` o
+`repository_url` viene como `null`, la pantalla muestra `message` y oculta la búsqueda y la
+apertura de esa plataforma. Si se desactiva el módulo conectado, el mock responde con
+las direcciones de demostración. Las búsquedas públicas quedan habilitadas con `servicios`
+para Koha y con `autoarchivo` para DSpace en el perfil `integracion`.
 
 ### Formato propuesto para `guide.body`
 
@@ -377,12 +383,19 @@ líneas que empiezan por `- `. Se admiten líneas en blanco entre elementos o t�
 
 ```markdown
 ## Procedimiento
+
 - Envía el trabajo de grado al repositorio.
+
 ## Requisitos
+
 - Incluye la autorización de publicación.
+
 ## Formatos
+
 - Entrega el documento en PDF.
+
 ## Metadatos
+
 - Indica el título y el nombre de cada autor.
 ```
 
@@ -430,9 +443,40 @@ identificador de la app, así que instalar uno puede reemplazar el otro.
 La primera petición puede tardar hasta un minuto si Render estaba dormido. La compilación
 del APK y el recorrido en Render quedan pendientes.
 
-## 8. Backend 2.2.0
+## 8. Alineación con el portal web y Backend 2.2.0
 
-### 8.1 Firma del personal y constancia
+El contrato de referencia es [OpenAPI 2.2.0](https://github.com/LibniT/BackEnd-Biblioteca/blob/develop/docs/schema.yml). La tabla histórica de §2 corresponde al inventario anterior a la integración.
+
+| Método y ruta                                    | Uso en la app                                                                                                                                                                       |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /config/rules/`                             | Lee `cancel_min_hours` para reservas y capacitaciones aprobadas. Es público.                                                                                                        |
+| `POST /spaces/reservations/{request_id}/cancel/` | Usa el id de Mis solicitudes. La reserva pendiente se puede cancelar antes del inicio y la aprobada hasta el plazo general. Envía `reason` si la persona lo indica.                 |
+| `POST /trainings/requests/{id}/cancel/`          | La capacitación pendiente o con fecha propuesta admite cancelación en cualquier momento. La aprobada está sujeta al plazo general. El motivo es obligatorio.                        |
+| `POST /tablets/loans/{id}/cancel/`               | Usa el id del préstamo de `GET /tablets/loans/`; se relaciona con Mis solicitudes mediante `request_id`. Solo admite préstamos reservados antes de empezar y el motivo es opcional. |
+| `GET /tablets/incidents/`                        | Inventario → Incidencias. Lista paginada, con filtros `type`, `from` y `to`. Requiere `tablets.manage_loans` en Django (permiso `tablets` en la app).                               |
+| `POST /notifications/me/read-all/`               | Marca todos los avisos de la sesión como leídos y devuelve `{updated}`. La app actualiza la lista y el contador.                                                                    |
+| `GET /statistics/summary/`                       | Añade tasa de finalización, cancelaciones y rechazos desde `by_status`, y asistentes desde `attendees_by_service`. Se conserva el desglose agregado por tipo de usuario.            |
+
+El resumen no incluye un ranking de personas. Por eso, «Usuarios más frecuentes» se oculta
+con la API. El CSV conserva el detalle de `GET /statistics/export/?format=csv` y agrega los
+indicadores del resumen. El PDF se genera en la app con los mismos filtros y cifras que se
+muestran en pantalla.
+
+El texto del endpoint de reservas describe el motivo como opcional. El esquema compartido
+`ReservationAction` lo describe como obligatorio para cancelar. La implementación
+`cancel_own_reservation` del Backend 2.2.0 aplica un motivo por defecto para cancelación propia.
+La app sigue esa ruta específica. El plazo general no se aplica al préstamo de tablet, cuya
+regla propia exige cancelar antes del inicio de la franja. El contrato no define un historial
+de solicitudes ni un registro de uso para la lectura de notificaciones.
+
+Con el perfil de demostración, verifica la notificación, el historial y el registro de uso
+tras cancelar cada servicio, y que desaparezcan del calendario los eventos cancelados.
+En la API, verifica también una solicitud fuera de plazo, el contador de notificaciones y
+los dos archivos exportados con un rango que incluya asistentes.
+
+## 9. Backend 2.2.0: firma, búsqueda de personas y tablets
+
+### 9.1 Firma del personal y constancia
 
 El OpenAPI de Render declara `signature` en `Profile` y en el esquema multipart de
 `PATCH /me/`. El esquema publicado para JSON omite ese campo. La app ya envía
@@ -451,7 +495,7 @@ abrir la constancia de un préstamo entregado y devuelto con firma registrada y
 comprobar que trae los trazos de cada operación. Conviene que Backend refleje en
 OpenAPI los campos que acepta y devuelve en estos flujos.
 
-### 8.2 Búsqueda de personas en Gestión
+### 9.2 Búsqueda de personas en Gestión
 
 «Reservar para un tercero» y «Registrar a mano → Con cuenta» consultan
 `GET /users/lookup/?search=…&page=…&page_size=10` a partir de tres caracteres
@@ -476,7 +520,7 @@ registra a esa persona con «Con cuenta»; verifica que figura como manual.
 Con una respuesta 403 del buscador, comprueba que el formulario correspondiente
 permite continuar por correo o sin cuenta.
 
-### 8.3 Disponibilidad de tablets
+### 9.3 Disponibilidad de tablets
 
 `GET /tablets/availability/` declara `total` para el día y mantiene
 `slots[].available` como las unidades libres por franja. La app conserva un

@@ -1,6 +1,6 @@
 /**
  * Filtro por estado de la agenda (HU-15), en reemplazo del cuadro de convenciones.
- * - BotonFiltroAgenda: un embudo que despliega Todas, Pendiente, Aprobada, Realizada y Sin
+ * - BotonFiltroAgenda: un embudo que despliega Todas, Pendiente, Aprobada, Finalizada y Sin
  *   asignar (#250), cada una con su ícono y su color, así el menú sirve también de leyenda. Con
  *   un filtro activo, el embudo se rellena y el lector dice cuál.
  * - ChipFiltroAgenda: con un filtro activo, un chip "Solo aprobadas ✕" que lo quita, para que
@@ -111,7 +111,11 @@ export function ChipFiltroAgenda({
     return (
       <Chip
         icon={({ size }) => (
-          <Icon source={ICONO_ESTADO_AGENDA.pendiente ?? 'circle-small'} size={size} color={texto} />
+          <Icon
+            source={ICONO_ESTADO_AGENDA.pendiente ?? 'circle-small'}
+            size={size}
+            color={texto}
+          />
         )}
         onPress={() => onCambiar('pendiente')}
         style={[estilos.chip, { backgroundColor: fondo }]}

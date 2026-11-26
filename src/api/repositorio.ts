@@ -8,21 +8,15 @@
  * Antes de abrir el repositorio, la orientación de autoarchivo comprueba que responde (CA3).
  */
 import { RESULTADOS_POR_PAGINA, type PaginaResultados } from '@/utils/busqueda';
-import { URL_REPOSITORIO } from '@/utils/constantes';
 import { leerResultadosRepositorio } from '@/utils/repositorio';
 
 import { ErrorApi } from './cliente';
 
 const TIEMPO_LIMITE_MS = 8000;
 
-/** Página principal del repositorio. */
-export function urlRepositorioPrincipal(): string {
-  return URL_REPOSITORIO;
-}
-
 /** La misma búsqueda en la página del repositorio, con sus filtros. */
-export function urlBusquedaRepositorio(texto: string): string {
-  return `${URL_REPOSITORIO}/search?query=${encodeURIComponent(texto.trim())}`;
+export function urlBusquedaRepositorio(url: string, texto: string): string {
+  return `${url.replace(/\/+$/, '')}/search?query=${encodeURIComponent(texto.trim())}`;
 }
 
 /**
@@ -30,7 +24,11 @@ export function urlBusquedaRepositorio(texto: string): string {
  * `pagina` cuenta desde 0. Lanza un error si DSpace no responde, tarda demasiado o no
  * devuelve una búsqueda.
  */
-export async function buscarEnRepositorio(texto: string, pagina = 0): Promise<PaginaResultados> {
+export async function buscarEnRepositorio(
+  url: string,
+  texto: string,
+  pagina = 0,
+): Promise<PaginaResultados> {
   const parametros =
     `query=${encodeURIComponent(texto.trim())}&dsoType=ITEM` +
     `&page=${pagina}&size=${RESULTADOS_POR_PAGINA}`;
@@ -38,13 +36,13 @@ export async function buscarEnRepositorio(texto: string, pagina = 0): Promise<Pa
   const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
   try {
     const respuesta = await fetch(
-      `${URL_REPOSITORIO}/server/api/discover/search/objects?${parametros}`,
+      `${url.replace(/\/+$/, '')}/server/api/discover/search/objects?${parametros}`,
       { headers: { Accept: 'application/json' }, signal: controlador.signal },
     );
     if (!respuesta.ok) {
       throw new Error(`El repositorio respondió ${respuesta.status}.`);
     }
-    return leerResultadosRepositorio(await respuesta.json(), URL_REPOSITORIO);
+    return leerResultadosRepositorio(await respuesta.json(), url.replace(/\/+$/, ''));
   } finally {
     clearTimeout(temporizador);
   }
@@ -55,11 +53,11 @@ export async function buscarEnRepositorio(texto: string, pagina = 0): Promise<Pa
  * Si no responde, tarda demasiado o devuelve un error, lanza un ErrorApi 503 con un mensaje
  * para la persona, nunca el error técnico.
  */
-export async function comprobarRepositorio(): Promise<void> {
+export async function comprobarRepositorio(url: string): Promise<void> {
   const controlador = new AbortController();
   const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
   try {
-    const respuesta = await fetch(`${URL_REPOSITORIO}/server/api`, {
+    const respuesta = await fetch(`${url.replace(/\/+$/, '')}/server/api`, {
       headers: { Accept: 'application/json' },
       signal: controlador.signal,
     });

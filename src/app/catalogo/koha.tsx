@@ -13,11 +13,19 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { CampoBusqueda } from '@/components/catalogo/CampoBusqueda';
 import { ResultadosBusqueda, type TextosFuente } from '@/components/catalogo/ResultadosBusqueda';
-import { AvisoError, EncabezadoApilado, Pantalla } from '@/components/ui';
+import {
+  AvisoError,
+  EncabezadoApilado,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  Pantalla,
+} from '@/components/ui';
 import {
   type ResultadoBusqueda,
   useBusquedaCatalogo,
   useCatalogoKoha,
+  useEnlacesKoha,
 } from '@/hooks/useCatalogoKoha';
 import { colores, coloresEstado, espacio } from '@/theme';
 import { abrirEnNavegador } from '@/utils/navegador';
@@ -35,10 +43,12 @@ const TEXTOS_KOHA: TextosFuente = {
 };
 
 export default function CatalogoKoha() {
-  const { estado, abrirCatalogo } = useCatalogoKoha();
+  const enlaces = useEnlacesKoha();
+  const opac = enlaces.isSuccess ? enlaces.data.opac : null;
+  const { estado, abrirCatalogo } = useCatalogoKoha(opac);
   // Texto enviado desde el campo; vacío, no hay resultados.
   const [textoBuscado, setTextoBuscado] = useState('');
-  const busqueda = useBusquedaCatalogo(textoBuscado);
+  const busqueda = useBusquedaCatalogo(opac, textoBuscado);
   const resultados = busqueda.data?.pages.flatMap((pagina) => pagina.resultados) ?? [];
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -68,66 +78,81 @@ export default function CatalogoKoha() {
         subtitulo="Libros, revistas, tesis y demás material de la biblioteca, en Koha."
         conEncabezado
         recarga={
-          textoBuscado !== ''
+          opac && textoBuscado !== ''
             ? { recargando: busqueda.isRefetching, onRecargar: () => busqueda.refetch() }
             : undefined
         }
       >
-        <CampoBusqueda
-          etiqueta="Buscar en el catálogo"
-          ejemplo="Título, autor o tema"
-          onBuscar={setTextoBuscado}
-        />
-
-        {textoBuscado !== '' ? (
-          <ResultadosBusqueda
-            textos={TEXTOS_KOHA}
-            texto={textoBuscado}
-            resultados={resultados}
-            total={busqueda.data?.pages[0]?.total ?? 0}
-            cargando={busqueda.isPending}
-            error={busqueda.isError && !busqueda.isFetchNextPageError}
-            onReintentar={() => busqueda.refetch()}
-            hayMas={busqueda.hasNextPage}
-            cargandoMas={busqueda.isFetchingNextPage}
-            errorMas={busqueda.isFetchNextPageError}
-            onVerMas={() => busqueda.fetchNextPage()}
-            onAbrir={abrirResultado}
-            onFiltrar={() => abrirCatalogo(textoBuscado)}
+        {enlaces.isPending ? (
+          <EstadoCarga mensaje="Cargando el enlace del catálogo…" />
+        ) : enlaces.isError ? (
+          <EstadoError
+            mensaje="No pudimos obtener el enlace del catálogo."
+            onReintentar={() => void enlaces.refetch()}
           />
-        ) : estado === 'no_disponible' ? (
-          <AvisoError mensaje={MENSAJE_NO_DISPONIBLE}>
-            <Button
-              mode="outlined"
-              icon="refresh"
-              onPress={() => abrirCatalogo()}
-              textColor={coloresEstado.rechazada.texto}
-              style={estilos.botonReintentar}
-              contentStyle={estilos.contenidoBoton}
-              accessibilityRole="button"
-              accessibilityLabel="Reintentar abrir el catálogo"
-            >
-              Reintentar
-            </Button>
-          </AvisoError>
-        ) : (
+        ) : opac ? (
           <>
-            <Button
-              mode="outlined"
-              icon="open-in-new"
-              onPress={() => abrirCatalogo()}
-              loading={comprobando}
-              disabled={comprobando}
-              contentStyle={estilos.contenidoBoton}
-              accessibilityRole="link"
-              accessibilityLabel="Abrir el catálogo completo en el navegador"
-            >
-              Abrir catálogo
-            </Button>
-            <Text variant="bodySmall" style={estilos.nota}>
-              El catálogo completo se abre en el navegador; al cerrarlo vuelves aquí.
-            </Text>
+            <CampoBusqueda
+              etiqueta="Buscar en el catálogo"
+              ejemplo="Título, autor o tema"
+              onBuscar={setTextoBuscado}
+            />
+
+            {textoBuscado !== '' ? (
+              <ResultadosBusqueda
+                textos={TEXTOS_KOHA}
+                texto={textoBuscado}
+                resultados={resultados}
+                total={busqueda.data?.pages[0]?.total ?? 0}
+                cargando={busqueda.isPending}
+                error={busqueda.isError && !busqueda.isFetchNextPageError}
+                onReintentar={() => busqueda.refetch()}
+                hayMas={busqueda.hasNextPage}
+                cargandoMas={busqueda.isFetchingNextPage}
+                errorMas={busqueda.isFetchNextPageError}
+                onVerMas={() => busqueda.fetchNextPage()}
+                onAbrir={abrirResultado}
+                onFiltrar={() => abrirCatalogo(textoBuscado)}
+              />
+            ) : estado === 'no_disponible' ? (
+              <AvisoError mensaje={MENSAJE_NO_DISPONIBLE}>
+                <Button
+                  mode="outlined"
+                  icon="refresh"
+                  onPress={() => abrirCatalogo()}
+                  textColor={coloresEstado.rechazada.texto}
+                  style={estilos.botonReintentar}
+                  contentStyle={estilos.contenidoBoton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Reintentar abrir el catálogo"
+                >
+                  Reintentar
+                </Button>
+              </AvisoError>
+            ) : (
+              <>
+                <Button
+                  mode="outlined"
+                  icon="open-in-new"
+                  onPress={() => abrirCatalogo()}
+                  loading={comprobando}
+                  disabled={comprobando}
+                  contentStyle={estilos.contenidoBoton}
+                  accessibilityRole="link"
+                  accessibilityLabel="Abrir el catálogo completo en el navegador"
+                >
+                  Abrir catálogo
+                </Button>
+                <Text variant="bodySmall" style={estilos.nota}>
+                  El catálogo completo se abre en el navegador; al cerrarlo vuelves aquí.
+                </Text>
+              </>
+            )}
           </>
+        ) : (
+          <EstadoVacio
+            mensaje={enlaces.data?.mensaje || 'El catálogo todavía no tiene un enlace publicado.'}
+          />
         )}
 
         <Portal>
