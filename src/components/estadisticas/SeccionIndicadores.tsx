@@ -228,9 +228,7 @@ function PestanaResumen({
           ? { datos: indicadores.porMes }
           : {
               datos: periodosEnOrden(indicadores.porPeriodo),
-              etiquetaCorta: (etiqueta: string) => etiqueta,
               nombreAccesible: nombrePeriodo,
-              nombrePico: 'el periodo con más operaciones',
             })}
       />
     </>
@@ -315,7 +313,7 @@ function PestanaServicios({ indicadores }: { indicadores: IndicadoresUso }) {
 
   return (
     <>
-      <BarraDistribucion
+      <GraficoBarras
         titulo="Demanda por servicio"
         descripcion="Qué parte de las operaciones fue de cada servicio"
         datos={servicios}
@@ -380,7 +378,7 @@ function PestanaServicios({ indicadores }: { indicadores: IndicadoresUso }) {
         datos={indicadores.porFacultad}
         total={total}
       />
-      <GraficoBarras
+      <GraficoBarras recomendada="dona"
         titulo="Por sede"
         descripcion="Sede de quien hizo la operación"
         datos={indicadores.porSede}
