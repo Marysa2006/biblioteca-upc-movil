@@ -8,7 +8,7 @@ BiblioUPC reúne en el celular los servicios de la biblioteca: consultar el cat�
 
 Para instalarla en un celular Android:
 
-1. Descarga el instalador desde el enlace en el Release v1.1.0.
+1. Descarga el instalador desde el enlace en el Release v1.2.0. Hay dos: `biblioupc-v1.2.0.apk`, conectada a la biblioteca, y `biblioupc-v1.2.0-demo.apk`, con datos de ejemplo para mostrar la app sin tocar los datos reales. Los dos instalan la misma aplicación: si instalas uno, reemplaza al otro.
 2. Abre el archivo descargado. Si el celular lo pide, permite instalar aplicaciones de esta fuente.
 3. Toca **Instalar** y luego **Abrir**.
 
@@ -22,18 +22,26 @@ El tutorial no vuelve a salir solo. Para verlo otra vez, toca el botón de arrib
 
 ![El tutorial de Upecito](manual-usuario/tutorial-upecito.jpeg)
 
+### La app conectada a la biblioteca
+
+La app usa los mismos datos que el portal web de la biblioteca: los servicios, los avisos, las guías, los espacios y tus solicitudes son los reales, y lo que haces en la app también se ve en la web.
+
+- **Mientras carga**, la pantalla muestra la forma de lo que va a aparecer, en gris.
+- **El servidor descansa cuando nadie lo usa.** La primera vez que abres la app en un rato, puede tardar hasta un minuto; mientras tanto aparece «Conectando con la biblioteca. La primera vez puede tardar hasta un minuto.».
+- **Sin internet o si el servidor no responde**, la pantalla lo dice y ofrece **Reintentar**. La app no inventa datos: las guías que guardaste sí se abren sin conexión.
+
 ## 2. Sin cuenta
 
 Cualquier persona puede usar estas partes sin iniciar sesión. Abajo están las pestañas **Inicio**, **Servicios**, **Catálogo** y **Mis solicitudes**.
 
-1. **Inicio:** las fotos de la biblioteca, los **Avisos y novedades** y los servicios destacados. Toca uno para ver su detalle.
+1. **Inicio:** las fotos de la biblioteca, los **Avisos y novedades** y los servicios destacados. Toca uno para ver su detalle. Si la biblioteca no ha publicado fotos, Upecito te da la bienvenida en su lugar.
 2. **Servicios:** todos los servicios con su público, horarios y forma de solicitud.
 3. **Catálogo:**
    - **Catálogo de la biblioteca:** libros, revistas y tesis de la biblioteca.
    - **Repositorio institucional:** trabajos de grado e investigaciones de la Universidad, en texto completo.
    - **Bibliotecas en línea:** las bases de datos y bibliotecas digitales de la Universidad. Arriba se puede buscar por nombre o tema (por ejemplo, "enfermería") y filtrar por área.
    - **Guías de la biblioteca:** las guías en PDF y las escritas se abren una vez con internet y quedan guardadas en el celular para leerlas sin conexión. **Abrir guía** abre el PDF con el lector de PDF del celular. Las guías con enlace (Drive o una página web) necesitan internet siempre.
-4. **Autoarchivo:** desde el servicio **Depósito de trabajos de grado**, los pasos para preparar el archivo y entrar al repositorio.
+4. **Autoarchivo:** desde el servicio **Depósito de trabajos de grado** o desde **Catálogo → Repositorio**, los pasos del instructivo de la biblioteca para depositar tu trabajo de grado: crear tu cuenta del repositorio, pedir acceso a la colección de tu programa, los formatos y los datos que te pedirán. **Descargar instructivo (PDF)** abre el instructivo completo, con capturas del repositorio, e **Ir al repositorio** te lleva a depositar.
 
 ![Servicios](manual-usuario/sin-cuenta-servicios.png)
 ![Catálogo](manual-usuario/sin-cuenta-catalogo.png)
@@ -103,7 +111,7 @@ La reserva queda **Pendiente** hasta que la biblioteca la apruebe.
 2. En el primer paso, elige la fecha y la hora que te sirven (con al menos 72 horas de anticipación y dentro del horario de atención; el calendario tacha los días que no se pueden), la modalidad, cuántas personas asisten (hasta 5, con el nombre de cada una) y qué necesitas.
 3. Sigue con **Tus datos** y **Términos**, y toca **Enviar solicitud**.
 
-Tu solicitud queda **Pendiente** hasta que la biblioteca la apruebe: al aprobarla confirma la fecha y la hora (puede cambiarlas) y asigna quién te atiende. Te llega una notificación; si la rechazan, el aviso trae el motivo. Si la biblioteca cambió la fecha, **Mis citas** y el detalle en **Mis solicitudes** muestran también la que pediste. En una asesoría virtual aprobada, **Abrir enlace** te lleva a la reunión.
+Tu solicitud queda **Pendiente** hasta que la biblioteca la apruebe: al aprobarla confirma la fecha y la hora (puede cambiarlas) y asigna quién te atiende. Te llega una notificación; si la rechazan, el aviso trae el motivo. Si la biblioteca cambió la fecha, **Mis citas** y el detalle en **Mis solicitudes** muestran también la que pediste. En una asesoría virtual aprobada, **Abrir enlace** te lleva a la reunión. Si la biblioteca no ha fijado cuánto dura una asesoría, la cita muestra solo la hora de inicio.
 
 Las citas se pueden cancelar o reprogramar desde **Mis citas** o desde su detalle en **Mis solicitudes**: las pendientes en cualquier momento y las aprobadas hasta el plazo que fija la biblioteca. Para reprogramar solo eliges otra fecha y otra hora: se envía una solicitud nueva, que queda **Pendiente**, y la anterior queda cancelada.
 
@@ -185,8 +193,8 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
    - Toca **Rechazar** para negarla; pide el motivo.
    - Toca **Otra fecha** para proponer otro día u hora.
    - En una capacitación aprobada, toca **Asignarme** o **Asignar responsable** para elegir quién la dicta y, cuando se haga, **Marcar como finalizada**.
-   - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona.
-2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** (eligiendo quién la atiende: la administración, que aparece primero, o un facilitador) o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Quien asiste también puede registrarse escaneando ese QR desde su aplicación.
+   - El botón **Reservar para un tercero** reserva un espacio a nombre de otra persona: búscala en **Buscar por nombre, correo o identificación** (desde 3 caracteres) y elígela. Si tu cuenta no tiene permiso para buscar, escribe su correo institucional.
+2. **Agenda:** las citas de asesoría por día, por semana y por mes. Las que esperan respuesta se ven como **Pendiente**, y desde el detalle de la cita se **aprueban** (eligiendo quién la atiende: la administración, que aparece primero, o un facilitador) o se **rechazan** con un motivo; rechazarla libera el cupo de esa franja. Desde una cita del día se puede **Tomar asistencia**: la aplicación muestra un código QR para la sesión y el facilitador marca a mano a quien asistió. Quien asiste también puede registrarse escaneando ese QR desde su aplicación. Con **Registrar a mano**, elige **Con cuenta** para buscar a la persona por nombre, correo o identificación, o **Sin cuenta** para escribir sus datos.
 3. **Préstamos:** la entrega y la devolución de tablets. Si hay préstamos vencidos, la pestaña muestra cuántos con un aviso. Los chips separan los préstamos:
    - **Entregar:** los apartados. Toca **Registrar entrega**:
      1. Elige la tablet de la lista o toca **Escanear**. Solo aparecen las tablets libres durante todas las horas del préstamo; la tablet se asigna en este momento.
@@ -203,7 +211,7 @@ Para actualizarlo, desliza hacia abajo; también se actualiza solo al volver a l
 4. **Portal:** en tres grupos. Cada persona ve solo las filas de sus permisos.
    - **Publicaciones** (lo que ve la comunidad):
      - **Contenidos del portal:** los avisos, novedades y servicios que ve la comunidad.
-     - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra las fotos que trae la aplicación.
+     - **Fotos de Inicio:** las fotos del carrusel que ve la comunidad al abrir la aplicación. **Nueva foto** abre la galería, recorta la foto a lo ancho y pide escribir qué muestra (eso es lo que lee el lector de pantalla). Con el menú **⋮** de cada foto se edita, se **sube** o se **baja** en el orden y se **publica** u **oculta**. Se publican hasta 5 a la vez. Si no hay ninguna publicada, o si no hay internet, Inicio muestra la bienvenida de Upecito.
      - **Guías de la biblioteca:** las guías que ve la comunidad en Catálogo. En **Cómo se lee** se elige el formato: **PDF** (con **Elegir PDF** se sube el archivo del celular, hasta 10 MB), **Enlace** (Drive o una página web) o **Escrita** (se escribe en la aplicación). Con el menú **⋮** de cada guía se edita y se **publica** u **oculta**.
    - **Servicios** (lo que se puede solicitar):
      - **Temas de asesoría:** los temas en los que la comunidad puede pedir una asesoría.
@@ -276,7 +284,9 @@ Solo se le pueden dar a alguien que tenga un rol del personal: a una cuenta de l
 
 ## 5. Usuarios de prueba
 
-Todos entran con la contraseña **`biblioteca123`**. Basta con escribir el usuario: la aplicación completa el correo institucional.
+En la app conectada se entra con la cuenta institucional: la de la comunidad se crea con **Regístrate**, y la del personal la habilita la administración de la biblioteca.
+
+Los usuarios de esta tabla existen **solo en el instalador de demostración**. Todos entran con la contraseña **`biblioteca123`**. Basta con escribir el usuario: la aplicación completa el correo institucional.
 
 | Usuario          | Nombre         | Tipo de usuario | Rol en la biblioteca            |
 | ---------------- | -------------- | --------------- | ------------------------------- |
@@ -289,6 +299,10 @@ Todos entran con la contraseña **`biblioteca123`**. Basta con escribir el usuar
 
 ## 6. Limitaciones de esta versión
 
-- **Datos de prueba:** todavía no está conectada a los sistemas de la Universidad. Las personas, solicitudes y estadísticas son de ejemplo, y lo que se cambia se borra al cerrar la aplicación.
+- **El servidor descansa:** si nadie usa la app un rato, la primera carga puede tardar hasta un minuto.
+- **Egresados:** todavía no pueden crear su cuenta desde la app.
+- **Notificaciones:** los avisos de cada cambio se ven en **Notificaciones**, dentro de la app, y los recordatorios de Mi calendario llegan al celular. Los avisos que manda el servidor con la app cerrada llegarán en una versión siguiente.
+- **Catálogo:** la disponibilidad de los ejemplares se ve en la ficha del libro, en el catálogo de la biblioteca.
+- **Instalador de demostración:** sus personas, solicitudes y estadísticas son de ejemplo, y lo que se cambia se borra al cerrar la aplicación.
 - **Solo Android:** por ahora no hay versión para iPhone.
-- **Notificaciones y cámara:** los recordatorios y la lectura de códigos QR y de barras funcionan solo en el celular.
+- **Cámara:** la lectura de códigos QR y de barras funciona solo en el celular.
