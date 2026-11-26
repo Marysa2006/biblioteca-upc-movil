@@ -84,7 +84,7 @@ src/
 ├── app/            las pantallas (Expo Router: cada archivo es una ruta)
 ├── components/     componentes por módulo (asesorias/, tablets/, ui/, …)
 ├── hooks/          un archivo por módulo; envuelven TanStack Query
-├── api/            llamadas: un archivo por módulo + cliente.ts + mocks/
+├── api/            llamadas: un archivo por módulo + cliente.ts + backend/ + mocks/
 ├── types/          tipos por módulo (base compartida: los aprueba un guardián)
 ├── utils/          funciones puras: fechas, calendario, roles, validaciones
 ├── store/          estado global (Zustand): la sesión y los recordatorios
@@ -93,9 +93,10 @@ docs/               manual de usuario, guía técnica, paleta y mockups
 assets/images/      íconos, splash, logos y fotos
 ```
 
-Tamaño **al 23 de noviembre de 2026**: **58 pantallas**, **184 componentes**, **24 módulos de API**
-(22 con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **27 hooks**, **54
-utilidades**, **16 archivos de tipos** y **19 mocks**.
+Tamaño **al 25 de noviembre de 2026**: **58 pantallas**, **191 componentes**, **26 módulos de API**
+(24 con `peticion()` y 2 que hablan con Koha y DSpace por su cuenta), **17 adaptadores del
+Backend** en `src/api/backend/`, **29 hooks**, **55 utilidades**, **17 archivos de tipos** y
+**20 mocks**.
 
 ### El stack
 
@@ -113,14 +114,29 @@ utilidades**, **16 archivos de tipos** y **19 mocks**.
 
 ```
 Pantalla (src/app)
-   └── usa un hook (src/hooks)          ← nunca llama a la API directamente
-         └── llama a src/api/<módulo>   ← decide mock o API real
-               └── src/api/cliente.ts   ← el `peticion()` de la API del Backend
+   └── usa un hook (src/hooks)       ← nunca llama a la API
+         └── src/api/<módulo>        ← usaApi() decide: mock o API
+               ├── mocks/<módulo>.ts    ← datos de prueba
+               └── backend/<módulo>.ts  ← traduce el contrato
+                     └── cliente.ts     ← peticion(): token y errores
 ```
 
 Una consecuencia práctica: **todo el Backend entra por `src/api/cliente.ts`**. Si algún día hay
 que añadir cabeceras, reintentos o telemetría para la API propia, se hace ahí y vale para todas
 las llamadas de los módulos que la usan.
+
+- **`usaApi(modulo)`** (`src/api/cliente.ts`) dice si un módulo usa la API: sí cuando
+  `EXPO_PUBLIC_USAR_MOCKS` es `"false"` o cuando el módulo está en `EXPO_PUBLIC_API_MODULOS`. Así la
+  app se conecta **módulo por módulo** (modo mixto).
+- **`src/api/backend/`** traduce cada módulo: rutas en inglés con `/api/v1/`, nombres de campos,
+  estados, días de la semana (0 es lunes en el Backend y domingo en la app) y sedes. Son funciones
+  puras; las pantallas siguen viendo los tipos de `src/types`.
+- **`peticion()`** pone la URL base y el token, renueva el token con un 401, traduce los errores a
+  `ErrorApi` (`estado`, `codigo`, `campos` y `cuerpo`) y espera hasta 60 segundos.
+  **`peticionPagina()`** y **`peticionTodas()`** leen las listas paginadas (`count`, `next`,
+  `results`).
+- **Servidor lento:** si una llamada pasa de 8 segundos (`MS_CONEXION_LENTA`), `AvisoConexionLenta`
+  dice que el servidor se está despertando.
 
 **La excepción son Koha y DSpace**, el catálogo y el repositorio: `src/api/catalogo.ts` y
 `src/api/repositorio.ts` llaman a `fetch()` directamente porque son servicios externos con su
@@ -145,9 +161,19 @@ viejos.
 
 ### La sesión persistida
 
-`src/store/sesion.ts` guarda el usuario en `expo-secure-store`, con `version` y `migrate`.
-Si cambia la forma del usuario guardado, **se sube la versión y se amplía la migración**; si no,
-las sesiones guardadas se rompen en silencio.
+`src/store/sesion.ts` guarda el usuario, el `access`, el `refresh` y las aceptaciones de la
+política en `expo-secure-store`, con `version` (hoy **4**) y `migrate`. Si cambia la forma del
+usuario guardado, **se sube la versión y se amplía la migración**; si no, las sesiones guardadas
+se rompen en silencio.
+
+- **Renovación del token:** con un 401, `peticion()` pide un `access` nuevo a `/token/refresh/`
+  **una sola vez** aunque fallen varias llamadas a la vez, y reintenta. Si no se puede, cierra la
+  sesión.
+- **Solo se manda el token de una sesión real.** Con la sesión de datos de prueba, Django
+  respondería 401 aunque la ruta sea pública; por eso, en modo mixto, los módulos conectados
+  funcionan como sin sesión mientras `sesion` siga con mocks.
+- **Al cerrar sesión** se vacía la caché de TanStack Query (`queryClient.clear()`), para que otra
+  cuenta no vea datos de la anterior.
 
 `src/store/recordatorios.ts` es aparte y **no se guarda en el celular**: vive en memoria, con el
 permiso de notificaciones, cuántos quedaron programados y el último error.
@@ -178,11 +204,11 @@ ver [trampas conocidas](#trampas-conocidas).
 | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Koha** (catálogo)      | El portal publica `url` y `staff_url` en `GET /portal/koha-opac/`. `useEnlacesKoha()` comparte esa consulta. `src/api/catalogo.ts` busca en el RSS del OPAC.                                 |
 | **DSpace** (repositorio) | `usePortalAutoarchivo()` comparte `GET /portal/self-archive/` entre Catálogo y Autoarchivo. `src/api/repositorio.ts` usa `repository_url` como base para buscar en la API pública de DSpace. |
-| **Notificaciones**       | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend                                                                                                      |
+| **Notificaciones**       | Los avisos de cada cambio vienen del Backend y se ven en la app. Los recordatorios son **locales** del celular. El push desde el servidor queda para después                                 |
 
 Las peticiones a Koha y DSpace salen sin el token de la app. Si falla la consulta del portal,
 la pantalla ofrece Reintentar. Si el enlace público viene nulo, muestra el mensaje del
-Backend y oculta la apertura. Las URLs de demostración viven en `src/api/mocks/enlacesPortal.ts`. Autoarchivo muestra el texto publicado cuando la guía no tiene los cuatro bloques. Si no hay guía, muestra el mensaje del Backend.
+Backend y oculta la apertura. Las URLs de demostración viven en `src/api/mocks/enlacesPortal.ts`. Autoarchivo muestra el texto publicado cuando la guía no tiene los cuatro bloques. Si no hay guía, muestra el mensaje del Backend. La sección opcional `## Instructivo`, con un solo enlace `https://`, agrega el botón para abrir el instructivo completo en PDF.
 
 ---
 
@@ -237,17 +263,21 @@ pruebas unitarias: la verificación es el tipado, el lint y la prueba manual en 
 
 `.env.example` es la plantilla; `.env` no se sube (está en `.gitignore`).
 
-| Variable                 | Qué hace                                                                                                                                          |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EXPO_PUBLIC_API_URL`    | URL base de la API del Backend. Desde el celular, usa la IP del computador, **no `localhost`**: `localhost` desde el celular es el propio celular |
-| `EXPO_PUBLIC_USAR_MOCKS` | `true`: datos de prueba. `false`: API real                                                                                                        |
+| Variable                  | Qué hace                                                                                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`     | URL base de la API, con el prefijo: `https://backend-biblioteca-njx5.onrender.com/api/v1`. Con un servidor local, la IP del computador, **no `localhost`**: `localhost` desde el celular es el propio celular |
+| `EXPO_PUBLIC_USAR_MOCKS`  | `true`: datos de prueba, salvo los módulos de `EXPO_PUBLIC_API_MODULOS`. `false`: toda la app usa la API                                                                                                      |
+| `EXPO_PUBLIC_API_MODULOS` | Los módulos que usan la API aunque `USAR_MOCKS` sea `true`, separados por comas (`sesion,servicios,…`). Los 19 módulos están en `.env.example`                                                                |
 
 **Ojo con la lógica:** solo el texto `"false"` desactiva los mocks. Una variable ausente o vacía
-mantiene los datos de prueba, que es lo que se quiere en el APK.
+mantiene los datos de prueba, que es lo que se quiere en el APK de demostración.
 
 ```ts
 export const USAR_MOCKS = process.env.EXPO_PUBLIC_USAR_MOCKS !== 'false';
 ```
+
+Las variables `EXPO_PUBLIC_*` **son públicas**: quedan dentro del APK. Nunca van tokens ni
+contraseñas en ellas.
 
 **Y `npm ci` después de cada merge que toque el lockfile.** Si un PR cambia `package.json` o
 `package-lock.json`, todo el equipo corre `npm ci` al bajar los cambios. Con `npm install` en su
@@ -266,8 +296,16 @@ lugar se puede reescribir el lockfile y meter ruido en el PR.
 
 ### `eas.json`
 
-Un solo perfil, `preview`: distribución interna, APK de Android y `EXPO_PUBLIC_USAR_MOCKS=true`
-inyectado en el build (el `.env` no se sube, así que el APK siempre sale con datos de prueba).
+Dos perfiles, los dos con distribución interna y APK de Android. El `.env` no se sube, así que
+cada perfil inyecta sus variables en el build:
+
+| Perfil        | Variables                                                             | Para qué                                                |
+| ------------- | --------------------------------------------------------------------- | ------------------------------------------------------- |
+| `integracion` | `USAR_MOCKS=true`, la URL de Render y los 19 módulos en `API_MODULOS` | La app conectada: la que se entrega y se prueba         |
+| `preview`     | `USAR_MOCKS=true`                                                     | La demostración, con datos de prueba y sin tocar Render |
+
+`eas.json` usa `appVersionSource: "remote"`: el número de build de Android lo lleva EAS; la
+versión visible sale de `app.json`.
 
 ---
 
@@ -299,6 +337,22 @@ capacitaciones:
 | `cancelada`   | Anulada; libera el cupo                                          |
 | `realizada`   | Finalizada. Ya ocurrió (con `asistio: true/false` en las citas)  |
 
+En pantalla, `realizada` se lee **«Finalizada»**, como en el Backend y la web. El Backend tiene ocho
+estados; `ESTADO_DESDE_BACKEND` (`src/api/backend/equivalencias.ts`) los traduce:
+
+| Backend                               | App           |
+| ------------------------------------- | ------------- |
+| `PENDING`                             | `pendiente`   |
+| `APPROVED`, `IN_PROGRESS` y `OVERDUE` | `aprobada`    |
+| `REJECTED`                            | `rechazada`   |
+| `RESCHEDULE_PROPOSED`                 | `nueva_fecha` |
+| `CANCELLED`                           | `cancelada`   |
+| `COMPLETED`                           | `realizada`   |
+
+`IN_PROGRESS` (tablet entregada) y `OVERDUE` (vencida) no se pierden: el préstamo los guarda en su
+propio estado (`entregado` y `vencido`). En la app, el id de toda solicitud es el `request_id` del
+Backend, el mismo de Mis solicitudes (`/me/requests/`).
+
 **El caso de las asesorías (#216, versión 1.1):** la cita ya no nace aprobada.
 
 - `agendarCita` la deja **`pendiente`** y **aparta el cupo** desde el primer momento.
@@ -324,7 +378,9 @@ Los permisos de una persona son **la suma de los de sus roles** (`PERMISOS_POR_R
 - Se pregunta con `useRol().tienePermiso('reservas')`. **Nunca se compara el nombre del rol a mano.**
 - Hay ayudas: `esPersonal()`, `tieneRol()`, `describirRoles()`, `NOMBRE_TIPO` y
   `NOMBRE_ROL_PERSONAL`. `NOMBRE_ROL` y `Rol` están obsoletos.
-- Los identificadores de los roles son **provisionales** hasta conectar con el Backend.
+- Los roles y los permisos adicionales del Backend se traducen a los de la app en
+  `rolesDesdeBackend()` y `permisosExtraDesdeBackend()` (`src/api/backend/equivalencias.ts`). Quien
+  es superusuario del Backend cuenta como `administrador`.
 - **Permisos adicionales** (#256 y #296): la administración da a una persona del personal
   `novedades`, `fotos` o `parametros` aparte de sus roles (`Usuario.permisosExtra`,
   `PERMISOS_ASIGNABLES`). `permisosDe()` los suma, y solo cuentan si la persona tiene algún rol.
@@ -447,6 +503,21 @@ temáticas»):
 | Gestión → Portal (revisión de la 1.1)                | `MenuAdministracion`                                               | Tres grupos: Publicaciones, Servicios (temas, líneas y Espacios, en `administracion/espacios`) y Configuración            |
 | Préstamo de tablets, firma y constancia (#253, #310) | Ver la sección siguiente                                           |                                                                                                                           |
 
+### Lo nuevo de la versión 1.2, por dónde buscarlo
+
+| Función                                  | Dónde está                                                            | En pocas palabras                                                                       |
+| ---------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Integración con el Backend (#318 a #322) | `src/api/cliente.ts`, `src/api/backend/`                              | Los 19 módulos con la API de Render, módulo por módulo con `usaApi()`                   |
+| Sin datos inventados con la API (#330)   | Cada módulo de `src/api/`                                             | Error → Reintentar; sin datos → vacío. Los datos de demostración solo en mocks          |
+| Esqueletos de carga (#330)               | `Esqueleto` (`src/components/ui/`)                                    | Con `Animated`; respetan «Reducir movimiento» y conservan el aviso de servidor lento    |
+| Gráficas con selector (#330)             | Componentes de `src/components/estadisticas/`, con `react-native-svg` | Dona, líneas o barras; cada tarjeta recuerda la elección y muestra los valores en texto |
+| Exportación XLSX, PDF y CSV (#330)       | `src/utils/exportarEstadisticas.ts`                                   | XLSX y PDF del Backend (`/statistics/export/`), con los filtros; CSV en el celular      |
+| Búsqueda de personas (#329)              | `SelectorPersona`, `useBuscarPersonas()`                              | `/users/lookup/` desde 3 caracteres; con 403, correo a mano o registro sin cuenta       |
+| Firma del personal (#317, #329)          | Perfil → Mi firma, `src/api/backend/firmas.ts`                        | Se guarda en el perfil y se pone sola en la constancia                                  |
+| Enlaces de Koha y del repositorio (#326) | `useEnlacesKoha()`, `usePortalAutoarchivo()`                          | Salen del Backend; ya no hay URLs fijas en la app                                       |
+| Instructivo de autoarchivo (#331)        | `src/api/autoarchivo.ts`, `src/app/autoarchivo.tsx`                   | La sección opcional `## Instructivo` del cuerpo de la página trae el PDF                |
+| Bienvenida de Upecito (#330)             | `CarruselInicio`                                                      | Sin fotos publicadas o si falla la consulta                                             |
+
 ### El préstamo de tablets (HU-22 a HU-24, HU-31 y #310)
 
 Inventario → Incidencias, con permiso `tablets`, consulta la lista paginada
@@ -550,17 +621,16 @@ Los **datos y la lógica** de un mock van en `src/api/mocks/<módulo>.ts`. La fu
 `src/api/<módulo>.ts` los importa y decide:
 
 ```ts
-// src/api/asesorias.ts
+// src/api/asesorias.ts (extracto)
 import { CITAS_ASESORIA } from './mocks/asesorias';
 
 let citas: Cita[] = CITAS_ASESORIA.map((cita) => ({ ...cita }));
 
-// simplificado
 export async function obtenerMisCitas(usuarioId: string): Promise<Cita[]> {
-  if (USAR_MOCKS) {
-    return simularRed(citas.filter((c) => c.solicitanteId === usuarioId));
-  }
-  return peticion<Cita[]>('/asesorias/citas/mias/');
+  // Con la API: la lista del Backend, traducida por src/api/backend/asesorias.ts.
+  if (usaApi('asesorias')) return ordenarPorFecha(await misCitasBackend());
+  const mias = citas.filter((cita) => cita.solicitanteId === usuarioId);
+  return simularRed(ordenarPorFecha(mias).map((cita) => ({ ...cita })));
 }
 ```
 
@@ -579,24 +649,32 @@ Qué hace cada pieza:
   abre la app**. No se escriben fechas fijas: la demo quedaría vieja al día siguiente.
 - Cada cambio de estado deja **notificación, evento del historial y registro de uso**, igual que
   en la API real (ver [El rastro de cada cambio de estado](#el-rastro-de-cada-cambio-de-estado)).
+  Con la API, ese rastro lo deja el Backend.
+- **Los datos de demostración viven solo en los mocks.** Con la API, si el Backend falla, la
+  pantalla muestra el error con Reintentar; si no hay datos, el estado vacío. Nunca se rellena con
+  datos inventados (fotos del APK, condiciones de tablets, plazos por defecto…).
 
-### El paso a la API real, módulo por módulo
+### Conectar un módulo con la API
 
-Cuando un módulo deje de usar datos de prueba:
+Los 19 módulos ya están conectados. Para uno nuevo, o para un cambio del contrato:
 
-1. **Confirma la ruta y la forma de la respuesta** con el equipo de Backend. La app espera
-   `'AAAA-MM-DD'` para las fechas y `'HH:MM'` para las horas.
-2. **Deja el `peticion<T>(...)` escrito** en la rama `else` **aunque el endpoint todavía no
-   exista**. Así, el día que el Backend responda, solo hace falta apagar el mock.
-3. **Ajusta el tipo de `src/types`** si la respuesta no coincide. Es base compartida: necesita la
+1. **Comprueba el contrato desplegado**, no el de memoria: [OpenAPI](https://backend-biblioteca-njx5.onrender.com/api/schema/)
+   o [Swagger](https://backend-biblioteca-njx5.onrender.com/api/docs/). Revisa ruta, método,
+   permisos, campos, nulos, enums, la forma de los errores y si la lista es paginada.
+2. **Escribe el adaptador** en `src/api/backend/<módulo>.ts`: funciones puras de ida
+   (`…HaciaBackend`) y de vuelta (`…DesdeBackend`). Las fechas quedan `'AAAA-MM-DD'` y las horas
+   `'HH:MM'`; los estados y los días, con las tablas de `equivalencias.ts`.
+3. **En `src/api/<módulo>.ts`**, la rama `usaApi('<módulo>')` llama a `peticion()` con el adaptador;
+   la otra sigue con el mock.
+4. **Ajusta el tipo de `src/types`** solo si el dominio cambia. Es base compartida: necesita la
    aprobación de un guardián.
-4. **Quita el mock solo cuando la API responda** en desarrollo. Hasta entonces, el mock sigue
-   siendo el camino de la demo y de las pruebas de aceptación.
-5. **`EXPO_PUBLIC_API_URL` apunta a la IP del computador, no a `localhost`**: `localhost` desde el
-   celular es el propio celular.
+5. **Agrega el módulo a `EXPO_PUBLIC_API_MODULOS`** en `.env.example` y en el perfil `integracion`
+   de `eas.json`.
+6. **Prueba los dos caminos**: con mocks y con la API, incluidos permisos, errores y caché. En
+   modo mixto, los ids reales pueden no tener datos de prueba asociados.
 
-Un módulo a la vez, con su PR y su prueba. **No se apaga `USAR_MOCKS` de golpe**: con el Backend a
-medias, la app quedaría vacía en el resto de pantallas.
+El detalle de cada módulo (rutas, campos y lo que falta) está en
+[Integración con el Backend](integracion-backend.md).
 
 ### Cómo agregar una pantalla
 
@@ -732,10 +810,14 @@ El proyecto vive en la organización **biblioupc** de Expo. Para lanzar builds h
 
 ```bash
 npx eas-cli@latest login
-npx eas-cli@latest build -p android --profile preview
+npx eas-cli@latest build -p android --profile integracion   # la app conectada a Render
+npx eas-cli@latest build -p android --profile preview       # la demostración, con datos de prueba
 ```
 
-- El perfil `preview` de `eas.json` produce un **APK** con `EXPO_PUBLIC_USAR_MOCKS=true`.
+- Los dos perfiles de `eas.json` producen un **APK**; ver [`eas.json`](#easjson) para sus
+  variables.
+- El APK conectado depende de Render: antes de probarlo, despierta el servidor abriendo
+  `https://backend-biblioteca-njx5.onrender.com/api/v1/health/`.
 - La compilación va en la nube: entre 10 y 30 minutos si la cola está libre, y hasta una hora o
   más cuando está cargada. **Se pide en cuanto se congela `develop`.**
 - La firma de Android la guarda Expo. No se sube al repositorio.
@@ -759,9 +841,9 @@ El orden importa. Saltarse un paso deja el README apuntando a un Release que no 
 **1. Sube la versión en los tres sitios:**
 
 ```
-app.json          → "version": "1.1.0"
-package.json      → "version": "1.1.0"
-package-lock.json → "version": "1.1.0"  y  packages[""].version: "1.1.0"
+app.json          → "version": "1.2.0"
+package.json      → "version": "1.2.0"
+package-lock.json → "version": "1.2.0"  y  packages[""].version: "1.2.0"
 ```
 
 Tienen que coincidir los tres para que **el APK, la etiqueta y el Release digan la misma
@@ -782,14 +864,15 @@ Las dos ramas no se fusionan igual:
 
 ```bash
 git switch main && git pull
-git tag -a v1.1.0 -m "v1.1.0 · Versión 1.1"
-git push origin v1.1.0
+git tag -a v1.2.0 -m "v1.2.0 · Versión 1.2"
+git push origin v1.2.0
 ```
 
-**5. Publica el Release** con el APK adjunto y las notas. El archivo sigue la convención
-`biblioupc-v1.1.0.apk`.
+**5. Publica el Release** con los APK adjuntos y las notas. Los archivos siguen la convención
+`biblioupc-v1.2.0.apk` (perfil `integracion`) y `biblioupc-v1.2.0-demo.apk` (perfil `preview`).
+Los APK se generan **después** de subir la versión, para que digan la misma.
 
-**6. Recién entonces reparte el APK.** El README enlaza a `releases/tag/v1.1.0`; hasta que el
+**6. Recién entonces reparte el APK.** El README enlaza a `releases/tag/v1.2.0`; hasta que el
 Release exista, ese enlace da 404.
 
 ### Las ramas
@@ -899,6 +982,25 @@ el Django local del `.env` de ejemplo (`http://192.168.1.10:8000/api`). En Expo 
 Para probar un APK contra un servidor local hace falta un túnel HTTPS; en producción, el Backend
 va por HTTPS.
 
+### La app conectada tarda o dice «Conectando con la biblioteca»
+
+El servidor de Render se duerme cuando nadie lo usa, y la primera llamada lo despierta: puede
+tardar hasta un minuto. Ábrelo antes en el navegador
+(`https://backend-biblioteca-njx5.onrender.com/api/v1/health/`). Si pasa de 60 segundos,
+`peticion()` corta y la pantalla ofrece Reintentar.
+
+### Un 401 en una ruta pública
+
+Pasa en modo mixto cuando se manda un token que el Backend no reconoce. `peticion()` solo manda el
+token de una sesión real (`usaApi('sesion')`); si aparece un 401 así, revisa que `sesion` esté en
+`EXPO_PUBLIC_API_MODULOS` junto con el módulo que falla.
+
+### El typecheck pasa en un computador y falla en otro
+
+`expo-env.d.ts` está en `.gitignore` y tipa `process.env`. Quien lo tiene ve tipos que el resto
+no. Antes de abrir un PR, corre el typecheck sin ese archivo (muévelo un momento) para ver lo
+mismo que el resto del equipo.
+
 ### Trampas conocidas
 
 Son las que más rompen la app, y casi ninguna da un error claro:
@@ -916,16 +1018,17 @@ Son las que más rompen la app, y casi ninguna da un error claro:
 
 ## Anexo: la integración con el Backend
 
-La app se entrega con datos de prueba. La comparación del **23 de noviembre de 2026** contra el
-Backend (`develop` `53d1350`, esquema 2.0.1) dice que la app llama **103 endpoints**: **75** tienen
-contraparte (algunos con otro método, ruta o campos) y **28** faltan. Casi todo lo que falta son
-funciones nuevas de la 1.1: guías, fotos de Inicio, permisos por persona, la firma de la constancia,
-la sede y los indicadores de estadísticas.
+Desde la versión 1.2, **la app se entrega conectada** al Backend en Render (versión **2.3.0**, al
+25 de noviembre de 2026): los 19 módulos usan la API en el APK del perfil `integracion`. El APK
+`preview` sigue con datos de prueba para las demostraciones.
 
-- **El inventario completo**, endpoint por endpoint y campo por campo, con el orden para apagar
-  `USAR_MOCKS` módulo por módulo, está en [Integración con el Backend](integracion-backend.md).
-- **Lo que se le pide al Backend**, con prioridades, campos y preguntas, está en el documento
-  «App móvil y Backend: campos pendientes y archivos», que se les envía.
 - **Lo que adapta la app por su cuenta** (rutas en inglés con `/api/v1/`, inicio de sesión con
-  `access` y `refresh`, paginación, días de la semana, nombres de campos y estados) va en una capa de
-  traducción en `src/api/cliente.ts`, sin cambios del Backend.
+  `access` y `refresh`, paginación, días de la semana, nombres de campos y estados) va en
+  `src/api/cliente.ts` y en los adaptadores de `src/api/backend/`.
+- **El inventario completo**, módulo por módulo, con lo que se adaptó y lo que se pidió al Backend
+  (versiones 2.1.0 a 2.3.0), está en [Integración con el Backend](integracion-backend.md).
+- **Lo que falta de otros equipos** está en el issue #328: la URL de Koha para el personal, que el
+  servidor quede despierto para las demostraciones, y la respuesta del Frontend web sobre estados,
+  indicadores y diseño.
+- **Para después:** las cuentas de egresados (el Backend no tiene ese tipo de usuario) y el push
+  desde el servidor.
