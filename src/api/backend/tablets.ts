@@ -20,6 +20,7 @@ import { datosSolicitanteHaciaBackend } from './espacios';
 import { horaDesdeBackend, sedeDesdeBackend, type EstadoBackend } from './equivalencias';
 
 export type DisponibilidadTabletsBackend = {
+  total?: number | null;
   date: string;
   slots: { start: string; end: string; available: number }[];
   message?: string | null;
@@ -35,14 +36,14 @@ export type FranjaTabletsApp = {
 };
 
 /**
- * Las franjas de un día. El Backend no dice cuántas tablets hay en total: se usa el mayor número
- * libre del día. Una hora de inicio que ya pasó no se ofrece.
+ * Las franjas incluyen el total del Backend. Si falta, se usa el mayor número libre del día.
+ * Una hora de inicio que ya pasó no se ofrece.
  */
 export function franjasTabletsDesdeBackend(
   dia: DisponibilidadTabletsBackend,
   ahora: Date = new Date(),
 ): FranjaTabletsApp[] {
-  const total = Math.max(0, ...dia.slots.map((franja) => franja.available));
+  const total = dia.total ?? Math.max(0, ...dia.slots.map((franja) => franja.available));
   return dia.slots.map((franja) => {
     const horaInicio = horaDesdeBackend(franja.start);
     const empieza = new Date(`${dia.date}T${horaInicio}:00`);
