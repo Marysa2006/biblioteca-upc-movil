@@ -61,7 +61,7 @@ export function DetalleCitaAgenda({ cita }: { cita: CitaAgenda }) {
         <Dato etiqueta="Tema" valor={cita.tema} />
         <Dato
           etiqueta="Fecha y hora"
-          valor={`${fechaCompleta(cita.fecha)}, ${cita.horaInicio} – ${cita.horaFin}`}
+          valor={`${fechaCompleta(cita.fecha)}, ${[cita.horaInicio,cita.horaFin].filter(Boolean).join(' – ')}`}
         />
         {cambioFecha ? (
           <Dato

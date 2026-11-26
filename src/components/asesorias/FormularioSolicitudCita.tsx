@@ -135,6 +135,7 @@ export function FormularioSolicitudCita({
 }: Props) {
   const hoy = hoyISO();
   const maximoPersonas = parametros.maximoPersonasAsesoria;
+  const [integrantesVisibles, setIntegrantesVisibles] = useState(8);
   const [pestana, setPestana] = useState<PestanaCita>('solicitud');
   const { control, handleSubmit, setValue, trigger, getFieldState, formState } =
     useForm<ValoresSolicitudCita>({
@@ -161,16 +162,13 @@ export function FormularioSolicitudCita({
     CAMPOS_SOLICITANTE.map((campo) => [campo, errores[campo]?.message]).filter(([, m]) => m),
   ) as Partial<Record<CampoSolicitante, string>>;
 
-  const numeroPersonas = Number(personas) || 1;
-  const otros = Math.max(0, Math.min(numeroPersonas, maximoPersonas) - 1);
+  const numeroPersonas = Math.min(Number(personas) || 1, 32767);
+  const otros = Math.max(0, Math.min(numeroPersonas, maximoPersonas ?? numeroPersonas) - 1);
   const horario = fecha ? horasInicioCita(fecha, parametros) : null;
 
-  // Un campo por cada uno de los otros integrantes: al cambiar Personas, la lista se ajusta.
+  // Se preservan los nombres ya escritos y se evita montar miles de campos a la vez.
   useEffect(() => {
-    if (participantes.length !== otros) {
-      const ajustados = Array.from({ length: otros }, (_, i) => participantes[i] ?? '');
-      setValue('participantes', ajustados);
-    }
+    if (participantes.length > otros) setValue('participantes', participantes.slice(0, otros));
   }, [otros, participantes, setValue]);
 
   // En Android lo anuncia accessibilityLiveRegion bajo cada campo.
@@ -308,14 +306,14 @@ export function FormularioSolicitudCita({
                 onCambiar={onChange}
                 onBlur={onBlur}
                 minimo={1}
-                maximo={maximoPersonas}
+                maximo={maximoPersonas ?? undefined}
                 mensajeError={errores.personas?.message}
                 deshabilitado={guardando}
               />
             )}
           />
           <Text variant="bodySmall" style={estilos.secundario}>
-            {`Contándote a ti, hasta ${maximoPersonas}.`}
+            {maximoPersonas == null ? 'Inclúyete en el total.' : `Contándote a ti, hasta ${maximoPersonas}.`}
           </Text>
 
           {otros > 0 ? (
@@ -323,7 +321,7 @@ export function FormularioSolicitudCita({
               <Text variant="bodyMedium" style={estilos.subtitulo} accessibilityRole="header">
                 Los otros integrantes
               </Text>
-              {Array.from({ length: otros }, (_, i) => (
+              {Array.from({ length: Math.min(otros, integrantesVisibles) }, (_, i) => (
                 <Controller
                   key={i}
                   control={control}
@@ -343,6 +341,9 @@ export function FormularioSolicitudCita({
                   )}
                 />
               ))}
+              {otros > integrantesVisibles ? (
+                <Button onPress={() => setIntegrantesVisibles((cantidad) => cantidad + 8)}>Mostrar más integrantes</Button>
+              ) : null}
             </View>
           ) : null}
 

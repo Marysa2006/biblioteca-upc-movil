@@ -13,7 +13,14 @@ import { Button, Portal, Snackbar, Text } from 'react-native-paper';
 
 import { CampoBusqueda } from '@/components/catalogo/CampoBusqueda';
 import { ResultadosBusqueda, type TextosFuente } from '@/components/catalogo/ResultadosBusqueda';
-import { EncabezadoApilado, Pantalla } from '@/components/ui';
+import {
+  EncabezadoApilado,
+  EstadoCarga,
+  EstadoError,
+  EstadoVacio,
+  Pantalla,
+} from '@/components/ui';
+import { useOrientacionAutoarchivo } from '@/hooks/useAutoarchivo';
 import { abrirRepositorio, useBusquedaRepositorio } from '@/hooks/useRepositorio';
 import { colores, espacio } from '@/theme';
 import type { ResultadoBusqueda } from '@/utils/busqueda';
@@ -32,7 +39,9 @@ const TEXTOS_REPOSITORIO: TextosFuente = {
 export default function Repositorio() {
   // Texto enviado desde el campo; vacío, no hay resultados.
   const [textoBuscado, setTextoBuscado] = useState('');
-  const busqueda = useBusquedaRepositorio(textoBuscado);
+  const portal = useOrientacionAutoarchivo();
+  const url = portal.isSuccess ? portal.data.url ?? null : null;
+  const busqueda = useBusquedaRepositorio(url, textoBuscado);
   const resultados = busqueda.data?.pages.flatMap((pagina) => pagina.resultados) ?? [];
   const [aviso, setAviso] = useState<string | null>(null);
 
@@ -44,7 +53,8 @@ export default function Repositorio() {
   const conAviso = (abrir: Promise<unknown>) =>
     abrir.catch(() => setAviso('No se pudo abrir el repositorio. Intenta de nuevo.'));
 
-  const abrirResultado = (resultado: ResultadoBusqueda) => conAviso(abrirEnNavegador(resultado.url));
+  const abrirResultado = (resultado: ResultadoBusqueda) =>
+    conAviso(abrirEnNavegador(resultado.url));
 
   return (
     <>
@@ -54,68 +64,84 @@ export default function Repositorio() {
         subtitulo="Trabajos de grado, tesis e investigaciones de la Universidad, en texto completo."
         conEncabezado
         recarga={
-          textoBuscado !== ''
+          url && textoBuscado !== ''
             ? { recargando: busqueda.isRefetching, onRecargar: () => busqueda.refetch() }
             : undefined
         }
       >
-        <CampoBusqueda
-          etiqueta="Buscar en el repositorio"
-          ejemplo="Título, autor o tema"
-          onBuscar={setTextoBuscado}
-        />
-
-        {textoBuscado !== '' ? (
-          <ResultadosBusqueda
-            textos={TEXTOS_REPOSITORIO}
-            texto={textoBuscado}
-            resultados={resultados}
-            total={busqueda.data?.pages[0]?.total ?? 0}
-            cargando={busqueda.isPending}
-            error={busqueda.isError && !busqueda.isFetchNextPageError}
-            onReintentar={() => busqueda.refetch()}
-            hayMas={busqueda.hasNextPage}
-            cargandoMas={busqueda.isFetchingNextPage}
-            errorMas={busqueda.isFetchNextPageError}
-            onVerMas={() => busqueda.fetchNextPage()}
-            onAbrir={abrirResultado}
-            onFiltrar={() => conAviso(abrirRepositorio(textoBuscado))}
+        {portal.isPending ? (
+          <EstadoCarga mensaje="Cargando el enlace del repositorio…" />
+        ) : portal.isError ? (
+          <EstadoError
+            mensaje="No pudimos obtener el enlace del repositorio."
+            onReintentar={() => void portal.refetch()}
           />
-        ) : (
+        ) : url ? (
           <>
-            <Button
-              mode="outlined"
-              icon="open-in-new"
-              onPress={() => conAviso(abrirRepositorio())}
-              contentStyle={estilos.contenidoBoton}
-              accessibilityRole="link"
-              accessibilityLabel="Abrir el repositorio completo en el navegador"
-            >
-              Abrir repositorio
-            </Button>
-            <Text variant="bodySmall" style={estilos.nota}>
-              El repositorio completo se abre en el navegador; al cerrarlo vuelves aquí.
-            </Text>
-            {/* HU-11: solo sin búsqueda, para no estorbar los resultados. La pregunta va como
-                texto aparte porque la etiqueta de Button es de una sola línea. */}
-            <View style={estilos.orientacion}>
-              <Text variant="bodyMedium" style={estilos.pregunta}>
-                ¿Vas a depositar tu trabajo de grado?
-              </Text>
-              <Button
-                mode="text"
-                icon="book-open-page-variant-outline"
-                onPress={() => router.push('/autoarchivo')}
-                style={estilos.botonOrientacion}
-                contentStyle={estilos.contenidoBoton}
-                accessibilityRole="button"
-                accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
-              >
-                Ver orientación
-              </Button>
-            </View>
+            <CampoBusqueda
+              etiqueta="Buscar en el repositorio"
+              ejemplo="Título, autor o tema"
+              onBuscar={setTextoBuscado}
+            />
+
+            {textoBuscado !== '' ? (
+              <ResultadosBusqueda
+                textos={TEXTOS_REPOSITORIO}
+                texto={textoBuscado}
+                resultados={resultados}
+                total={busqueda.data?.pages[0]?.total ?? 0}
+                cargando={busqueda.isPending}
+                error={busqueda.isError && !busqueda.isFetchNextPageError}
+                onReintentar={() => busqueda.refetch()}
+                hayMas={busqueda.hasNextPage}
+                cargandoMas={busqueda.isFetchingNextPage}
+                errorMas={busqueda.isFetchNextPageError}
+                onVerMas={() => busqueda.fetchNextPage()}
+                onAbrir={abrirResultado}
+                onFiltrar={() => conAviso(abrirRepositorio(url, textoBuscado))}
+              />
+            ) : (
+              <>
+                <Button
+                  mode="outlined"
+                  icon="open-in-new"
+                  onPress={() => conAviso(abrirRepositorio(url))}
+                  contentStyle={estilos.contenidoBoton}
+                  accessibilityRole="link"
+                  accessibilityLabel="Abrir el repositorio completo en el navegador"
+                >
+                  Abrir repositorio
+                </Button>
+                <Text variant="bodySmall" style={estilos.nota}>
+                  El repositorio completo se abre en el navegador; al cerrarlo vuelves aquí.
+                </Text>
+              </>
+            )}
           </>
+        ) : (
+          <EstadoVacio
+            mensaje={portal.data?.mensaje || 'El repositorio todavía no tiene un enlace publicado.'}
+          />
         )}
+
+        {portal.isSuccess && (!url || textoBuscado === '') ? (
+          <View style={estilos.orientacion}>
+            <Text variant="bodyMedium" style={estilos.pregunta}>
+              ¿Vas a depositar tu trabajo de grado?
+            </Text>
+            <Button
+              mode="text"
+              icon="book-open-page-variant-outline"
+              onPress={() => router.push('/autoarchivo')}
+              style={estilos.botonOrientacion}
+              contentStyle={estilos.contenidoBoton}
+              accessibilityRole="button"
+              accessibilityLabel="Ver la orientación para depositar tu trabajo de grado"
+            >
+              Ver orientación
+            </Button>
+          </View>
+        ) : null}
 
         <Portal>
           <Snackbar

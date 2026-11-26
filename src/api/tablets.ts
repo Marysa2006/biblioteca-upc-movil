@@ -975,23 +975,13 @@ export async function obtenerDisponibilidadTablets(fecha: string): Promise<DiaTa
 }
 
 /** Condiciones de uso del préstamo (HU-22, CA3). Texto provisional de la biblioteca. */
-export async function obtenerCondicionesTablet(): Promise<CondicionesTablet> {
+export async function obtenerCondicionesTablet(): Promise<CondicionesTablet | null> {
   if (usaApi('tablets')) {
-    // La página `condiciones-tablets` del portal; mientras la biblioteca no la publica responde
-    // 404 y se muestran las condiciones de siempre.
-    try {
-      const pagina = await peticion<{ title: string; body: string; published_at: string | null }>(
-        '/portal/contents/condiciones-tablets/',
-      );
-      return {
-        titulo: pagina.title,
-        texto: pagina.body,
-        actualizada: (pagina.published_at ?? CONDICIONES_TABLET.actualizada).slice(0, 10),
-      };
-    } catch (error) {
-      if (error instanceof ErrorApi && error.estado === 404) return { ...CONDICIONES_TABLET };
-      throw error;
-    }
+    const pagina = await peticion<{ title: string; body: string; published_at: string | null }>(
+      '/portal/contents/condiciones-tablets/',
+    );
+    if (!pagina.body.trim()) return null;
+    return { titulo: pagina.title, texto: pagina.body, actualizada: pagina.published_at?.slice(0, 10) };
   }
   return simularRed({ ...CONDICIONES_TABLET });
 }

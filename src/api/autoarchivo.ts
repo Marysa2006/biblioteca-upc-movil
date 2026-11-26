@@ -2,9 +2,11 @@
  * Orientación de autoarchivo (HU-11): procedimiento, requisitos, formatos y metadatos para
  * depositar un trabajo de grado en el Repositorio Institucional. Solo orienta: el depósito se
  * hace en el repositorio (ver ./repositorio).
- * Si el portal no publica la guía con los cuatro bloques, se usa la orientación de prueba.
+ * La guía publicada se muestra aunque su contenido llegue como texto libre.
  */
-import { ErrorApi, peticion, simularRed, usaApi } from './cliente';
+import { URL_REPOSITORIO } from '@/utils/constantes';
+
+import { peticion, simularRed, usaApi } from './cliente';
 import { ORIENTACION_AUTOARCHIVO } from './mocks/autoarchivo';
 
 /**
@@ -13,8 +15,11 @@ import { ORIENTACION_AUTOARCHIVO } from './mocks/autoarchivo';
  */
 export type OrientacionAutoarchivo = {
   titulo: string;
+  url?: string | null;
   /** Fecha de la última actualización, 'AAAA-MM-DD'. */
-  actualizada: string;
+  actualizada?: string;
+  texto?: string;
+  mensaje?: string | null;
   /** Pasos del procedimiento, en orden. */
   procedimiento: string[];
   requisitos: string[];
@@ -25,26 +30,25 @@ export type OrientacionAutoarchivo = {
 /** La orientación completa, con sus cuatro bloques (HU-11, CA1). */
 export async function obtenerOrientacionAutoarchivo(): Promise<OrientacionAutoarchivo> {
   if (usaApi('autoarchivo')) {
-    try {
-      const respuesta = await peticion<{
-        guide: { body: string; title: string; published_at?: string | null } | null;
-      }>('/portal/self-archive/');
-      if (respuesta.guide) {
-        const { body, title, published_at } = respuesta.guide;
-        const bloques = typeof body === 'string' ? leerBloques(body) : undefined;
-        if (bloques) return {
-          ...bloques,
-          titulo: title || ORIENTACION_AUTOARCHIVO.titulo,
-          actualizada: published_at?.slice(0, 10) || ORIENTACION_AUTOARCHIVO.actualizada,
-        };
-      }
-    } catch (error) {
-      if (!(error instanceof ErrorApi) || error.estado !== 404) throw error;
-    }
+    const { guide, message, repository_url: url } = await peticion<{
+      guide: { body: string; title: string; published_at: string | null; updated_at: string } | null;
+      message: string | null;
+      repository_url: string | null;
+    }>('/portal/self-archive/');
+    if (!guide?.body.trim()) return { titulo: '', url, mensaje: message, procedimiento: [], requisitos: [], formatos: [], metadatos: [] };
+    const bloques = leerBloques(guide.body);
+    return {
+      titulo: guide.title,
+      url,
+      mensaje: message,
+      actualizada: (guide.published_at ?? guide.updated_at)?.slice(0, 10),
+      ...(bloques ?? { texto: guide.body, procedimiento: [], requisitos: [], formatos: [], metadatos: [] }),
+    };
   }
   const orientacion = ORIENTACION_AUTOARCHIVO;
   return simularRed({
     ...orientacion,
+    url: URL_REPOSITORIO,
     procedimiento: [...orientacion.procedimiento],
     requisitos: [...orientacion.requisitos],
     formatos: [...orientacion.formatos],

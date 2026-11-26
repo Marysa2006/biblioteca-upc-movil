@@ -21,7 +21,7 @@ type Props = {
 };
 
 export function TarjetaCitaAgenda({ cita, mostrarFacilitador, onAbrir }: Props) {
-  const horas = `${cita.horaInicio} – ${cita.horaFin}`;
+  const horas = `${[cita.horaInicio,cita.horaFin].filter(Boolean).join(' – ')}`;
   const modalidad = NOMBRE_MODALIDAD[cita.modalidad];
   const libre = sinAsignar(cita);
   const facilitador = libre

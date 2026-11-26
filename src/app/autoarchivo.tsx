@@ -33,6 +33,7 @@ const TITULO = 'Orientación de autoarchivo';
 export default function Autoarchivo() {
   const orientacion = useOrientacionAutoarchivo();
   const comprobar = useComprobarRepositorio();
+  const url = orientacion.isSuccess ? orientacion.data.url : null;
   const [aviso, setAviso] = useState<string | null>(null);
 
   // AvisoError ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
@@ -41,9 +42,10 @@ export default function Autoarchivo() {
   }, [aviso]);
 
   async function irAlDeposito() {
+    if (!url) return;
     setAviso(null);
     try {
-      await comprobar.mutateAsync();
+      await comprobar.mutateAsync(url);
     } catch (error) {
       // CA3: el 503 trae un mensaje listo para la persona; se lee el código sin importar la clase.
       setAviso(
@@ -54,7 +56,7 @@ export default function Autoarchivo() {
       return;
     }
     try {
-      await abrirRepositorio();
+      await abrirRepositorio(url);
     } catch {
       setAviso('No se pudo abrir el repositorio. Intenta de nuevo.');
     }
@@ -71,16 +73,17 @@ export default function Autoarchivo() {
       />
     );
   } else {
-    const { actualizada, procedimiento, requisitos, formatos, metadatos } = orientacion.data;
-    const vacia = [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
+    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto, mensaje } = orientacion.data;
+    const vacia = !texto && [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
 
     contenido = vacia ? (
-      <EstadoVacio mensaje="La biblioteca todavía no ha publicado la orientación de autoarchivo." />
+      <EstadoVacio mensaje={mensaje || 'La biblioteca todavía no ha publicado la orientación de autoarchivo.'} />
     ) : (
       <>
-        <Text variant="bodySmall" style={estilos.secundario}>
+        {actualizada ? <Text variant="bodySmall" style={estilos.secundario}>
           {`Actualizada el ${fechaLegible(actualizada)}`}
-        </Text>
+        </Text> : null}
+        {texto ? <Text variant="bodyMedium">{texto}</Text> : null}
 
         {procedimiento.length > 0 ? (
           <BloqueOrientacion icono="format-list-numbered" titulo="Pasos">
@@ -119,7 +122,7 @@ export default function Autoarchivo() {
           </BloqueOrientacion>
         ) : null}
 
-        <View style={estilos.deposito}>
+        {url ? <View style={estilos.deposito}>
           {aviso ? (
             <AvisoError mensaje={aviso}>
               <Button
@@ -151,7 +154,7 @@ export default function Autoarchivo() {
             El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la
             Universidad. Al cerrarlo vuelves aquí.
           </Text>
-        </View>
+        </View> : <EstadoVacio mensaje={mensaje || 'El repositorio todavía no tiene un enlace publicado.'} />}
       </>
     );
   }

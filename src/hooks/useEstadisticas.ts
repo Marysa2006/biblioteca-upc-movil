@@ -31,8 +31,9 @@ export function useRegistrosUso(filtros: FiltrosEstadisticas = {}) {
  * cambia, el cumplimiento se recalcula.
  */
 export function useIndicadores(filtros: FiltrosEstadisticas = {}, enabled = true) {
-  const horasReferenciaTablet =
-    useParametros().data?.horasPrestamoTablet ?? HORAS_REFERENCIA_TABLET;
+  const parametros = useParametros();
+  const conApi = usaApi('estadisticas');
+  const horasReferenciaTablet = conApi ? undefined : parametros.data?.horasPrestamoTablet ?? HORAS_REFERENCIA_TABLET;
   return useQuery({
     queryKey: [...claves.indicadoresUso(filtros), horasReferenciaTablet],
     enabled,

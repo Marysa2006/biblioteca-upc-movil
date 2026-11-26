@@ -52,9 +52,10 @@ export function CondicionesUso({ condiciones, aceptadas, onCambiar, mensajeError
             {`• ${linea}`}
           </Text>
         ))}
+        {condiciones.actualizada ? (
         <Text variant="bodySmall" style={estilos.secundario}>
           {`Actualizadas el ${fechaLegible(condiciones.actualizada)}.`}
-        </Text>
+        </Text>) : null}
       </DialogoTexto>
 
       <Checkbox.Item

@@ -560,7 +560,7 @@ export async function solicitarCita(usuario: Usuario, nueva: NuevaSolicitudCita)
   }
 
   const inicio = aMinutos(nueva.hora);
-  const fin = inicio + parametros.duracionAsesoriaMinutos;
+  const fin = inicio + (parametros.duracionAsesoriaMinutos ?? 0);
   if (
     !horariosDeFecha(nueva.fecha, parametros).some(
       (h) => inicio >= aMinutos(h.abre) && fin <= aMinutos(h.cierra),
@@ -584,7 +584,7 @@ export async function solicitarCita(usuario: Usuario, nueva: NuevaSolicitudCita)
   }
   // #278: el grupo de una asesoría tiene un tope (el Backend, `advisory-max-group`). Más gente
   // es una capacitación, que es otro servicio.
-  if (personas > parametros.maximoPersonasAsesoria) {
+  if (parametros.maximoPersonasAsesoria != null && personas > parametros.maximoPersonasAsesoria) {
     throw new ErrorApi(
       400,
       `Una asesoría es para ${parametros.maximoPersonasAsesoria} personas como máximo. Para un grupo mayor, solicita una capacitación.`,
@@ -736,7 +736,7 @@ export async function aprobarCitaConDatos(
   }
 
   // #278: un facilitador no puede tener dos asesorías aprobadas a la misma hora.
-  const finNueva = aHora(aMinutos(hora) + parametros.duracionAsesoriaMinutos);
+  const finNueva = aHora(aMinutos(hora) + (parametros.duracionAsesoriaMinutos ?? 0));
   const choque = citas.find(
     (otra) =>
       otra.id !== cita.id &&

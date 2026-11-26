@@ -89,7 +89,7 @@ const horas = z
 const textoAutomatico = z
   .string()
   .trim()
-  .min(1, { error: 'Escribe el texto.' })
+
   .max(LARGO_MAXIMO_TEXTO, { error: `Máximo ${LARGO_MAXIMO_TEXTO} caracteres.` });
 
 /**
@@ -129,9 +129,9 @@ export const esquemaParametros = z
     horasPrestamoTablet: horas,
     diasMaximosTablet: horas,
     minutosRecogerTablet: horas,
-    duracionAsesoriaMinutos: horas,
-    maximoPersonasAsesoria: horas,
-    horasVigenciaQr: horas,
+    duracionAsesoriaMinutos: horas.or(z.literal('')),
+    maximoPersonasAsesoria: horas.or(z.literal('')),
+    horasVigenciaQr: horas.or(z.literal('')),
   })
   .superRefine((datos, ctx) => {
     // Periodos: fechas cruzadas y periodos que se superponen.
@@ -206,9 +206,9 @@ export function aFormulario(parametros: Parametros): FormularioParametros {
     horasPrestamoTablet: String(parametros.horasPrestamoTablet),
     diasMaximosTablet: String(parametros.diasMaximosTablet),
     minutosRecogerTablet: String(parametros.minutosRecogerTablet),
-    duracionAsesoriaMinutos: String(parametros.duracionAsesoriaMinutos),
-    maximoPersonasAsesoria: String(parametros.maximoPersonasAsesoria),
-    horasVigenciaQr: String(parametros.horasVigenciaQr),
+    duracionAsesoriaMinutos: String(parametros.duracionAsesoriaMinutos ?? ''),
+    maximoPersonasAsesoria: String(parametros.maximoPersonasAsesoria ?? ''),
+    horasVigenciaQr: String(parametros.horasVigenciaQr ?? ''),
   };
 }
 
@@ -236,9 +236,9 @@ export function aParametros(datos: FormularioParametros): Parametros {
     horasPrestamoTablet: Number(datos.horasPrestamoTablet),
     diasMaximosTablet: Number(datos.diasMaximosTablet),
     minutosRecogerTablet: Number(datos.minutosRecogerTablet),
-    duracionAsesoriaMinutos: Number(datos.duracionAsesoriaMinutos),
-    maximoPersonasAsesoria: Number(datos.maximoPersonasAsesoria),
-    horasVigenciaQr: Number(datos.horasVigenciaQr),
+    duracionAsesoriaMinutos: datos.duracionAsesoriaMinutos === '' ? null : Number(datos.duracionAsesoriaMinutos),
+    maximoPersonasAsesoria: datos.maximoPersonasAsesoria === '' ? null : Number(datos.maximoPersonasAsesoria),
+    horasVigenciaQr: datos.horasVigenciaQr === '' ? null : Number(datos.horasVigenciaQr),
   };
 }
 export function horariosDeFecha(fecha: string, parametros: Parametros): HorarioAtencion[] {

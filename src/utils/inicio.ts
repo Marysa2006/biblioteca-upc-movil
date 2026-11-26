@@ -93,13 +93,9 @@ export function fotosPublicadas(fotos: FotoInicio[]): FotoInicio[] {
   return fotos.filter((foto) => foto.publicada).sort((a, b) => a.orden - b.orden);
 }
 
-/**
- * Lo que muestra el carrusel (#290, CA3): las fotos publicadas o, si todavía no llegan, si la
- * consulta falló (sin conexión) o no hay ninguna publicada, las del APK. Inicio nunca queda vacío.
- */
+/** Traduce las fotos publicadas del carrusel. */
 export function imagenesDelCarrusel(fotos: FotoInicio[] | undefined): ImagenInicio[] {
   const publicadas = fotosPublicadas(fotos ?? []);
-  if (publicadas.length === 0) return IMAGENES_INICIO;
   return publicadas.map((foto) => ({
     fuente: fuenteFotoInicio(foto.imagen),
     descripcion: foto.descripcion,

@@ -158,6 +158,7 @@ export async function abrirAsistencia(sesionId: string): Promise<AsistenciaSesio
   if (!vigente) {
     // #278: la vigencia la fija `Parametros.horasVigenciaQr` (`attendance-qr-hours`).
     const parametros = await obtenerParametros();
+    if (parametros.horasVigenciaQr == null) throw new ErrorApi(400, 'No hay una vigencia del QR configurada.');
     estado.codigo = codigoTemporal(sesionId);
     estado.vence = sumarMinutos(ahora, parametros.horasVigenciaQr * 60);
   }

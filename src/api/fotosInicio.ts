@@ -70,7 +70,6 @@ export async function obtenerFotosInicio(): Promise<FotoInicio[]> {
   if (!usaApi('fotosInicio')) {
     return simularRed(copia(fotosPublicadas(fotos)));
   }
-  // Sin fotos publicadas, el carrusel usa las que trae la app (#290).
   const publicadas = await peticion<FotoInicioBackend[]>('/portal/home-photos/');
   return publicadas.map(fotoInicioDesdeBackend);
 }
