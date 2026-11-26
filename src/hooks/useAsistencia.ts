@@ -49,11 +49,11 @@ export function useAbrirAsistencia() {
   });
 }
 
-export function useCodigoAsistencia(sesionId: string) {
+export function useCodigoAsistencia(sesionId: string, { permitirMock = false } = {}) {
   return useQuery({
     queryKey: [...claves.asistenciaSesion(sesionId), 'qr'],
     queryFn: () => obtenerCodigoAsistencia(sesionId),
-    enabled: usaApi('asistencia') && sesionId !== '',
+    enabled: (permitirMock || usaApi('asistencia')) && sesionId !== '',
   });
 }
 
@@ -87,7 +87,8 @@ export function useRegistrarAsistenciaQr() {
       return registrarAsistencia(codigo, usuario);
     },
     onSuccess: (asistencia) => {
-      if (!usaApi('asistencia')) queryClient.setQueryData(claves.asistenciaSesion(asistencia.sesionId), asistencia);
+      if (!usaApi('asistencia'))
+        queryClient.setQueryData(claves.asistenciaSesion(asistencia.sesionId), asistencia);
       queryClient.invalidateQueries({ queryKey: claves.asistenciasTodas });
       // El registro de uso (HU-25 y HU-26).
       queryClient.invalidateQueries({ queryKey: claves.estadisticasTodas });

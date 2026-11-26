@@ -161,7 +161,7 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
         ]}
       />
       <BotonEnlaceCita cita={cita} />
-      <BotonRegistrarAsistencia cita={cita} />
+      <BotonRegistrarAsistencia sesion={cita} tipo="cita" />
       <SeccionCalificacion tipo="cita" solicitud={cita} />
       {puedeCancelar ? (
         <View style={estilos.acciones}>
@@ -362,6 +362,7 @@ function InfoCapacitacion({ solicitud }: { solicitud: ResumenSolicitud }) {
           { etiqueta: 'Motivo', valor: capacitacion.motivo },
         ]}
       />
+      <BotonRegistrarAsistencia sesion={capacitacion} tipo="capacitacion" />
       <SeccionCalificacion tipo="capacitacion" solicitud={capacitacion} />
 
       <DialogoNoMeSirve

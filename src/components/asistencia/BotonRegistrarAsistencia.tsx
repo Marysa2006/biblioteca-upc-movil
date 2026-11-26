@@ -1,11 +1,4 @@
-/**
- * Registrar la asistencia a una asesoría con el QR del facilitador (HU-32, función plus).
- * Va en la tarjeta de Mis citas y en el detalle de la asesoría de Mis solicitudes.
- * - Solo aparece mientras se puede tomar la asistencia (puedeTomarAsistencia: la cita está
- *   aprobada y es de hoy, desde 30 minutos antes de empezar).
- * - Si la persona ya se registró, en lugar del botón dice "Ya registraste tu asistencia" (CA3).
- * Abre la pantalla del escáner, /asistencia/registrar.
- */
+/** Acceso al escáner desde una solicitud aprobada de hoy. */
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Button, Icon, Text } from 'react-native-paper';
@@ -14,15 +7,19 @@ import { useAsistencia } from '@/hooks/useAsistencia';
 import { usaApi } from '@/api/cliente';
 import { useSesion } from '@/store/sesion';
 import { coloresEstado, espacio, fuentes, radio } from '@/theme';
-import type { Cita } from '@/types';
-import { puedeTomarAsistencia } from '@/utils/asistencia';
+import type { ResumenSolicitud } from '@/types';
+import { esSesionAprobadaDeHoy } from '@/utils/asistencia';
 
-export function BotonRegistrarAsistencia({ cita }: { cita: Cita }) {
+type Props = {
+  sesion: Pick<ResumenSolicitud, 'id' | 'fecha' | 'estado'>;
+  tipo: 'cita' | 'capacitacion';
+};
+
+export function BotonRegistrarAsistencia({ sesion, tipo }: Props) {
   const conApi = usaApi('asistencia');
-  const enCurso = conApi ? cita.estado === 'aprobada' : puedeTomarAsistencia(cita);
-  // Solo se consulta la asistencia de las citas de hoy que la admiten.
-  const asistencia = useAsistencia(enCurso && !conApi ? cita.id : '');
   const usuario = useSesion((estado) => estado.usuario);
+  const enCurso = esSesionAprobadaDeHoy(sesion);
+  const asistencia = useAsistencia(usuario && enCurso && !conApi ? sesion.id : '');
 
   if (!enCurso || !usuario) return null;
 
@@ -46,11 +43,11 @@ export function BotonRegistrarAsistencia({ cita }: { cita: Cita }) {
       mode="contained"
       icon="qrcode-scan"
       onPress={() =>
-        router.push({ pathname: '/asistencia/registrar', params: { citaId: cita.id } })
+        router.push({ pathname: '/asistencia/registrar', params: { sesionId: sesion.id, tipo } })
       }
       contentStyle={estilos.contenidoBoton}
       accessibilityRole="button"
-      accessibilityLabel={`Registrar tu asistencia a la asesoría de ${cita.tema} con el código QR`}
+      accessibilityLabel="Registrar asistencia con QR"
     >
       Registrar asistencia
     </Button>
@@ -72,5 +69,5 @@ const estilos = StyleSheet.create({
     color: coloresEstado.aprobada.texto,
     fontFamily: fuentes.seminegrita,
   },
-  contenidoBoton: { paddingVertical: espacio.xs },
+  contenidoBoton: { minHeight: 44 },
 });
