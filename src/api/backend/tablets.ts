@@ -11,8 +11,16 @@ import { firmaDesdeBackend, firmaHaciaBackend, type FirmaBackend } from './firma
  * - Un 409 (`NoTablet`) trae los siguientes horarios con tablets (`next_slots`).
  */
 import type {
-  CondicionTablet, DatosSolicitante, EstadoEquipo, EstadoFranja, EstadoPrestamo,
-  EstadoTablet, FirmaElectronica, Prestamo, RegistroTablet, Tablet,
+  CondicionTablet,
+  DatosSolicitante,
+  EstadoEquipo,
+  EstadoFranja,
+  EstadoPrestamo,
+  EstadoTablet,
+  FirmaElectronica,
+  Prestamo,
+  RegistroTablet,
+  Tablet,
 } from '@/types';
 import { aMinutos } from '@/utils/franjas';
 
@@ -148,13 +156,20 @@ export type TabletBackend = {
 };
 
 const ESTADO_TABLET_DESDE: Record<EstadoTabletBackend, EstadoTablet> = {
-  OPERATIONAL: 'disponible', MAINTENANCE: 'mantenimiento', DAMAGED: 'mantenimiento', RETIRED: 'de_baja',
+  OPERATIONAL: 'disponible',
+  MAINTENANCE: 'mantenimiento',
+  DAMAGED: 'mantenimiento',
+  RETIRED: 'de_baja',
 };
 const CONDICION_DESDE: Record<CondicionBackend, CondicionTablet> = {
-  GOOD: 'bueno', MINOR_ISSUES: 'regular', DAMAGED: 'danado',
+  GOOD: 'bueno',
+  MINOR_ISSUES: 'regular',
+  DAMAGED: 'danado',
 };
 const EQUIPO_DESDE: Record<EstadoEquipoBackend, EstadoEquipo> = {
-  NEW: 'nuevo', OPTIMAL: 'optimo', OTHER: 'otro',
+  NEW: 'nuevo',
+  OPTIMAL: 'optimo',
+  OTHER: 'otro',
 };
 const EQUIPO_HACIA = { nuevo: 'NEW', optimo: 'OPTIMAL', otro: 'OTHER' } as const;
 const CONDICION_HACIA = { bueno: 'GOOD', regular: 'MINOR_ISSUES', danado: 'DAMAGED' } as const;
@@ -166,7 +181,10 @@ export function estadoTabletHaciaBackend(estado: EstadoTablet): EstadoTabletBack
 }
 
 function leerAccesorios(valor?: string) {
-  return (valor ?? '').split(/[,;\n]+/).map((accesorio) => accesorio.trim()).filter(Boolean);
+  return (valor ?? '')
+    .split(/[,;\n]+/)
+    .map((accesorio) => accesorio.trim())
+    .filter(Boolean);
 }
 
 export function tabletInventarioDesdeBackend(tablet: TabletBackend, prestada = false): Tablet {
@@ -176,8 +194,10 @@ export function tabletInventarioDesdeBackend(tablet: TabletBackend, prestada = f
     serial: tablet.serial,
     modelo: tablet.model,
     accesorios: leerAccesorios(tablet.accessories),
-    estado: tablet.operational_status === 'OPERATIONAL' && prestada
-      ? 'en_prestamo' : ESTADO_TABLET_DESDE[tablet.operational_status],
+    estado:
+      tablet.operational_status === 'OPERATIONAL' && prestada
+        ? 'en_prestamo'
+        : ESTADO_TABLET_DESDE[tablet.operational_status],
     tipo: tablet.device_type || undefined,
     marca: tablet.brand || undefined,
     valor: tablet.asset_value ?? undefined,
@@ -251,7 +271,10 @@ function registroDesdeBackend(registro: RegistroBackend, fecha: string): Registr
   };
 }
 
-export function prestamoPersonalDesdeBackend(registro: PrestamoPersonalBackend, tabletId?: string): Prestamo {
+export function prestamoPersonalDesdeBackend(
+  registro: PrestamoPersonalBackend,
+  tabletId?: string,
+): Prestamo {
   const { delivery, return_record: devolucion } = registro;
   const firma = delivery?.signature;
   return {
@@ -268,28 +291,38 @@ export function prestamoPersonalDesdeBackend(registro: PrestamoPersonalBackend, 
       programa: registro.program || registro.requester_program || undefined,
       semestre: Number(registro.semester) || undefined,
     },
-    entrega: delivery ? {
-      ...registroDesdeBackend(delivery, delivery.delivered_at),
-      firmaUsuario: firmaDesdeBackend(firma),
-    } : undefined,
-    devolucion: devolucion ? {
-      ...registroDesdeBackend(devolucion, devolucion.returned_at),
-      tardia: devolucion.is_late,
-      retrasoMinutos: devolucion.late_minutes,
-    } : undefined,
+    entrega: delivery
+      ? {
+          ...registroDesdeBackend(delivery, delivery.delivered_at),
+          firmaUsuario: firmaDesdeBackend(firma),
+        }
+      : undefined,
+    devolucion: devolucion
+      ? {
+          ...registroDesdeBackend(devolucion, devolucion.returned_at),
+          tardia: devolucion.is_late,
+          retrasoMinutos: devolucion.late_minutes,
+        }
+      : undefined,
     estadoEquipo: delivery?.format_condition ? EQUIPO_DESDE[delivery.format_condition] : undefined,
     notas: delivery?.observations || undefined,
   };
 }
 
-export function registroTabletHaciaBackend(datos: Pick<RegistroTablet, 'condicion' | 'accesorios'>) {
-  return { device_condition: CONDICION_HACIA[datos.condicion], accessories: datos.accesorios.join('\n') };
+export function registroTabletHaciaBackend(
+  datos: Pick<RegistroTablet, 'condicion' | 'accesorios'>,
+) {
+  return {
+    device_condition: CONDICION_HACIA[datos.condicion],
+    accessories: datos.accesorios.join('\n'),
+  };
 }
 
 export function entregaTabletHaciaBackend(
   codigo: string,
   datos: Pick<RegistroTablet, 'condicion' | 'accesorios' | 'firmaUsuario'> & {
-    estadoEquipo?: EstadoEquipo; notas?: string;
+    estadoEquipo?: EstadoEquipo;
+    notas?: string;
   },
 ) {
   const firma: FirmaElectronica | undefined = datos.firmaUsuario;
@@ -311,4 +344,42 @@ export function alternativasTabletDesdeBackend(
     horaInicio: horaDesdeBackend(tramo.start),
     horaLimite: horaDesdeBackend(tramo.end),
   }));
+}
+
+export const TIPOS_INCIDENCIA_TABLET = {
+  OVERDUE: 'Préstamo vencido',
+  LATE_RETURN: 'Devolución tardía',
+  DAMAGE: 'Daño',
+  MISSING_ACCESSORY: 'Accesorio faltante',
+  LOSS: 'Pérdida',
+  OTHER: 'Otra',
+} as const;
+
+export type TipoIncidenciaTablet = keyof typeof TIPOS_INCIDENCIA_TABLET;
+export type IncidenciaTabletBackend = {
+  id: number;
+  loan_id: number;
+  request_id: number;
+  tablet: string | null;
+  requester: string;
+  incident_type: TipoIncidenciaTablet;
+  incident_type_display: string;
+  description: string;
+  reported_by: string | null;
+  created_at: string;
+};
+
+export function incidenciaTabletDesdeBackend(incidencia: IncidenciaTabletBackend) {
+  return {
+    id: String(incidencia.id),
+    prestamoId: String(incidencia.loan_id),
+    solicitudId: String(incidencia.request_id),
+    tablet: incidencia.tablet,
+    solicitante: incidencia.requester,
+    tipo: incidencia.incident_type,
+    etiqueta: incidencia.incident_type_display,
+    descripcion: incidencia.description,
+    reporto: incidencia.reported_by,
+    fechaHora: fechaHoraLocal(incidencia.created_at),
+  };
 }

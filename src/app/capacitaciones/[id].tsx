@@ -9,8 +9,8 @@
  * - CA2: rechazar exige el motivo.
  * - CA3: aprobada y sin responsable, cualquiera con `formacion` puede tomarla ("Asignarme") y la
  *   administración puede asignarla a quien elija; solo la administración cambia al responsable.
- *   Después de dictarla, la marca como realizada el responsable o la administración, con el
- *   resultado (en la API, cerrarCapacitacion). Queda Realizada y se notifica al usuario.
+ *   Después de dictarla, la marca como finalizada el responsable o la administración, con el
+ *   resultado (en la API, cerrarCapacitacion). Queda Finalizada y se notifica al usuario.
  *   Las reglas están en src/utils/capacitaciones.ts (puedeTomarCapacitacion y las demás).
  * - CA4: con nueva fecha, un aviso dice que espera la respuesta del usuario, que la acepta en
  *   Mis solicitudes.
@@ -145,8 +145,16 @@ function Detalle({ id }: { id: string }) {
         <AvisoNuevaFecha solicitud={solicitud} />
         <ListaDatos datos={datosDe(solicitud)} />
         {usaApi('asistencia') && solicitud.estado === 'aprobada' ? (
-          <Button mode="contained-tonal" icon="qrcode"
-            onPress={() => router.push({ pathname: '/asistencia/[id]', params: { id: solicitud.id, tipo: 'capacitacion' } })}>
+          <Button
+            mode="contained-tonal"
+            icon="qrcode"
+            onPress={() =>
+              router.push({
+                pathname: '/asistencia/[id]',
+                params: { id: solicitud.id, tipo: 'capacitacion' },
+              })
+            }
+          >
             Tomar asistencia
           </Button>
         ) : null}
@@ -473,7 +481,7 @@ function BarraAcciones({
               contentStyle={estilos.contenidoBoton}
               labelStyle={estilos.textoBoton}
               accessibilityRole="button"
-              accessibilityLabel="Marcar como realizada y registrar el resultado"
+              accessibilityLabel="Marcar como finalizada y registrar el resultado"
               accessibilityHint="Hazlo después de dictar la capacitación"
             >
               {NOMBRE_ACCION_CAPACITACION.cerrar}
@@ -498,15 +506,21 @@ function BarraAcciones({
       ) : null}
 
       {botones.cancelar ? (
-        <Button mode="outlined" disabled={ocupado || cancelar.isPending} onPress={() => {
-          cancelar.reset();
-          setDialogo('cancelar');
-        }}>
+        <Button
+          mode="outlined"
+          disabled={ocupado || cancelar.isPending}
+          onPress={() => {
+            cancelar.reset();
+            setDialogo('cancelar');
+          }}
+        >
           Cancelar capacitación
         </Button>
       ) : null}
       <DialogoTextoCapacitacion
-        tipo={dialogo === 'rechazar' || dialogo === 'cerrar' || dialogo === 'cancelar' ? dialogo : null}
+        tipo={
+          dialogo === 'rechazar' || dialogo === 'cerrar' || dialogo === 'cancelar' ? dialogo : null
+        }
         solicitud={solicitud}
         guardando={rechazar.isPending || cerrar.isPending || cancelar.isPending}
         mensajeError={errorDialogo}
@@ -516,14 +530,15 @@ function BarraAcciones({
                 { id: solicitud.id, motivo: texto },
                 { onSuccess: listo(avisoCapacitacion('rechazar', solicitud)) },
               )
-            : dialogo === 'cancelar' ? cancelar.mutate(
-                { id: solicitud.id, motivo: texto },
-                { onSuccess: listo('Cancelaste la capacitación. Le avisamos a la persona.') },
-              )
-            : cerrar.mutate(
-                { id: solicitud.id, resultado: texto, participantesReales },
-                { onSuccess: listo(avisoCapacitacion('cerrar', solicitud)) },
-              )
+            : dialogo === 'cancelar'
+              ? cancelar.mutate(
+                  { id: solicitud.id, motivo: texto },
+                  { onSuccess: listo('Cancelaste la capacitación. Le avisamos a la persona.') },
+                )
+              : cerrar.mutate(
+                  { id: solicitud.id, resultado: texto, participantesReales },
+                  { onSuccess: listo(avisoCapacitacion('cerrar', solicitud)) },
+                )
         }
         onCerrar={() => setDialogo(null)}
       />

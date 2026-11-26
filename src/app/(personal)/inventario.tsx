@@ -8,17 +8,16 @@
  * Esta pantalla solo compone: el contenido de cada sección se cambia en su componente, no aquí,
  * para que dos personas no editen el mismo archivo.
  */
-import { router } from 'expo-router';
 import { useState, type ComponentType } from 'react';
-import { Button } from 'react-native-paper';
 
+import { SeccionIncidencias } from '@/components/inventario/SeccionIncidencias';
 import { BotonRegistrarTablet, SeccionTablets } from '@/components/inventario/SeccionTablets';
 import { SelectorSeccion } from '@/components/gestion/SelectorSeccion';
 import { EstadoVacio, Pantalla } from '@/components/ui';
 import { useRol } from '@/hooks/useRol';
 import type { Permiso } from '@/types';
 
-type ValorSeccion = 'tablets';
+type ValorSeccion = 'tablets' | 'incidencias';
 
 type Seccion = {
   valor: ValorSeccion;
@@ -36,6 +35,12 @@ const SECCIONES: Seccion[] = [
     etiqueta: 'Tablets',
     Componente: SeccionTablets,
     Flotante: BotonRegistrarTablet,
+    permisos: ['tablets'],
+  },
+  {
+    valor: 'incidencias',
+    etiqueta: 'Incidencias',
+    Componente: SeccionIncidencias,
     permisos: ['tablets'],
   },
 ];
@@ -69,19 +74,6 @@ export default function Inventario() {
       ) : (
         <EstadoVacio mensaje="Tu rol no tiene secciones de inventario por ahora." />
       )}
-
-      {/* Spike de cámara (#84): solo en desarrollo, para probar la lectura de códigos de HU-31. */}
-      {__DEV__ ? (
-        <Button
-          mode="outlined"
-          icon="barcode-scan"
-          onPress={() => router.push('/pruebas/camara')}
-          accessibilityRole="button"
-          accessibilityLabel="Abrir la prueba de cámara para leer códigos"
-        >
-          Prueba de cámara (desarrollo)
-        </Button>
-      ) : null}
     </Pantalla>
   );
 }

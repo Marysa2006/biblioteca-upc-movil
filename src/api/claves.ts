@@ -5,6 +5,7 @@
  * consultan las pantallas. Las claves de la iteración 1 quedaron aquí centralizadas y las
  * de la iteración 2 se suman desde el contrato de tipos.
  */
+import type { FiltrosIncidenciasTablet } from '@/api/tablets';
 import type { EstadoPrestamo, EstadoSolicitud } from '@/types';
 
 export const claves = {
@@ -14,6 +15,7 @@ export const claves = {
   serviciosAdministracion: ['servicios', 'administracion'] as const,
   contenidos: ['contenidos'] as const,
   parametros: ['parametros'] as const,
+  plazoCancelacion: (conApi: boolean) => ['parametros', 'cancelacion', conApi] as const,
   usuarios: ['usuarios'] as const,
   /**
    * El directorio del personal de la biblioteca (#256). Va aparte de `usuarios` porque no
@@ -90,6 +92,8 @@ export const claves = {
   disponibilidadTabletsTodas: ['tablets', 'disponibilidad'] as const,
   condicionesTablet: ['tablets', 'condiciones'] as const,
   prestamosTablet: ['prestamos'] as const,
+  incidenciasTablets: (filtros: FiltrosIncidenciasTablet) =>
+    ['prestamos', 'incidencias', filtros] as const,
   prestamosPorEstado: (estado: EstadoPrestamo | 'todas') => ['prestamos', estado] as const,
   /** Préstamos del usuario de la sesión (HU-22). */
   misPrestamos: (usuarioId?: string) => ['prestamos', 'mios', usuarioId] as const,

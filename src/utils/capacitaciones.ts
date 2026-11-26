@@ -74,8 +74,7 @@ const camposCapacitacion = {
     .string()
     .trim()
     .refine(
-      (valor) =>
-        /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= MAXIMO_PARTICIPANTES,
+      (valor) => /^\d+$/.test(valor) && Number(valor) >= 1 && Number(valor) <= MAXIMO_PARTICIPANTES,
       { error: MENSAJE_MAXIMO_PARTICIPANTES },
     ),
 };
@@ -232,7 +231,7 @@ export const NOMBRE_ACCION_CAPACITACION: Record<AccionCapacitacion, string> = {
   nueva_fecha: 'Otra fecha',
   rechazar: 'Rechazar',
   responsable: 'Asignar responsable',
-  cerrar: 'Marcar como realizada',
+  cerrar: 'Marcar como finalizada',
 };
 
 /**
@@ -240,7 +239,7 @@ export const NOMBRE_ACCION_CAPACITACION: Record<AccionCapacitacion, string> = {
  * capacitación asignada ni se la pasa a otro sin que lo decida la administración:
  * - sin responsable, cualquiera del personal con `formacion` puede tomarla ("Asignarme");
  * - la administración la asigna a quien elija y es la única que cambia al responsable;
- * - la marca como realizada el responsable o la administración.
+ * - la marca como finalizada el responsable o la administración.
  * La regla vive en la interfaz: el Backend también debe validarla.
  */
 type QuienGestiona = { usuarioId: string | undefined; esAdministrador: boolean };
@@ -290,7 +289,7 @@ export function avisoCapacitacion(
         ? `Responsable asignado: ${responsable}. Se le notificó.`
         : 'Responsable asignado.';
     case 'cerrar':
-      return `Capacitación marcada como realizada. Se notificó a ${persona}.`;
+      return `Capacitación marcada como finalizada. Se notificó a ${persona}.`;
   }
 }
 

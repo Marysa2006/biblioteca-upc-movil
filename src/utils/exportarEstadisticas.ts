@@ -7,17 +7,21 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { hoyISO } from '@/utils/fechas';
-import { nombreArchivoCsv, registrosACsv } from '@/utils/estadisticas';
-import type { FiltrosEstadisticas, RegistroUso } from '@/types';
+import {
+  agregarIndicadoresAlCsv,
+  BOM_UTF8,
+  nombreArchivoCsv,
+  registrosACsv,
+  SEPARADOR_CSV,
+} from '@/utils/estadisticas';
+import type { FiltrosEstadisticas, IndicadoresUso, RegistroUso } from '@/types';
 import { descargarEstadisticas } from '@/api/estadisticas';
 
-export async function exportarEstadisticasBackend(filtros: FiltrosEstadisticas, formato: 'csv' | 'pdf') {
-  const respuesta = await descargarEstadisticas(filtros, formato);
-  const datos = new Uint8Array(await respuesta.arrayBuffer());
-  const nombre = `estadisticas_${hoyISO()}.${formato}`;
-  const mimeType = formato === 'pdf' ? 'application/pdf' : 'text/csv';
+async function guardarYCompartirCsv(datos: string) {
+  const nombre = nombreArchivoCsv(hoyISO());
+  const mimeType = 'text/csv';
   if (typeof document !== 'undefined' && typeof URL.createObjectURL === 'function') {
-    const url = URL.createObjectURL(new Blob([datos], { type: mimeType }));
+    const url = URL.createObjectURL(new Blob([datos], { type: mimeType + ';charset=utf-8' }));
     const enlace = document.createElement('a');
     enlace.href = url;
     enlace.download = nombre;
@@ -29,34 +33,28 @@ export async function exportarEstadisticasBackend(filtros: FiltrosEstadisticas, 
   archivo.create({ overwrite: true });
   archivo.writeSync(datos);
   const compartido = await Sharing.isAvailableAsync();
-  if (compartido) await Sharing.shareAsync(archivo.uri, { mimeType, dialogTitle: 'Compartir las estadísticas' });
+  if (compartido) {
+    await Sharing.shareAsync(archivo.uri, {
+      mimeType,
+      dialogTitle: 'Compartir las estadísticas',
+      UTI: 'public.comma-separated-values-text',
+    });
+  }
   return { archivo: nombre, compartido };
 }
 
-/**
- * Guarda los registros como CSV y abre el menú del sistema para compartirlo o enviarlo.
- * Devuelve el nombre del archivo. Si el sistema no puede compartir, lo deja guardado y lo dice.
- */
-export async function exportarRegistrosCsv(
-  registros: RegistroUso[],
-): Promise<{ archivo: string; compartido: boolean }> {
-  const nombre = nombreArchivoCsv(hoyISO());
-  const archivo = new File(Paths.cache, nombre);
-  if (archivo.exists) {
-    archivo.delete();
-  }
-  archivo.create({ intermediates: true });
-  // SDK 58: write() es asíncrono; writeSync() deja el archivo listo antes de compartirlo.
-  archivo.writeSync(registrosACsv(registros));
+export async function exportarCsvBackend(
+  filtros: FiltrosEstadisticas,
+  indicadores: IndicadoresUso,
+) {
+  const respuesta = await descargarEstadisticas(filtros, 'csv');
+  const csv = await respuesta.text();
+  const texto = csv.startsWith(BOM_UTF8) ? csv : BOM_UTF8 + csv;
+  return guardarYCompartirCsv(agregarIndicadoresAlCsv(texto, indicadores, ','));
+}
 
-  const disponible = await Sharing.isAvailableAsync();
-  if (!disponible) {
-    return { archivo: nombre, compartido: false };
-  }
-  await Sharing.shareAsync(archivo.uri, {
-    mimeType: 'text/csv',
-    dialogTitle: 'Compartir las estadísticas',
-    UTI: 'public.comma-separated-values-text',
-  });
-  return { archivo: nombre, compartido: true };
+export function exportarRegistrosCsv(registros: RegistroUso[], indicadores: IndicadoresUso) {
+  return guardarYCompartirCsv(
+    agregarIndicadoresAlCsv(registrosACsv(registros), indicadores, SEPARADOR_CSV),
+  );
 }

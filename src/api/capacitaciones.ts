@@ -34,6 +34,7 @@ import { aDatosSolicitante, problemaSolicitante, valoresSolicitante } from '@/ut
 import { ahoraFechaHora } from '@/utils/tablets';
 import { aNombrePropio, normalizarTexto } from '@/utils/texto';
 
+import { puedeCancelarSolicitud } from '@/utils/cancelacionSolicitud';
 import { useSesion } from '@/store/sesion';
 import { describirRoles, tienePermiso } from '@/utils/roles';
 
@@ -55,7 +56,7 @@ import { historialDesdeBackend } from './backend/solicitudes';
 import { crearNotificacion } from './notificaciones';
 import { LINEAS_FORMACION, SOLICITUDES_CAPACITACION } from './mocks/capacitaciones';
 import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
-import { obtenerParametros } from './parametros';
+import { obtenerParametros, obtenerPlazoCancelacion } from './parametros';
 
 /** Copia de una solicitud para no exponer el almacén mutable. */
 function copiarSolicitud(solicitud: SolicitudCapacitacion): SolicitudCapacitacion {
@@ -206,9 +207,7 @@ export function editarLinea(id: string, datos: DatosLinea): Promise<LineaFormaci
  * Cuántas solicitudes activas (pendientes, aprobadas o con nueva fecha) tiene la línea.
  * La pantalla lo consulta antes de desactivar para advertir (CA3).
  */
-export async function solicitudesActivasDeLinea(
-  lineaId: string,
-): Promise<SolicitudCapacitacion[]> {
+export async function solicitudesActivasDeLinea(lineaId: string): Promise<SolicitudCapacitacion[]> {
   if (usaApi('capacitaciones')) {
     // La bandeja del personal, filtrada por la línea; los estados activos se filtran aquí.
     const bandeja = await peticionTodas(
@@ -220,8 +219,7 @@ export async function solicitudesActivasDeLinea(
   return simularRed(
     solicitudes
       .filter(
-        (solicitud) =>
-          solicitud.lineaId === lineaId && ESTADOS_ACTIVOS.includes(solicitud.estado),
+        (solicitud) => solicitud.lineaId === lineaId && ESTADOS_ACTIVOS.includes(solicitud.estado),
       )
       .map(copiarSolicitud),
   );
@@ -588,12 +586,14 @@ export function obtenerSolicitudesCapacitacion(
   estado: EstadoSolicitud | 'todas' = 'todas',
 ): Promise<SolicitudCapacitacion[]> {
   if (usaApi('capacitaciones')) {
-    return peticionTodas(RUTA_GESTION_CAPACITACIONES, capacitacionGestionDesdeBackend)
-      .then((lista) => estado === 'todas' ? lista : lista.filter((s) => s.estado === estado));
+    return peticionTodas(RUTA_GESTION_CAPACITACIONES, capacitacionGestionDesdeBackend).then(
+      (lista) => (estado === 'todas' ? lista : lista.filter((s) => s.estado === estado)),
+    );
   }
-  const lista = (estado === 'todas'
-    ? solicitudes
-    : solicitudes.filter((solicitud) => solicitud.estado === estado)
+  const lista = (
+    estado === 'todas'
+      ? solicitudes
+      : solicitudes.filter((solicitud) => solicitud.estado === estado)
   )
     .slice()
     .sort((a, b) => b.creada.localeCompare(a.creada));
@@ -612,23 +612,69 @@ export async function obtenerSolicitudCapacitacion(id: string) {
       historial: historialDesdeBackend(detalle.id, 'TRAINING', detalle.history ?? []),
     };
   }
-  return { solicitud: copiarSolicitud(buscarSolicitud(id)), historial: historialDePrueba('capacitacion', id) };
+  return {
+    solicitud: copiarSolicitud(buscarSolicitud(id)),
+    historial: historialDePrueba('capacitacion', id),
+  };
 }
 
 export async function obtenerResponsablesCapacitacion() {
   if (usaApi('capacitaciones')) {
-    const personas = await peticion<ResponsableBackend[]>(`${RUTA_GESTION_CAPACITACIONES}responsibles/`);
+    const personas = await peticion<ResponsableBackend[]>(
+      `${RUTA_GESTION_CAPACITACIONES}responsibles/`,
+    );
     return personas.map((persona) => ({ id: persona.id, nombre: persona.name, roles: '' }));
   }
-  return USUARIOS_DIRECTORIO.filter((persona) => tienePermiso(persona, 'formacion'))
-    .map((persona) => ({ id: persona.id, nombre: persona.nombre, roles: describirRoles(persona) }));
+  return USUARIOS_DIRECTORIO.filter((persona) => tienePermiso(persona, 'formacion')).map(
+    (persona) => ({ id: persona.id, nombre: persona.nombre, roles: describirRoles(persona) }),
+  );
 }
 
 async function modificarCapacitacion(id: string, accion: string, cuerpo: object) {
-  return capacitacionGestionDesdeBackend(await peticion<CapacitacionGestionBackend>(
-    `${RUTA_GESTION_CAPACITACIONES}${encodeURIComponent(id)}/${accion}/`,
-    { method: 'POST', body: JSON.stringify(cuerpo) },
-  ));
+  return capacitacionGestionDesdeBackend(
+    await peticion<CapacitacionGestionBackend>(
+      `${RUTA_GESTION_CAPACITACIONES}${encodeURIComponent(id)}/${accion}/`,
+      { method: 'POST', body: JSON.stringify(cuerpo) },
+    ),
+  );
+}
+
+export async function cancelarMiCapacitacion(
+  id: string,
+  motivo: string,
+  usuario: Usuario,
+): Promise<void> {
+  const reason = motivo.trim();
+  if (!reason) throw new ErrorApi(400, 'Indica el motivo de la cancelación.');
+  if (usaApi('capacitaciones')) {
+    await peticion('/trainings/requests/' + encodeURIComponent(id) + '/cancel/', {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+    return;
+  }
+  const plazo = await obtenerPlazoCancelacion(false);
+  const capacitacion = buscarSolicitud(id);
+  if (capacitacion.solicitante.id !== usuario.id)
+    throw new ErrorApi(404, 'No encontramos tu capacitación.');
+  if (
+    !puedeCancelarSolicitud(
+      'capacitacion',
+      capacitacion.estado,
+      capacitacion.fecha,
+      capacitacion.hora,
+      plazo,
+    )
+  ) {
+    throw new ErrorApi(400, 'Esta capacitación ya no se puede cancelar.');
+  }
+  guardarSolicitud(
+    { ...capacitacion, estado: 'cancelada', motivo: reason },
+    'Capacitación cancelada',
+    reason,
+  );
+  registrarEvento('capacitacion', id, 'cancelada', usuario.nombre, reason);
+  await simularRed(null);
 }
 
 export async function cancelarCapacitacionPersonal(id: string, motivo: string) {
@@ -639,12 +685,20 @@ export async function cancelarCapacitacionPersonal(id: string, motivo: string) {
   if (!ESTADOS_GESTIONABLES.includes(solicitud.estado) && solicitud.estado !== 'aprobada') {
     throw new ErrorApi(400, 'Esta capacitación ya no se puede cancelar.');
   }
-  registrarEvento('capacitacion', id, 'cancelada', useSesion.getState().usuario?.nombre ?? AUTOR_PERSONAL, reason);
-  return simularRed(guardarSolicitud(
-    { ...solicitud, estado: 'cancelada', motivo: reason },
-    'Capacitación cancelada',
+  registrarEvento(
+    'capacitacion',
+    id,
+    'cancelada',
+    useSesion.getState().usuario?.nombre ?? AUTOR_PERSONAL,
     reason,
-  ));
+  );
+  return simularRed(
+    guardarSolicitud(
+      { ...solicitud, estado: 'cancelada', motivo: reason },
+      'Capacitación cancelada',
+      reason,
+    ),
+  );
 }
 
 /** Aprueba una solicitud pendiente (CA1). */
@@ -673,7 +727,8 @@ export async function rechazarCapacitacion(
   id: string,
   motivo: string,
 ): Promise<SolicitudCapacitacion> {
-  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'reject', { reason: motivo.trim() });
+  if (usaApi('capacitaciones'))
+    return modificarCapacitacion(id, 'reject', { reason: motivo.trim() });
   const solicitud = buscarSolicitud(id);
   if (!ESTADOS_GESTIONABLES.includes(solicitud.estado)) {
     throw new ErrorApi(400, 'Esta solicitud ya no se puede rechazar.');
@@ -756,7 +811,8 @@ export async function asignarResponsable(
   id: string,
   usuarioId: string,
 ): Promise<SolicitudCapacitacion> {
-  if (usaApi('capacitaciones')) return modificarCapacitacion(id, 'assign', { responsible: usuarioId });
+  if (usaApi('capacitaciones'))
+    return modificarCapacitacion(id, 'assign', { responsible: usuarioId });
   const solicitud = buscarSolicitud(id);
   if (solicitud.estado !== 'aprobada') {
     throw new ErrorApi(400, 'Solo se asigna responsable a una solicitud aprobada.');
@@ -771,7 +827,13 @@ export async function asignarResponsable(
     responsable: persona.nombre,
   };
   solicitudes = solicitudes.map((actual) => (actual.id === id ? actualizada : actual));
-  registrarEvento('capacitacion', id, 'aprobada', AUTOR_PERSONAL, `Responsable: ${persona.nombre}.`);
+  registrarEvento(
+    'capacitacion',
+    id,
+    'aprobada',
+    AUTOR_PERSONAL,
+    `Responsable: ${persona.nombre}.`,
+  );
   // La persona asignada se entera en su campana (HU-12 UI). No es un cambio de estado: no
   // toca el registro de uso. Si se reasigna a la misma persona, no se le avisa otra vez.
   if (solicitud.responsableId !== persona.id) {
@@ -792,12 +854,17 @@ export async function cerrarCapacitacion(
   participantesReales?: number,
 ): Promise<SolicitudCapacitacion> {
   if (usaApi('capacitaciones')) {
-    if (participantesReales == null || !Number.isInteger(participantesReales) ||
-        participantesReales < 0 || participantesReales > 32767) {
+    if (
+      participantesReales == null ||
+      !Number.isInteger(participantesReales) ||
+      participantesReales < 0 ||
+      participantesReales > 32767
+    ) {
       throw new ErrorApi(400, 'Indica el número de asistentes reales.');
     }
     return modificarCapacitacion(id, 'close', {
-      result: resultado.trim(), actual_participants: participantesReales,
+      result: resultado.trim(),
+      actual_participants: participantesReales,
     });
   }
   const solicitud = buscarSolicitud(id);
@@ -814,10 +881,14 @@ export async function cerrarCapacitacion(
   if (texto.length > LARGO_MAXIMO_TEXTO) {
     throw new ErrorApi(400, `El resultado no puede pasar de ${LARGO_MAXIMO_TEXTO} caracteres.`);
   }
-  const actualizada: SolicitudCapacitacion = { ...solicitud, estado: 'realizada', resultado: texto };
+  const actualizada: SolicitudCapacitacion = {
+    ...solicitud,
+    estado: 'realizada',
+    resultado: texto,
+  };
   const guardada = guardarSolicitud(
     actualizada,
-    'Capacitación realizada',
+    'Capacitación finalizada',
     `Tu capacitación de ${solicitud.linea} quedó cerrada. Resultado: ${texto}`,
   );
   registrarEvento('capacitacion', id, 'realizada', AUTOR_PERSONAL, texto);
@@ -857,7 +928,10 @@ export async function responderNuevaFecha(
     estado,
     // Al aceptar, la fecha propuesta pasa a ser la de la cita.
     ...(acepta
-      ? { fecha: solicitud.fechaPropuesta ?? solicitud.fecha, hora: solicitud.horaPropuesta ?? solicitud.hora }
+      ? {
+          fecha: solicitud.fechaPropuesta ?? solicitud.fecha,
+          hora: solicitud.horaPropuesta ?? solicitud.hora,
+        }
       : { motivo: 'No aceptó la nueva fecha propuesta.' }),
     fechaPropuesta: undefined,
     horaPropuesta: undefined,
@@ -909,7 +983,7 @@ export async function calificarCapacitacion(
     throw new ErrorApi(403, 'Solo quien pidió la capacitación puede calificarla.');
   }
   if (solicitud.estado !== 'realizada') {
-    throw new ErrorApi(400, 'Solo puedes calificar una capacitación realizada.');
+    throw new ErrorApi(400, 'Solo puedes calificar una capacitación finalizada.');
   }
   if (solicitud.calificacion) {
     throw new ErrorApi(400, 'Ya calificaste esta capacitación.');

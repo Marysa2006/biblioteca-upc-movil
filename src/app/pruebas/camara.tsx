@@ -1,7 +1,7 @@
 /**
  * Spike de cámara (iteración 2, chore/spike-camara): prueba en Expo Go la lectura de QR y
  * códigos de barras antes de necesitarla en HU-31 (tablets) y HU-32/HU-33 (asistencia con QR).
- * Solo existe en desarrollo (__DEV__): en el APK muestra un aviso y no abre la cámara.
+ * Solo existe en desarrollo (__DEV__): en el APK redirige a Inicio.
  *
  * Compara dos formas de leer:
  * - Cámara dentro de la app (CameraView + onBarcodeScanned), con nuestro diseño.
@@ -10,6 +10,7 @@
  * Los resultados se anotan en docs/spike-camara.md.
  */
 import { CameraView, type BarcodeType } from 'expo-camera';
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons, Text, TextInput } from 'react-native-paper';
@@ -24,7 +25,19 @@ type GrupoTipos = 'qr' | 'barras' | 'todos';
 const TIPOS: Record<GrupoTipos, BarcodeType[]> = {
   qr: ['qr'],
   barras: ['code128', 'code39', 'ean13', 'ean8', 'upc_a', 'upc_e', 'itf14', 'codabar'],
-  todos: ['qr', 'code128', 'code39', 'ean13', 'ean8', 'upc_a', 'upc_e', 'itf14', 'codabar', 'datamatrix', 'pdf417'],
+  todos: [
+    'qr',
+    'code128',
+    'code39',
+    'ean13',
+    'ean8',
+    'upc_a',
+    'upc_e',
+    'itf14',
+    'codabar',
+    'datamatrix',
+    'pdf417',
+  ],
 };
 
 type Origen = 'cámara' | 'escáner del sistema' | 'a mano';
@@ -33,10 +46,16 @@ type Registro = LecturaCodigo & { id: number; origen: Origen; hora: string };
 const MAXIMO_REGISTROS = 10;
 
 function horaActual(): string {
-  return new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  return new Date().toLocaleTimeString('es-CO', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
 }
 
 export default function PruebaCamara() {
+  if (!__DEV__) return <Redirect href="/" />;
+
   return (
     <>
       <EncabezadoApilado titulo="Prueba de cámara" />
@@ -46,11 +65,7 @@ export default function PruebaCamara() {
         conEncabezado
         conTeclado
       >
-        {__DEV__ ? (
-          <Prueba />
-        ) : (
-          <EstadoVacio mensaje="Esta prueba solo está disponible en desarrollo." />
-        )}
+        <Prueba />
       </Pantalla>
     </>
   );
@@ -64,14 +79,20 @@ function Prueba() {
 
   const agregar = (lectura: LecturaCodigo, origen: Origen) =>
     setRegistros((actuales) =>
-      [{ ...lectura, origen, id: Date.now(), hora: horaActual() }, ...actuales].slice(0, MAXIMO_REGISTROS),
+      [{ ...lectura, origen, id: Date.now(), hora: horaActual() }, ...actuales].slice(
+        0,
+        MAXIMO_REGISTROS,
+      ),
     );
 
   // El escáner del sistema avisa por un evento, no por una promesa.
   useEffect(() => {
     if (!CameraView.isModernBarcodeScannerAvailable) return;
     const suscripcion = CameraView.onModernBarcodeScanned((resultado) =>
-      agregar({ tipo: resultado.type, datos: resultado.data, demoraMs: null }, 'escáner del sistema'),
+      agregar(
+        { tipo: resultado.type, datos: resultado.data, demoraMs: null },
+        'escáner del sistema',
+      ),
     );
     return () => suscripcion.remove();
   }, []);
@@ -108,7 +129,11 @@ function Prueba() {
           ]}
         />
         {/* key: al cambiar los tipos se vuelve a montar la cámara con la nueva configuración. */}
-        <EscanerCodigos key={grupo} tipos={TIPOS[grupo]} onLeido={(lectura) => agregar(lectura, 'cámara')} />
+        <EscanerCodigos
+          key={grupo}
+          tipos={TIPOS[grupo]}
+          onLeido={(lectura) => agregar(lectura, 'cámara')}
+        />
       </View>
 
       <View style={estilos.grupo}>

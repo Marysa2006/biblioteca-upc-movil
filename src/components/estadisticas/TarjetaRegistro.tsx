@@ -17,9 +17,9 @@ const NOMBRE_MODALIDAD: Record<string, string> = {
   virtual: 'Virtual',
 };
 
-/** Colores de las etiquetas de solicitud: completada va en verde, como Aprobada. */
+/** Colores de las etiquetas de solicitud: las finalizadas conservan el morado. */
 const COLORES_ESTADO: Record<EstadoUso, { fondo: string; texto: string }> = {
-  completada: coloresEstado.aprobada,
+  completada: coloresEstado.realizada,
   pendiente: coloresEstado.pendiente,
   cancelada: coloresEstado.cancelada,
 };
@@ -54,7 +54,10 @@ export function TarjetaRegistro({ registro }: { registro: RegistroUso }) {
     <View
       style={estilos.tarjeta}
       accessible
-      accessibilityLabel={[`${servicio}, ${estado}`, ...filas.map(([campo, valor]) => `${campo}: ${valor}`)].join('. ')}
+      accessibilityLabel={[
+        `${servicio}, ${estado}`,
+        ...filas.map(([campo, valor]) => `${campo}: ${valor}`),
+      ].join('. ')}
     >
       <View style={estilos.encabezado}>
         <Text variant="titleMedium" style={estilos.servicio}>
@@ -90,7 +93,12 @@ const estilos = StyleSheet.create({
     borderRadius: radio.tarjeta,
     backgroundColor: colores.superficie,
   },
-  encabezado: { flexDirection: 'row', alignItems: 'center', gap: espacio.s, marginBottom: espacio.xs },
+  encabezado: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacio.s,
+    marginBottom: espacio.xs,
+  },
   servicio: { flex: 1, color: colores.texto, fontFamily: fuentes.negrita },
   estado: { paddingHorizontal: espacio.s, paddingVertical: espacio.xs, borderRadius: radio.boton },
   // Con letra grande, el valor pasa debajo del campo en vez de cortarse.

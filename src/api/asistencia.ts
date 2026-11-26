@@ -318,7 +318,7 @@ export function marcarAsistenciaManual(
       ];
       registrarUso({
         id: `uso-${id}`,
-        servicio: 'asesorias',
+        servicio: sesionId.startsWith('cap-') ? 'capacitaciones' : 'asesorias',
         finalidad: 'Asistencia manual',
         fecha: hoyISO(),
         estado: 'completada',
@@ -340,7 +340,7 @@ export function marcarAsistenciaManual(
   registrarUso({
     id: `uso-asistencia-${sesionId}-${usuarioId}`,
     usuario,
-    servicio: 'asesorias',
+    servicio: sesionId.startsWith('cap-') ? 'capacitaciones' : 'asesorias',
     finalidad: 'Asistencia manual',
     fecha: hoyISO(),
     estado: 'completada',
