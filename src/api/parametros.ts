@@ -88,7 +88,23 @@ type ReglasPublicas = {
   tablet_loan_hours: number;
   tablet_max_days_ahead: number;
   tablet_pickup_minutes: number;
+  advisory_duration_minutes?: number | null;
+  advisory_max_group?: number | null;
+  attendance_qr_hours?: number | null;
 };
+
+const REGLAS_REQUERIDAS = [
+  'min_notice_days',
+  'cancel_min_hours',
+  'tablet_max_loan_hours',
+  'tablet_loan_hours',
+  'tablet_max_days_ahead',
+  'tablet_pickup_minutes',
+] as const satisfies readonly (keyof ReglasPublicas)[];
+
+function reglaOpcional(valor: number | null | undefined): number | null {
+  return typeof valor === 'number' && Number.isFinite(valor) ? valor : null;
+}
 
 async function leerConfiguracion() {
   const [periodos, festivos, horarios, plazos, reglas] = await Promise.all([
@@ -98,10 +114,7 @@ async function leerConfiguracion() {
     leerPlazos(),
     peticion<ReglasPublicas>(RUTA_REGLAS),
   ]);
-  if (
-    Object.values(reglas).length < 6 ||
-    Object.values(reglas).some((valor) => !Number.isFinite(valor))
-  ) {
+  if (REGLAS_REQUERIDAS.some((campo) => !Number.isFinite(reglas[campo]))) {
     throw new ErrorApi(502, 'La biblioteca no devolvió todos los plazos públicos.');
   }
   return { periodos, festivos, horarios, plazos, reglas };
@@ -122,9 +135,9 @@ function parametrosDesdeConfiguracion({
     horasPrestamoTablet: reglas.tablet_loan_hours,
     diasMaximosTablet: reglas.tablet_max_days_ahead,
     minutosRecogerTablet: reglas.tablet_pickup_minutes,
-    duracionAsesoriaMinutos: null,
-    maximoPersonasAsesoria: null,
-    horasVigenciaQr: null,
+    duracionAsesoriaMinutos: reglaOpcional(reglas.advisory_duration_minutes),
+    maximoPersonasAsesoria: reglaOpcional(reglas.advisory_max_group),
+    horasVigenciaQr: reglaOpcional(reglas.attendance_qr_hours),
     textoRecordatorio: '',
     textoCancelacion: '',
     periodos: periodos.map(periodoDesdeBackend),
