@@ -7,6 +7,7 @@ import { StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 
 import { acentoServicio, colores, coloresEstado, espacio, fondoServicio, fuentes, radio } from '@/theme';
+import { textoHorario } from '@/utils/fechas';
 import {
   CATEGORIA_COMPROMISO,
   ICONO_COMPROMISO,
@@ -22,7 +23,7 @@ export function TarjetaCompromiso({ compromiso }: Props) {
   const esTablet = compromiso.tipo === 'tablet';
   const horas = esTablet
     ? `${compromiso.horaInicio} – ${compromiso.horaFin} (límite)`
-    : `${compromiso.horaInicio} – ${compromiso.horaFin}`;
+    : textoHorario(compromiso.horaInicio, compromiso.horaFin);
   const partes = [horas, nombreTipo, compromiso.titulo, compromiso.lugar, compromiso.detalle];
   if (compromiso.vencido) partes.splice(2, 0, 'Vencido');
 

@@ -211,7 +211,7 @@ export function textoConteoDia(conteo: ConteoDia | undefined): string {
 
 /** Ya pasó la hora de fin de la cita, en la hora del celular. */
 export function citaTerminada(cita: Cita, ahora = new Date()): boolean {
-  return inicioReserva({ fecha: cita.fecha, horaInicio: cita.horaFin }) <= ahora;
+  return !!cita.horaFin && inicioReserva({ fecha: cita.fecha, horaInicio: cita.horaFin }) <= ahora;
 }
 
 /** Ya se registró el resultado o la inasistencia. */
@@ -265,13 +265,20 @@ export function rangoHorasMalla(
   ];
   const fines = [
     ...(horarios ?? []).map((h) => aMinutos(h.cierra)),
-    ...citas.map((c) => aMinutos(c.horaFin)),
+    ...citas.map(finVisualCita),
   ];
   if (inicios.length === 0) return RANGO_MALLA_PREDETERMINADO;
   return {
     inicio: Math.floor(Math.min(...inicios) / 60) * 60,
     fin: Math.ceil(Math.max(...fines) / 60) * 60,
   };
+}
+
+/** Una cita sin fin ocupa el mínimo visual de la malla. */
+export function finVisualCita(cita: Pick<Cita, 'horaInicio' | 'horaFin'>): number {
+  const inicio = aMinutos(cita.horaInicio);
+  const fin = cita.horaFin ? aMinutos(cita.horaFin) : inicio;
+  return Math.max(fin, inicio + 15);
 }
 
 /** Una cita en la malla: su columna y cuántas columnas comparten ese momento del día. */
@@ -285,7 +292,7 @@ export type CitaEnMalla = { cita: Cita; columna: number; columnas: number };
 export function distribuirCitas(citas: Cita[]): CitaEnMalla[] {
   const ordenadas = [...citas].sort(
     (a, b) =>
-      aMinutos(a.horaInicio) - aMinutos(b.horaInicio) || aMinutos(b.horaFin) - aMinutos(a.horaFin),
+      aMinutos(a.horaInicio) - aMinutos(b.horaInicio) || finVisualCita(b) - finVisualCita(a),
   );
   const resultado: CitaEnMalla[] = [];
   let grupo: CitaEnMalla[] = [];
@@ -302,7 +309,7 @@ export function distribuirCitas(citas: Cita[]): CitaEnMalla[] {
 
   for (const cita of ordenadas) {
     const inicio = aMinutos(cita.horaInicio);
-    const fin = aMinutos(cita.horaFin);
+    const fin = finVisualCita(cita);
     if (inicio >= finGrupo) cerrarGrupo();
     let columna = finColumnas.findIndex((finColumna) => finColumna <= inicio);
     if (columna === -1) columna = finColumnas.length;

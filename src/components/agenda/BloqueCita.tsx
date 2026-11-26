@@ -9,6 +9,7 @@ import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
 import { coloresEstado, espacio, fuentes, radio } from '@/theme';
+import { textoHorario } from '@/utils/fechas';
 import type { Cita } from '@/types';
 import { ICONO_ESTADO_AGENDA, ICONO_SIN_ASIGNAR, sinAsignar } from '@/utils/agenda';
 
@@ -25,7 +26,7 @@ type Props = {
 
 export function BloqueCita({ cita, posicion, mostrarFacilitador, onAbrir }: Props) {
   const { fondo, texto, etiqueta } = coloresEstado[cita.estado];
-  const horas = `${cita.horaInicio} – ${cita.horaFin}`;
+  const horas = textoHorario(cita.horaInicio, cita.horaFin);
   const libre = sinAsignar(cita);
   const persona = libre ? 'Sin asignar' : mostrarFacilitador ? cita.facilitador : cita.solicitante;
 

@@ -39,6 +39,7 @@ import {
   puedeTomarAsistencia,
 } from '@/utils/asistencia';
 import { fechaCompleta } from '@/utils/calendario';
+import { textoHorario } from '@/utils/fechas';
 import { mensajeErrorGuardar } from '@/utils/errores';
 
 const NO_ES_QR_ASISTENCIA =
@@ -145,7 +146,7 @@ function Escaneo({ cita }: { cita?: Cita }) {
         {cita.tema}
       </Text>
       <Text variant="bodyMedium" style={estilos.dato}>
-        {`${fechaCompleta(cita.fecha)} · ${cita.horaInicio} – ${cita.horaFin}`}
+        {`${fechaCompleta(cita.fecha)} · ${textoHorario(cita.horaInicio, cita.horaFin)}`}
       </Text>
       <Text variant="bodyMedium" style={estilos.secundario}>
         {`Con ${cita.facilitador}`}

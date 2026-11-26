@@ -37,7 +37,7 @@ import {
 } from '@/utils/asesorias';
 import { fechaCompleta } from '@/utils/calendario';
 import { mensajeErrorGuardar } from '@/utils/errores';
-import { fechaLegible } from '@/utils/fechas';
+import { fechaLegible, textoHorario } from '@/utils/fechas';
 import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
 import { textoRecursos } from '@/utils/reservas';
 import { notaDePrestamo } from '@/utils/solicitudes';
@@ -147,7 +147,7 @@ function InfoCita({ solicitud }: { solicitud: ResumenSolicitud }) {
           },
           {
             etiqueta: 'Horario',
-            valor: `${[cita.horaInicio, cita.horaFin].filter(Boolean).join(' a ')}`,
+            valor: `${textoHorario(cita.horaInicio, cita.horaFin, ' a ')}`,
           },
           {
             etiqueta: 'Fecha y hora que pediste (la biblioteca las cambió al aprobar)',

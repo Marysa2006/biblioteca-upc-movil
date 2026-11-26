@@ -66,3 +66,8 @@ export function horaAlPaso(
     ajustada: total !== hora * 60 + minuto,
   };
 }
+
+/** Horario de un servicio cuyo fin puede estar pendiente de confirmación. */
+export function textoHorario(inicio: string, fin?: string, separador = ' – '): string {
+  return [inicio, fin].filter(Boolean).join(separador);
+}

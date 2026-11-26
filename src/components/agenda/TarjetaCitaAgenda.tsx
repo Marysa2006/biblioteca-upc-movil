@@ -9,6 +9,7 @@ import { Icon, Text, TouchableRipple } from 'react-native-paper';
 
 import { EtiquetaEstado } from '@/components/ui';
 import { colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
+import { textoHorario } from '@/utils/fechas';
 import type { Cita } from '@/types';
 import { ICONO_SIN_ASIGNAR, sinAsignar } from '@/utils/agenda';
 import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
@@ -21,7 +22,7 @@ type Props = {
 };
 
 export function TarjetaCitaAgenda({ cita, mostrarFacilitador, onAbrir }: Props) {
-  const horas = `${[cita.horaInicio, cita.horaFin].filter(Boolean).join(' – ')}`;
+  const horas = textoHorario(cita.horaInicio, cita.horaFin);
   const modalidad = NOMBRE_MODALIDAD[cita.modalidad];
   const libre = sinAsignar(cita);
   const facilitador = libre

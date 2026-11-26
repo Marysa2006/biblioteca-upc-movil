@@ -14,6 +14,7 @@ import { EtiquetaEstado } from '@/components/ui';
 import type { CitaAgenda } from '@/hooks/useAsesorias';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import { fechaCompleta } from '@/utils/calendario';
+import { textoHorario } from '@/utils/fechas';
 import { NOMBRE_NIVEL_FORMACION } from '@/utils/constantes';
 import { NOMBRE_MODALIDAD } from '@/utils/jornadas';
 import { NOMBRE_TIPO } from '@/utils/roles';
@@ -63,7 +64,7 @@ export function DetalleCitaAgenda({ cita }: { cita: CitaAgenda }) {
         <Dato etiqueta="Tema" valor={cita.tema} />
         <Dato
           etiqueta="Fecha y hora"
-          valor={`${fechaCompleta(cita.fecha)}, ${[cita.horaInicio, cita.horaFin].filter(Boolean).join(' – ')}`}
+          valor={`${fechaCompleta(cita.fecha)}, ${textoHorario(cita.horaInicio, cita.horaFin)}`}
         />
         {cambioFecha ? (
           <Dato
