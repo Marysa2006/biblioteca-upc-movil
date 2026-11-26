@@ -137,3 +137,21 @@ export function usuarioDirectorioDesdeBackend(usuario: UsuarioBackend): Usuario 
     activo: usuario.is_active ?? true,
   };
 }
+
+export type PersonaEncontrada = Pick<Usuario, 'id' | 'nombre' | 'correo' | 'tipo'>;
+
+type PersonaLookupBackend = {
+  id: string;
+  full_name: string;
+  email: string;
+  user_type: TipoUsuarioBackend;
+};
+
+export function personaDesdeLookup(persona: PersonaLookupBackend): PersonaEncontrada {
+  return {
+    id: persona.id,
+    nombre: persona.full_name,
+    correo: persona.email,
+    tipo: TIPO_DESDE_BACKEND[persona.user_type],
+  };
+}

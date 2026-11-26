@@ -32,7 +32,8 @@ import {
 } from './backend/asistencia';
 import { registrarUso } from './estadisticas';
 import { obtenerParametros } from './parametros';
-import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
+import { crearNotificacion } from './notificaciones';
+import { obtenerPersonaDePrueba } from './usuarios';
 
 export type { DatosAsistenciaManual } from './backend/asistencia';
 
@@ -255,7 +256,7 @@ function agregarRegistro(sesionId: string, usuarioId: string, medio: MedioAsiste
   if (estado.registros.some((registro) => registro.usuarioId === usuarioId)) {
     return;
   }
-  const persona = USUARIOS_DIRECTORIO.find((usuario) => usuario.id === usuarioId);
+  const persona = obtenerPersonaDePrueba(usuarioId);
   estado.registros = [
     ...estado.registros,
     {
@@ -329,14 +330,20 @@ export function marcarAsistenciaManual(
   if (!usuarioId?.trim()) {
     return Promise.reject(new ErrorApi(400, 'Elige a la persona que asistió.'));
   }
-  if (!USUARIOS_DIRECTORIO.some((usuario) => usuario.id === usuarioId)) {
+  const usuario = obtenerPersonaDePrueba(usuarioId);
+  if (!usuario) {
     return Promise.reject(new ErrorApi(404, 'Esa persona no existe.'));
   }
   if (estado.registros.some((registro) => registro.usuarioId === usuarioId)) {
     return simularRed(aAsistencia(sesionId));
   }
   agregarRegistro(sesionId, usuarioId, 'manual');
-  const usuario = USUARIOS_DIRECTORIO.find((persona) => persona.id === usuarioId);
+  crearNotificacion({
+    usuarioId,
+    solicitudId: '',
+    titulo: 'Asistencia registrada',
+    mensaje: 'El personal registró tu asistencia a la sesión.',
+  });
   registrarUso({
     id: `uso-asistencia-${sesionId}-${usuarioId}`,
     usuario,

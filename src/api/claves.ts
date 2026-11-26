@@ -15,6 +15,8 @@ export const claves = {
   contenidos: ['contenidos'] as const,
   parametros: ['parametros'] as const,
   usuarios: ['usuarios'] as const,
+  buscarPersonas: (cuenta: string, modulo: string, texto: string) =>
+    ['usuarios', 'lookup', cuenta, modulo, texto] as const,
   /**
    * El directorio del personal de la biblioteca (#256). Va aparte de `usuarios` porque no
    * devuelve lo mismo: el equipo excluye a la comunidad. Con la misma clave, la caché se pisa.
