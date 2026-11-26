@@ -36,11 +36,11 @@ objetivo es reunir y modernizar los servicios que hoy presta la biblioteca.
 
 ### Los usuarios
 
-| Quién | Qué puede hacer |
-|---|---|
-| **Visitantes**, sin cuenta | Consultar servicios, horarios, catálogo y disponibilidad de espacios |
+| Quién                                   | Qué puede hacer                                                                                                |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Visitantes**, sin cuenta              | Consultar servicios, horarios, catálogo y disponibilidad de espacios                                           |
 | **Comunidad**, con cuenta institucional | Además, solicitar servicios y seguir sus solicitudes. Puede ser estudiante, docente, administrativo o egresado |
-| **Personal**, con cuenta y rol | La operación del día: aprobar, gestionar, inventario y estadísticas |
+| **Personal**, con cuenta y rol          | La operación del día: aprobar, gestionar, inventario y estadísticas                                            |
 
 En el código, `TipoUsuario` (`src/types/usuarios.ts`) también incluye `visitante`, pero **no es
 un tipo de cuenta**: es el valor que usa la app cuando no hay sesión (`useRol()` lo toma por
@@ -48,11 +48,11 @@ defecto). Los nombres visibles salen de `NOMBRE_TIPO`.
 
 Los **roles del personal** son tres, y una persona puede tener varios:
 
-| Rol | Quién es |
-|---|---|
-| `administrador` | La administradora de la biblioteca. Una sola persona; no se asigna desde la app |
-| `facilitador` | Atiende asesorías y capacitaciones |
-| `gestor_espacios` | Gestiona el catálogo de espacios y sus reservas |
+| Rol               | Quién es                                                                        |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `administrador`   | La administradora de la biblioteca. Una sola persona; no se asigna desde la app |
+| `facilitador`     | Atiende asesorías y capacitaciones                                              |
+| `gestor_espacios` | Gestiona el catálogo de espacios y sus reservas                                 |
 
 > **No existe** el rol de encargado de tablets: el préstamo lo maneja la administradora, que ya
 > tiene el permiso `tablets` (#208).
@@ -99,15 +99,15 @@ utilidades**, **16 archivos de tipos** y **19 mocks**.
 
 ### El stack
 
-| Pieza | Versión | Para qué |
-|---|---|---|
-| Expo SDK | 58 (`expo` ~58.0.22) | Base de la app; se prueba en Expo Go |
-| React Native / React | 0.88.1 / 19.3 | — |
-| Expo Router | ~58.0.29 | Rutas por archivos en `src/app/`, con `typedRoutes` |
-| React Native Paper | 5 (MD3) | Componentes, con el tema de `src/theme`. Íconos MaterialCommunityIcons |
-| TanStack Query | 5 | Datos del servidor: consultas y mutaciones |
-| Zustand | 5 | Estado global, con `persist` sobre `expo-secure-store` |
-| react-hook-form + zod | 7 / 4 | Formularios y validación |
+| Pieza                 | Versión              | Para qué                                                               |
+| --------------------- | -------------------- | ---------------------------------------------------------------------- |
+| Expo SDK              | 58 (`expo` ~58.0.22) | Base de la app; se prueba en Expo Go                                   |
+| React Native / React  | 0.88.1 / 19.3        | —                                                                      |
+| Expo Router           | ~58.0.29             | Rutas por archivos en `src/app/`, con `typedRoutes`                    |
+| React Native Paper    | 5 (MD3)              | Componentes, con el tema de `src/theme`. Íconos MaterialCommunityIcons |
+| TanStack Query        | 5                    | Datos del servidor: consultas y mutaciones                             |
+| Zustand               | 5                    | Estado global, con `persist` sobre `expo-secure-store`                 |
+| react-hook-form + zod | 7 / 4                | Formularios y validación                                               |
 
 ### Las capas, siempre igual
 
@@ -156,10 +156,10 @@ permiso de notificaciones, cuántos quedaron programados y el último error.
 
 Expo Router toma **el árbol de `src/app/` como rutas**; no hay tabla de rutas que mantener.
 
-| Grupo | Pestañas |
-|---|---|
-| `(comunidad)/` | Inicio, Servicios, Catálogo y Mis solicitudes |
-| `(personal)/` | Dashboard, Gestión, Personal, Inventario y Estadísticas |
+| Grupo          | Pestañas                                                |
+| -------------- | ------------------------------------------------------- |
+| `(comunidad)/` | Inicio, Servicios, Catálogo y Mis solicitudes           |
+| `(personal)/`  | Dashboard, Gestión, Personal, Inventario y Estadísticas |
 
 - Los grupos entre paréntesis **no aparecen en la URL**: solo separan los dos conjuntos de pestañas.
 - El resto son **rutas apiladas**, con flecha atrás (`asesorias/mis-citas`, `agenda/[id]`, `administracion/…`).
@@ -174,11 +174,15 @@ ver [trampas conocidas](#trampas-conocidas).
 
 ### Las integraciones externas
 
-| Servicio | Cómo se usa |
-|---|---|
-| **Koha** (catálogo) | Búsqueda por RSS, en `src/api/catalogo.ts`. La URL está en `URL_CATALOGO_KOHA` |
-| **DSpace** (repositorio) | API de DSpace, en `src/api/repositorio.ts`. Va por HTTPS desde noviembre de 2026 (#165); la URL está en `URL_REPOSITORIO` |
-| **Notificaciones** | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend |
+| Servicio                 | Cómo se usa                                                                                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Koha** (catálogo)      | El portal publica `url` y `staff_url` en `GET /portal/koha-opac/`. `useEnlacesKoha()` comparte esa consulta. `src/api/catalogo.ts` busca en el RSS del OPAC.                                 |
+| **DSpace** (repositorio) | `usePortalAutoarchivo()` comparte `GET /portal/self-archive/` entre Catálogo y Autoarchivo. `src/api/repositorio.ts` usa `repository_url` como base para buscar en la API pública de DSpace. |
+| **Notificaciones**       | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend                                                                                                      |
+
+Las peticiones a Koha y DSpace salen sin el token de la app. Si falla la consulta del portal,
+la pantalla ofrece Reintentar. Si el enlace público viene nulo, muestra el mensaje del
+Backend y oculta la apertura. Las URLs de demostración viven en `src/api/mocks/enlacesPortal.ts`.
 
 ---
 
@@ -186,13 +190,13 @@ ver [trampas conocidas](#trampas-conocidas).
 
 ### Requisitos
 
-| Herramienta | Versión | Para qué |
-|---|---|---|
-| Node.js | 20 o superior (probado con 22) | Compilar y ejecutar la app |
-| npm | 10 | Instalar dependencias y regenerar el lockfile |
-| Expo Go | **SDK 58** | Probar en el celular sin compilar |
-| Git | cualquiera reciente | Ramas y commits |
-| Java / Android Studio | **no hace falta** | El APK se compila en la nube con EAS |
+| Herramienta           | Versión                        | Para qué                                      |
+| --------------------- | ------------------------------ | --------------------------------------------- |
+| Node.js               | 20 o superior (probado con 22) | Compilar y ejecutar la app                    |
+| npm                   | 10                             | Instalar dependencias y regenerar el lockfile |
+| Expo Go               | **SDK 58**                     | Probar en el celular sin compilar             |
+| Git                   | cualquiera reciente            | Ramas y commits                               |
+| Java / Android Studio | **no hace falta**              | El APK se compila en la nube con EAS          |
 
 Un Expo Go de otra SDK no abre el proyecto.
 
@@ -233,10 +237,10 @@ pruebas unitarias: la verificación es el tipado, el lint y la prueba manual en 
 
 `.env.example` es la plantilla; `.env` no se sube (está en `.gitignore`).
 
-| Variable | Qué hace |
-|---|---|
-| `EXPO_PUBLIC_API_URL` | URL base de la API del Backend. Desde el celular, usa la IP del computador, **no `localhost`**: `localhost` desde el celular es el propio celular |
-| `EXPO_PUBLIC_USAR_MOCKS` | `true`: datos de prueba. `false`: API real |
+| Variable                 | Qué hace                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_API_URL`    | URL base de la API del Backend. Desde el celular, usa la IP del computador, **no `localhost`**: `localhost` desde el celular es el propio celular |
+| `EXPO_PUBLIC_USAR_MOCKS` | `true`: datos de prueba. `false`: API real                                                                                                        |
 
 **Ojo con la lógica:** solo el texto `"false"` desactiva los mocks. Una variable ausente o vacía
 mantiene los datos de prueba, que es lo que se quiere en el APK.
@@ -251,14 +255,14 @@ lugar se puede reescribir el lockfile y meter ruido en el PR.
 
 ### Lo que configura `app.json`
 
-| Clave | Qué hace |
-|---|---|
-| `plugins` | `expo-router`, `expo-splash-screen`, `expo-secure-store` y `expo-camera` (con el texto del permiso) |
-| `experiments.typedRoutes` | Tipa las rutas: `router.push('/asesorias/mis-citas')` falla en `tsc` si la ruta no existe |
-| `experiments.reactCompiler` | Activa el compilador de React |
-| `android.package` | `com.biblioupc.app` |
-| `android.adaptiveIcon` | Fondo, primer plano y monocromo del ícono |
-| `extra.eas.projectId` | El proyecto de EAS |
+| Clave                       | Qué hace                                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------- |
+| `plugins`                   | `expo-router`, `expo-splash-screen`, `expo-secure-store` y `expo-camera` (con el texto del permiso) |
+| `experiments.typedRoutes`   | Tipa las rutas: `router.push('/asesorias/mis-citas')` falla en `tsc` si la ruta no existe           |
+| `experiments.reactCompiler` | Activa el compilador de React                                                                       |
+| `android.package`           | `com.biblioupc.app`                                                                                 |
+| `android.adaptiveIcon`      | Fondo, primer plano y monocromo del ícono                                                           |
+| `extra.eas.projectId`       | El proyecto de EAS                                                                                  |
 
 ### `eas.json`
 
@@ -286,14 +290,14 @@ reexporta.
 `EstadoSolicitud` tiene seis valores y los comparten reservas, asesorías, préstamos y
 capacitaciones:
 
-| Estado | Qué significa |
-|---|---|
-| `pendiente` | Espera la decisión del personal |
-| `aprobada` | Aceptada; ocupa su cupo u horario |
-| `rechazada` | Negada, con motivo |
+| Estado        | Qué significa                                                    |
+| ------------- | ---------------------------------------------------------------- |
+| `pendiente`   | Espera la decisión del personal                                  |
+| `aprobada`    | Aceptada; ocupa su cupo u horario                                |
+| `rechazada`   | Negada, con motivo                                               |
 | `nueva_fecha` | El personal propuso otro día y espera la respuesta de la persona |
-| `cancelada` | Anulada; libera el cupo |
-| `realizada` | Ya ocurrió (con `asistio: true/false` en las citas) |
+| `cancelada`   | Anulada; libera el cupo                                          |
+| `realizada`   | Ya ocurrió (con `asistio: true/false` en las citas)              |
 
 **El caso de las asesorías (#216, versión 1.1):** la cita ya no nace aprobada.
 
@@ -311,11 +315,11 @@ y `tienePermiso()`.
 Los permisos de una persona son **la suma de los de sus roles** (`PERMISOS_POR_ROL` en
 `src/utils/roles.ts`):
 
-| Rol | Permisos |
-|---|---|
-| `administrador` | `roles`, `contenidos`, `parametros`, `espacios`, `reservas`, `asesorias`, `tablets`, `formacion`, `estadisticas`, `fotos` |
-| `facilitador` | `asesorias`, `formacion` |
-| `gestor_espacios` | `espacios`, `reservas` |
+| Rol               | Permisos                                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `administrador`   | `roles`, `contenidos`, `parametros`, `espacios`, `reservas`, `asesorias`, `tablets`, `formacion`, `estadisticas`, `fotos` |
+| `facilitador`     | `asesorias`, `formacion`                                                                                                  |
+| `gestor_espacios` | `espacios`, `reservas`                                                                                                    |
 
 - Se pregunta con `useRol().tienePermiso('reservas')`. **Nunca se compara el nombre del rol a mano.**
 - Hay ayudas: `esPersonal()`, `tieneRol()`, `describirRoles()`, `NOMBRE_TIPO` y
@@ -355,17 +359,17 @@ enlace** (Drive o una página, se abre en el navegador y no se guarda) o **escri
 guarda en el celular y se lee sin conexión). El tipo es `Guia` (`src/types/guias.ts`); las reglas
 del formulario, `esquemaGuia` (`src/utils/guias.ts`).
 
-| Campo | Tipo | Obligatorio | Límite y reglas |
-|---|---|---|---|
-| `id` | texto | lo asigna el sistema | — |
-| `titulo` | texto | sí | hasta 80 caracteres |
-| `descripcion` | texto | sí | hasta 200 caracteres |
-| `contenido` | texto plano | si es escrita | hasta 5000 caracteres; la primera línea es el título y las que empiezan con `1.` son pasos. Vacío en los otros formatos |
-| `enlace` | texto (URL) o `null` | si es con enlace | empieza por `https://`. Al editar, `null` borra el enlace: la guía cambió de formato (#297) |
-| `archivo` | `ArchivoGuia` o `null` | si es PDF | `url` (de dónde se descarga), `nombre` y `bytes`. Solo PDF, hasta 10 MB. Al editar, `null` borra el PDF (#303) |
-| `publicado` | sí o no | sí | solo las publicadas las ve la comunidad |
-| `actualizada` | fecha `AAAA-MM-DD` | la asigna el sistema al guardar | sirve para saber si la copia del celular está al día |
-| `sede` | texto | no | **sin uso**: ni el formulario ni las pantallas lo leen |
+| Campo         | Tipo                   | Obligatorio                     | Límite y reglas                                                                                                         |
+| ------------- | ---------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `id`          | texto                  | lo asigna el sistema            | —                                                                                                                       |
+| `titulo`      | texto                  | sí                              | hasta 80 caracteres                                                                                                     |
+| `descripcion` | texto                  | sí                              | hasta 200 caracteres                                                                                                    |
+| `contenido`   | texto plano            | si es escrita                   | hasta 5000 caracteres; la primera línea es el título y las que empiezan con `1.` son pasos. Vacío en los otros formatos |
+| `enlace`      | texto (URL) o `null`   | si es con enlace                | empieza por `https://`. Al editar, `null` borra el enlace: la guía cambió de formato (#297)                             |
+| `archivo`     | `ArchivoGuia` o `null` | si es PDF                       | `url` (de dónde se descarga), `nombre` y `bytes`. Solo PDF, hasta 10 MB. Al editar, `null` borra el PDF (#303)          |
+| `publicado`   | sí o no                | sí                              | solo las publicadas las ve la comunidad                                                                                 |
+| `actualizada` | fecha `AAAA-MM-DD`     | la asigna el sistema al guardar | sirve para saber si la copia del celular está al día                                                                    |
+| `sede`        | texto                  | no                              | **sin uso**: ni el formulario ni las pantallas lo leen                                                                  |
 
 - Lo que envía el formulario al crear o editar es `DatosGuia`: la guía sin `id` ni `actualizada`.
 - **La copia en el celular** (`GuiaGuardada`) es la guía completa más `guardadaEn` (milisegundos).
@@ -393,12 +397,12 @@ indicadores (`IndicadoresUso`) se calculan en el celular con `calcularIndicadore
 Los campos que agregó el #307 para lo que pidió la bibliotecóloga (tabla 2.7: «calidad en tiempos y
 temáticas»):
 
-| Campo de `RegistroUso` | Qué guarda | Quién lo llena |
-|---|---|---|
-| `tematica` | El tema de la asesoría o la línea de formación | Asesorías y capacitaciones, al registrarse |
-| `solicitadaEl` | Cuándo se pidió (ISO 8601 con hora) | `registrarUso()`, en el primer registro |
-| `respondidaEl` | Cuándo respondió el personal **por primera vez** | `registrarUso()`, cuando la operación llega con `respondida: true` (aprobar, rechazar o proponer otra fecha) |
-| `duracionHoras` | Horas de la entrega a la devolución de una tablet | `registrarDevolucion()` de tablets |
+| Campo de `RegistroUso` | Qué guarda                                        | Quién lo llena                                                                                               |
+| ---------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `tematica`             | El tema de la asesoría o la línea de formación    | Asesorías y capacitaciones, al registrarse                                                                   |
+| `solicitadaEl`         | Cuándo se pidió (ISO 8601 con hora)               | `registrarUso()`, en el primer registro                                                                      |
+| `respondidaEl`         | Cuándo respondió el personal **por primera vez**  | `registrarUso()`, cuando la operación llega con `respondida: true` (aprobar, rechazar o proponer otra fecha) |
+| `duracionHoras`        | Horas de la entrega a la devolución de una tablet | `registrarDevolucion()` de tablets                                                                           |
 
 - **Tiempo de respuesta:** de `solicitadaEl` a `respondidaEl`, en promedio por servicio. Solo
   cuentan espacios, asesorías y capacitaciones (las tablets se reservan solas). Cancelar la persona
@@ -415,17 +419,17 @@ temáticas»):
 
 ### Lo nuevo de la versión 1.1, por dónde buscarlo
 
-| Función | Dónde está | En pocas palabras |
-|---|---|---|
-| Registro de cuentas (#203, #294) | `src/app/registro.tsx`, `src/utils/registro.ts` | Nombres, cédula, correo, tipo, sede y, para estudiantes, facultad y programa de la lista; acepta la autorización de datos |
-| Formularios por pasos (#251) | `PasosFormulario`, `camposDelPaso()` (`src/utils/pasos.ts`) | Solicitud · Tus datos · Términos; Enviar solo en el último |
-| Tutorial de Upecito (#261, #267) | `src/app/tutorial.tsx`, `src/components/tutorial/` | La primera vez en el celular; el del personal muestra sus secciones de Gestión |
-| Dashboard del personal (#306) | `src/app/(personal)/panel.tsx`, `usePanel()`, `src/utils/panel.ts` | Cifras del día, resumen por área, lo pendiente y la afluencia semanal; reutiliza las claves de cada módulo |
-| Estadísticas (#259, #307) | `src/app/(personal)/estadisticas.tsx`, `src/utils/estadisticas.ts` | Ver «Las estadísticas» |
-| Fotos de Inicio (#290) | `src/app/administracion/fotos-inicio.tsx`, `src/types/inicio.ts` | Hasta 5 publicadas, con orden y descripción; sin fotos o sin internet, las del APK |
-| Guías en PDF (#297, #303) | `src/app/administracion/guia.tsx`, `src/hooks/useGuias.ts` | Ver «Las guías» |
-| Gestión → Portal (revisión de la 1.1) | `MenuAdministracion` | Tres grupos: Publicaciones, Servicios (temas, líneas y Espacios, en `administracion/espacios`) y Configuración |
-| Préstamo de tablets, firma y constancia (#253, #310) | Ver la sección siguiente | |
+| Función                                              | Dónde está                                                         | En pocas palabras                                                                                                         |
+| ---------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| Registro de cuentas (#203, #294)                     | `src/app/registro.tsx`, `src/utils/registro.ts`                    | Nombres, cédula, correo, tipo, sede y, para estudiantes, facultad y programa de la lista; acepta la autorización de datos |
+| Formularios por pasos (#251)                         | `PasosFormulario`, `camposDelPaso()` (`src/utils/pasos.ts`)        | Solicitud · Tus datos · Términos; Enviar solo en el último                                                                |
+| Tutorial de Upecito (#261, #267)                     | `src/app/tutorial.tsx`, `src/components/tutorial/`                 | La primera vez en el celular; el del personal muestra sus secciones de Gestión                                            |
+| Dashboard del personal (#306)                        | `src/app/(personal)/panel.tsx`, `usePanel()`, `src/utils/panel.ts` | Cifras del día, resumen por área, lo pendiente y la afluencia semanal; reutiliza las claves de cada módulo                |
+| Estadísticas (#259, #307)                            | `src/app/(personal)/estadisticas.tsx`, `src/utils/estadisticas.ts` | Ver «Las estadísticas»                                                                                                    |
+| Fotos de Inicio (#290)                               | `src/app/administracion/fotos-inicio.tsx`, `src/types/inicio.ts`   | Hasta 5 publicadas, con orden y descripción; sin fotos o sin internet, las del APK                                        |
+| Guías en PDF (#297, #303)                            | `src/app/administracion/guia.tsx`, `src/hooks/useGuias.ts`         | Ver «Las guías»                                                                                                           |
+| Gestión → Portal (revisión de la 1.1)                | `MenuAdministracion`                                               | Tres grupos: Publicaciones, Servicios (temas, líneas y Espacios, en `administracion/espacios`) y Configuración            |
+| Préstamo de tablets, firma y constancia (#253, #310) | Ver la sección siguiente                                           |                                                                                                                           |
 
 ### El préstamo de tablets (HU-22 a HU-24, HU-31 y #310)
 
@@ -638,14 +642,14 @@ pantallas.** La paleta exacta está en [paleta-colores.md](paleta-colores.md).
 
 Cuándo usar cada color:
 
-| Token | Cuándo |
-|---|---|
-| `colores.primario` | Botones, enlaces y texto de marca |
+| Token                    | Cuándo                                    |
+| ------------------------ | ----------------------------------------- |
+| `colores.primario`       | Botones, enlaces y texto de marca         |
 | `colores.primarioOscuro` | Bloques oscuros, siempre con texto blanco |
-| `colores.primarioSuave` | Fondos suaves de chips y contenedores |
-| `verdeUpc` | Solo en elementos grandes o decorativos |
-| `verdeClaroUpc` | Solo de fondo, con texto `colores.texto` |
-| `amarilloUpc` | Solo como acento pequeño |
+| `colores.primarioSuave`  | Fondos suaves de chips y contenedores     |
+| `verdeUpc`               | Solo en elementos grandes o decorativos   |
+| `verdeClaroUpc`          | Solo de fondo, con texto `colores.texto`  |
+| `amarilloUpc`            | Solo como acento pequeño                  |
 
 **Nunca** texto amarillo ni verde claro sobre blanco: no alcanza el contraste AA.
 
@@ -660,22 +664,22 @@ proporción del archivo.
 
 Están en `src/components/ui`:
 
-| Componente | Cuándo |
-|---|---|
-| `Pantalla` | Envuelve toda pantalla. Lleva el isotipo y el menú de usuario arriba a la derecha |
-| `EncabezadoApilado` | Encabezado de las rutas apiladas |
-| `EstadoCarga`, `EstadoError`, `EstadoVacio` | Los tres estados obligatorios de una pantalla con datos; el de error lleva reintentar |
-| `BotonFlotante` | Crear algo nuevo, en la prop `flotante` de `Pantalla`. Se encoge al desplazar. No se usan botones largos de «Nuevo …» ni `AnimatedFAB` |
-| `MenuAcciones` | Las acciones de una tarjeta (tres puntos, con `ocupado` mientras guarda). Si la tarjeta tiene **una sola** acción, se toca la tarjeta entera, con `chevron-right` |
-| `PestanasFiltro` | Las secciones o estados de una pantalla, con `cantidad` y `alerta` |
-| `ChipsFiltro` | Filtrar una lista por un valor |
-| `EtiquetaEstado` | El estado de una solicitud, con texto y color |
-| `CampoHora` y `CampoNumerico` | Horas (cada 30 min) y cantidades (− y +) |
-| `Paginacion`, `ListaPaginada` y `usePaginacion` | Listas largas, de 10 en 10 (#161); `ListaPaginada` vuelve a la página 1 al cambiar el filtro |
-| `CampoDesplegable` | Elegir entre nombres largos (facultad, programa, filtros): un campo con ▾ que abre un menú del mismo ancho |
-| `PasosFormulario` | Los formularios de la comunidad por pasos, con Anterior, Siguiente y Enviar en el último |
-| `Upecito` | La mascota en sus poses, en los estados vacíos y en el tutorial |
-| `AvisoError`, `FilaInterruptor`, `MenuUsuario`, `EnConstruccion` | Avisos, interruptores, menú de la sesión y pantallas pendientes |
+| Componente                                                       | Cuándo                                                                                                                                                            |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Pantalla`                                                       | Envuelve toda pantalla. Lleva el isotipo y el menú de usuario arriba a la derecha                                                                                 |
+| `EncabezadoApilado`                                              | Encabezado de las rutas apiladas                                                                                                                                  |
+| `EstadoCarga`, `EstadoError`, `EstadoVacio`                      | Los tres estados obligatorios de una pantalla con datos; el de error lleva reintentar                                                                             |
+| `BotonFlotante`                                                  | Crear algo nuevo, en la prop `flotante` de `Pantalla`. Se encoge al desplazar. No se usan botones largos de «Nuevo …» ni `AnimatedFAB`                            |
+| `MenuAcciones`                                                   | Las acciones de una tarjeta (tres puntos, con `ocupado` mientras guarda). Si la tarjeta tiene **una sola** acción, se toca la tarjeta entera, con `chevron-right` |
+| `PestanasFiltro`                                                 | Las secciones o estados de una pantalla, con `cantidad` y `alerta`                                                                                                |
+| `ChipsFiltro`                                                    | Filtrar una lista por un valor                                                                                                                                    |
+| `EtiquetaEstado`                                                 | El estado de una solicitud, con texto y color                                                                                                                     |
+| `CampoHora` y `CampoNumerico`                                    | Horas (cada 30 min) y cantidades (− y +)                                                                                                                          |
+| `Paginacion`, `ListaPaginada` y `usePaginacion`                  | Listas largas, de 10 en 10 (#161); `ListaPaginada` vuelve a la página 1 al cambiar el filtro                                                                      |
+| `CampoDesplegable`                                               | Elegir entre nombres largos (facultad, programa, filtros): un campo con ▾ que abre un menú del mismo ancho                                                        |
+| `PasosFormulario`                                                | Los formularios de la comunidad por pasos, con Anterior, Siguiente y Enviar en el último                                                                          |
+| `Upecito`                                                        | La mascota en sus poses, en los estados vacíos y en el tutorial                                                                                                   |
+| `AvisoError`, `FilaInterruptor`, `MenuUsuario`, `EnConstruccion` | Avisos, interruptores, menú de la sesión y pantallas pendientes                                                                                                   |
 
 **Fechas, horas y cantidades nunca se escriben a mano.** Las fechas van con `SelectorFecha`
 (`src/components/espacios/`), las horas con `CampoHora` y las cantidades con `CampoNumerico`.
@@ -740,9 +744,9 @@ versión**. (`npm ci` no lee `app.json`; lo que se descuadra es lo que ve quien 
 
 Las dos ramas no se fusionan igual:
 
-| Rama | Cómo se fusiona | Por qué |
-|---|---|---|
-| PR hacia `develop` | **Squash** | Un commit por PR en el historial de la iteración |
+| Rama                  | Cómo se fusiona  | Por qué                                                    |
+| --------------------- | ---------------- | ---------------------------------------------------------- |
+| PR hacia `develop`    | **Squash**       | Un commit por PR en el historial de la iteración           |
 | PR `develop` → `main` | **Merge commit** | El cierre de la versión conserva la historia y se etiqueta |
 
 **4. Crea la etiqueta sobre `main`**, ya fusionado:
@@ -766,12 +770,12 @@ Release exista, ese enlace da 404.
 - Los nombres son `feature/huNN-ui-…`, `feature/huNN-datos-…`, `fix/…`, `chore/…` o `docs/…`.
 - Una rama vive pocos días y nace de `develop` actualizado.
 
-| Prefijo | Para qué | Ejemplo |
-|---|---|---|
-| `feature/` | Una capa de una HU | `feature/hu14-datos-aprobacion-citas` |
-| `fix/` | Corregir algo ya fusionado | `fix/calendarios-dias-habiles` |
-| `chore/` | Base, configuración o dependencias | `chore/icono-upecito` |
-| `docs/` | Documentación | `docs/guia-tecnica` |
+| Prefijo    | Para qué                           | Ejemplo                               |
+| ---------- | ---------------------------------- | ------------------------------------- |
+| `feature/` | Una capa de una HU                 | `feature/hu14-datos-aprobacion-citas` |
+| `fix/`     | Corregir algo ya fusionado         | `fix/calendarios-dias-habiles`        |
+| `chore/`   | Base, configuración o dependencias | `chore/icono-upecito`                 |
+| `docs/`    | Documentación                      | `docs/guia-tecnica`                   |
 
 ### Los commits y los PR
 
@@ -870,16 +874,16 @@ va por HTTPS.
 
 Son las que más rompen la app, y casi ninguna da un error claro:
 
-| Trampa | Por qué |
-|---|---|
-| **Nunca importar `'expo-notifications'` directamente** | Carga el módulo nativo de push y **Expo Go para Android se cae al abrir**. Se usa `src/hooks/useRecordatorios.ts`, que importa por archivo (`expo-notifications/build/…`) |
-| **El peso de la letra va con `fuentes.*`**, nunca con `fontWeight` | Android no aplica `fontWeight` a las fuentes cargadas: el texto se queda con el peso normal |
-| **Los diálogos de Paper (`Portal`) quedan fuera del `QueryClientProvider`** | Los hooks de datos van en la pantalla y el diálogo los recibe **por props** |
-| **Los paquetes se instalan con `npx expo install`** | `npm install` puede traer una versión incompatible con la SDK |
-| **Nunca `npm audit fix`** | Aunque npm lo sugiera al final de `npm ci`. Rompe versiones fijadas por Expo |
-| **Con React Compiler activo, `useWatch` y no `watch()`** | `watch()` no se re-ejecuta como el compilador espera |
-| **Un PDF de `expo-print` no se comparte tal cual** | En Expo Go, `shareAsync` responde «Not allowed to read file under given URL»: el archivo queda en una carpeta de expo-print. Se usa `guardarPdf()` (`src/utils/exportarPdf.ts`), que lo pide en base64 y lo escribe en `Paths.cache` |
-| **Los tipos de RN 0.88 son estrictos** | `onPress={() => handleSubmit(fn)()}`, y en `tabBarIcon` el `color` es `ColorValue` |
+| Trampa                                                                      | Por qué                                                                                                                                                                                                                              |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Nunca importar `'expo-notifications'` directamente**                      | Carga el módulo nativo de push y **Expo Go para Android se cae al abrir**. Se usa `src/hooks/useRecordatorios.ts`, que importa por archivo (`expo-notifications/build/…`)                                                            |
+| **El peso de la letra va con `fuentes.*`**, nunca con `fontWeight`          | Android no aplica `fontWeight` a las fuentes cargadas: el texto se queda con el peso normal                                                                                                                                          |
+| **Los diálogos de Paper (`Portal`) quedan fuera del `QueryClientProvider`** | Los hooks de datos van en la pantalla y el diálogo los recibe **por props**                                                                                                                                                          |
+| **Los paquetes se instalan con `npx expo install`**                         | `npm install` puede traer una versión incompatible con la SDK                                                                                                                                                                        |
+| **Nunca `npm audit fix`**                                                   | Aunque npm lo sugiera al final de `npm ci`. Rompe versiones fijadas por Expo                                                                                                                                                         |
+| **Con React Compiler activo, `useWatch` y no `watch()`**                    | `watch()` no se re-ejecuta como el compilador espera                                                                                                                                                                                 |
+| **Un PDF de `expo-print` no se comparte tal cual**                          | En Expo Go, `shareAsync` responde «Not allowed to read file under given URL»: el archivo queda en una carpeta de expo-print. Se usa `guardarPdf()` (`src/utils/exportarPdf.ts`), que lo pide en base64 y lo escribe en `Paths.cache` |
+| **Los tipos de RN 0.88 son estrictos**                                      | `onPress={() => handleSubmit(fn)()}`, y en `tabBarIcon` el `color` es `ColorValue`                                                                                                                                                   |
 
 ## Anexo: la integración con el Backend
 
