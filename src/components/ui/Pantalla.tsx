@@ -41,6 +41,7 @@ type Props = {
    * Como función, recibe si el contenido ya se deslizó hacia abajo, para encogerse.
    */
   flotante?: ReactNode | ((desplazada: boolean) => ReactNode);
+  flotanteCubrePantalla?: boolean;
   /**
    * Acciones fijas abajo (por ejemplo, las de un detalle): una tarjeta flotante sobre el
    * contenido, justo encima de la barra de navegación del sistema, sin taparla. El final del
@@ -74,6 +75,7 @@ export function Pantalla({
   sinMenuUsuario = false,
   marcaPropia,
   flotante,
+  flotanteCubrePantalla = false,
   pie,
   children,
 }: Props) {
@@ -219,7 +221,10 @@ export function Pantalla({
         conPie
       )}
       {flotante ? (
-        <View style={estilos.flotante}>
+        <View
+          pointerEvents="box-none"
+          style={flotanteCubrePantalla ? StyleSheet.absoluteFill : estilos.flotante}
+        >
           {typeof flotante === 'function' ? flotante(desplazada) : flotante}
         </View>
       ) : null}
