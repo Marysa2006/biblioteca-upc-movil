@@ -17,6 +17,7 @@ export type OrientacionAutoarchivo = {
   /** Fecha de la última actualización, 'AAAA-MM-DD'. */
   actualizada?: string;
   texto?: string;
+  instructivo?: string;
   /** Pasos del procedimiento, en orden. */
   procedimiento: string[];
   requisitos: string[];
@@ -66,7 +67,10 @@ function leerBloques(body: string) {
   ]);
   const vistos = new Set<keyof typeof bloques>();
   let actual: string[] | undefined;
-  for (const linea of body.split(/\r?\n/).map((texto) => texto.trimEnd())) {
+  const lineas = body.split(/\r?\n/).map((texto) => texto.trimEnd());
+  const inicioInstructivo = lineas.indexOf('## Instructivo');
+  const secciones = inicioInstructivo === -1 ? lineas : lineas.slice(0, inicioInstructivo);
+  for (const linea of secciones) {
     if (!linea.trim()) continue;
     const titulo = titulos.get(linea);
     if (titulo) {
@@ -78,5 +82,16 @@ function leerBloques(body: string) {
       actual.push(linea.slice(2).trim());
     }
   }
-  if (Object.values(bloques).every((items) => items.length > 0)) return bloques;
+  if (!Object.values(bloques).every((items) => items.length > 0)) return;
+  if (inicioInstructivo === -1) return bloques;
+
+  const elementos = lineas.slice(inicioInstructivo + 1).filter((linea) => linea.trim());
+  const url =
+    elementos.length === 1 ? /^- (https:\/\/[^\s/]+\S*)$/.exec(elementos[0])?.[1] : undefined;
+  if (!url) return bloques;
+  try {
+    return new URL(url).hostname ? { ...bloques, instructivo: url } : bloques;
+  } catch {
+    return bloques;
+  }
 }

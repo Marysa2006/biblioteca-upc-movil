@@ -27,19 +27,32 @@ import { usePortalAutoarchivo } from '@/hooks/useAutoarchivo';
 import { abrirRepositorio, useComprobarRepositorio } from '@/hooks/useRepositorio';
 import { colores, espacio, fuentes } from '@/theme';
 import { fechaLegible } from '@/utils/fechas';
+import { abrirEnNavegador } from '@/utils/navegador';
 
 const TITULO = 'Orientación de autoarchivo';
+const ERROR_INSTRUCTIVO = 'No se pudo abrir el instructivo. Intenta de nuevo.';
 
 export default function Autoarchivo() {
   const portal = usePortalAutoarchivo();
   const url = portal.isSuccess ? portal.data.url : null;
   const comprobar = useComprobarRepositorio();
   const [aviso, setAviso] = useState<string | null>(null);
+  const [errorInstructivo, setErrorInstructivo] = useState(false);
 
   // AvisoError ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
   useEffect(() => {
     if (Platform.OS === 'ios' && aviso) AccessibilityInfo.announceForAccessibility(aviso);
   }, [aviso]);
+
+  async function abrirInstructivo(instructivo: string) {
+    setErrorInstructivo(false);
+    try {
+      await abrirEnNavegador(instructivo);
+    } catch {
+      setErrorInstructivo(true);
+      if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(ERROR_INSTRUCTIVO);
+    }
+  }
 
   async function irAlDeposito() {
     if (!url) return;
@@ -73,7 +86,7 @@ export default function Autoarchivo() {
       />
     );
   } else {
-    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto } =
+    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto, instructivo } =
       portal.data.orientacion;
     const vacia =
       !texto && [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
@@ -131,6 +144,26 @@ export default function Autoarchivo() {
           </BloqueOrientacion>
         ) : null}
 
+        {instructivo ? (
+          <View style={estilos.deposito}>
+            {errorInstructivo ? <AvisoError mensaje={ERROR_INSTRUCTIVO} /> : null}
+            <Button
+              mode="outlined"
+              icon="file-pdf-box"
+              onPress={() => abrirInstructivo(instructivo)}
+              contentStyle={estilos.contenidoBoton}
+              labelStyle={estilos.etiquetaInstructivo}
+              accessibilityRole="link"
+              accessibilityLabel="Descargar el instructivo de autoarchivo en PDF"
+            >
+              Descargar instructivo (PDF)
+            </Button>
+            <Text variant="bodySmall" style={estilos.secundario}>
+              Trae los mismos pasos con capturas del repositorio.
+            </Text>
+          </View>
+        ) : null}
+
         {url ? (
           <View style={estilos.deposito}>
             {aviso ? (
@@ -161,8 +194,8 @@ export default function Autoarchivo() {
               Ir al repositorio
             </Button>
             <Text variant="bodySmall" style={estilos.secundario}>
-              El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la
-              Universidad. Al cerrarlo vuelves aquí.
+              El repositorio se abre en el navegador. Para depositar necesitas tu cuenta del
+              repositorio con acceso a tu colección (pasos 1 a 3). Al cerrarlo vuelves aquí.
             </Text>
           </View>
         ) : (
@@ -197,4 +230,5 @@ const estilos = StyleSheet.create({
   deposito: { gap: espacio.s, marginTop: espacio.s },
   reintentar: { alignSelf: 'flex-start' },
   contenidoBoton: { paddingVertical: espacio.xs },
+  etiquetaInstructivo: { flexShrink: 1 },
 });

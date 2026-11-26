@@ -63,11 +63,16 @@ export const GUIAS: Guia[] = [
   {
     id: 'guia-repositorio',
     titulo: 'Cómo depositar tu trabajo de grado',
-    descripcion: 'Formatos, licencia y pasos del autoarchivo, en el repositorio institucional.',
+    descripcion:
+      'Instructivo de la biblioteca (2026): registro, metadatos, carga de archivos y licencia, con capturas del repositorio.',
     contenido: '',
-    // De prueba: la biblioteca pondrá el enlace al PDF o al Drive de la guía.
-    enlace: PORTAL_AUTOARCHIVO_PRUEBA.repository_url,
-    actualizada: '2026-11-04',
+    enlace: PORTAL_AUTOARCHIVO_PRUEBA.repository_url + '/',
+    archivo: {
+      url: 'https://ipxtzpbontuugdvawnge.supabase.co/storage/v1/object/public/media/guides/instructivo-autoarchivo-2026.pdf',
+      nombre: 'instructivo-autoarchivo-2026.pdf',
+      bytes: 876495,
+    },
+    actualizada: '2026-11-25',
     publicado: true,
   },
   {
