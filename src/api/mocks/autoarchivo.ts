@@ -1,40 +1,41 @@
-/**
- * DATOS DE PRUEBA de la orientación de autoarchivo (HU-11).
- *
- * PROVISIONAL: el procedimiento, los requisitos, los formatos y los metadatos son de ejemplo.
- * La biblioteca entregará el texto definitivo (pendiente de María, documento de la iteración 4).
- * Es orientación para depositar un trabajo de grado, no un reglamento ni un formulario.
- */
+/** Orientación de prueba (HU-11), tomada del instructivo de la biblioteca (2026). */
 import type { OrientacionAutoarchivo } from '../autoarchivo';
 
 export const ORIENTACION_AUTOARCHIVO: OrientacionAutoarchivo = {
   titulo: 'Cómo depositar tu trabajo de grado en el Repositorio Institucional',
-  actualizada: '2026-11-02',
+  actualizada: '2026-11-25',
+  instructivo:
+    'https://ipxtzpbontuugdvawnge.supabase.co/storage/v1/object/public/media/guides/instructivo-autoarchivo-2026.pdf',
   procedimiento: [
-    'Revisa que cumples los requisitos de esta guía.',
-    'Prepara el archivo final de tu trabajo en el formato aceptado.',
-    'Reúne los metadatos: título, autores, director, programa, resumen y palabras clave.',
-    'Ingresa al Repositorio Institucional con tu cuenta.',
-    'Deposita el archivo y completa los metadatos en el formulario del repositorio.',
-    'Revisa la confirmación del depósito; la biblioteca lo valida antes de publicarlo.',
+    'Regístrate en el repositorio (https://repositorio.unicesar.edu.co/register) y crea tu perfil.',
+    'Escribe a biblioteca@unicesar.edu.co y pide acceso a la colección de tu programa.',
+    'Espera de 2 a 5 días a que te habiliten y vuelve a iniciar sesión con tu cuenta del repositorio.',
+    'Toca «Comenzar un nuevo envío» (o el botón +) y elige la comunidad y la colección de tu tipo de documento.',
+    'Completa los metadatos; los campos con asterisco (*) son obligatorios.',
+    'Sube el documento y la autorización, en ese orden, y describe cada archivo.',
+    'Elige el acceso: abierto, o con embargo si hay derechos editoriales o patentes.',
+    'Revisa el resumen, marca «Concedo la licencia» y toca «Completar envío» o «Depositar».',
   ],
   requisitos: [
-    'El trabajo de grado está aprobado por tu programa.',
-    'Tienes la autorización del director del trabajo para publicarlo.',
-    'El archivo es la versión final, sin comentarios ni marcas de revisión.',
-    'Los datos de autores y director están completos.',
+    'Una cuenta del repositorio con acceso a la colección de tu programa (la habilita la biblioteca).',
+    'El documento final de tu trabajo.',
+    'La autorización de publicación.',
+    'Si es un artículo ya publicado, revisa en Sherpa Romeo qué versión permite subir la editorial: la publicada o la aceptada (post-print).',
   ],
   formatos: [
-    'PDF como formato principal del documento.',
-    'Si tu trabajo incluye anexos en otros formatos, consulta a la biblioteca si se aceptan.',
+    'PDF o PDF/A, sin contraseña ni restricciones de impresión.',
+    'De preferencia un solo archivo, salvo que te pidan portada y contenido por separado.',
+    'Nombres de los archivos: ApellidoApellido.2026 para el documento y Autorizacion.ApellidoApellido.2026 para la autorización, con los apellidos de quien deposita.',
+    'Sin tildes, espacios, ñ ni caracteres especiales en el nombre del archivo.',
   ],
   metadatos: [
-    'Título del trabajo.',
-    'Autor o autores.',
-    'Director del trabajo.',
-    'Programa académico.',
-    'Fecha de sustentación o de aprobación.',
-    'Resumen.',
-    'Palabras clave.',
+    'Autor(es)',
+    'Título',
+    'Fecha de publicación',
+    'Tipo de documento',
+    'Idioma',
+    'Palabras clave',
+    'Resumen',
+    'Patrocinadores (opcional)',
   ],
 };
