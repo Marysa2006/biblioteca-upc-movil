@@ -3,7 +3,7 @@
  * Gestión → Solicitudes. Solo con el permiso 'reservas'.
  * Necesita las personas, los espacios activos y los parámetros (día hábil, HU-28).
  *
- * Patrón de datos: useUsuarios() / useEspacios() / useParametros() / useCrearReservaTercero()
+ * Patrón de datos: useEspacios() / useParametros() / useCrearReservaTercero()
  * (src/hooks) → src/api → mock o API.
  */
 import { SinPermiso } from '@/components/personal/SinPermiso';
@@ -12,19 +12,16 @@ import { EncabezadoApilado, EstadoCarga, EstadoError, Pantalla } from '@/compone
 import { useEspacios } from '@/hooks/useEspacios';
 import { useParametros } from '@/hooks/useParametros';
 import { useRol } from '@/hooks/useRol';
-import { useUsuarios } from '@/hooks/useUsuarios';
 import { usaApi } from '@/api/cliente';
 
 const TITULO = 'Reservar para un tercero';
 
 export default function ReservaTercero() {
   const { tienePermiso } = useRol();
-  const conDirectorio = tienePermiso('reservas') && tienePermiso('roles');
-  const usuarios = useUsuarios(conDirectorio);
   const espacios = useEspacios();
   const parametros = useParametros();
 
-  const consultas = conDirectorio ? [usuarios, espacios, parametros] : [espacios, parametros];
+  const consultas = [espacios, parametros];
   const reintentar = () => consultas.filter((c) => c.isError).forEach((c) => c.refetch());
 
   let contenido;
@@ -32,14 +29,13 @@ export default function ReservaTercero() {
     contenido = <SinPermiso />;
   } else if (consultas.some((c) => c.isPending)) {
     contenido = <EstadoCarga mensaje="Cargando personas y espacios…" />;
-  } else if ((conDirectorio && !usuarios.data) || !espacios.data || !parametros.data) {
+  } else if (!espacios.data || !parametros.data) {
     contenido = (
       <EstadoError mensaje="No pudimos cargar lo necesario para reservar." onReintentar={reintentar} />
     );
   } else {
     contenido = (
       <FormularioReservaTercero
-        usuarios={conDirectorio ? usuarios.data : undefined}
         espacios={espacios.data}
         parametros={parametros.data}
       />

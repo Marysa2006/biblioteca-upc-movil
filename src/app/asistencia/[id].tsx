@@ -12,12 +12,12 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
-import { Button, Icon, Text, TextInput, SegmentedButtons } from 'react-native-paper';
+import { Button, Icon, Text } from 'react-native-paper';
 import { usaApi } from '@/api/cliente';
-import type { DatosAsistenciaManual } from '@/api/asistencia';
 
 import { DialogoCerrarAsistencia } from '@/components/asistencia/DialogoCerrarAsistencia';
 import { ListaAsistentes } from '@/components/asistencia/ListaAsistentes';
+import { RegistroManualAsistencia } from '@/components/asistencia/RegistroManualAsistencia';
 import { QrAsistencia } from '@/components/asistencia/QrAsistencia';
 import { SinPermiso } from '@/components/personal/SinPermiso';
 import {
@@ -34,7 +34,6 @@ import {
   useAsistencia,
   useCodigoAsistencia,
   useCerrarAsistencia,
-  useMarcarAsistenciaManual,
 } from '@/hooks/useAsistencia';
 import { useRol } from '@/hooks/useRol';
 import { colores, espacio, fuentes, radio } from '@/theme';
@@ -100,24 +99,20 @@ function MostrarQrDePrueba({ sesionId }: { sesionId: string }) {
   }
   if (!qr.data) return <EstadoVacio mensaje="El QR de esta sesión no está disponible." />;
   return (
-    <QrAsistencia codigo={qr.data} minutosRestantes={minutosParaVencer(qr.data.vence, ahora)} />
+    <View style={estilos.contenido}>
+      <QrAsistencia codigo={qr.data} minutosRestantes={minutosParaVencer(qr.data.vence, ahora)} />
+      <RegistroManualAsistencia
+        sesionId={sesionId}
+        antesDeIniciar={qr.data.desde != null && ahora.getTime() < Date.parse(qr.data.desde)}
+      />
+    </View>
   );
 }
 
 function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {
-  const { tienePermiso } = useRol();
   const asistencia = useAsistencia(sesionId, { actualizar: true });
   const qr = useCodigoAsistencia(sesionId);
-  const marcar = useMarcarAsistenciaManual();
   const [ahora, setAhora] = useState(Date.now);
-  const [eligeCuenta, setConCuenta] = useState(false);
-  const puedeElegirCuenta = tienePermiso('roles');
-  const conCuenta = puedeElegirCuenta && eligeCuenta;
-  const [nombre, setNombre] = useState('');
-  const [usuarioId, setUsuarioId] = useState('');
-  const [tipo, setTipo] = useState<'' | 'STUDENT' | 'TEACHER' | 'ADMINISTRATIVE'>('');
-  const [programa, setPrograma] = useState('');
-  const [semestre, setSemestre] = useState('');
   useEffect(() => {
     const intervalo = setInterval(() => setAhora(Date.now()), 1000);
     return () => clearInterval(intervalo);
@@ -125,29 +120,6 @@ function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {
   const desde = qr.data?.desde ? Date.parse(qr.data.desde) : undefined;
   const hasta = qr.data ? Date.parse(qr.data.vence) : undefined;
   const vigente = desde != null && hasta != null && ahora >= desde && ahora < hasta;
-  const idValido = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(usuarioId.trim());
-  const guardar = () => {
-    const datos: DatosAsistenciaManual = conCuenta
-      ? { usuarioId }
-      : {
-          nombre,
-          tipo: tipo || undefined,
-          programa,
-          semestre,
-        };
-    marcar.mutate(
-      { sesionId, ...datos },
-      {
-        onSuccess: () => {
-          setNombre('');
-          setUsuarioId('');
-          setTipo('');
-          setPrograma('');
-          setSemestre('');
-        },
-      },
-    );
-  };
   return (
     <View style={estilos.contenido}>
       {qr.isPending ? <EstadoCarga mensaje="Cargando el QR…" /> : null}
@@ -173,71 +145,7 @@ function ControlAsistenciaBackend({ sesionId }: { sesionId: string }) {
       {asistencia.data ? (
         <ListaAsistentes registros={asistencia.data.registros} total={asistencia.data.total} />
       ) : null}
-      <Text variant="titleMedium">Registrar a mano</Text>
-      {puedeElegirCuenta ? (
-        <SegmentedButtons
-          value={conCuenta ? 'cuenta' : 'sin-cuenta'}
-          onValueChange={(valor) => setConCuenta(valor === 'cuenta')}
-          buttons={[
-            { value: 'sin-cuenta', label: 'Sin cuenta' },
-            { value: 'cuenta', label: 'Con cuenta' },
-          ]}
-        />
-      ) : null}
-      {conCuenta ? (
-        <TextInput
-          label="ID de la cuenta (UUID)"
-          value={usuarioId}
-          onChangeText={setUsuarioId}
-          autoCapitalize="none"
-        />
-      ) : (
-        <>
-          <TextInput
-            label="Nombre completo"
-            value={nombre}
-            onChangeText={setNombre}
-            maxLength={201}
-          />
-          <SegmentedButtons
-            value={tipo}
-            onValueChange={(valor) => setTipo(valor === tipo ? '' : (valor as typeof tipo))}
-            buttons={[
-              { value: 'STUDENT', label: 'Estudiante' },
-              { value: 'TEACHER', label: 'Docente' },
-              { value: 'ADMINISTRATIVE', label: 'Administrativo' },
-            ]}
-          />
-          <TextInput
-            label="Programa (opcional)"
-            value={programa}
-            onChangeText={setPrograma}
-            maxLength={150}
-          />
-          <TextInput
-            label="Semestre (opcional)"
-            value={semestre}
-            onChangeText={setSemestre}
-            maxLength={10}
-          />
-        </>
-      )}
-      <Button
-        mode="contained"
-        loading={marcar.isPending}
-        disabled={
-          marcar.isPending ||
-          (desde != null && ahora < desde) ||
-          (conCuenta ? !idValido : !nombre.trim())
-        }
-        onPress={guardar}
-      >
-        Registrar asistencia
-      </Button>
-      {marcar.error ? <AvisoError mensaje={mensajeErrorGuardar(marcar.error)} /> : null}
-      {marcar.isSuccess ? (
-        <Text accessibilityLiveRegion="polite">Asistencia registrada.</Text>
-      ) : null}
+      <RegistroManualAsistencia sesionId={sesionId} antesDeIniciar={desde != null && ahora < desde} />
     </View>
   );
 }
@@ -267,11 +175,9 @@ function Asistencia() {
 }
 
 function ControlAsistencia({ cita }: { cita: Cita }) {
-  const { tienePermiso } = useRol();
   const cerrar = useCerrarAsistencia();
   const asistencia = useAsistencia(cita.id, { actualizar: !cerrar.isSuccess });
   const abrir = useAbrirAsistencia();
-  const marcar = useMarcarAsistenciaManual();
   const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [ahora, setAhora] = useState(() => new Date());
@@ -302,41 +208,9 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
   // la consulta se actualiza.
   const cerrada = asistencia.data.cerrada || cerrar.isSuccess;
   const abierta = codigo != null && !cerrada;
-  const yaRegistrada = registros.some(
-    (registro) =>
-      registro.usuarioId === cita.solicitanteId ||
-      (!registro.usuarioId && registro.nombre === cita.solicitante),
-  );
-
   const abrirAsistencia = () => {
     setAviso(null);
     abrir.mutate(cita.id);
-  };
-
-  const marcarAMano = () => {
-    setAviso(null);
-    const persona = cita.datosSolicitante;
-    const tipos = {
-      estudiante: 'STUDENT',
-      docente: 'TEACHER',
-      administrativo: 'ADMINISTRATIVE',
-    } as const;
-    const tipo =
-      persona?.tipo && persona.tipo in tipos
-        ? tipos[persona.tipo as keyof typeof tipos]
-        : undefined;
-    const datos: DatosAsistenciaManual = tienePermiso('roles')
-      ? { usuarioId: cita.solicitanteId }
-      : {
-          nombre: cita.solicitante,
-          tipo,
-          programa: persona?.programa,
-          semestre: persona?.semestre != null ? String(persona.semestre) : undefined,
-        };
-    marcar.mutate(
-      { sesionId: cita.id, ...datos },
-      { onSuccess: () => setAviso(`Marcamos la asistencia de ${cita.solicitante} a mano.`) },
-    );
   };
 
   const cerrarAsistencia = () => {
@@ -350,7 +224,7 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
     });
   };
 
-  const errorAccion = abrir.error ?? marcar.error;
+  const errorAccion = abrir.error;
 
   return (
     <View style={estilos.contenido}>
@@ -411,20 +285,7 @@ function ControlAsistencia({ cita }: { cita: Cita }) {
 
       <ListaAsistentes registros={registros} total={total} />
 
-      {abierta && !yaRegistrada ? (
-        <Button
-          mode="outlined"
-          icon="hand-back-right-outline"
-          onPress={marcarAMano}
-          loading={marcar.isPending}
-          disabled={marcar.isPending}
-          contentStyle={estilos.contenidoBoton}
-          accessibilityRole="button"
-          accessibilityLabel={`Marcar a mano la asistencia de ${cita.solicitante}, si no pudo escanear`}
-        >
-          {`Marcar a ${cita.solicitante}`}
-        </Button>
-      ) : null}
+      {abierta ? <RegistroManualAsistencia sesionId={cita.id} /> : null}
 
       {abierta ? (
         <Button
