@@ -429,3 +429,24 @@ identificador de la app, así que instalar uno puede reemplazar el otro.
 
 La primera petición puede tardar hasta un minuto si Render estaba dormido. La compilación
 del APK y el recorrido en Render quedan pendientes.
+
+## 8. Backend 2.2.0
+
+### 8.1 Firma del personal y constancia
+
+El OpenAPI de Render declara `signature` en `Profile` y en el esquema multipart de
+`PATCH /me/`. El esquema publicado para JSON omite ese campo. La app ya envía
+`{signature: {path, width, height, signed_at}}` o `{signature: null}` en JSON y
+muestra «Mi firma» para el personal cuando el perfil incluye el campo.
+
+La constancia lee `delivery.responsible_signature` y
+`return_record.responsible_signature`. El OpenAPI desplegado omite ambos campos.
+Con una respuesta simulada que contiene las dos firmas se comprobó que aparecen
+como trazos en los recuadros de entrega y devolución.
+
+La consulta sin sesión a `GET /me/` en Render devolvió 401. Falta probar con
+una cuenta autorizada del personal y un préstamo de prueba: abrir «Mi firma»,
+guardar un trazo, volver a cargar el perfil y verificar que persiste. Después,
+abrir la constancia de un préstamo entregado y devuelto con firma registrada y
+comprobar que trae los trazos de cada operación. Conviene que Backend refleje en
+OpenAPI los campos que acepta y devuelve en estos flujos.
