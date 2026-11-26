@@ -16,3 +16,5 @@ export { Pantalla, useSubirAlInicio } from './Pantalla';
 export { PasosFormulario, type PasoFormulario } from './PasosFormulario';
 export { PestanasFiltro, type OpcionPestana } from './PestanasFiltro';
 export { Upecito, type PoseUpecito } from './Upecito';
+
+export { Esqueleto } from './Esqueleto';

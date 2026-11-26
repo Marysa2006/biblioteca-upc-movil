@@ -15,7 +15,7 @@ import { Portal, Searchbar, Snackbar } from 'react-native-paper';
 
 import {
   ChipsFiltro,
-  EstadoCarga,
+  Esqueleto,
   EstadoError,
   EstadoVacio,
   ListaPaginada,
@@ -120,7 +120,7 @@ export function BandejaReservas() {
 
   let contenido;
   if (isPending) {
-    contenido = <EstadoCarga mensaje="Cargando solicitudes…" />;
+    contenido = <Esqueleto forma="lista" mensaje="Cargando solicitudes…" />;
   } else if (isError) {
     contenido = (
       <EstadoError mensaje="No pudimos cargar las solicitudes." onReintentar={() => refetch()} />

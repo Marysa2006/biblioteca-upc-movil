@@ -21,7 +21,7 @@ import { Portal, Snackbar } from 'react-native-paper';
 import { DialogoDesactivarEspacio } from '@/components/espacios/DialogoDesactivarEspacio';
 import { TarjetaEspacioAdmin } from '@/components/espacios/TarjetaEspacioAdmin';
 import { DialogoMotivoAccion } from '@/components/reservas/DialogoMotivo';
-import { BotonFlotante, EstadoCarga, EstadoError, EstadoVacio } from '@/components/ui';
+import { BotonFlotante, Esqueleto, EstadoError, EstadoVacio } from '@/components/ui';
 import {
   useCambiarEstadoEspacio,
   useEspaciosAdministracion,
@@ -96,7 +96,7 @@ export function SeccionEspacios() {
 
   let lista;
   if (isPending) {
-    lista = <EstadoCarga mensaje="Cargando espacios…" />;
+    lista = <Esqueleto forma="lista" mensaje="Cargando espacios…" />;
   } else if (isError) {
     lista = <EstadoError mensaje="No pudimos cargar los espacios." onReintentar={() => refetch()} />;
   } else if (data.length === 0) {

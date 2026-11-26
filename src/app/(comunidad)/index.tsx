@@ -18,7 +18,7 @@ import { AvisosNovedades } from '@/components/contenidos/AvisosNovedades';
 import { usaApi } from '@/api/cliente';
 import { CarruselInicio } from '@/components/inicio/CarruselInicio';
 import { TarjetaCategoria } from '@/components/servicios/TarjetaCategoria';
-import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import { Esqueleto, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useContenidosPublicos } from '@/hooks/useContenidos';
 import { useFotosInicio } from '@/hooks/useFotosInicio';
 import { useServicios } from '@/hooks/useServicios';
@@ -47,7 +47,7 @@ export default function Inicio() {
 
   let contenido;
   if (isPending) {
-    contenido = <EstadoCarga mensaje="Cargando servicios…" />;
+    contenido = <Esqueleto forma="cuadricula" mensaje="Cargando servicios…" />;
   } else if (isError) {
     contenido = <EstadoError onReintentar={() => refetch()} />;
   } else {

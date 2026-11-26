@@ -18,7 +18,7 @@ import { ColumnasMes } from '@/components/estadisticas/ColumnasMes';
 import { GraficoBarras } from '@/components/estadisticas/GraficoBarras';
 import { GraficoTiempoRespuesta } from '@/components/estadisticas/GraficoTiempoRespuesta';
 import { TarjetaIndicador } from '@/components/estadisticas/TarjetaIndicador';
-import { EstadoCarga, EstadoError, EstadoVacio, PestanasFiltro } from '@/components/ui';
+import { Esqueleto, EstadoError, EstadoVacio, PestanasFiltro } from '@/components/ui';
 import { usaApi } from '@/api/cliente';
 import { useIndicadores } from '@/hooks/useEstadisticas';
 import { acentoServicio, colores, coloresEstado, espacio, fuentes, radio } from '@/theme';
@@ -63,7 +63,7 @@ type Props = {
 export function SeccionIndicadores({ filtros, pestana, onQuitarFiltros }: Props) {
   const indicadores = useIndicadores(filtros);
 
-  if (indicadores.isPending) return <EstadoCarga mensaje="Calculando los indicadores…" />;
+  if (indicadores.isPending) return <Esqueleto forma="grafica" mensaje="Calculando los indicadores…" />;
   if (indicadores.isError) {
     return (
       <EstadoError

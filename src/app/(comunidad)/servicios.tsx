@@ -15,7 +15,7 @@ import { Button, Text } from 'react-native-paper';
 
 import { IconoCategoria } from '@/components/servicios/IconoCategoria';
 import { TarjetaServicio } from '@/components/servicios/TarjetaServicio';
-import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import { Esqueleto, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { useServicios } from '@/hooks/useServicios';
 import { colores, espacio, fuentes, radio } from '@/theme';
 import type { CategoriaServicio } from '@/types';
@@ -27,7 +27,7 @@ export default function Servicios() {
 
   let contenido;
   if (isPending) {
-    contenido = <EstadoCarga mensaje="Cargando servicios…" />;
+    contenido = <Esqueleto forma="cuadricula" mensaje="Cargando servicios…" />;
   } else if (isError) {
     contenido = <EstadoError onReintentar={() => refetch()} />;
   } else {

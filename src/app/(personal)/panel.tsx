@@ -23,7 +23,7 @@ import { AfluenciaSemanal } from '@/components/panel/AfluenciaSemanal';
 import { CifrasDelDia } from '@/components/panel/CifrasDelDia';
 import { abrirPendiente, irAGestion } from '@/components/panel/navegacion';
 import { TarjetaArea } from '@/components/panel/TarjetaArea';
-import { EstadoCarga, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
+import { Esqueleto, EstadoError, EstadoVacio, Pantalla } from '@/components/ui';
 import { usePanel } from '@/hooks/usePanel';
 import { useRol } from '@/hooks/useRol';
 import { useSesion } from '@/store/sesion';
@@ -69,7 +69,7 @@ export default function Panel() {
   let solicitudes = null;
   if (panel.conSolicitudes) {
     if (panel.cargando) {
-      solicitudes = <EstadoCarga mensaje="Cargando el resumen del día…" />;
+      solicitudes = <Esqueleto forma="cuadricula" mensaje="Cargando el resumen del día…" />;
     } else if (panel.conError) {
       solicitudes = (
         <EstadoError
@@ -109,7 +109,7 @@ export default function Panel() {
   let afluencia = null;
   if (panel.registros.activa) {
     if (panel.registros.cargando) {
-      afluencia = <EstadoCarga mensaje="Calculando la afluencia…" />;
+      afluencia = <Esqueleto forma="grafica" mensaje="Calculando la afluencia…" />;
     } else if (panel.registros.conError || !panel.registros.lista) {
       afluencia = (
         <EstadoError

@@ -19,7 +19,7 @@ import { InfoSolicitud } from '@/components/solicitudes/InfoSolicitud';
 import { LineaTiempo } from '@/components/solicitudes/LineaTiempo';
 import {
   EncabezadoApilado,
-  EstadoCarga,
+  Esqueleto,
   EstadoError,
   EstadoVacio,
   EtiquetaEstado,
@@ -85,7 +85,7 @@ export default function DetalleSolicitud() {
       />
     );
   } else if (solicitudes.isPending) {
-    contenido = <EstadoCarga mensaje="Cargando la solicitud…" />;
+    contenido = <Esqueleto forma="tarjeta" mensaje="Cargando la solicitud…" />;
   } else if (solicitudes.isError) {
     contenido = <EstadoError mensaje="No pudimos cargar la solicitud." onReintentar={recargar} />;
   } else if (!solicitud) {
@@ -136,7 +136,7 @@ export default function DetalleSolicitud() {
             Historial
           </Text>
           {historial.isPending ? (
-            <EstadoCarga mensaje="Cargando el historial…" />
+            <Esqueleto forma="tarjeta" mensaje="Cargando el historial…" />
           ) : historial.isError ? (
             <EstadoError
               mensaje="No pudimos cargar el historial."

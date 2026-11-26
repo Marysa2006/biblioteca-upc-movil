@@ -8,7 +8,7 @@ import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 
 import { TarjetaRegistro } from '@/components/estadisticas/TarjetaRegistro';
-import { EstadoCarga, EstadoError, EstadoVacio, ListaPaginada } from '@/components/ui';
+import { Esqueleto, EstadoError, EstadoVacio, ListaPaginada } from '@/components/ui';
 import { useRegistrosUso } from '@/hooks/useEstadisticas';
 import { colores, espacio } from '@/theme';
 import type { FiltrosEstadisticas } from '@/types';
@@ -22,7 +22,7 @@ type Props = {
 export function SeccionRegistros({ filtros, onQuitarFiltros }: Props) {
   const { data, isPending, isError, refetch } = useRegistrosUso(filtros);
 
-  if (isPending) return <EstadoCarga mensaje="Cargando los registros de uso…" />;
+  if (isPending) return <Esqueleto forma="lista" mensaje="Cargando los registros de uso…" />;
   if (isError) {
     return <EstadoError mensaje="No pudimos cargar los registros de uso." onReintentar={() => refetch()} />;
   }

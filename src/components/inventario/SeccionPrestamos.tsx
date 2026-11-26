@@ -24,7 +24,7 @@ import {
   BotonFlotante,
   ChipsFiltro,
   ListaPaginada,
-  EstadoCarga,
+  Esqueleto,
   EstadoError,
   EstadoVacio,
   type OpcionFiltro,
@@ -68,7 +68,7 @@ export function SeccionPrestamos() {
   const abrir = (id: string, modo: 'entrega' | 'devolucion') =>
     router.push({ pathname: '/administracion/prestamo', params: { id, modo } });
 
-  if (prestamos.isPending || tablets.isPending) return <EstadoCarga mensaje="Cargando los préstamos…" />;
+  if (prestamos.isPending || tablets.isPending) return <Esqueleto forma="lista" mensaje="Cargando los préstamos…" />;
   if (prestamos.isError || tablets.isError) {
     return (
       <EstadoError
