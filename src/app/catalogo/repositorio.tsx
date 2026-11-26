@@ -20,7 +20,7 @@ import {
   EstadoVacio,
   Pantalla,
 } from '@/components/ui';
-import { useOrientacionAutoarchivo } from '@/hooks/useAutoarchivo';
+import { usePortalAutoarchivo } from '@/hooks/useAutoarchivo';
 import { abrirRepositorio, useBusquedaRepositorio } from '@/hooks/useRepositorio';
 import { colores, espacio } from '@/theme';
 import type { ResultadoBusqueda } from '@/utils/busqueda';
@@ -39,8 +39,8 @@ const TEXTOS_REPOSITORIO: TextosFuente = {
 export default function Repositorio() {
   // Texto enviado desde el campo; vacío, no hay resultados.
   const [textoBuscado, setTextoBuscado] = useState('');
-  const portal = useOrientacionAutoarchivo();
-  const url = portal.isSuccess ? (portal.data.url ?? null) : null;
+  const portal = usePortalAutoarchivo();
+  const url = portal.isSuccess ? portal.data.url : null;
   const busqueda = useBusquedaRepositorio(url, textoBuscado);
   const resultados = busqueda.data?.pages.flatMap((pagina) => pagina.resultados) ?? [];
   const [aviso, setAviso] = useState<string | null>(null);

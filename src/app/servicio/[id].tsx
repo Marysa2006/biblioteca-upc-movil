@@ -87,8 +87,16 @@ function Detalle({ servicio }: { servicio: NonNullable<ReturnType<typeof useServ
       <Card mode="contained" style={estilos.tarjeta}>
         <Card.Content style={estilos.secciones}>
           <Seccion icono="text-box-outline" titulo="Descripción" texto={servicio.descripcion} />
-          <Seccion icono="account-group-outline" titulo="Público objetivo" texto={servicio.publico} />
-          <Seccion icono="clipboard-text-outline" titulo="Forma de solicitud" texto={servicio.formaSolicitud} />
+          <Seccion
+            icono="account-group-outline"
+            titulo="Público objetivo"
+            texto={servicio.publico}
+          />
+          <Seccion
+            icono="clipboard-text-outline"
+            titulo="Forma de solicitud"
+            texto={servicio.formaSolicitud}
+          />
           <Seccion icono="clock-outline" titulo="Horarios" texto={servicio.horario} />
         </Card.Content>
       </Card>
@@ -164,10 +172,9 @@ function Detalle({ servicio }: { servicio: NonNullable<ReturnType<typeof useServ
       ) : null}
 
       {/*
-        Préstamo de libros: la disponibilidad se consulta en Koha, sin cuenta. Por id y no por
-        categoría: otros servicios de préstamo, como las tablets, son de la misma categoría.
+        Préstamo de libros: la disponibilidad se consulta en Koha, sin cuenta.
       */}
-      {mostrarAcciones && servicio.id === 'prestamo' ? (
+      {mostrarAcciones && categoria === 'prestamo' ? (
         <Button
           mode="contained"
           icon="book-search-outline"
@@ -176,7 +183,7 @@ function Detalle({ servicio }: { servicio: NonNullable<ReturnType<typeof useServ
           accessibilityRole="button"
           accessibilityLabel="Buscar libros en el catálogo Koha"
         >
-          Buscar en el catálogo
+          Consultar en Koha
         </Button>
       ) : null}
 

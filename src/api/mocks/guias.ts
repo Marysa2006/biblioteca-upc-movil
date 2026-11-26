@@ -6,6 +6,8 @@
  */
 import type { Guia } from '@/types';
 
+import { PORTAL_AUTOARCHIVO_PRUEBA } from './enlacesPortal';
+
 export const GUIAS: Guia[] = [
   {
     id: 'guia-apa',
@@ -64,7 +66,7 @@ export const GUIAS: Guia[] = [
     descripcion: 'Formatos, licencia y pasos del autoarchivo, en el repositorio institucional.',
     contenido: '',
     // De prueba: la biblioteca pondrá el enlace al PDF o al Drive de la guía.
-    enlace: 'https://repositorio.unicesar.edu.co/',
+    enlace: PORTAL_AUTOARCHIVO_PRUEBA.repository_url,
     actualizada: '2026-11-04',
     publicado: true,
   },

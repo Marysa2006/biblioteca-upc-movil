@@ -15,17 +15,14 @@ import type { PaginaResultados } from '@/utils/busqueda';
 import { leerResultadosCatalogo } from '@/utils/catalogo';
 
 import { peticion, simularRed, usaApi } from './cliente';
-import { URL_CATALOGO_KOHA } from '@/utils/constantes';
+import { PORTAL_KOHA_PRUEBA } from './mocks/enlacesPortal';
 
 type KohaBackend = { url: string | null; staff_url?: string | null; message?: string | null };
 
 export async function obtenerEnlacesKoha() {
   const enlaces = usaApi('servicios')
     ? await peticion<KohaBackend>('/portal/koha-opac/')
-    : await simularRed<KohaBackend>({
-        url: URL_CATALOGO_KOHA + '/cgi-bin/koha/opac-main.pl',
-        staff_url: null,
-      });
+    : await simularRed<KohaBackend>(PORTAL_KOHA_PRUEBA);
   return {
     opac: enlaces.url ?? null,
     personal: enlaces.staff_url ?? null,

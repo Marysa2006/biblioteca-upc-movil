@@ -108,7 +108,7 @@ export default function Gestion() {
     >
       {enlacesKoha.isError ? (
         <EstadoError
-          mensaje="No pudimos consultar el acceso a Koha."
+          mensaje="No pudimos consultar el acceso a Koha del personal."
           onReintentar={() => void enlacesKoha.refetch()}
         />
       ) : kohaPersonal ? (

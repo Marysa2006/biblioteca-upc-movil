@@ -117,7 +117,7 @@ export const claves = {
 
   // ── Iteración 4: autoarchivo (HU-11) ─────────────────────────
   /** Contenido de orientación de autoarchivo (HU-11). */
-  orientacionAutoarchivo: ['autoarchivo', 'orientacion'] as const,
+  portalAutoarchivo: ['portal', 'self-archive'] as const,
 
   // ── Iteración 4: capacitaciones (HU-09, HU-10 y HU-12) ───────
   /** Todas las líneas de formación, también las inactivas (HU-09). */

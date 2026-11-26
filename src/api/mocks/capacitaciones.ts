@@ -20,7 +20,7 @@ import { conHora, habil, HOY } from './fechasDemo';
  */
 export const FECHAS_CAPACITACIONES = {
   'cap-1': habil(3),
-  'cap-2': habil(4),
+  'cap-2': HOY, // Aprobada para probar la asistencia por QR.
   'cap-3': habil(5),
   'cap-3-propuesta': habil(6),
   'cap-4': habil(8),

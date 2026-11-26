@@ -4,9 +4,9 @@
  * Pantalla apilada que se abre desde el servicio "Depósito de trabajos de grado" y desde
  * Catálogo → Repositorio.
  *
- * "Ir al depósito" primero comprueba que el repositorio responde (CA3) y, si responde, lo abre
+ * "Ir al repositorio" primero comprueba que el repositorio responde (CA3) y, si responde, lo abre
  * en el navegador integrado (CA2). Si no, muestra el aviso con Reintentar y no abre nada.
- * Patrón de datos: useOrientacionAutoarchivo() → obtenerOrientacionAutoarchivo() → mock.
+ * Patrón de datos: usePortalAutoarchivo() → obtenerPortalAutoarchivo() → API o mock.
  */
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Platform, StyleSheet, View } from 'react-native';
@@ -23,7 +23,7 @@ import {
   EstadoVacio,
   Pantalla,
 } from '@/components/ui';
-import { useOrientacionAutoarchivo } from '@/hooks/useAutoarchivo';
+import { usePortalAutoarchivo } from '@/hooks/useAutoarchivo';
 import { abrirRepositorio, useComprobarRepositorio } from '@/hooks/useRepositorio';
 import { colores, espacio, fuentes } from '@/theme';
 import { fechaLegible } from '@/utils/fechas';
@@ -31,9 +31,9 @@ import { fechaLegible } from '@/utils/fechas';
 const TITULO = 'Orientación de autoarchivo';
 
 export default function Autoarchivo() {
-  const orientacion = useOrientacionAutoarchivo();
+  const portal = usePortalAutoarchivo();
+  const url = portal.isSuccess ? portal.data.url : null;
   const comprobar = useComprobarRepositorio();
-  const url = orientacion.isSuccess ? orientacion.data.url : null;
   const [aviso, setAviso] = useState<string | null>(null);
 
   // AvisoError ya trae accessibilityLiveRegion (Android); en iOS el aviso se anuncia aquí.
@@ -63,24 +63,27 @@ export default function Autoarchivo() {
   }
 
   let contenido;
-  if (orientacion.isPending) {
+  if (portal.isPending) {
     contenido = <EstadoCarga mensaje="Cargando la orientación…" />;
-  } else if (orientacion.isError) {
+  } else if (portal.isError) {
     contenido = (
       <EstadoError
         mensaje="No pudimos cargar la orientación de autoarchivo."
-        onReintentar={() => orientacion.refetch()}
+        onReintentar={() => portal.refetch()}
       />
     );
   } else {
-    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto, mensaje } =
-      orientacion.data;
+    const { actualizada, procedimiento, requisitos, formatos, metadatos, texto } =
+      portal.data.orientacion;
     const vacia =
       !texto && [procedimiento, requisitos, formatos, metadatos].every((b) => b.length === 0);
 
     contenido = vacia ? (
       <EstadoVacio
-        mensaje={mensaje || 'La biblioteca todavía no ha publicado la orientación de autoarchivo.'}
+        mensaje={
+          portal.data.mensaje ||
+          'La biblioteca todavía no ha publicado la orientación de autoarchivo.'
+        }
       />
     ) : (
       <>
@@ -155,7 +158,7 @@ export default function Autoarchivo() {
               accessibilityRole="link"
               accessibilityLabel="Abrir el Repositorio Institucional para depositar tu trabajo"
             >
-              Ir al depósito
+              Ir al repositorio
             </Button>
             <Text variant="bodySmall" style={estilos.secundario}>
               El repositorio se abre en el navegador; para depositar necesitas tu cuenta de la
@@ -164,7 +167,7 @@ export default function Autoarchivo() {
           </View>
         ) : (
           <EstadoVacio
-            mensaje={mensaje || 'El repositorio todavía no tiene un enlace publicado.'}
+            mensaje={portal.data.mensaje || 'El repositorio todavía no tiene un enlace publicado.'}
           />
         )}
       </>
@@ -176,9 +179,9 @@ export default function Autoarchivo() {
       <EncabezadoApilado titulo={TITULO} />
       <Pantalla
         titulo={TITULO}
-        subtitulo={orientacion.data?.titulo}
+        subtitulo={portal.data?.orientacion.titulo}
         conEncabezado
-        recarga={{ recargando: orientacion.isRefetching, onRecargar: () => orientacion.refetch() }}
+        recarga={{ recargando: portal.isRefetching, onRecargar: () => portal.refetch() }}
       >
         {contenido}
       </Pantalla>

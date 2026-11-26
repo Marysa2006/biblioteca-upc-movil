@@ -174,11 +174,15 @@ ver [trampas conocidas](#trampas-conocidas).
 
 ### Las integraciones externas
 
-| Servicio                 | Cómo se usa                                                                                    |
-| ------------------------ | ---------------------------------------------------------------------------------------------- |
-| **Koha** (catálogo)      | Búsqueda por RSS en `src/api/catalogo.ts`, con la URL publicada en `/portal/koha-opac/`.       |
-| **DSpace** (repositorio) | Búsqueda pública en `src/api/repositorio.ts`, con `repository_url` de `/portal/self-archive/`. |
-| **Notificaciones**       | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend        |
+| Servicio                 | Cómo se usa                                                                                                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Koha** (catálogo)      | El portal publica `url` y `staff_url` en `GET /portal/koha-opac/`. `useEnlacesKoha()` comparte esa consulta. `src/api/catalogo.ts` busca en el RSS del OPAC.                                 |
+| **DSpace** (repositorio) | `usePortalAutoarchivo()` comparte `GET /portal/self-archive/` entre Catálogo y Autoarchivo. `src/api/repositorio.ts` usa `repository_url` como base para buscar en la API pública de DSpace. |
+| **Notificaciones**       | Recordatorios **locales** del celular. El push desde el servidor llegará con el Backend                                                                                                      |
+
+Las peticiones a Koha y DSpace salen sin el token de la app. Si falla la consulta del portal,
+la pantalla ofrece Reintentar. Si el enlace público viene nulo, muestra el mensaje del
+Backend y oculta la apertura. Las URLs de demostración viven en `src/api/mocks/enlacesPortal.ts`. Autoarchivo muestra el texto publicado cuando la guía no tiene los cuatro bloques. Si no hay guía, muestra el mensaje del Backend.
 
 ---
 

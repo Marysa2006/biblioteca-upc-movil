@@ -37,6 +37,7 @@ import { USUARIOS_DIRECTORIO } from './mocks/usuarios';
 export type { DatosAsistenciaManual } from './backend/asistencia';
 
 export async function obtenerCodigoAsistencia(sesionId: string) {
+  if (!usaApi('asistencia')) return (await abrirAsistencia(sesionId)).codigo;
   const respuesta = await peticion<QrAsistenciaBackend>(
     `/attendance/${encodeURIComponent(sesionId)}/qr/`,
   );
@@ -63,22 +64,19 @@ type EstadoAsistencia = {
 const asistencias = new Map<string, EstadoAsistencia>();
 
 /**
- * DATOS DE PRUEBA (HU-32): la cita de hoy de Laura (cit-6) empieza con la asistencia abierta y
- * un código fijo. Los datos de prueba viven en la memoria de cada celular, así que el QR que
- * muestra el facilitador en otro equipo no existe en el de Laura; con este código, el QR se
- * puede imprimir o mostrar en un computador y probar el registro en un solo celular. Si el
- * facilitador abre la asistencia de cit-6, ve este mismo código (abrirAsistencia lo reutiliza).
+ * QR fijos para la asesoría de Laura y la capacitación de Carlos de hoy. Permiten
+ * probar los códigos entre dispositivos, ya que cada teléfono guarda sus mocks en memoria.
  */
 export const CITA_ASISTENCIA_PRUEBA = 'cit-6';
 export const CODIGO_ASISTENCIA_PRUEBA = '246810';
 
 if (USAR_MOCKS) {
-  asistencias.set(CITA_ASISTENCIA_PRUEBA, {
-    codigo: CODIGO_ASISTENCIA_PRUEBA,
-    vence: `${hoyISO()} 23:59`,
-    cerrada: false,
-    registros: [],
-  });
+  for (const [id, codigo] of [
+    [CITA_ASISTENCIA_PRUEBA, CODIGO_ASISTENCIA_PRUEBA],
+    ['cap-2', '135790'],
+  ]) {
+    asistencias.set(id, { codigo, vence: hoyISO() + ' 23:59', cerrada: false, registros: [] });
+  }
 }
 
 /** Estado de la sesión, creándolo vacío la primera vez. */
